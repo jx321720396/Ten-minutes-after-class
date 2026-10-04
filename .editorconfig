@@ -2,3 +2,29 @@ root = true
 
 [*]
 charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# ---- GDScript / Godot 资源：官方风格使用 Tab 缩进 ----
+[*.gd]
+indent_style = tab
+indent_size = 4
+
+[*.{tscn,tres,godot,cfg,import}]
+indent_style = tab
+
+# ---- 文档：Markdown 用 2 空格，允许行尾空格（换行语义）----
+[*.{md,markdown}]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = false
+
+# ---- 配置与数据 ----
+[*.{json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.csv]
+indent_style = space
+insert_final_newline = false

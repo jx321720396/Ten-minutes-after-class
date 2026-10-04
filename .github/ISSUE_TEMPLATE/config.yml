@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 玩法规格（v3.0）
+    url: https://github.com/jx321720396/Ten-minutes-after-class/blob/main/docs/gdd/core-gameplay-v3.0.md
+    about: 提问或讨论玩法之前，请先查阅唯一生效规格。
+  - name: 贡献指南
+    url: https://github.com/jx321720396/Ten-minutes-after-class/blob/main/CONTRIBUTING.md
+    about: 分支、提交、代码风格、资源与文档规范。

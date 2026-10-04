@@ -1,4 +1,40 @@
-# Godot 4+ specific ignores
+# ---- Godot 4 ----
 .godot/
 /android/
+*.translation
+
+# ---- 构建与导出产物 ----
+/build/
+/dist/
+/export/
+*.pck
+*.apk
+*.aab
+*.dmg
+*.msi
+
+# ---- 编辑器 / IDE ----
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# ---- 操作系统 ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Office 临时文件（Word/Excel 打开时产生）----
+~$*
+
+# ---- Reasonix 本地配置与附件（含机器相关路径，不共享）----
+.reasonix/
+reasonix.toml
+
+# ---- 日志与临时文件 ----
+*.log
 *.tmp
+*.bak
+*.orig

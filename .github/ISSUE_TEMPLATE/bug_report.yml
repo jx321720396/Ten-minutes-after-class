@@ -1,0 +1,68 @@
+name: 缺陷报告
+description: 报告一个可复现的问题（崩溃、数值异常、UI 错误等）
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请尽量提供可复现步骤与现场证据。涉及数值异常的，请附批量局统计或日志片段。
+
+  - type: input
+    id: build
+    attributes:
+      label: 版本 / 构建
+      description: Godot 版本、操作系统、运行的是编辑器还是导出包
+      placeholder: "Godot 4.6 / Windows 11 / 编辑器运行"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从主菜单开始，逐步写清操作
+      placeholder: |
+        1. 新游戏 → 上午课间
+        2. 对 06 号角色使用「当众调侃」
+        3. 连续 3 次后…
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果
+      description: 依据哪一节规格（如 v3.0 §10 R10）
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+      description: 包含报错信息 / 堆栈 / 截图
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 严重程度
+      options:
+        - 阻断（无法运行 / 必崩）
+        - 严重（核心循环受影响）
+        - 一般（局部功能异常）
+        - 轻微（表现层问题）
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认
+      options:
+        - label: 我已搜索过现有 Issue，未发现重复
+          required: true
+        - label: 我已对照 v3.0 规格确认这确实是缺陷（而非设计意图）
+          required: true
