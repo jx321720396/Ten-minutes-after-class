@@ -6,7 +6,7 @@
 
 ## 1. 开工前必读
 
-1. **Notion 玩法文档**（入口见 [`docs/gdd/README.md`](docs/gdd/README.md)）—— **玩法唯一事实源**。仓库只保留工程契约（铁律、编号锚点、数据接口），不复制玩法正文，避免双源漂移。
+1. [`docs/gdd/core-gameplay-v3.1.md`](docs/gdd/core-gameplay-v3.1.md) —— **玩法唯一事实源（主文档）**，在仓库内维护。改规格就改这份文档，并在 `CHANGELOG.md` 记录；工程契约（铁律、编号、数据接口）见 `docs/design/`。
 2. [`docs/design/架构总览.md`](docs/design/架构总览.md) —— 工程结构与模块边界。
 3. 本文件的设计铁律一节。
 

@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        玩法规格的**唯一事实源是 Notion 玩法文档**（入口见 `docs/gdd/README.md`）；仓库内只维护工程契约，不复制玩法正文。
+        玩法规格的**唯一事实源是 `docs/gdd/core-gameplay-v3.1.md`**；改规格直接改这份主文档，并在 `CHANGELOG.md` 记录。
         若本议题要改变规格，请在结论中明确"改哪一节、旧结论是什么、新结论是什么"，并附带检验题论证。
 
   - type: textarea

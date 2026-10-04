@@ -48,4 +48,4 @@ data/
 
 ## 权威性
 
-数值的**出处**必须可追溯到 [`../docs/gdd/README.md`](../docs/gdd/README.md) 的具体章节或它的标定目标（§3.4）。标定后的调整走 `balance/` 前缀分支并在 `CHANGELOG.md` 的「平衡」分类中记录。
+数值的**出处**必须可追溯到 [`../docs/gdd/core-gameplay-v3.1.md`](../docs/gdd/core-gameplay-v3.1.md) 的具体章节或它的标定目标（§3.4）。标定后的调整走 `balance/` 前缀分支并在 `CHANGELOG.md` 的「平衡」分类中记录。

@@ -53,7 +53,7 @@
 | 文档 | 说明 |
 |---|---|
 | [`docs/README.md`](docs/README.md) | **文档总索引**（从这里进入） |
-| [`docs/gdd/README.md`](docs/gdd/README.md) | **玩法规格入口**（事实源在 Notion；仓库侧只留工程契约与编号锚点） |
+| [`docs/gdd/core-gameplay-v3.1.md`](docs/gdd/core-gameplay-v3.1.md) | **玩法主文档（唯一事实源）** v3.1 |
 | `docs/gdd/` | 玩法设计文档体系与章节映射 |
 | `docs/design/` | 技术设计：架构、数据模型、规则引擎 |
 | `docs/production/` | 路线图、里程碑、比赛提交清单 |

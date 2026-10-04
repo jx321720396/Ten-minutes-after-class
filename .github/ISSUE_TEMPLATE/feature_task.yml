@@ -32,7 +32,7 @@ body:
     attributes:
       label: 规格依据
       description: 对应 v3.0 的章节（如 §10 R5、§7.2）
-      placeholder: "Notion 玩法文档 §10 R5"
+      placeholder: "docs/gdd/core-gameplay-v3.1.md §10 R5"
     validations:
       required: true
 
