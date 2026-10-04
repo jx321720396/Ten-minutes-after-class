@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: 玩法规格索引（Notion）
-    url: https://github.com/jx321720396/Ten-minutes-after-class/blob/main/docs/gdd/README.md
-    about: 玩法规格的事实源在 Notion；此处为仓库侧索引与工程契约。
+  - name: 玩法规格（主文档）
+    url: https://github.com/jx321720396/Ten-minutes-after-class/blob/main/docs/gdd/core-gameplay-v3.1.md
+    about: 玩法规格的唯一事实源，仓库内维护。
   - name: 贡献指南
     url: https://github.com/jx321720396/Ten-minutes-after-class/blob/main/CONTRIBUTING.md
     about: 分支、提交、代码风格、资源与文档规范。
