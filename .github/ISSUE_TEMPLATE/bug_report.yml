@@ -33,7 +33,7 @@ body:
     id: expected
     attributes:
       label: 期望结果
-      description: 依据哪一节规格（如 v3.0 §10 R10）
+      description: 依据哪一节规格（如主文档 §10 调侃）
     validations:
       required: true
 
