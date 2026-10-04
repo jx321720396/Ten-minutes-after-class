@@ -1,0 +1,56 @@
+name: 设计讨论 / 规格变更
+description: 讨论玩法设计、提出规格修订或数值标定结论
+title: "[设计] "
+labels: ["design"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        玩法规格的**唯一生效版本**是 `docs/gdd/core-gameplay-v3.0.md`。
+        若本议题要改变规格，请在结论中明确"改哪一节、旧结论是什么、新结论是什么"，并附带检验题论证。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 当前的痛点或漏洞，尽量引用规格章节与具体数值
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提议方案
+      description: 至少给出一个可执行方案；若有替代方案请一并列出并比较成本
+    validations:
+      required: true
+
+  - type: textarea
+    id: emergence
+    attributes:
+      label: 涌现检验
+      description: |
+        检验一：把涌现部分换成脚本，游戏还成立吗？
+        检验二：玩家面对的整体，是否拥有任何部分都没有、也没有任何部分想要的性质？
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: 影响面
+      description: 受影响的规则编号 / 数值 / 文档章节 / 已实现的模块
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 议题性质
+      options:
+        - 规格修订（改变 v3.0 结论）
+        - 规格细化（补充 v3.0 未明确处）
+        - 数值标定（不改规则，只调参数）
+        - 纯讨论（暂不落地）
+    validations:
+      required: true

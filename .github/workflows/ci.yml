@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  structure:
+    name: 仓库结构校验
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 必需文件与目录
+        run: |
+          missing=0
+          for f in project.godot README.md CHANGELOG.md CONTRIBUTING.md LICENSE AGENTS.md .gitignore .editorconfig .gitattributes; do
+            [ -f "$f" ] || { echo "::error file=$f::缺少必需文件 $f"; missing=1; }
+          done
+          for d in assets autoload data docs scenes scripts tests shaders .github; do
+            [ -d "$d" ] || { echo "::error::缺少必需目录 $d"; missing=1; }
+          done
+          exit $missing
+
+      - name: 不得被版本控制的文件
+        run: |
+          bad=0
+          while IFS= read -r f; do
+            case "$f" in
+              .godot/*|android/*|build/*|dist/*|export/*|.reasonix/*|reasonix.toml|*'~$'*|*.log|*.tmp)
+                echo "::error file=$f::该文件不应被提交（见 .gitignore）"; bad=1 ;;
+            esac
+          done < <(git ls-files)
+          exit $bad
+
+      - name: 文档相对链接检查
+        run: python3 .github/scripts/check_docs_links.py
+
+  gdscript:
+    name: GDScript 格式与静态检查
+    runs-on: ubuntu-latest
+    continue-on-error: true   # 骨架阶段仅提示；代码稳定后在分支保护中设为必需
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 安装 gdtoolkit
+        run: pip install 'gdtoolkit==4.*'
+      - name: gdformat --check
+        run: gdformat --check scripts/ || echo "::warning title=格式::存在未按 gdformat 格式化的脚本"
+      - name: gdlint
+        run: gdlint scripts/ || echo "::warning title=静态检查::gdlint 报告了问题"

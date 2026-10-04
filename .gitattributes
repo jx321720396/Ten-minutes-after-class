@@ -1,2 +1,35 @@
-# Normalize EOL for all files that Git considers text files.
+# 统一文本文件换行为 LF，避免跨平台差异制造无意义 diff
 * text=auto eol=lf
+
+# ---- 文本类（显式声明，便于 diff 与合并）----
+*.gd     text eol=lf
+*.tscn   text eol=lf
+*.tres   text eol=lf
+*.godot  text eol=lf
+*.md     text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.csv    text eol=lf
+
+# ---- 二进制资源（禁用行尾转换与文本 diff）----
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.svg   text eol=lf
+*.ogg   binary
+*.wav   binary
+*.mp3   binary
+*.ttf   binary
+*.otf   binary
+*.pck   binary
+*.apk   binary
+*.zip   binary
+*.docx  binary
+*.xlsx  binary
+*.pdf   binary
+
+# ---- 语言统计：Godot 生成的 .import 不计入仓库语言构成 ----
+*.import linguist-generated=true
+
+# 说明：若后续贴图/音频总体积超过 100 MB，再评估启用 Git LFS（需全员安装 git-lfs）。
