@@ -1,0 +1,240 @@
+[gd_scene format=3 uid="uid://ckhk7pqoo1clw"]
+
+[ext_resource type="Script" uid="uid://bimyujatl3f57" path="res://ui/pause_menu.gd" id="1_pause"]
+[ext_resource type="PackedScene" uid="uid://yh1nvljgb0uw" path="res://ui/settings_menu.tscn" id="2_settings"]
+
+[sub_resource type="FontVariation" id="FontVariation_title"]
+outline_size = 4
+outline_color = Color(1, 0.98, 0.92, 0.90)
+shadow_color = Color(0.08, 0.12, 0.28, 0.30)
+shadow_offset_x = 3
+shadow_offset_y = 3
+extra_spacing/glyph = 3
+
+[sub_resource type="FontVariation" id="FontVariation_btn"]
+extra_spacing/glyph = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(1, 0.97, 0.91, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0.80, 0.70, 0.50, 1)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 22
+corner_radius_bottom_left = 22
+shadow_color = Color(0.12, 0.08, 0.04, 0.20)
+shadow_size = 10
+shadow_offset_y = 4
+content_margin_left = 40
+content_margin_top = 35
+content_margin_right = 40
+content_margin_bottom = 35
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
+bg_color = Color(1, 0.97, 0.90, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0.80, 0.70, 0.50, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0.12, 0.08, 0.04, 0.14)
+shadow_size = 5
+shadow_offset_y = 3
+content_margin_left = 18
+content_margin_top = 8
+content_margin_right = 18
+content_margin_bottom = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(1, 0.94, 0.80, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0.72, 0.60, 0.38, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0.12, 0.08, 0.04, 0.22)
+shadow_size = 8
+shadow_offset_y = 5
+content_margin_left = 18
+content_margin_top = 8
+content_margin_right = 18
+content_margin_bottom = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
+bg_color = Color(0.94, 0.86, 0.68, 1)
+border_width_left = 2
+border_width_top = 3
+border_width_right = 2
+border_width_bottom = 1
+border_color = Color(0.65, 0.54, 0.34, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0.10, 0.06, 0.02, 0.10)
+shadow_size = 2
+shadow_offset_y = 1
+content_margin_left = 18
+content_margin_top = 8
+content_margin_right = 18
+content_margin_bottom = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_focus"]
+bg_color = Color(1, 0.95, 0.83, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 4
+border_color = Color(0.52, 0.42, 0.26, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0.12, 0.08, 0.04, 0.18)
+shadow_size = 7
+shadow_offset_y = 4
+content_margin_left = 18
+content_margin_top = 8
+content_margin_right = 18
+content_margin_bottom = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_disabled"]
+bg_color = Color(0.90, 0.88, 0.84, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.76, 0.72, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0)
+shadow_size = 0
+content_margin_left = 18
+content_margin_top = 8
+content_margin_right = 18
+content_margin_bottom = 8
+
+[node name="PauseMenu" type="Control" unique_id=201027925]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_pause")
+
+[node name="Overlay" type="ColorRect" parent="." unique_id=889341849]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.35)
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=1278223202]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 0
+offset_left = 766.0
+offset_top = 382.0
+offset_right = 1176.0
+offset_bottom = 704.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Panel" unique_id=1627605994]
+layout_mode = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="Title" type="Label" parent="Panel/VBox" unique_id=1949074000]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.14, 0.24, 0.48, 1)
+theme_override_colors/font_shadow_color = Color(0.08, 0.12, 0.28, 0.20)
+theme_override_fonts/font = SubResource("FontVariation_title")
+theme_override_font_sizes/font_size = 40
+text = "暂停"
+horizontal_alignment = 1
+
+[node name="Spacer1" type="Control" parent="Panel/VBox" unique_id=2024693738]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="MenuVBox" type="VBoxContainer" parent="Panel/VBox" unique_id=1191911070]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 12
+
+[node name="ResumeBtn" type="Button" parent="Panel/VBox/MenuVBox" unique_id=506540914]
+custom_minimum_size = Vector2(280, 52)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.20, 0.12, 1)
+theme_override_colors/font_hover_color = Color(0.20, 0.14, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.10, 0.04, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.50, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+text = "继续游戏"
+
+[node name="Sep1" type="ColorRect" parent="Panel/VBox/MenuVBox" unique_id=1758835476]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.78, 0.65, 0.42, 0.35)
+
+[node name="SettingBtn" type="Button" parent="Panel/VBox/MenuVBox" unique_id=1645644609]
+custom_minimum_size = Vector2(280, 52)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.20, 0.12, 1)
+theme_override_colors/font_hover_color = Color(0.20, 0.14, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.10, 0.04, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.50, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+text = "设置"
+
+[node name="Sep2" type="ColorRect" parent="Panel/VBox/MenuVBox" unique_id=520015299]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.78, 0.65, 0.42, 0.35)
+
+[node name="QuitBtn" type="Button" parent="Panel/VBox/MenuVBox" unique_id=1736920853]
+custom_minimum_size = Vector2(280, 52)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.20, 0.12, 1)
+theme_override_colors/font_hover_color = Color(0.20, 0.14, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.10, 0.04, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.50, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+text = "返回主菜单"
+
+[node name="SettingsMenu" parent="." unique_id=1566011065 instance=ExtResource("2_settings")]
+visible = false
+layout_mode = 1

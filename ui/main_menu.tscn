@@ -1,0 +1,232 @@
+[gd_scene format=3 uid="uid://cc7c5bw525vga"]
+
+[ext_resource type="Script" uid="uid://cctsahkm2am3h" path="res://ui/main_menu.gd" id="1_menu"]
+
+[sub_resource type="FontVariation" id="FontVariation_title"]
+
+[sub_resource type="FontVariation" id="FontVariation_btn"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(1, 0.97, 0.9, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0.8, 0.7, 0.5, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.12, 0.08, 0.04, 0.14)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(0.94, 0.86, 0.68, 1)
+border_width_left = 2
+border_width_top = 3
+border_width_right = 2
+border_width_bottom = 1
+border_color = Color(0.65, 0.54, 0.34, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.1, 0.06, 0.02, 0.1)
+shadow_size = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(1, 0.94, 0.8, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0.72, 0.6, 0.38, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.12, 0.08, 0.04, 0.22)
+shadow_size = 9
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_disabled"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(0.9, 0.88, 0.84, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.76, 0.72, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0, 0, 0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_focus"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(1, 0.95, 0.83, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 4
+border_color = Color(0.52, 0.42, 0.26, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.12, 0.08, 0.04, 0.18)
+shadow_size = 7
+
+[node name="MainMenu" type="Control" unique_id=314385986]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = -1.0
+offset_right = 4.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=132265238]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.50100005
+anchor_right = 0.5
+anchor_bottom = 0.50100005
+offset_left = -961.0
+offset_top = -539.0801
+offset_right = 948.0
+offset_bottom = 539.9199
+color = Color(0.97, 0.94, 0.87, 1)
+
+[node name="TopAccent" type="ColorRect" parent="." unique_id=172440876]
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 6.0
+color = Color(0.78, 0.65, 0.42, 0.6)
+
+[node name="Label" type="Label" parent="." unique_id=740808181]
+layout_mode = 0
+offset_left = 670.0
+offset_top = 141.0
+offset_right = 1270.0
+offset_bottom = 311.0
+theme_override_colors/font_color = Color(0.14, 0.24, 0.48, 1)
+theme_override_colors/font_shadow_color = Color(0.08, 0.12, 0.28, 0.25)
+theme_override_fonts/font = SubResource("FontVariation_title")
+theme_override_font_sizes/font_size = 120
+text = "下课十分钟"
+horizontal_alignment = 1
+
+[node name="Separator" type="ColorRect" parent="." unique_id=805894501]
+layout_mode = 0
+offset_left = 845.0
+offset_top = 338.0
+offset_right = 1095.0
+offset_bottom = 342.0
+color = Color(0.78, 0.65, 0.42, 0.5)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1705651263]
+layout_mode = 0
+offset_left = 767.0
+offset_top = 375.0
+offset_right = 1170.0
+offset_bottom = 928.0
+theme_override_constants/separation = 16
+
+[node name="NewGame" type="Button" parent="VBoxContainer" unique_id=239127956]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
+theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
+text = "新游戏"
+
+[node name="ContinueGame" type="Button" parent="VBoxContainer" unique_id=543489735]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
+theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
+text = "继续游戏"
+
+[node name="Setting" type="Button" parent="VBoxContainer" unique_id=927929537]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
+theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
+text = "设置"
+
+[node name="About" type="Button" parent="VBoxContainer" unique_id=306431021]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
+theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
+text = "关于"
+
+[node name="Exit" type="Button" parent="VBoxContainer" unique_id=1929693430]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
+theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 40
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
+text = "退出游戏"

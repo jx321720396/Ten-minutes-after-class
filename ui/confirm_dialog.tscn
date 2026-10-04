@@ -1,0 +1,104 @@
+[gd_scene format=3 uid="uid://cvxfbvoik66dv"]
+
+[ext_resource type="Script" uid="uid://bojyrsv0ghj7b" path="res://ui/confirm_dialog.gd" id="1_confirm"]
+[ext_resource type="StyleBox" uid="uid://b8x2ehcxgjtpy" path="res://ui/new_style_box_flat.tres" id="2_0nu4o"]
+
+[node name="ConfirmDialog" type="Control" unique_id=1932078758]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_confirm")
+
+[node name="Overlay" type="ColorRect" parent="." unique_id=706789280]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.4)
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=672470342]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="CenterContainer" unique_id=654866916]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+theme_override_styles/panel = ExtResource("2_0nu4o")
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel" unique_id=219132323]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="CenterContainer/Panel/VBox" unique_id=1166612560]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.15, 0.16, 0.22, 1)
+theme_override_font_sizes/font_size = 36
+text = "检测到存档"
+horizontal_alignment = 1
+
+[node name="Sep" type="ColorRect" parent="CenterContainer/Panel/VBox" unique_id=1908796830]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0.72, 0.7, 0.64, 1)
+
+[node name="Spacer1" type="Control" parent="CenterContainer/Panel/VBox" unique_id=670944305]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="Msg" type="Label" parent="CenterContainer/Panel/VBox" unique_id=647482841]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.44, 0.5, 1)
+theme_override_font_sizes/font_size = 22
+text = "检测到本地存档，请选择：
+· 清除存档并开始新游戏
+· 保留存档并开始新游戏"
+horizontal_alignment = 1
+
+[node name="Spacer2" type="Control" parent="CenterContainer/Panel/VBox" unique_id=1283187427]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+
+[node name="ClearBtn" type="Button" parent="CenterContainer/Panel/VBox" unique_id=1494554258]
+custom_minimum_size = Vector2(300, 48)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.78, 0.3, 0.28, 1)
+theme_override_colors/font_pressed_color = Color(0.42, 0.44, 0.5, 1)
+theme_override_colors/font_hover_color = Color(0.29, 0.42, 0.62, 1)
+theme_override_font_sizes/font_size = 24
+text = "清除存档并开始"
+
+[node name="Spacer3" type="Control" parent="CenterContainer/Panel/VBox" unique_id=1782646601]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="KeepBtn" type="Button" parent="CenterContainer/Panel/VBox" unique_id=397438210]
+custom_minimum_size = Vector2(300, 48)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_pressed_color = Color(0.42, 0.44, 0.5, 1)
+theme_override_colors/font_hover_color = Color(0.29, 0.42, 0.62, 1)
+theme_override_font_sizes/font_size = 24
+text = "保留存档并开始"
+
+[node name="Spacer4" type="Control" parent="CenterContainer/Panel/VBox" unique_id=1684331515]
+custom_minimum_size = Vector2(0, 8)
+layout_mode = 2
+
+[node name="CancelBtn" type="Button" parent="CenterContainer/Panel/VBox" unique_id=1364543469]
+custom_minimum_size = Vector2(300, 48)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_pressed_color = Color(0.42, 0.44, 0.5, 1)
+theme_override_colors/font_hover_color = Color(0.29, 0.42, 0.62, 1)
+theme_override_font_sizes/font_size = 24
+text = "取消"

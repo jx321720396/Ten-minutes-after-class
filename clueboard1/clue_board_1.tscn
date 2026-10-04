@@ -1,0 +1,158 @@
+[gd_scene format=3 uid="uid://85tyegdfkhg0"]
+
+[ext_resource type="Script" uid="uid://15g00axq0xxy" path="res://clueboard1/clue_board_1.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cptn11dhvw3uq" path="res://clueboard1/chalk_white.png" id="2_chalk"]
+[ext_resource type="Texture2D" uid="uid://cti8ayrvx60ru" path="res://clueboard1/01.png" id="2_ddmx5"]
+[ext_resource type="Texture2D" uid="uid://c4bm2qlqi7b0h" path="res://clueboard1/eraser.png" id="3_eraser"]
+
+[node name="ClueBoard1" type="Control" unique_id=2096637661]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1651221222]
+layout_mode = 0
+offset_right = 1926.0
+offset_bottom = 1087.0
+texture = ExtResource("2_ddmx5")
+
+[node name="DrawingSurface" type="Control" parent="." unique_id=169388197]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Chalk" type="TextureRect" parent="." unique_id=139972788]
+visible = false
+layout_mode = 0
+offset_left = -200.0
+offset_top = -200.0
+offset_right = -80.0
+offset_bottom = -170.0
+mouse_filter = 2
+texture = ExtResource("2_chalk")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Eraser" type="TextureRect" parent="." unique_id=60578797]
+visible = false
+layout_mode = 0
+offset_left = -200.0
+offset_top = -200.0
+offset_right = -120.0
+offset_bottom = -140.0
+mouse_filter = 2
+texture = ExtResource("3_eraser")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ToolToggle" type="Button" parent="." unique_id=1673985814]
+layout_mode = 0
+offset_left = 1750.0
+offset_top = 20.0
+offset_right = 1900.0
+offset_bottom = 60.0
+text = "粉笔"
+
+[node name="ColorPalette" type="ColorRect" parent="." unique_id=591564681]
+layout_mode = 0
+offset_left = 760.0
+offset_top = 990.0
+offset_right = 1129.0
+offset_bottom = 1060.0
+color = Color(0, 0, 0, 0)
+
+[node name="Swatch0" type="ColorRect" parent="ColorPalette" unique_id=1253455113]
+layout_mode = 0
+offset_right = 60.0
+offset_bottom = 60.0
+color = Color(0.95, 0.95, 0.92, 1)
+
+[node name="Swatch1" type="ColorRect" parent="ColorPalette" unique_id=1400772183]
+layout_mode = 0
+offset_left = 75.0
+offset_right = 135.0
+offset_bottom = 60.0
+color = Color(1, 0.95, 0.3, 1)
+
+[node name="Swatch2" type="ColorRect" parent="ColorPalette" unique_id=176744383]
+layout_mode = 0
+offset_left = 150.0
+offset_right = 210.0
+offset_bottom = 60.0
+color = Color(1, 0.4, 0.55, 1)
+
+[node name="Swatch3" type="ColorRect" parent="ColorPalette" unique_id=1255266249]
+layout_mode = 0
+offset_left = 225.0
+offset_right = 285.0
+offset_bottom = 60.0
+color = Color(0.3, 0.85, 1, 1)
+
+[node name="Swatch4" type="ColorRect" parent="ColorPalette" unique_id=1008814457]
+layout_mode = 0
+offset_left = 300.0
+offset_right = 360.0
+offset_bottom = 60.0
+color = Color(0.4, 1, 0.4, 1)
+
+[node name="Markers" type="Control" parent="." unique_id=521257606]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Marker0" type="ColorRect" parent="Markers" unique_id=1185808530]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 200.0
+offset_right = 110.0
+offset_bottom = 230.0
+mouse_filter = 2
+color = Color(1, 0.2, 0.2, 1)
+
+[node name="Marker1" type="ColorRect" parent="Markers" unique_id=439122790]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 260.0
+offset_right = 110.0
+offset_bottom = 290.0
+mouse_filter = 2
+color = Color(0.2, 0.6, 1, 1)
+
+[node name="Marker2" type="ColorRect" parent="Markers" unique_id=927448230]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 320.0
+offset_right = 110.0
+offset_bottom = 350.0
+mouse_filter = 2
+color = Color(1, 0.9, 0.2, 1)
+
+[node name="Marker3" type="ColorRect" parent="Markers" unique_id=2017590839]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 380.0
+offset_right = 110.0
+offset_bottom = 410.0
+mouse_filter = 2
+color = Color(0.2, 1, 0.4, 1)
+
+[node name="Marker4" type="ColorRect" parent="Markers" unique_id=1809437095]
+layout_mode = 0
+offset_left = 80.0
+offset_top = 440.0
+offset_right = 110.0
+offset_bottom = 470.0
+mouse_filter = 2
+color = Color(1, 0.5, 0.9, 1)

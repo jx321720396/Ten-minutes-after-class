@@ -1,0 +1,90 @@
+[gd_scene format=3 uid="uid://dweg24oiy4i7y"]
+
+[ext_resource type="Script" uid="uid://roh6c6ohr7hi" path="res://ui/about_menu.gd" id="1_about"]
+[ext_resource type="StyleBox" uid="uid://b8x2ehcxgjtpy" path="res://ui/new_style_box_flat.tres" id="2_3ljgl"]
+
+[node name="AboutMenu" type="Control" unique_id=1387159928]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_about")
+
+[node name="Overlay" type="ColorRect" parent="." unique_id=1493301840]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.35)
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1517253593]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="CenterContainer" unique_id=312871582]
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+theme_override_styles/panel = ExtResource("2_3ljgl")
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel" unique_id=125890845]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="CenterContainer/Panel/VBox" unique_id=481284397]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.15, 0.16, 0.22, 1)
+theme_override_font_sizes/font_size = 44
+text = "关于"
+horizontal_alignment = 1
+
+[node name="Sep" type="ColorRect" parent="CenterContainer/Panel/VBox" unique_id=1642942789]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0.72, 0.7, 0.64, 1)
+
+[node name="Spacer1" type="Control" parent="CenterContainer/Panel/VBox" unique_id=1989669357]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="Desc" type="Label" parent="CenterContainer/Panel/VBox" unique_id=422427708]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.44, 0.5, 1)
+theme_override_font_sizes/font_size = 24
+text = "《下课十分钟》是一款以校园课间生活
+为主题的休闲游戏。
+
+在短短十分钟的课间休息里，
+体验最欢乐的校园时光！"
+horizontal_alignment = 1
+
+[node name="Spacer2" type="Control" parent="CenterContainer/Panel/VBox" unique_id=563032931]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
+[node name="Version" type="Label" parent="CenterContainer/Panel/VBox" unique_id=1729091276]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.42, 0.44, 0.5, 0.6)
+theme_override_font_sizes/font_size = 18
+text = "v0.1.0"
+horizontal_alignment = 1
+
+[node name="Spacer3" type="Control" parent="CenterContainer/Panel/VBox" unique_id=128653775]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+
+[node name="BackBtn" type="Button" parent="CenterContainer/Panel/VBox" unique_id=519593371]
+custom_minimum_size = Vector2(240, 52)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_pressed_color = Color(0.42, 0.44, 0.5, 1)
+theme_override_colors/font_hover_color = Color(0.29, 0.42, 0.62, 1)
+theme_override_font_sizes/font_size = 28
+text = "返回"
