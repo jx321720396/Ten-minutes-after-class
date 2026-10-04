@@ -9,9 +9,15 @@
 
 ## [未发布]
 
+### 变更
+- **玩法规格事实源迁移至 Notion**：仓库不再维护玩法正文，`docs/gdd/` 改为规格入口（登记工程契约 + 编号锚点）。
+- `docs/gdd/core-gameplay-v3.0.md` 降级为**编号锚点快照**并移至 `docs/references/core-gameplay-v3.0-20261003.md`（文件头已标注"非事实源"）。
+- 术语表由 `docs/gdd/术语表.md` 移至 `docs/design/术语表.md`（属工程标识符约定）。
+- 全仓约 30 处规格引用改为统一指向 `docs/gdd/README.md`（单一入口，后续更换 Notion 链接只需改一处）。
+
 ### 文档
-- 建立 `docs/` 文档体系：文档索引、GDD 章节映射、技术设计、制作管理、视听规范、测试策略、本地化说明、历史资料归档。
-- 归档 v1.0 / v2.0 策划资料至 `docs/references/`，v3.0 玩法规格移入 `docs/gdd/`。
+- 建立 `docs/` 文档体系：文档索引、GDD 入口与契约登记、技术设计、制作管理、视听规范、测试策略、本地化说明、历史资料归档。
+- 归档 v1.0 / v2.0 策划资料至 `docs/references/`，v3.0 玩法规格快照归档至 `docs/references/core-gameplay-v3.0-20261003.md`。
 - 补齐仓库级文档：`README.md`、`CONTRIBUTING.md`、`AGENTS.md`、`LICENSE`。
 
 ### 新增
