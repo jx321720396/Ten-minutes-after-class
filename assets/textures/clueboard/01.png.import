@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4bm2qlqi7b0h"
-path="res://.godot/imported/eraser.png-a0c378889392c82237089097cba122cf.ctex"
+uid="uid://cti8ayrvx60ru"
+path="res://.godot/imported/01.png-49f3bec40480da509ed8394271403fcb.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://clueboard1/eraser.png"
-dest_files=["res://.godot/imported/eraser.png-a0c378889392c82237089097cba122cf.ctex"]
+source_file="res://assets/textures/clueboard/01.png"
+dest_files=["res://.godot/imported/01.png-49f3bec40480da509ed8394271403fcb.ctex"]
 
 [params]
 
