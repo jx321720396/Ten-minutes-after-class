@@ -1,9 +1,8 @@
 extends Control
 
-const SCENE_SETTINGS = preload("res://ui/settings_menu.tscn")
-const SCENE_ABOUT = preload("res://ui/about_menu.tscn")
-const SCENE_CONFIRM = preload("res://ui/confirm_dialog.tscn")
-const SCENE_GAME = "res://ui/game_scene.tscn"
+const SCENE_SETTINGS = preload("res://scenes/ui/settings_menu.tscn")
+const SCENE_ABOUT = preload("res://scenes/ui/about_menu.tscn")
+const SCENE_CONFIRM = preload("res://scenes/ui/confirm_dialog.tscn")
 const SAVE_PATH = "user://savegame.dat"
 
 @onready var continue_btn: Button = $VBoxContainer/ContinueGame
@@ -52,11 +51,13 @@ func _on_new_game():
 		_start_new_game()
 
 func _start_new_game():
-	get_tree().change_scene_to_file(SCENE_GAME)
+	# TODO: 实现游戏场景
+	pass
 
 func _on_continue():
 	if _has_save():
-		get_tree().change_scene_to_file(SCENE_GAME)
+		# TODO: 实现游戏场景加载
+		pass
 
 func _on_settings():
 	settings_panel.visible = true
