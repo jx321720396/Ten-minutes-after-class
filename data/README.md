@@ -10,13 +10,13 @@
 ```
 data/
 ├─ characters/
-│   └─ seeds.csv          24 角色种子表（对应 v3.0 §11.4）
+│   └─ seeds.csv          24 角色种子表（对应 主文档 §11.4）
 ├─ rules/
-│   ├─ transmission.csv   传导参数：theta_A / theta_H / sigma / beta / epsilon（v3.0 §7.2）
-│   ├─ decay.csv          跨天衰减系数（v3.0 §3.5）
-│   └─ phases.csv         相位时长与规则启用子集（v3.0 §3.2、§3.3）
+│   ├─ transmission.csv   传导参数：theta_A / theta_H / sigma / beta / epsilon（主文档 §7.2）
+│   ├─ decay.csv          跨天衰减系数（主文档 §3.5）
+│   └─ phases.csv         相位时长与规则启用子集（主文档 §3.2、§3.3）
 └─ balance/
-    └─ w_events.csv       统一增量公式的事件权重全表（v3.0 §6.1）
+    └─ w_events.csv       统一增量公式的事件权重全表（主文档 §6.1）
 ```
 
 （上述 CSV 为规划文件，M1 阶段创建。）

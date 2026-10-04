@@ -22,7 +22,7 @@ body:
       label: 目标与验收标准
       description: 完成时"什么算做完"，尽量可验证
       placeholder: |
-        目标：实现 R5 消息传歪的传播意愿判定
+        目标：实现流言传播（消息传歪）的传播意愿判定
         验收：信任 ≥60 愿传 / 40–60 五五开 / <40 不传，并有单测覆盖三个分支
     validations:
       required: true
@@ -31,8 +31,8 @@ body:
     id: spec
     attributes:
       label: 规格依据
-      description: 对应 v3.0 的章节（如 §10 R5、§7.2）
-      placeholder: "docs/gdd/core-gameplay-v3.1.md §10 R5"
+      description: 对应主文档的章节（如 §10 流言、§7.2）
+      placeholder: "docs/gdd/core-gameplay-v3.1.md §10 流言"
     validations:
       required: true
 
