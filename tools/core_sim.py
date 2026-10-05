@@ -136,6 +136,7 @@ class Sim:
         self.phase = "break"
         self.tick_in_phase = 0
         self.stats = {"events": 0, "chats": 0, "joins": 0, "reports": 0, "bursts": 0,
+                      "interrupts": 0,
                       "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0,
                       "teases": 0, "tease_fail": 0, "rumors": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
@@ -144,6 +145,7 @@ class Sim:
         self.global_tick = 0
         self.next_action = [0] * n
         self.busy_until = [0] * n        # 忙碌到何时（按行为 duration，替代统一冷却）
+        self.busy_phase = [-1] * n       # 行为开始时的相位序号（用于判定「被下课铃打断」）
         self.in_conversation = [False] * n
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
@@ -460,6 +462,8 @@ class Sim:
         if dur > 0:
             self.busy_until[i] = self.global_tick + dur
             self.busy_until[j] = self.global_tick + dur
+            self.busy_phase[i] = self.phase_index
+            self.busy_phase[j] = self.phase_index
 
     def do_chat(self, i, j):
         """闲聊：话题共鸣事件 + 双方观测"""
@@ -592,6 +596,22 @@ class Sim:
         """原型简化：未参与互动即视为在原位学习（正式版按行为状态判定）"""
         return True
 
+    def check_interrupt(self):
+        """跨相位中断：行为还没做完就被「下课铃 / 上课铃」打断。
+
+        耗时机制的直接推论 —— 课间只有 100 tick，一个 60 tick 的秘密交换很容易跨越过相位边界。
+        被打断者获得压力代价（`interrupted_stress`），因为「话说到一半被打断」本身就是压力源。
+        这也让「长行为」有了真实的代价：不是不能做，而是**要挑时机做**。
+        """
+        cost = self.probs.get("interrupted_stress", 0.0)
+        for i in range(self.N):
+            if self.busy_phase[i] >= 0 and self.busy_phase[i] != self.phase_index:
+                self.busy_until[i] = 0
+                self.busy_phase[i] = -1
+                if cost > 0:
+                    self.Stress[i] = clamp100(self.Stress[i] + cost)
+                self.stats["interrupts"] = self.stats.get("interrupts", 0) + 1
+
     def tick(self):
         self.global_tick += 1
         self.decide_and_act()
@@ -606,6 +626,7 @@ class Sim:
         for pidx, (phase, ticks) in enumerate(phases):
             self.phase_index = pidx
             self.phase, self.tick_in_phase = phase, 0
+            self.check_interrupt()            # 相位切换 → 未完成的行为被打断
             for _ in range(ticks):
                 self.tick()
                 self.tick_in_phase += 1
@@ -681,8 +702,9 @@ class Sim:
         print("  接近饱和(>=95)比例：%.1f%%" % (saturated * 100))
         print("  事件 %d 次（闲聊 %d / 搭话 %d / 举报 %d）" % (
             self.stats["events"], self.stats["chats"], self.stats["joins"], self.stats["reports"]))
-        print("  调侃 %d 次（过火 %d）/ 流言 %d 次" % (
-            self.stats["teases"], self.stats["tease_fail"], self.stats["rumors"]))
+        print("  调侃 %d 次（过火 %d）/ 流言 %d 次 / 被打断 %d 次" % (
+            self.stats["teases"], self.stats["tease_fail"], self.stats["rumors"],
+            self.stats.get("interrupts", 0)))
         print("  去重跳过 %d 次" % self.stats["dedup_skips"])
         print("  传导结算 %d 次 | 压力爆发 %d 次（平均每 %.1f 天一次）" % (
             self.stats["transmission_ticks"], self.stats["bursts"],
