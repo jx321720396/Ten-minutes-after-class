@@ -5,3 +5,13 @@ report,hostility,>=,60,举报：对某人的敌对累积到阈值即触发
 burst,stress,>=,90,压力爆发：跨过阈值触发全班事件
 apologize_trigger,hostility,>=,30,道歉可发起的最低敌对
 comfort_trigger,target_stress,>=,70,安慰可发起的目标压力门槛
+# 当众调侃的方向判定（混合判定型）：用**绝对阈值**分档。
+# 为何不用 M 的符号：M 的零点在 A=H，而游戏里 A 的基线(25~40)远高于 H 的基线(0~15)，
+#   M 恒偏正 → 会退化成「永远玩笑」，实测 30 天全班冲到 89.4、SD 1.5、爆发 0。
+tease_laugh,affinity,>=,55,玩笑档：好感下限
+tease_laugh,hostility,<,25,玩笑档：敌对上限
+tease_taunt,hostility,>=,40,嘲讽档：敌对下限
+tease_taunt,affinity,<,25,嘲讽档：低好感触发
+# 搭话是否被接纳：判据 = 信念 B_A（i 眼中对方对 i 的好感）+ 对方外向度修正，
+# 门槛须**高于** belief.csv 的 prior_a(=40)，否则先验恰好等于门槛 → 永远通过（关系只涨不跌）
+join_chat,affinity,>=,45,搭话被接纳的信念门槛（含对方外向度修正后）

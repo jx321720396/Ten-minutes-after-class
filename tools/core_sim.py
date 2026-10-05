@@ -84,6 +84,9 @@ class Sim:
         self.bp = load_params("rules/belief.csv")
         self.probs = {r["behavior"]: float(r["base_p"]) for r in load_table("rules/behavior_probs.csv")}
         self.thresholds = load_table("rules/behavior_thresholds.csv")
+        # 阈值查表：键为 `<behavior>_<metric>`（同一行为可有多个指标，如调侃的两档）
+        self.thresholds_lookup = {"%s_%s" % (r["behavior"], r["metric"]): float(r["value"])
+                                  for r in self.thresholds}
         # decay.csv 采用 param,value 标量风格（注意键名已由 axis 改为 param）
         self.decay = {r["param"]: float(r["value"]) for r in load_table("rules/decay.csv")}
         # 负反馈：传导增益随目标容纳度衰减（来自 transmission.csv 的 feedback）
@@ -448,10 +451,16 @@ class Sim:
         self.stats["chats"] += 1
 
     def do_join_chat(self, i, j):
-        """搭话：走对方回应判定（拒绝则反噬）"""
+        """搭话：走对方回应判定（拒绝则反噬）。
+
+        判据 = **信念** `B_A[i][j]`（i 眼中"对方对我多有好感"）+ 对方**外向度**修正；
+        门槛来自 `behavior_thresholds.csv` 的 `join_chat_affinity`（默认 45，**高于** `prior_a`=40）。
+        ⚠️ 早期实现用 `B_A >= 40`，而先验正好是 40 → 永远通过 → 「好感扣减」路径从不触发（§10.17）。
+        """
         self.in_conversation[i] = True
         self.in_conversation[j] = True
-        if self.B["affinity"][i][j] >= 40 and self.Stress[j] <= 70:
+        accept = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
+        if accept >= self.thresholds_lookup["join_chat_affinity"] and self.Stress[j] <= 70:
             self.do_chat(i, j)
             self.stats["joins"] += 1
         else:
@@ -469,32 +478,33 @@ class Sim:
         self.stats["reports"] += 1
 
     def do_tease(self, i, j, audience):
-        """当众调侃（§10.12）：成功加好感；过火则目标压力↑、对发起者敌对↑、围观者分裂。
+        """当众调侃（§10.12）：**结果方向由净态度 M 决定**，而不是二分的「成功 / 过火」。
 
-        成功率 = 基础 + 目标好感 + 目标外向 − 目标敏感（全部来自四维与当前关系，无角色 ID 判断）
+        同一个行为覆盖三种社会含义：
+          · **玩笑档**（A ≥ 55 且 H < 25）→ 双方好感↑、被逗笑减压
+          · **嘲讽档**（H ≥ 40 或 A < 25）→ 目标压力↑、对发起者敌对↑、围观者按性格分裂
+          · **尴尬档**（其余）             → 不结算（效果自然为 0）
+        方向由 `behavior_thresholds.csv` 的**绝对阈值**判定；强度仍由 |M| 调制。
+        ⚠️ 不用 M 的符号判方向：M 的零点在 A=H，而 A 的基线(25~40)远高于 H 的基线(0~15)，
+        M 恒偏正 → 会退化成「永远玩笑」，实测全班冲到 89.4 / SD 1.5 / 爆发 0。
         """
-        e_j, f_j = self.dims[j][0], self.dims[j][2]
-        p = clamp(0.30 + (self.A[i][j] - 40.0) / 100.0
-                  + (e_j - 50.0) / 200.0 - (f_j - 50.0) / 200.0, 0.05, 0.95)
-        if self.rng.random() < p:
-            # 成功：双方 + 围观者对目标好感上升
+        th = self.thresholds_lookup
+        if self.A[i][j] >= th["tease_laugh_affinity"] and self.H[i][j] < th["tease_laugh_hostility"]:
             self.apply_event(i, j, "tease_success_affinity")
             self.apply_event(j, i, "tease_success_affinity")
             for k in audience:
                 self.apply_event(k, j, "tease_success_affinity")
-            self.stats["teases"] += 1
-        else:
-            # 过火：被调侃者受辱 → 压力与敌对上升（这是压力的主要来源之一）
+            self.apply_event(j, i, "tease_laugh_stress")
+        elif self.H[i][j] >= th["tease_taunt_hostility"] or self.A[i][j] < th["tease_taunt_affinity"]:
             self.apply_event(j, i, "tease_hostility")
             self.apply_event(j, i, "tease_stress")
-            # 围观者按性格分裂：一半站目标
             for k in audience:
                 if self.dims[k][2] >= 60:          # 高 F（情感型）更可能同情受害者
                     self.apply_event(k, i, "tease_hostility")
                 else:
                     self.apply_event(k, j, "tease_affinity")
-            self.stats["teases"] += 1
             self.stats["tease_fail"] += 1
+        self.stats["teases"] += 1
 
     def do_rumor(self, i, j):
         """流言（§10.1）：i 传关于 j 的话 → j 压力变化；旁观者"二手观测"。
