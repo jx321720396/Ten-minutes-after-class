@@ -10,7 +10,7 @@
 ```
 data/
 ├─ characters/
-│   └─ seeds.csv          24 角色种子表（对应 主文档 §11.4）
+│   └─ seeds.csv          24 角色种子表（身份/标签 + E/N/F/P 四维）✓
 ├─ rules/
 │   ├─ transmission.csv       传导与软饱和参数（theta_* / beta_* / u_* / settle_interval / epsilon）✓
 │   ├─ belief.csv             信念矩阵更新参数（eta0_* / sigma_max_* / prior_* / lambda_b）✓

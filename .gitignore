@@ -38,3 +38,8 @@ reasonix.toml
 *.tmp
 *.bak
 *.orig
+
+# ---- Python 缓存（tools/ 离线脚本用）----
+__pycache__/
+*.py[cod]
+.pytest_cache/
