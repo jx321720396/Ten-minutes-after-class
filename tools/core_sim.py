@@ -362,7 +362,11 @@ class Sim:
                 # 重大负性事件 → 同时写入**永不衰减**的深层（§10.22）。
                 # ⚠️ 不经 room_for：负反馈是给「表层摩擦」用的，若也套在深层上，
                 #    仇恨会自己封顶（越满越涨不动），「不可消减」就名存实亡了。
-                self.H_deep[i][j] = min(100.0, self.H_deep[i][j] + abs(delta))
+                # 深层**软上限**（§10.27）：不会一路涨到 100。
+                # 「恨到顶了」——到了上限就不再加深，但**永不回落**（忘不掉依然成立）。
+                # 总 H 仍可更高（深层 + 表层），所以「死仇」的强度不被压平，只是不再无限堆积。
+                cap = self.env.get("deep_cap", 70.0)
+                self.H_deep[i][j] = min(cap, self.H_deep[i][j] + abs(delta))
                 self.stats["deep_writes"] = self.stats.get("deep_writes", 0) + 1
             if axis == "stress":
                 self.Stress[i] = clamp100(self.Stress[i] + delta)
