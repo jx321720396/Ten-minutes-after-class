@@ -100,6 +100,8 @@ for r in ph:
 print("=== 8. status_tags ===")
 for r in load("rules/status_tags.csv"):
     check("%s: days ≥ 1" % r["tag_id"], int(float(r["days"])) >= 1)
+    check("%s: spread_ratio ∈ [0,1]" % r["tag_id"], 0.0 <= float(r.get("spread_ratio", 0)) <= 1.0)
+    check("%s: spread_max ≥ 0" % r["tag_id"], int(float(r.get("spread_max", 0))) >= 0)
 
 print("=== 9. social_event_triggers：禁日期记号 ===")
 for r in load("rules/social_event_triggers.csv"):
