@@ -312,10 +312,14 @@ class Sim:
         return u / (1.0 + abs(u) / U)
 
     # ------------------------------------------------ 事件写入
-    def apply_event(self, i, j, event_id):
+    def apply_event(self, i, j, event_id, scale=1.0):
         """按统一影响公式写入：E × 性格 × 关系调制 → 软饱和 → round(0.1) → clamp
 
         含事件去重：同一对子同一规则每课间段只结算一次（§2.5.4）
+
+        `scale`：**外部幅度系数**（默认 1.0）—— 让「同一事件」随情境强弱缩放，
+        例如音量越吵、怕吵者的敌对越重。它与 `base` 相乘、仍走同一套公式，
+        不是旁路写入（保持 §2.6 的单一写入点）。
         """
         dkey = (i, j, event_id, self.day, self.phase_index)
         if dkey in self.settled:
@@ -329,7 +333,7 @@ class Sim:
                 continue
             axis = row["axis"]
             base = float(row["base"])
-            e_val = base * self.mult_personality(row, i)
+            e_val = base * scale * self.mult_personality(row, i)
             if axis in AXES:
                 # 边界②：重大档不做关系调制（M_eff = 1）
                 #   否则「关系好 → 举报反而是好事」会塌掉欺凌线与信任崩塌线；
@@ -896,6 +900,60 @@ class Sim:
             fear = max(0.0, fear)
             self.Stress[i] = clamp100(self.Stress[i] + excess * k * fear)
 
+    def noise_of(self, j):
+        """j 此刻的噪音贡献（来自 behaviors.csv 的 noise 列；0 = 安静）。"""
+        return float(self.behaviors.get(self.current_act[j], {}).get("noise", 0.0))
+
+    def noise_fear(self, i):
+        """i 的「怕吵程度」（§10.18）：越内向、越专注，越受不了吵。
+
+        与 `noise_pressure` 用的是**同一个 fear**（同源），只是后果不同。
+        ⚠️ 待核验：`dims` 第 4 维在本原型里名为 `p`，而注释说的是「J（专注型）」，
+        两者在 MBTI 里互斥（J 判/断 vs P 感知）。此处沿用现有实现的方向，暂不改动。
+        """
+        e = self.env
+        fj, fe = e.get("fear_j", 0.0), e.get("fear_e", 0.0)
+        f = fj * (self.dims[i][3] - 50.0) / 50.0 + fe * (50.0 - self.dims[i][0]) / 50.0
+        return max(0.0, f)
+
+    def noise_hostility(self):
+        """超阈音量 → **定向敌对**：怕吵的人会记恨「最吵的那个邻居」。
+
+        **不对称是本机制的灵魂**（用户设计）：
+          · **安静/学习者 → 敌视吵闹者** ✓ —— 他是真的在受损；
+          · **吵闹者 → 敌视安静者** ✗ —— 他不觉得自己被打扰。
+        ∴ 这是本项目第一条**天然单向**的关系通道（其余通道都是对称的）。
+
+        与 `noise_pressure` 同源、不同轴：同一刺激，一份转化成**压力**（内耗），
+        一份转化成**敌对**（指向他人）—— 这正是社会解释的分岔。
+
+        为什么它能解决「种子频率太低」：音量**持续存在**，不像打闹那样稀疏，
+        因此每个涓流周期都在累积，而且**方向明确**（对象是具体的「最吵的邻居」）。
+        """
+        e = self.env
+        excess = max(0.0, self.volume - e.get("volume_threshold", 20.0))
+        if excess <= 0:
+            return
+        scale = max(1e-6, e.get("noise_scale", 8.0))
+        base = e.get("noise_hostility_base", 0.0) * min(2.0, excess / scale)
+        if base <= 0:
+            return
+        for i in range(self.N):
+            fear = self.noise_fear(i)
+            if fear <= 0.05:
+                continue                       # 不怕吵的人不会去恨（不对称的另一面）
+            culprits = [j for j in self.neighbor_idx[i]
+                        if j != i and not self.sleeping[j] and self.noise_of(j) > 0]
+            if not culprits:
+                continue
+            # 恨「最吵的那个」—— 但**并列的第二个也恨**。
+            # 只取 1 个时对象每次结算都在变，同一对子很难被反复命中（实测 H 上不去）；
+            # 取 2 个既保留「盯着最吵的人」的方向性，又让敌意在**稳定的边**上真正累积。
+            culprits.sort(key=self.noise_of, reverse=True)
+            for j in culprits[:2]:
+                self.apply_event(i, j, "noise_hostility", scale=base * fear)
+                self.stats["noise_grudges"] = self.stats.get("noise_grudges", 0) + 1
+
     def spread_knot(self, i, severity=0.0):
         """爆发传染：把「心结」扩散给与 i 关系最鲜明的少数人。
 
@@ -926,6 +984,7 @@ class Sim:
     # ------------------------------------------------ 主循环
     def stress_drip(self):
         self.noise_pressure()      # 环境层：超阈音量 → 压力
+        self.noise_hostility()     # 环境层：超阈音量 → 定向敌对（单向，§10.21）
         self.deviance_pressure()   # 环境层：偏离氛围 → 压力（不是禁止，是代价）
         """涓流：独处恢复 / 学习累积（主文档 §8.4）"""
         for i in range(self.N):
