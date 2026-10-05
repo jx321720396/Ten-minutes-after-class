@@ -127,13 +127,15 @@ class Sim:
         self.phase = "break"
         self.tick_in_phase = 0
         self.stats = {"events": 0, "chats": 0, "joins": 0, "reports": 0, "bursts": 0,
-                      "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0}
+                      "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0,
+                      "teases": 0, "tease_fail": 0, "rumors": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
         self.settled = set()
         self.phase_index = 0
         self.global_tick = 0
         self.next_action = [0] * n
         self.in_conversation = [False] * n
+        self.knot_days = [0] * n        # 「心结」剩余天数：爆发后 3 天，每天初始压力 +5（§3.5）
 
     # ------------------------------------------------ 初始化关系
     def _init_relations(self):
@@ -174,7 +176,7 @@ class Sim:
         if s < 40:
             return 1.0
         if s < 70:
-            return 1.5 if negative else 0.5
+            return 1.5 if negative else 0.75
         if s < 90:
             return 1.5
         return 1.0
@@ -372,6 +374,29 @@ class Sim:
                     busy.add(i)
                     busy.add(j)
                     continue
+            # 意向类：当众调侃（需 ≥3 人围观；失败则目标受辱）
+            # 目标选择**带偏好**：敌对越高 / 好感越低越容易被针对 —— 被讨厌的人会被反复打击，
+            # 这正是"压力分化 → 个别爆发"的机制来源（不允许随机摊平）
+            cands_t = [j for j in range(n) if j != i and j not in busy and self.A[i][j] >= 20.0]
+            if len(cands_t) >= 3 and self.rng.random() < 0.18:
+                wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
+                j = self.rng.choices(cands_t, weights=wts, k=1)[0]
+                audience = [k for k in range(n) if k not in (i, j) and k not in busy]
+                if len(audience) >= 3:
+                    self.do_tease(i, j, audience[:3])
+                    busy.add(i)
+                    busy.add(j)
+                    continue
+            # 附加行为：流言（负面染色，压力来源）；目标同样偏好敌对高者
+            if self.rng.random() < 0.03:
+                c2 = [j for j in range(n) if j != i and j not in busy]
+                if c2:
+                    w2 = [max(1.0, 20.0 + self.H[i][j] - self.A[i][j] * 0.5) for j in c2]
+                    j = self.rng.choices(c2, weights=w2, k=1)[0]
+                    self.do_rumor(i, j)
+                    busy.add(i)
+                    busy.add(j)
+                    continue
             # 阈值类：举报（敌对累积到阈值即发生）
             for j in range(n):
                 if i == j or self.H[i][j] < 60:
@@ -439,6 +464,48 @@ class Sim:
         self.H[i][j] = clamp100(self.H[i][j] - 5.0)  # 举报后敌对回落
         self.stats["reports"] += 1
 
+    def do_tease(self, i, j, audience):
+        """当众调侃（§10.12）：成功加好感；过火则目标压力↑、对发起者敌对↑、围观者分裂。
+
+        成功率 = 基础 + 目标好感 + 目标外向 − 目标敏感（全部来自四维与当前关系，无角色 ID 判断）
+        """
+        e_j, f_j = self.dims[j][0], self.dims[j][2]
+        p = clamp(0.30 + (self.A[i][j] - 40.0) / 100.0
+                  + (e_j - 50.0) / 200.0 - (f_j - 50.0) / 200.0, 0.05, 0.95)
+        if self.rng.random() < p:
+            # 成功：双方 + 围观者对目标好感上升
+            self.apply_event(i, j, "tease_success_affinity")
+            self.apply_event(j, i, "tease_success_affinity")
+            for k in audience:
+                self.apply_event(k, j, "tease_success_affinity")
+            self.stats["teases"] += 1
+        else:
+            # 过火：被调侃者受辱 → 压力与敌对上升（这是压力的主要来源之一）
+            self.apply_event(j, i, "tease_hostility")
+            self.apply_event(j, i, "tease_stress")
+            # 围观者按性格分裂：一半站目标
+            for k in audience:
+                if self.dims[k][2] >= 60:          # 高 F（情感型）更可能同情受害者
+                    self.apply_event(k, i, "tease_hostility")
+                else:
+                    self.apply_event(k, j, "tease_affinity")
+            self.stats["teases"] += 1
+            self.stats["tease_fail"] += 1
+
+    def do_rumor(self, i, j):
+        """流言（§10.1）：i 传关于 j 的话 → j 压力变化；旁观者"二手观测"。
+
+        倾向由 i 对 j 的净态度决定：敌对压过好感则传负面（被传者压力↑）。
+        """
+        negative = self.H[i][j] > self.A[i][j]
+        if negative:
+            self.apply_event(i, j, "rumor_stress")
+            self.apply_event(i, j, "tease_hostility")
+        for k in range(self.N):
+            if k not in (i, j):
+                self.observe(k, j, "hostility")     # 二手观测（会带噪声）
+        self.stats["rumors"] += 1
+
     # ------------------------------------------------ 主循环
     def stress_drip(self):
         """涓流：独处恢复 / 学习累积（主文档 §8.4）"""
@@ -446,9 +513,9 @@ class Sim:
             if self.in_conversation[i]:
                 continue                      # 参与互动者已由 topic_stress 减压
             if self.doing_study(i):
-                self.Stress[i] = clamp100(self.Stress[i] + 3)   # 默认学习：压力上升（每天 2 次结算）
+                self.Stress[i] = clamp100(self.Stress[i] + 1)   # 默认学习：压力缓升（每天 2 次结算）
             else:
-                self.Stress[i] = clamp100(self.Stress[i] - 3)   # 独处恢复（每天 2 次结算）
+                self.Stress[i] = clamp100(self.Stress[i] - 2)   # 独处恢复（每天 2 次结算）
 
     @staticmethod
     def doing_study(i):
@@ -465,6 +532,7 @@ class Sim:
         for i in range(self.N):
             if self.Stress[i] >= 90:
                 self.Stress[i] = clamp100(self.Stress[i] - 40)
+                self.knot_days[i] = 3          # 爆发后进入「心结」：3 天内每天 +5
                 self.stats["bursts"] += 1
 
     def run_day(self):
@@ -483,6 +551,11 @@ class Sim:
     def settle_day(self):
         """跨天结算（§3.5）"""
         d = self.decay
+        # 「心结」：爆发后的 3 天里，每天先加 5 点压力（长线心理创伤，§3.5）
+        for i in range(self.N):
+            if self.knot_days[i] > 0:
+                self.Stress[i] = clamp100(self.Stress[i] + 5)
+                self.knot_days[i] -= 1
         for i in range(self.N):
             for j in range(self.N):
                 if i == j:
@@ -510,6 +583,8 @@ class Sim:
         print("  接近饱和(>=95)比例：%.1f%%" % (saturated * 100))
         print("  事件 %d 次（闲聊 %d / 搭话 %d / 举报 %d）" % (
             self.stats["events"], self.stats["chats"], self.stats["joins"], self.stats["reports"]))
+        print("  调侃 %d 次（过火 %d）/ 流言 %d 次" % (
+            self.stats["teases"], self.stats["tease_fail"], self.stats["rumors"]))
         print("  去重跳过 %d 次" % self.stats["dedup_skips"])
         print("  传导结算 %d 次 | 压力爆发 %d 次（平均每 %.1f 天一次）" % (
             self.stats["transmission_ticks"], self.stats["bursts"],
