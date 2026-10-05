@@ -187,6 +187,8 @@ def convert(md_path, docx_path):
 PRESETS = [
     ("docs/gdd/core-gameplay-v3.1.md", "docs/export/下课十分钟-游戏策划案-v3.1.docx"),
     ("docs/production/开发进展-2026-10-05.md", "docs/export/开发进展-2026-10-05.docx"),
+    # 面向「分享给人看」的变更与完善报告（2026-10-05 本次会话）
+    ("docs/production/本次会话变更与完善报告.md", "docs/export/本次会话变更与完善报告.docx"),
 ]
 
 
