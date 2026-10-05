@@ -49,3 +49,14 @@ gdformat --check scripts/ && gdlint scripts/
 ## 当前状态
 
 仓库处于 M0（框架搭建）：主菜单流与线索板原型可用，`autoload/`、`data/`、`tests/` 为待实现目录。实现顺序以 主文档 §16 开发优先级与 `docs/production/路线图.md` 为准（第一版：时间系统 → 态度矩阵 → 压力 → 人物行为（闲聊/搭话/调侃/安慰）+ 簇标签 → 可视化 → 简报）。
+
+## 提交前的六道门（全部必须通过；用 `&&` 串起，勿用 `;`）
+
+```bash
+python tools/check_config.py     &&   # 配置校验（含阈值键存在性）
+python tools/test_core.py        &&   # 内核单测
+python tools/verify_formula.py   &&   # 公式对拍
+python tools/check_metrics.py    &&   # 玩法指标（**多种子分布判据**，不看单局）
+python tools/diversity_report.py &&   # 多样性与存在性（机制上场率 / 跨局指纹 / 吸收态）
+python tools/check_docs.py            # 文档一致性（未实现标记 / 参数值 / 引用 / 陈旧表述）
+```
