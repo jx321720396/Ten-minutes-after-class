@@ -164,10 +164,48 @@ class Sim:
         self.current_act = [None] * n     # 当前正在做/刚做完的行为（供音量统计）
         self.vol_log = []                 # 每个相位末的音量（标定观测用）
         self.sleeping = [False] * n       # 睡觉中（§10.8）：本课间不做别的事，且别人不能与之交互
+        # --- 空间层（§15.1、§10.17.2 种子一）：座位表 + 邻接 ---
+        self.seats = load_table("rules/seats.csv")
+        self.seat_pos = {r["seat_id"]: (int(r["row"]), int(r["col"])) for r in self.seats}
+        self.seat_of = [None] * n         # 角色 -> seat_id
+        self.neighbors = self._build_neighbors()
+        self.assign_seats()               # 必须在 seats/neighbors 定义之后
         self.in_conversation = [False] * n
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
         self.day_events = {}            # (i,j) -> 当天事件类结算次数，用于「有互动」判定
+
+    def _build_neighbors(self):
+        """按 8 邻域（相邻 ≤1 格）建立邻接表；讲桌旁（row 0）与第一排（row 1）相邻。
+
+        邻接是**对称**的。这张表是「边数摊薄」的解药 —— 交互只在**固定邻居**之间反复发生，
+        而不是在 272 条边上随机撒点。
+        """
+        ids = [r["seat_id"] for r in self.seats]
+        nb = {sid: set() for sid in ids}
+        for a in ids:
+            ra, ca = self.seat_pos[a]
+            for b in ids:
+                if a == b:
+                    continue
+                rb, cb = self.seat_pos[b]
+                if max(abs(ra - rb), abs(ca - cb)) <= 1:
+                    nb[a].add(b)
+        return {k: sorted(v) for k, v in nb.items()}
+
+    def assign_seats(self):
+        """把本局角色分配到座位上（同种子同座位），并算出「谁是我的邻居」。"""
+        ids = [r["seat_id"] for r in self.seats]
+        self.rng.shuffle(ids)
+        for i in range(self.N):
+            self.seat_of[i] = ids[i]
+        self.neighbor_idx = [[k for k in range(self.N)
+                              if self.seat_of[k] in self.neighbors[self.seat_of[i]]]
+                             for i in range(self.N)]
+
+    def are_neighbors(self, i, j):
+        """i 与 j 是否相邻（≤1 格）。"""
+        return j in self.neighbor_idx[i]
 
     # ------------------------------------------------ 初始化关系
     def _init_relations(self):
@@ -486,6 +524,7 @@ class Sim:
             #   修复前只有「A ≥ 20」这一条，与 §10.16 的嘲讽档判据互斥，使嘲讽档永远发不出来。
             cands_t = [j for j in range(n)
                        if j != i and j not in busy and not self.sleeping[j]
+                       and self.are_neighbors(i, j)      # 调侃需物理接近（§10.12 围观前提）
                        and (self.A[i][j] >= 40.0 or self.B["hostility"][i][j] >= 25.0 or self.A[i][j] < 25.0)]
             if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * (1.0 + self.tag_bias(i, "tease_bias")):
                 wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
@@ -510,7 +549,11 @@ class Sim:
                         # 旁观者聚焦「安静专注型」（高 J + 内向）—— 他们最容易被吵到，
                         # 于是「活跃分子 × 严肃分子」这一批边会被反复击中而累积，而不是被摊平
                         bys.sort(key=lambda k: -((self.dims[k][3] - 50.0) + (50.0 - self.dims[k][0])))
-                        self.do_roughhouse(i, j, bys[:3])
+                        # 打闹**只吵到邻座**（§10.18 + 空间层）——
+                        # 修复前用的是「全班路过的」，一次打闹就摊到全班的边上，这正是边数摊薄的主因。
+                        nb = [k for k in (self.neighbor_idx[i] + self.neighbor_idx[j])
+                              if k != i and k != j and not self.sleeping[k]]
+                        self.do_roughhouse(i, j, sorted(set(nb))[:3])
                         busy.add(i)
                         busy.add(j)
                         continue
@@ -568,12 +611,34 @@ class Sim:
                     busy.add(i)
                     busy.add(j)
 
-    def pick_target(self, i):
+    def pick_target(self, i, neighbors_only=False):
+        """选交互目标。**邻居优先**（§10.15 相邻修正）——
+
+        这是「边数摊薄」的解药：交互集中在固定邻居之间，同一对子会反复相遇。
+        `neighbors_only=True` 时只在邻居里选（打闹/调侃这类**需要物理接近**的行为）。
+        """
         n = self.N
-        others = [j for j in range(n) if j != i]
-        if not others:
+        if neighbors_only:
+            others = [j for j in self.neighbor_idx[i] if not self.sleeping[j]]
+            return self.rng.choice(others) if others else None
+        # **邻居优先**：邻居被选中的权重更高（§10.15 相邻修正）。
+        # 非邻居仍可能（课间有人走动），但概率显著低 —— 这就是「边数摊薄」的解药。
+        w_nb = self.probs.get("neighbor_pick_mult", 3.0)
+        pool = []
+        for j in range(n):
+            if j == i or self.sleeping[j]:
+                continue
+            pool.append((j, w_nb if j in self.neighbor_idx[i] else 1.0))
+        if not pool:
             return None
-        return self.rng.choice(others)
+        tot = sum(w for _, w in pool)
+        r = self.rng.random() * tot
+        acc = 0.0
+        for j, w in pool:
+            acc += w
+            if r <= acc:
+                return j
+        return pool[-1][0]
 
     def occupy(self, i, j, behavior, quiet=False):
         """按行为耗时把双方置为忙碌（“收益越大耗时越长”，不再一律 20 tick）"""
