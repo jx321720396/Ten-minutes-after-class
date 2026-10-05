@@ -1,0 +1,32 @@
+# 标签表（按**底层轴**分类，并区分影响强度）
+# 依据：主文档 §11 标签层、§10.20 从众与环境反馈
+#
+# 为什么标签要按轴分类：**标签是"对底层轴的调制"，不是"身份"**。
+#   铁律 §11.1 禁止按角色名/身份做行为判断；所以「学霸」不能作为规则存在 ——
+#   它只能是「高 J × 低从众度 × 爱学习」这组条件**涌现出来的称呼**。
+#   把标签定义成"作用于哪个轴、影响多大"，行为逻辑才能保持为 f(性格, 标签, 状态)。
+#
+# axis（作用轴）：
+#   behavior         行为倾向（让某类行为更容易/更少被选中）
+#   info             信息（守密 / 传播 / 泄露）
+#   relation         关系（对他人态度的倾向）
+#   environment_fact 客观条件（不是"倾向"，是既有事实）
+# strength（影响强度）：
+#   weak   小部分影响（约 ±10%）
+#   strong 长久影响（约 ±50%）
+#
+# 启动校验：axis ∈ 上述四项；strength ∈ {weak, strong}；tag_id 唯一
+tag_id,axis,strength,effect,note
+爱学习,behavior,strong,study_bias,+50%,长久影响：总是倾向学习（与低从众度叠加 → 即所谓「学霸」）
+爱聊天,behavior,strong,chat_bias,+50%,长久影响：偏好闲聊
+爱调侃,behavior,weak,tease_bias,+10%,小部分影响：更可能起哄
+爱帮忙,behavior,weak,help_bias,+10%,小部分影响：更可能答应求助
+爱独处,behavior,strong,alone_bias,+50%,长久影响：倾向独处，不主动参与
+爱调和,relation,strong,mediate_bias,+50%,长久影响：倾向化解冲突
+爱八卦,info,strong,spread_bias,+50%,长久影响：信息传播意愿高
+嘴严,info,strong,keep_bias,+50%,长久影响：守密概率高，不传播
+泄密,info,strong,leak_bias,+50%,长久影响：守住秘密的概率显著降低
+操纵,relation,strong,manipulate_bias,+50%,长久影响：倾向挑拨、利用信息
+带手机,environment_fact,strong,report_exposure,+,环境事实：客观持有，提升被举报风险（非倾向）
+谈恋爱,environment_fact,strong,bond_pair,+,环境事实：与绑定对象初始高好感 / 信任（非倾向）
+举报,behavior,strong,report_bias,+50%,长久影响：更倾向举报（与高 J 叠加）
