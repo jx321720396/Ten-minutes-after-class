@@ -20,9 +20,9 @@
 
 ## 阅读路径
 
-- **新程序**：主文档 [`gdd/core-gameplay-v3.1.md`](gdd/core-gameplay-v3.1.md)（§3 时间、§4 架构、§5–§8 数值）→ [`design/架构总览.md`](design/架构总览.md)（模块边界）→ [`design/统一影响公式.md`](design/统一影响公式.md) → [`design/信念矩阵.md`](design/信念矩阵.md) → [`design/NPC行为决策.md`](design/NPC行为决策.md) → [`design/规则引擎设计.md`](design/规则引擎设计.md)
+- **新程序**：主文档 [`gdd/core-gameplay-v3.1.md`](gdd/core-gameplay-v3.1.md)（§3 时间、§4 架构、§5–§8 数值、**§18 工程实现规范**）→ [`design/架构总览.md`](design/架构总览.md)（模块边界）→ [`design/统一影响公式.md`](design/统一影响公式.md) → [`design/信念矩阵.md`](design/信念矩阵.md) → [`design/NPC行为决策.md`](design/NPC行为决策.md) → [`design/规则引擎设计.md`](design/规则引擎设计.md)
 - **新策划**：先读主文档 §3.4 标定目标与 [`design/统一影响公式.md`](design/统一影响公式.md) §2.5 数值铁律 → 主文档全文 → [`production/路线图.md`](production/路线图.md)
-- **新美术 / 音频**：主文档 §14 可视化 → [`art/视觉风格指南.md`](art/视觉风格指南.md) / [`audio/音频设计.md`](audio/音频设计.md)
+- **新美术 / 音频**：主文档 §15 可视化 → [`art/视觉风格指南.md`](art/视觉风格指南.md) / [`audio/音频设计.md`](audio/音频设计.md)
 
 ## 新读者导读
 
