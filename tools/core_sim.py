@@ -480,12 +480,16 @@ class Sim:
         raw = {
             "affinity": self.nw["alpha_a_base"] + self.nw["alpha_a_f"] * self.dims[i][2] / 100.0
                         + self.nw["alpha_a_e"] * self.dims[i][0] / 100.0,
-            # 感知型（高 P）更容易信任（与 alpha_h 同向，均为「感知型更随性」）
-            "trust": self.nw["alpha_t_base"] + self.nw["alpha_t_j"] * self.dims[i][3] / 100.0,
+            # **选项 C：两行都跟 J**（判断型爱恨分明 —— 「谁值得信、谁是敌人」都是**先判断再下结论**的事）。
+            #   · 接通了原本断掉的一条线：强 J 种子「举报倾向由 J 派生」，若敌对意向权重低，
+            #     则**最有动机举报的人反而不记恨**，欺凌→举报链对他们不成立；
+            #   · 与从众（§10.24）互补而非重叠：**J 型发起（意向层高权重）→ P 型跟从（从众通道）**，
+            #     「主谋 + 被拉拢的乌合」的分层才出得来；
+            #   · 对齐 §5.5「J/P 影响小团体归属倾向、被拉拢概率」——P 型被拉拢 = 低自主权重 + 高从众。
+            # `(1 + arg_j)/2` 把 J 强度从 [-1,1] 映到 [0,1]，与系数原标定区间一致。
+            "trust": self.nw["alpha_t_base"] + self.nw["alpha_t_j"] * (1.0 + self.arg_j(i)) / 2.0,
             "hostility": self.nw["alpha_h_base"] + self.nw["alpha_h_f"] * (1 - self.dims[i][2] / 100.0)
-                         # 用户确认的设计意图：**感知型（高 P）更容易信任、也更容易记恨** ——
-                         # 两行都跟 P。原 alpha_h 写的是 (1−P)，方向与意图相反，已翻转。
-                         + self.nw["alpha_h_j"] * (self.dims[i][3] / 100.0),
+                         + self.nw["alpha_h_j"] * (1.0 + self.arg_j(i)) / 2.0,
             "stress": self.nw["alpha_s_base"] + self.nw["alpha_s_e"] * (1 - self.dims[i][0] / 100.0),
         }
         total = sum(raw.values())
