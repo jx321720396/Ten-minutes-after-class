@@ -737,6 +737,12 @@ class Sim:
                 elif self.H[k][j] >= th["tease_sneer_hostility"]:
                     self.apply_event(k, j, "tease_affinity")      # 讨厌被调侃者 → 附和发起者
                 # 其余：中立，不表态
+            # **当众羞辱**（§10.23）：被一群人看着嘲笑，就不是"过火"而是**羞辱**了。
+            # 私下的嘲讽只是表层摩擦（会淡忘）；**当众**才写进永不衰减的深层。
+            # 判定只看「有多少人在看」—— 这是纯粹的处境条件，与是谁无关（无特例）。
+            if len(audience) >= th.get("humiliate_min_bystanders", 3.0):
+                self.apply_event(j, i, "humiliate_hostility")
+                self.stats["humiliations"] = self.stats.get("humiliations", 0) + 1
             self.stats["tease_fail"] += 1
         self.stats["teases"] += 1
 
@@ -1126,8 +1132,12 @@ class Sim:
                 self.A[i][j] *= d["decay_a_interact"] if interacted else d["decay_a_no_interact"]
                 # 两层敌对（§10.22）：深层原样保留，只衰减**表层**。
                 # 「表层怒火会消，但心结永远在」—— 所以「可以原谅，但忘不了」。
+                # ⚠️ 表层要夹到 ≥0：H 会被别的负向事件（和解类）降到低于 deep，
+                #    那时 `H - deep` 为负，若不夹住会把负数继续带下去 ——
+                #    结果出现「深层 17.5 而总数只有 9.0」的自相矛盾（深层本应是**底线**）。
                 deep = self.H_deep[i][j]
-                self.H[i][j] = deep + (self.H[i][j] - deep) * d["decay_h"]
+                surf = max(0.0, self.H[i][j] - deep)
+                self.H[i][j] = min(100.0, deep + surf * d["decay_h"])
                 self.T[i][j] *= d["decay_t"]
             self.Stress[i] *= d["retain_s"]
         self.day_events.clear()          # 新的一天，重置「有互动」判定
