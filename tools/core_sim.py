@@ -558,9 +558,21 @@ class Sim:
             if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * (1.0 + self.tag_bias(i, "tease_bias")):
                 wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
                 j = self.rng.choices(cands_t, weights=wts, k=1)[0]
-                audience = [k for k in range(n) if k not in (i, j) and k not in busy]
+                # **围观者 = 物理上在场的人（邻居）**，而不是「全班减去两个忙人」。
+                #    后者让 audience 恒有 13~15 人，任何「被围着」的门槛都会恒真。
+                #    §10.12 说的「周围 ≥3 人围观」，'周围'本就是空间概念（§10.20 座位表）。
+                # 围观者 = **i 与 j 的共同邻居**（调侃发生在两人之间，看热闹的是两人旁边的人）。
+                #    用「并集」会得到约 10 人（5+5），任何门槛都会恒真；
+                #    用「交集」才是真正的「围在他俩周围」—— 数量少、有筛选力。
+                audience = [k for k in self.neighbor_idx[i]
+                            if k in self.neighbor_idx[j]
+                            and k not in (i, j) and k not in busy and not self.sleeping[k]]
                 if len(audience) >= 3:
-                    self.do_tease(i, j, audience[:3])
+                    # ⚠️ **不截断** audience：`audience[:3]` 曾把围观者固定为恰好 3 人，
+                    #    而羞辱门槛也是 3 → `len(audience) >= 3` **恒真**，
+                    #    §10.23 所说「私下嘲讽只是摩擦、被围着才写深层」的区分**从未生效**。
+                    #    而且 [:3] 取的是 range(n) 前 3 个 → 围观者系统性偏向低索引角色。
+                    self.do_tease(i, j, audience)
                     busy.add(i)
                     busy.add(j)
                     continue
@@ -577,7 +589,8 @@ class Sim:
                     if len(bys) >= th_rc:
                         # 旁观者聚焦「安静专注型」（高 J + 内向）—— 他们最容易被吵到，
                         # 于是「活跃分子 × 严肃分子」这一批边会被反复击中而累积，而不是被摊平
-                        bys.sort(key=lambda k: -((self.dims[k][3] - 50.0) + (50.0 - self.dims[k][0])))
+                        # 随机采样，而非取 range(n) 前 N 个 —— 否则围观者永远是低索引角色
+                        bys = self.rng.sample(bys, min(len(bys), 4))
                         # 打闹**只吵到邻座**（§10.18 + 空间层）——
                         # 修复前用的是「全班路过的」，一次打闹就摊到全班的边上，这正是边数摊薄的主因。
                         nb = [k for k in (self.neighbor_idx[i] + self.neighbor_idx[j])
@@ -765,7 +778,7 @@ class Sim:
             # **当众羞辱**（§10.23）：被一群人看着嘲笑，就不是"过火"而是**羞辱**了。
             # 私下的嘲讽只是表层摩擦（会淡忘）；**当众**才写进永不衰减的深层。
             # 判定只看「有多少人在看」—— 这是纯粹的处境条件，与是谁无关（无特例）。
-            if len(audience) >= th.get("humiliate_min_bystanders", 3.0):
+            if len(audience) >= th.get("humiliate_bystanders", 3.0):
                 self.apply_event(j, i, "humiliate_hostility")
                 self.stats["humiliations"] = self.stats.get("humiliations", 0) + 1
             self.stats["tease_fail"] += 1
