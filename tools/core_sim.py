@@ -541,10 +541,12 @@ class Sim:
             return None
         return self.rng.choice(others)
 
-    def occupy(self, i, j, behavior):
+    def occupy(self, i, j, behavior, quiet=False):
         """按行为耗时把双方置为忙碌（“收益越大耗时越长”，不再一律 20 tick）"""
         self.current_act[i] = behavior
-        self.current_act[j] = behavior
+        # quiet=True：加入 / 被搭话的一方 —— 同一场对话只算**一个声源**
+        # （现实里多一个人加入同一场聊天，音量几乎不变；让教室变吵的是「多摊人各自在聊」）
+        self.current_act[j] = None if quiet else behavior
         dur = self.behaviors.get(behavior, {}).get("duration", 0)
         if dur > 0:
             self.busy_until[i] = self.global_tick + dur
@@ -556,7 +558,7 @@ class Sim:
         """闲聊：话题共鸣事件 + 双方观测"""
         self.in_conversation[i] = True
         self.in_conversation[j] = True
-        self.occupy(i, j, "chat")
+        self.occupy(i, j, "chat", quiet=True)   # 同一场对话：只计一个声源
         self.apply_event(i, j, "topic_affinity")
         self.apply_event(i, j, "topic_trust")
         self.apply_event(i, j, "topic_stress")
@@ -575,7 +577,7 @@ class Sim:
         """
         self.in_conversation[i] = True
         self.in_conversation[j] = True
-        self.occupy(i, j, "join_chat")
+        self.occupy(i, j, "join_chat", quiet=True)   # 同一场对话：只计一个声源
         accept = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
         if accept >= self.thresholds_lookup["join_chat_affinity"] and self.Stress[j] <= 70:
             self.do_chat(i, j)
@@ -697,7 +699,10 @@ class Sim:
             # 全员被当成"一直在聊天"，音量恒满。
             if self.global_tick >= self.busy_until[i]:
                 self.current_act[i] = None
-            act = self.current_act[i] or "study"
+            # None = 既没在做事、也没在发声（静默参与者或空闲）→ 不贡献音量
+            act = self.current_act[i]
+            if act is None:
+                continue
             target += self.behaviors.get(act, {}).get("noise", 0.0)
         target = clamp(target, 0.0, e.get("volume_max", 100.0))
         rate = e.get("adapt_rate", 0.02)
