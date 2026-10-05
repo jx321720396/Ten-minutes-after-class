@@ -28,5 +28,6 @@ tease_sneer,hostility,>=,40,围观者讨厌被调侃者 → 附和发起者（�
 # 【追逐打闹】门槛：发起者要够外向（热闹型才追跑），且要有人在场当旁观者
 roughhouse,affinity,>=,45,发起者外向度门槛（用 E 维代替：仅外向者主动发起）
 roughhouse,count,>=,2,旁观者人数门槛
-exclude,hostility,>=,40,排挤：单人对目标的敌对门槛
+exclude,window,<=,14,排挤：在最近多少天内有敌对行为才算「当前还在欺负他」
+exclude,cooldown,>=,7,排挤：同一目标多少天内不再被重复驱逐（孤立是状态，不是反复的动作）
 exclude,count,>=,3,排挤：达到上述敌对的人数门槛（≥3 人才构成「集体」）
