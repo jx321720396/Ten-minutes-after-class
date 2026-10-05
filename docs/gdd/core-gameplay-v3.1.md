@@ -1245,7 +1245,7 @@ class Belief:                         # 信念矩阵：三份 N×N（§18.5）
 | `balance/npc_weights.csv` | α 派生系数、`tau0`、`top_n` | §18.6 |
 | `rules/decay.csv` | 跨天衰减：`decay_a_no_interact` / `decay_a_interact` / `decay_h` / `decay_t` / `retain_s` / `interact_min_events` | §3.5 |
 | `rules/status_tags.csv` | 状态标签：`heart_knot`（心结）/ `secret_alliance` | §3.5、§10.14 |
-| `rules/environment.csv` | **环境层**：音量上限 / 适应率 / 阈值 / 系数 / 偏离代价（见 §10.18、§10.20） | §10.18 |
+| `rules/environment.csv` | **环境层**：音量上限 / 适应率 / 阈值 / 系数 / 偏离代价（见 §10.18、§10.19） | §10.18 |
 | `rules/tags.csv` | 标签表：按作用轴（behavior / info / relation / environment_fact）× 强度（weak / strong） | §11、§10.19 |
 | `rules/phases.csv` | 相位时长 + 规则启用子集 + 玩家操作权限 | §3.2、§3.3 |
 | `rules/social_events.csv` | 社会事件状态机（多阶段跨相位） | §13 |
