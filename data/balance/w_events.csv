@@ -3,24 +3,24 @@
 #   tier = normal → base ∈ [1,3]（任何角色都能轻易触发）
 #   tier = major  → base ∈ [4,5]（前置条件苛刻者）
 # w_* 为该事件对 MBTI 四维的敏感度（顺序 E S F J），用于 clamp(1 + Σw·d, 0.1, 1.2)
-event_id,axis,base,w_e,w_s,w_f,w_j,tier,note
-tease_stress,stress,3,-0.3,0,0.5,0,normal,被当众调侃
-tease_hostility,hostility,3,0,0,0.4,0.2,normal,被当众调侃
-tease_affinity,affinity,-2,0,0,0.3,0,normal,被当众调侃
-reject_stress,stress,3,0.2,0,0.3,0,normal,被拒绝搭话
-reject_hostility,hostility,3,0,0,0.2,0.3,normal,被拒绝搭话
-reject_affinity,affinity,-3,0,0,0.2,0,normal,被拒绝搭话
-report_stress,stress,5,0,0,0.3,-0.4,major,被举报（须敌对累积到阈值）
-report_hostility,hostility,5,0,0,0.2,-0.3,major,被举报
-comfort_target_stress,stress,-3,0.2,0,0.4,0,normal,安慰他人
-comfort_target_affinity,affinity,3,0,0,0.3,0,normal,安慰他人
-comfort_target_trust,trust,3,0,0,0.5,0,normal,安慰他人
-leak_stress,stress,5,0,0,0.4,0.2,major,秘密被泄露（须先有秘密交换）
-leak_trust,trust,-5,0,0,0.3,0.2,major,秘密被泄露
-leak_hostility,hostility,4,0,0,0.2,0,major,秘密被泄露
-tease_laugh_stress,stress,-2,0,0,0.3,0,normal,被逗笑（调侃的正面结果）
-tease_success_affinity,affinity,2,0,0,0.3,0,normal,当众调侃成功（双方 + 围观者）
-rumor_stress,stress,3,0,0,0.4,0.2,normal,被流言击中（压力来源）
-topic_trust,trust,3,0,0.3,0.2,0,normal,话题共鸣
-topic_affinity,affinity,3,0.2,0.2,0,0,normal,话题共鸣
-topic_stress,stress,-2,0.3,0,0.2,0,normal,话题共鸣
+event_id,axis,base,w_e,w_s,w_f,w_j,tier,class,note
+tease_stress,stress,3,-0.3,0,0.5,0,normal,E,被当众调侃
+tease_hostility,hostility,3,0,0,0.4,0.2,normal,E,被当众调侃
+tease_affinity,affinity,-2,0,0,0.3,0,normal,E,被当众调侃
+reject_stress,stress,3,0.2,0,0.3,0,normal,C,被拒绝搭话
+reject_hostility,hostility,3,0,0,0.2,0.3,normal,C,被拒绝搭话
+reject_affinity,affinity,-3,0,0,0.2,0,normal,C,被拒绝搭话
+report_stress,stress,5,0,0,0.3,-0.4,major,B,被举报（须敌对累积到阈值）
+report_hostility,hostility,5,0,0,0.2,-0.3,major,B,被举报
+comfort_target_stress,stress,-3,0.2,0,0.4,0,normal,A,安慰他人
+comfort_target_affinity,affinity,3,0,0,0.3,0,normal,A,安慰他人
+comfort_target_trust,trust,3,0,0,0.5,0,normal,A,安慰他人
+leak_stress,stress,5,0,0,0.4,0.2,major,B,秘密被泄露（须先有秘密交换）
+leak_trust,trust,-5,0,0,0.3,0.2,major,B,秘密被泄露
+leak_hostility,hostility,4,0,0,0.2,0,major,B,秘密被泄露
+tease_laugh_stress,stress,-2,0,0,0.3,0,normal,E,被逗笑（调侃的正面结果）
+tease_success_affinity,affinity,2,0,0,0.3,0,normal,E,当众调侃成功（双方 + 围观者）
+rumor_stress,stress,3,0,0,0.4,0.2,normal,B,被流言击中（压力来源）
+topic_trust,trust,3,0,0.3,0.2,0,normal,A,话题共鸣
+topic_affinity,affinity,3,0.2,0.2,0,0,normal,A,话题共鸣
+topic_stress,stress,-2,0.3,0,0.2,0,normal,A,话题共鸣

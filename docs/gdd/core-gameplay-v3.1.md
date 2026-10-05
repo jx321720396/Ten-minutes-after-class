@@ -991,7 +991,7 @@ class Belief:                         # 信念矩阵：三份 N×N（§18.5）
 | `rules/belief.csv` | `eta0_a/h/t`、`sigma_max_a/h/t`、`prior_a/h/t`、`lambda_b`、`w_bias` | §18.5 |
 | `rules/behavior_probs.csv` | 环境类行为每 tick 基础概率 | §10、§18.6 |
 | `rules/behavior_thresholds.csv` | 阈值类行为触发条件（举报 / 爆发 / 道歉 / 安慰） | §10.2、§8.5 |
-| `balance/w_events.csv` | 事件权重全表（含 `tier`：常规 1–3 / 重大 4–5） | §6.3、§6.1 |
+| `balance/w_events.csv` | 事件权重全表（`tier`：常规 1–3 / 重大 4–5；`class`：A–E 五分类，见 §10.16） | §6.3、§6.1、§10.16 |
 | `balance/npc_weights.csv` | α 派生系数、`tau0`、`top_n` | §18.6 |
 | `rules/decay.csv` | 跨天衰减：`decay_a_no_interact` / `decay_a_interact` / `decay_h` / `decay_t` / `retain_s` / `interact_min_events` | §3.5 |
 | `rules/status_tags.csv` | 状态标签：`heart_knot`（心结）/ `secret_alliance` | §3.5、§10.14 |
