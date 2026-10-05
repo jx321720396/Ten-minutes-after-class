@@ -946,6 +946,9 @@ class Sim:
         for i in range(self.N):
             fear = fj * (self.dims[i][3] - 50.0) / 50.0 + fe * (50.0 - self.dims[i][0]) / 50.0
             fear = max(0.0, fear)
+            # ⚠️ 加上**基础项**：嘈杂环境对**所有人**都有压力，不只是「怕吵的人」。
+            # 此前只在 fear 上做文章，导致 stress_k 放大 12 倍仍无效 —— 因为压力只压到了少数内向/专注者。
+            fear = e.get("noise_base_fear", 0.0) + fear
             self.Stress[i] = clamp100(self.Stress[i] + excess * k * fear)
 
     def conformity_hostility(self):
