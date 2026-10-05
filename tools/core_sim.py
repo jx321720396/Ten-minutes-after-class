@@ -534,7 +534,7 @@ class Sim:
                 self.observe(k, j, "hostility")     # 二手观测（会带噪声）
         self.stats["rumors"] += 1
 
-    def spread_knot(self, i):
+    def spread_knot(self, i, severity=0.0):
         """爆发传染：把「心结」扩散给与 i 关系最鲜明的少数人。
 
         情绪传染沿**关系**传播 —— 与爆发者关系越鲜明（无论亲密还是敌对，|A − H| 越大），
@@ -555,8 +555,11 @@ class Sim:
             return
         others.sort(key=lambda j: -abs(self.A[i][j] - self.H[i][j]))   # 关系最鲜明者优先
         pool = others[:max(1, int(len(others) * ratio))]
-        for j in self.rng.sample(pool, min(kmax, len(pool))):
-            self.knot_days[j] = int(float(tag["days"]))
+        # 越晚爆发（severity 越高）→ 波及越广、心结越久：这就是「拖得越久，爆得越大」
+        kmax_eff = int(round(kmax * (1.0 + severity)))
+        days_eff = int(round(float(tag["days"]) * (1.0 + severity)))
+        for j in self.rng.sample(pool, min(kmax_eff, len(pool))):
+            self.knot_days[j] = max(self.knot_days[j], days_eff)
 
     # ------------------------------------------------ 主循环
     def stress_drip(self):
@@ -580,13 +583,7 @@ class Sim:
         if self.global_tick % int(self.p["settle_interval"]) == 0:   # 每天 2 次（上午/下午）
             self.transmission()
             self.stress_drip()
-        # 压力爆发（阈值相变）
-        for i in range(self.N):
-            if self.Stress[i] >= 90:
-                self.Stress[i] = clamp100(self.Stress[i] - 40)
-                self.knot_days[i] = int(float(self.status_tags["heart_knot"]["days"]))
-                self.spread_knot(i)          # 传染：让爆发有"连环"的可能
-                self.stats["bursts"] += 1
+        # 压力爆发已在每日结算时按概率判定（见 try_burst），此处不再做阈值相变
 
     def run_day(self):
         phases = [("break", 100), ("class", 90), ("break", 100), ("class", 90), ("break", 100)]
@@ -601,8 +598,39 @@ class Sim:
         self.settle_day()
         return total_ticks
 
+    def try_burst(self):
+        """概率爆发（不是「到点必爆」）。
+
+        压力跨过入口阈值 `burst`（70，即 §8.3 高压区入口）后，**每天判定一次**：
+            概率 p = burst_p_max × severity，其中 severity = (stress − θ) / (100 − θ)
+        `severity` 同时放大**波及范围**与**心结时长** —— 于是「拖得越久、压力越高、爆得越大」，
+        而大爆又会传染更广 → 这就是「连环爆发」的结构来源。
+
+        为什么概率化：阈值处「必爆」会让行为在阈值附近疯狂跳变（UIF §2.6 边界③）；
+        概率化之后，高压区是一个**危险斜区**，而不是一堵墙。
+        """
+        th = self.thresholds_lookup.get("burst_stress", 70.0)
+        pmax = self.probs.get("burst_p_max", 0.0)
+        if pmax <= 0:
+            return
+        tag = self.status_tags.get("heart_knot")
+        for i in range(self.N):
+            s = self.Stress[i]
+            if s < th:
+                continue
+            severity = clamp((s - th) / (100.0 - th), 0.0, 1.0)
+            if self.rng.random() >= pmax * severity:
+                continue
+            self.Stress[i] = clamp100(s - 40)
+            if tag:
+                self.knot_days[i] = max(self.knot_days[i],
+                                        int(round(float(tag["days"]) * (1.0 + severity))))
+            self.spread_knot(i, severity)
+            self.stats["bursts"] += 1
+
     def settle_day(self):
         """跨天结算（§3.5）"""
+        self.try_burst()                      # 每日一次：压力爆发按概率判定
         d = self.decay
         # 「心结」：爆发后的 3 天里，每天先加 5 点压力（长线心理创伤，§3.5）
         for i in range(self.N):
