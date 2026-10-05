@@ -15,11 +15,14 @@ report_hostility,hostility,5,0,0,0.2,-0.3,major,B,被举报
 comfort_target_stress,stress,-3,0.2,0,0.4,0,normal,A,安慰他人
 comfort_target_affinity,affinity,3,0,0,0.3,0,normal,A,安慰他人
 comfort_target_trust,trust,3,0,0,0.5,0,normal,A,安慰他人
+exclude_stress,stress,5,0,0,0.4,0.2,major,B,被小团体明确排斥（§8.4；重大档，伤害与关系无关）
+exclude_affinity,affinity,-4,0,0,0.2,0.3,major,B,被排挤后对参与者的好感下降（让关系真变差）
 leak_stress,stress,5,0,0,0.4,0.2,major,B,秘密被泄露（须先有秘密交换）
 leak_trust,trust,-5,0,0,0.3,0.2,major,B,秘密被泄露
 leak_hostility,hostility,4,0,0,0.2,0,major,B,秘密被泄露
 tease_laugh_stress,stress,-2,0,0,0.3,0,normal,E,被逗笑（调侃的正面结果）
 tease_success_affinity,affinity,2,0,0,0.3,0,normal,E,当众调侃成功（双方 + 围观者）
+rumor_hostility,hostility,3,0,0,0.2,0.2,normal,B,被传谣后对传播者产生敌对（流言本就该让关系变差）
 rumor_stress,stress,3,0,0,0.4,0.2,normal,B,被流言击中（压力来源）
 topic_trust,trust,3,0,0.3,0.2,0,normal,A,话题共鸣
 topic_affinity,affinity,3,0.2,0.2,0,0,normal,A,话题共鸣
