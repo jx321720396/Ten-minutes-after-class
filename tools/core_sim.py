@@ -89,6 +89,11 @@ class Sim:
                                   for r in self.thresholds}
         # decay.csv 采用 param,value 标量风格（注意键名已由 axis 改为 param）
         self.decay = {r["param"]: float(r["value"]) for r in load_table("rules/decay.csv")}
+        # 行为主表：行为 -> {duration, payoff, kind}（含“收益越大耗时越长”法则）
+        self.behaviors = {r["behavior"]: {"duration": int(float(r["duration"])),
+                                         "payoff": float(r["payoff"]),
+                                         "kind": r["kind"]}
+                          for r in load_table("rules/behaviors.csv")}
         # 负反馈：传导增益随目标容纳度衰减（来自 transmission.csv 的 feedback）
         self.feedback = self.p.get("feedback", 0.0)
         self.event_rows = load_table("balance/w_events.csv")
@@ -138,6 +143,7 @@ class Sim:
         self.phase_index = 0
         self.global_tick = 0
         self.next_action = [0] * n
+        self.busy_until = [0] * n        # 忙碌到何时（按行为 duration，替代统一冷却）
         self.in_conversation = [False] * n
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
@@ -381,9 +387,8 @@ class Sim:
         self.rng.shuffle(order)
         busy = set()
         for i in order:
-            if i in busy or self.global_tick < self.next_action[i]:
+            if i in busy or self.global_tick < self.busy_until[i]:
                 continue
-            self.next_action[i] = self.global_tick + ACTION_COOLDOWN
             self.in_conversation[i] = False
             # 环境类：闲聊（概率触发）
             if self.rng.random() < self.probs["chat"]:
@@ -449,10 +454,18 @@ class Sim:
             return None
         return self.rng.choice(others)
 
+    def occupy(self, i, j, behavior):
+        """按行为耗时把双方置为忙碌（“收益越大耗时越长”，不再一律 20 tick）"""
+        dur = self.behaviors.get(behavior, {}).get("duration", 0)
+        if dur > 0:
+            self.busy_until[i] = self.global_tick + dur
+            self.busy_until[j] = self.global_tick + dur
+
     def do_chat(self, i, j):
         """闲聊：话题共鸣事件 + 双方观测"""
         self.in_conversation[i] = True
         self.in_conversation[j] = True
+        self.occupy(i, j, "chat")
         self.apply_event(i, j, "topic_affinity")
         self.apply_event(i, j, "topic_trust")
         self.apply_event(i, j, "topic_stress")
@@ -471,6 +484,7 @@ class Sim:
         """
         self.in_conversation[i] = True
         self.in_conversation[j] = True
+        self.occupy(i, j, "join_chat")
         accept = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
         if accept >= self.thresholds_lookup["join_chat_affinity"] and self.Stress[j] <= 70:
             self.do_chat(i, j)
@@ -501,6 +515,7 @@ class Sim:
         M 恒偏正 → 会退化成「永远玩笑」，实测全班冲到 89.4 / SD 1.5 / 爆发 0。
         """
         th = self.thresholds_lookup
+        self.occupy(i, j, "tease")
         if self.A[i][j] >= th["tease_laugh_affinity"] and self.H[i][j] < th["tease_laugh_hostility"]:
             self.apply_event(i, j, "tease_success_affinity")
             self.apply_event(j, i, "tease_success_affinity")
