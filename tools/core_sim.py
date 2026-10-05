@@ -114,6 +114,12 @@ class Sim:
         # 深层敌对（§10.22）：只由 tier=major 的负性事件写入，**永不衰减**。
         # H 存的仍是「总敌对」，H_deep 是其中「忘不掉的那一部分」。
         self.H_deep = [[0.0] * n for _ in range(n)]
+        # 施害者一侧的证据（§8.4 修订）：最近一次「i 对 j 做过敌对行为」的日。
+        # 排挤的判据要用它 —— 集体排斥的证据在**施害者**一侧，不在受害者一侧。
+        self.hurt_day = [[-10 ** 9] * n for _ in range(n)]
+        # 排挤冷却：同一目标多少天内不再被重复驱逐。
+        # 「孤立某人」是一个**状态**而不是反复的动作 —— 没有冷却时同一人一天被排挤 9 次（实测）。
+        self.exclude_last_day = [-10 ** 9] * n
         self.T = [[0.0] * n for _ in range(n)]
         self.O = [0.0] * n
         self.Stress = [0.0] * n
@@ -346,6 +352,12 @@ class Sim:
             p_val = e_val + (0.0 if axis == "stress" else 0.0)  # 事件侧不含传导
             m = self.m_state(i, negative=(base < 0) == (axis in AXES))
             delta = r1(m * self.sat(p_val, axis)) if axis != "stress" else r1(self.sat(p_val, axis))
+            if axis == "hostility" and row.get("tier") == "major" and delta > 0:
+                # 记下「i 对 j 做过**严重**敌对行为」（只记 major 档）。
+                # ⚠️ 不能记日常摩擦：noise_hostility 每天让几乎所有人互相「损害」，
+                #    那样「被 3 人损害」是常态，排挤会变成天天发生（实测 268 次/30 天）。
+                #    「被欺负」指的就是**严重**的事 —— 当众羞辱、举报、秘密泄露。
+                self.hurt_day[i][j] = self.day
             if axis == "hostility" and row.get("tier") == "major":
                 # 重大负性事件 → 同时写入**永不衰减**的深层（§10.22）。
                 # ⚠️ 不经 room_for：负反馈是给「表层摩擦」用的，若也套在深层上，
@@ -571,16 +583,25 @@ class Sim:
                         busy.add(j)
                         continue
             # 阈值类：排挤（"大家都讨厌他" → 集体驱逐）—— B 类，让关系能无条件变差
+            # 阈值类：排挤（§8.4 **修订**：「有多少人**近期损害过他**」→ 集体驱逐）。
+            # ⚠️ 原判据是「≥3 人**恨**他 ≥40」，方向反了 —— 欺凌是**多对一**：
+            #    施害者多人、受害者一人，**受害者只能单向记恨**，永远凑不出「3 人恨他」。
+            #    集体排斥的证据在**施害者一侧**：有多少人**对他做过敌对行为**。
             if self.allowed("exclude") and self.rng.random() < self.probs.get("exclude_p", 0.04):
-                th_h = self.thresholds_lookup.get("exclude_hostility", 40.0)
                 th_n = int(self.thresholds_lookup.get("exclude_count", 3))
+                cd_days = self.thresholds_lookup.get("exclude_cooldown", 7.0)
+                window = self.thresholds_lookup.get("exclude_window", 7.0)
                 done = False
                 for j in range(n):
                     if j == i or j in busy:
                         continue
-                    haters = [k for k in range(n) if k != j and self.H[k][j] >= th_h]
-                    if len(haters) >= th_n:
-                        self.do_exclude(i, j, haters[:4])
+                    if self.day - self.exclude_last_day[j] < cd_days:
+                        continue                      # 冷却中：已经被驱逐过，不再重复
+                    hurters = [k for k in range(n)
+                               if k != j and self.day - self.hurt_day[k][j] <= window]
+                    if len(hurters) >= th_n:
+                        self.do_exclude(i, j, hurters[:4])
+                        self.exclude_last_day[j] = self.day
                         busy.add(i)
                         done = True
                         break
