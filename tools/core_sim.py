@@ -139,7 +139,8 @@ class Sim:
         self.stats = {"events": 0, "chats": 0, "joins": 0, "reports": 0, "bursts": 0,
                       "interrupts": 0,
                       "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0,
-                      "teases": 0, "tease_fail": 0, "rumors": 0, "excludes": 0}
+                      "teases": 0, "tease_fail": 0, "rumors": 0, "excludes": 0,
+                      "roughhouse": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
         self.settled = set()
         self.phase_index = 0
@@ -451,6 +452,24 @@ class Sim:
                     busy.add(i)
                     busy.add(j)
                     continue
+            # 意向类：追逐打闹 —— 敌对种子（参与者好感↑ / 旁观者敌对↑）
+            th_rh = self.thresholds_lookup.get("roughhouse_affinity", 45.0)
+            th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
+            if self.dims[i][0] >= th_rh and self.rng.random() < 0.05:
+                others = [j for j in range(n) if j != i and j not in busy]
+                if others:
+                    # 追跑对象按外向度加权：越外向越可能一起闹（→ 同样的少数人反复搭配）
+                    w_rh = [max(1.0, self.dims[j][0] - 30.0) for j in others]
+                    j = self.rng.choices(others, weights=w_rh, k=1)[0]
+                    bys = [k for k in range(n) if k not in (i, j) and k not in busy]
+                    if len(bys) >= th_rc:
+                        # 旁观者聚焦「安静专注型」（高 J + 内向）—— 他们最容易被吵到，
+                        # 于是「活跃分子 × 严肃分子」这一批边会被反复击中而累积，而不是被摊平
+                        bys.sort(key=lambda k: -((self.dims[k][3] - 50.0) + (50.0 - self.dims[k][0])))
+                        self.do_roughhouse(i, j, bys[:3])
+                        busy.add(i)
+                        busy.add(j)
+                        continue
             # 阈值类：排挤（"大家都讨厌他" → 集体驱逐）—— B 类，让关系能无条件变差
             if self.rng.random() < 0.04:
                 th_h = self.thresholds_lookup.get("exclude_hostility", 40.0)
@@ -629,6 +648,27 @@ class Sim:
                 self.observe(k, j, "hostility")     # 二手观测（会带噪声）
         self.stats["rumors"] += 1
 
+    def do_roughhouse(self, i, j, bystanders):
+        """【追逐打闹】（§10.18）—— 全系统唯一不依赖既有敌对的「敌对种子」。
+
+        · 参与者互相**好感↑**（A 类效果）；
+        · **路过的旁观者对参与者敌对↑**（B 类效果）—— 只需「有人在打闹」+「有人在场」，
+          不引用任何已有敌对值，因此 **t = 0 即可触发**，解开了「要产生敌对需先有敌对」的死锁。
+
+        社会含义自带讽刺：打闹的两人越来越亲近，被吵到的人越来越讨厌他们两个 ——
+        「聚集」与「排斥」在同一个动作里同时发生，这正是 §16「小团体自发抱团」的机理。
+
+        聚焦而非纯随机：发起者须外向（热闹型才追跑）、旁观者的敌对受 `w_j` 调制（高 J 的专注型
+        最容易被吵到），于是「活跃分子 × 严肃分子」这一批边会持续累积，而不是被摊平。
+        """
+        self.occupy(i, j, "roughhouse")
+        self.apply_event(i, j, "roughhouse_affinity")
+        self.apply_event(j, i, "roughhouse_affinity")
+        for k in bystanders:
+            self.apply_event(k, i, "roughhouse_hostility")
+            self.apply_event(k, j, "roughhouse_hostility")
+        self.stats["roughhouse"] += 1
+
     def spread_knot(self, i, severity=0.0):
         """爆发传染：把「心结」扩散给与 i 关系最鲜明的少数人。
 
@@ -778,9 +818,10 @@ class Sim:
         print("  接近饱和(>=95)比例：%.1f%%" % (saturated * 100))
         print("  事件 %d 次（闲聊 %d / 搭话 %d / 举报 %d）" % (
             self.stats["events"], self.stats["chats"], self.stats["joins"], self.stats["reports"]))
-        print("  调侃 %d 次（过火 %d）/ 流言 %d 次 / 排挤 %d 次 / 被打断 %d 次" % (
+        print("  调侃 %d（过火 %d）/ 流言 %d / 排挤 %d / 打闹 %d / 被打断 %d" % (
             self.stats["teases"], self.stats["tease_fail"], self.stats["rumors"],
-            self.stats.get("excludes", 0), self.stats.get("interrupts", 0)))
+            self.stats.get("excludes", 0), self.stats.get("roughhouse", 0),
+            self.stats.get("interrupts", 0)))
         print("  去重跳过 %d 次" % self.stats["dedup_skips"])
         print("  传导结算 %d 次 | 压力爆发 %d 次（平均每 %.1f 天一次）" % (
             self.stats["transmission_ticks"], self.stats["bursts"],
