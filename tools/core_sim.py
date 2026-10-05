@@ -92,7 +92,8 @@ class Sim:
         # 行为主表：行为 -> {duration, payoff, kind}（含“收益越大耗时越长”法则）
         self.behaviors = {r["behavior"]: {"duration": int(float(r["duration"])),
                                          "payoff": float(r["payoff"]),
-                                         "kind": r["kind"]}
+                                         "kind": r["kind"],
+                                         "noise": float(r.get("noise", 0))}
                           for r in load_table("rules/behaviors.csv")}
         # 负反馈：传导增益随目标容纳度衰减（来自 transmission.csv 的 feedback）
         self.feedback = self.p.get("feedback", 0.0)
@@ -148,6 +149,10 @@ class Sim:
         self.next_action = [0] * n
         self.busy_until = [0] * n        # 忙碌到何时（按行为 duration，替代统一冷却）
         self.busy_phase = [-1] * n       # 行为开始时的相位序号（用于判定「被下课铃打断」）
+        # --- 环境层（班级级标量，不是第六轴，而是与个体/关系并列的第三层）---
+        self.env = {r["param"]: float(r["value"]) for r in load_table("rules/environment.csv")}
+        self.volume = self.env.get("init_volume", 20.0)
+        self.current_act = [None] * n     # 当前正在做/刚做完的行为（供音量统计）
         self.in_conversation = [False] * n
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
@@ -531,6 +536,8 @@ class Sim:
 
     def occupy(self, i, j, behavior):
         """按行为耗时把双方置为忙碌（“收益越大耗时越长”，不再一律 20 tick）"""
+        self.current_act[i] = behavior
+        self.current_act[j] = behavior
         dur = self.behaviors.get(behavior, {}).get("duration", 0)
         if dur > 0:
             self.busy_until[i] = self.global_tick + dur
@@ -669,6 +676,39 @@ class Sim:
             self.apply_event(k, j, "roughhouse_hostility")
         self.stats["roughhouse"] += 1
 
+    def update_environment(self):
+        """环境层：由「当前大家在做什么」推出目标音量，再平滑趋近。
+
+        `target = clamp(Σ noise(各人当前行为), 0, max)` —— **量的累积产生质变**：
+        2 人聊天 noise=12×2=24（正常）；8 人聊天 96（**吵到别人**）。
+        超阈部分才转化为压力，且**怕吵程度取决于性格**（高 J 的专注型、内向者更受不了）。
+        """
+        e = self.env
+        target = 0.0
+        for i in range(self.N):
+            # 行为结束后回到"默认（学习，不发声）"——否则 current_act 会永久残留，
+            # 全员被当成"一直在聊天"，音量恒满。
+            if self.global_tick >= self.busy_until[i]:
+                self.current_act[i] = None
+            act = self.current_act[i] or "study"
+            target += self.behaviors.get(act, {}).get("noise", 0.0)
+        target = clamp(target, 0.0, e.get("volume_max", 100.0))
+        rate = e.get("adapt_rate", 0.02)
+        self.volume = clamp(self.volume + rate * (target - self.volume), 0.0, e.get("volume_max", 100.0))
+
+    def noise_pressure(self):
+        """超阈音量 → 压力。极慢的涓流（每次结算一次），怕吵程度由性格决定。"""
+        e = self.env
+        excess = max(0.0, self.volume - e.get("volume_threshold", 60.0))
+        if excess <= 0:
+            return
+        k = e.get("stress_k", 0.0)
+        fj, fe = e.get("fear_j", 0.0), e.get("fear_e", 0.0)
+        for i in range(self.N):
+            fear = fj * (self.dims[i][3] - 50.0) / 50.0 + fe * (50.0 - self.dims[i][0]) / 50.0
+            fear = max(0.0, fear)
+            self.Stress[i] = clamp100(self.Stress[i] + excess * k * fear)
+
     def spread_knot(self, i, severity=0.0):
         """爆发传染：把「心结」扩散给与 i 关系最鲜明的少数人。
 
@@ -698,6 +738,7 @@ class Sim:
 
     # ------------------------------------------------ 主循环
     def stress_drip(self):
+        self.noise_pressure()      # 环境层：超阈音量 → 压力
         """涓流：独处恢复 / 学习累积（主文档 §8.4）"""
         for i in range(self.N):
             if self.in_conversation[i]:
@@ -731,6 +772,7 @@ class Sim:
     def tick(self):
         self.global_tick += 1
         self.decide_and_act()
+        self.update_environment()
         if self.global_tick % int(self.p["settle_interval"]) == 0:   # 每天 2 次（上午/下午）
             self.transmission()
             self.stress_drip()
