@@ -136,6 +136,36 @@ for r in load("rules/social_event_triggers.csv"):
     hit = [w for w in DATE_WORDS if w in blob]
     check("%s / %s: 无日期类记号" % (r["trigger_rule"], r["metric"]), not hit, hit)
 
+print("=== 11. 配置键存在性（防 .get 静默回落）===")
+# 教训（本会话第 5 类「回执≠真相」，同类错误已发生 **两次**）：
+#   `thresholds_lookup` 的键是 f"{behavior}_{metric}"。曾把整串 `humiliate_min_bystanders`
+#   写进 behavior 列 → 键变成 `humiliate_min_bystanders_bystanders`，
+#   代码 `th.get("humiliate_min_bystanders", 3.0)` **静默回落到默认 3.0** →
+#   §10.23 的羞辱判据**恒真**，而一切「看起来在跑」；同类错误在 `conformity_see_window` 上又复发一次。
+#   ∴ 本项把「代码引用的阈值键」与「表里实际存在的键」做集合比对。
+#   ⚠️ 缺键应当**报错**，而不是悄悄用默认值 —— 这就是本项存在的理由。
+_tkeys = set()
+for _r in load("rules/behavior_thresholds.csv"):
+    _tkeys.add(_r["behavior"] + "_" + _r["metric"])
+_srcp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "core_sim.py")
+_src = open(_srcp, encoding="utf-8").read()
+_want = set()
+for _line in _src.split("\n"):
+    for _pre in ('th["', 'th.get("', 'thresholds_lookup.get("'):
+        _i = 0
+        while True:
+            _i = _line.find(_pre, _i)
+            if _i < 0:
+                break
+            _rest = _line[_i + len(_pre):]
+            _end = _rest.find('"')
+            if _end > 0:
+                _want.add(_rest[:_end])
+            _i += len(_pre)
+_missing = sorted(k for k in _want if k not in _tkeys)
+check("代码引用的阈值键全部存在于 behavior_thresholds.csv", not _missing,
+      ("缺失: %s" % _missing) if _missing else "全部存在（%d 个键）" % len(_want))
+
 print("\n=== 结论 ===")
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))
 if FAILED:
