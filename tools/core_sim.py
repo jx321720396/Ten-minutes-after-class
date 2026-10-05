@@ -153,6 +153,10 @@ class Sim:
         self.env = {r["param"]: float(r["value"]) for r in load_table("rules/environment.csv")}
         self.volume = self.env.get("init_volume", 20.0)
         self.tag_rows = {r["tag_id"]: r for r in load_table("rules/tags.csv")}
+        # 每个角色持有的标签（来自 seeds.csv 的 tags 列，"|" 分隔）
+        self.character_tags = [
+            [t2 for t2 in (c.get("tags") or "").split("|") if t2] for c in self.chars
+        ] + [[]]                                 # 末位是玩家（无标签）
         # 相位 -> 允许的行为集（§3.3：上课段只跑规则子集；"all" = 全部允许）
         self.phase_rules = {r["phase_id"]: (r["active_rules"] or "none").split("|")
                             for r in load_table("rules/phases.csv")}
@@ -454,7 +458,7 @@ class Sim:
             # 目标选择**带偏好**：敌对越高 / 好感越低越容易被针对 —— 被讨厌的人会被反复打击，
             # 这正是"压力分化 → 个别爆发"的机制来源（不允许随机摊平）
             cands_t = [j for j in range(n) if j != i and j not in busy and self.A[i][j] >= 20.0]
-            if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < 0.18:
+            if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18):
                 wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
                 j = self.rng.choices(cands_t, weights=wts, k=1)[0]
                 audience = [k for k in range(n) if k not in (i, j) and k not in busy]
@@ -466,7 +470,7 @@ class Sim:
             # 意向类：追逐打闹 —— 敌对种子（参与者好感↑ / 旁观者敌对↑）
             th_rh = self.thresholds_lookup.get("roughhouse_affinity", 45.0)
             th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
-            if self.allowed("roughhouse") and self.dims[i][0] >= th_rh and self.rng.random() < 0.05:
+            if self.allowed("roughhouse") and self.dims[i][0] >= th_rh and self.rng.random() < self.probs.get("roughhouse_p", 0.05):
                 others = [j for j in range(n) if j != i and j not in busy]
                 if others:
                     # 追跑对象按外向度加权：越外向越可能一起闹（→ 同样的少数人反复搭配）
@@ -482,7 +486,7 @@ class Sim:
                         busy.add(j)
                         continue
             # 阈值类：排挤（"大家都讨厌他" → 集体驱逐）—— B 类，让关系能无条件变差
-            if self.allowed("exclude") and self.rng.random() < 0.04:
+            if self.allowed("exclude") and self.rng.random() < self.probs.get("exclude_p", 0.04):
                 th_h = self.thresholds_lookup.get("exclude_hostility", 40.0)
                 th_n = int(self.thresholds_lookup.get("exclude_count", 3))
                 done = False
@@ -498,7 +502,7 @@ class Sim:
                 if done:
                     continue
             # 附加行为：流言（负面染色，压力来源）；目标同样偏好敌对高者
-            if self.allowed("rumor") and self.rng.random() < 0.03:
+            if self.allowed("rumor") and self.rng.random() < self.probs.get("rumor_p", 0.03):
                 c2 = [j for j in range(n) if j != i and j not in busy]
                 if c2:
                     w2 = [max(1.0, 20.0 + self.H[i][j] - self.A[i][j] * 0.5) for j in c2]
@@ -511,7 +515,7 @@ class Sim:
             for j in range(n):
                 if i == j or self.H[i][j] < 60:
                     continue
-                if self.rng.random() < 0.05:  # 避免每 tick 都触发
+                if self.rng.random() < self.probs.get("report_p", 0.05):  # 避免每 tick 都触发
                     self.do_report(i, j)
                     break
             # 意向类：搭话
@@ -707,6 +711,23 @@ class Sim:
         target = clamp(target, 0.0, e.get("volume_max", 100.0))
         rate = e.get("adapt_rate", 0.02)
         self.volume = clamp(self.volume + rate * (target - self.volume), 0.0, e.get("volume_max", 100.0))
+
+    def tag_bias(self, i, effect_key):
+        """标签对行为倾向的加成（`data/rules/tags.csv`，按作用轴分类、分 weak/strong 两级）。
+
+        **标签是"对底层轴的调制"，不是身份** —— 所以「学霸」不是规则，
+        而是「高 J × 低从众度 × 爱学习」这组条件涌现出来的称呼（§10.19 结尾）。
+        这里只做**倾向加成**：weak ≈ +0.10、strong ≈ +0.50（对应表里的 `effect` 列）。
+        """
+        if not self.character_tags:
+            return 0.0
+        total = 0.0
+        for tid in self.character_tags[i]:
+            row = self.tag_rows.get(tid)
+            if not row or row.get("effect") != effect_key:
+                continue
+            total += 0.10 if row.get("strength") == "weak" else 0.50
+        return total
 
     def allowed(self, behavior):
         """当前相位是否允许该行为（§3.3：上课段只跑规则子集）。
