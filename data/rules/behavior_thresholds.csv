@@ -1,7 +1,7 @@
 # 阈值类行为的触发条件（确定性：条件满足即发生）
 # 依据：主文档 §10.2（举报）、§8.5（爆发）、docs/design/NPC行为决策.md §3
 behavior,metric,op,value,note
-report,hostility,>=,60,举报：对某人的敌对累积到阈值即触发
+report,hostility,>=,50,举报：对某人的敌对累积到阈值即触发
 burst,stress,>=,70,压力爆发**入口**：进入高压区（§8.3 的 70–90）后每日判定，不是到点必爆
 apologize_trigger,hostility,>=,30,道歉可发起的最低敌对
 comfort_trigger,target_stress,>=,70,安慰可发起的目标压力门槛
@@ -31,4 +31,4 @@ roughhouse,affinity,>=,45,发起者外向度门槛（用 E 维代替：仅外向
 roughhouse,count,>=,2,旁观者人数门槛
 exclude,window,<=,30,排挤：在最近多少天内有敌对行为才算「当前还在欺负他」
 exclude,cooldown,>=,7,排挤：同一目标多少天内不再被重复驱逐（孤立是状态，不是反复的动作）
-exclude,count,>=,3,排挤：近期对他做过重大敌对行为的人数门槛（≥3 人才构成「集体」）
+exclude,count,>=,2,排挤：近期对他做过重大敌对行为的人数门槛（≥3 人才构成「集体」）
