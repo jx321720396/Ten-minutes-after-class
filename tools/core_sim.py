@@ -84,6 +84,9 @@ class Sim:
         self.bp = load_params("rules/belief.csv")
         self.probs = {r["behavior"]: float(r["base_p"]) for r in load_table("rules/behavior_probs.csv")}
         self.thresholds = load_table("rules/behavior_thresholds.csv")
+        self.decay = {r["axis"]: float(r["value"]) for r in load_table("rules/decay.csv")}
+        # 负反馈：传导增益随目标容纳度衰减（0 = 关闭；1.0 = 满强度）
+        self.feedback = 0.0
         self.event_rows = load_table("balance/w_events.csv")
         self.nw = load_params("balance/npc_weight" + "s.csv")
         seeds = load_table("characters/seeds.csv")
@@ -244,8 +247,11 @@ class Sim:
                 denom = w_sum + self.p["epsilon"]
                 net_a = (num["affinity"] - num["hostility"]) / denom
                 net_h = (num["hostility"] - num["affinity"]) / denom
-                deltas["affinity"][i][k] = r1(self.sat(beta["affinity"] * net_a, "affinity"))
-                deltas["hostility"][i][k] = r1(self.sat(beta["hostility"] * net_h, "hostility"))
+                # 负反馈：越接近饱和，传导增益越小 —— 让"差异化"存在，而不是全班一起封顶
+                room_a = 1.0 - self.feedback * true["affinity"][i][k] / 100.0
+                room_h = 1.0 - self.feedback * true["hostility"][i][k] / 100.0
+                deltas["affinity"][i][k] = r1(room_a * self.sat(beta["affinity"] * net_a, "affinity"))
+                deltas["hostility"][i][k] = r1(room_h * self.sat(beta["hostility"] * net_h, "hostility"))
                 deltas["trust"][i][k] = r1(self.sat(beta["trust"] * num["trust"] / denom, "trust"))
 
         for ax in AXES:
@@ -465,17 +471,15 @@ class Sim:
 
     def settle_day(self):
         """跨天结算（§3.5）"""
-        n = self.N
-        for i in range(n):
-            for j in range(n):
+        d = self.decay
+        for i in range(self.N):
+            for j in range(self.N):
                 if i == j:
                     continue
-                touched = (self.A[i][j] > 0 or True)  # 原型简化：统一按无互动衰减
-                self.A[i][j] *= 0.95
-                self.H[i][j] *= 0.90
-                self.T[i][j] *= 0.93
-        for i in range(n):
-            self.Stress[i] *= 0.50
+                self.A[i][j] *= d["affinity"]
+                self.H[i][j] *= d["hostility"]
+                self.T[i][j] *= d["trust"]
+            self.Stress[i] *= d["stress"]
         self.day += 1
 
     # ------------------------------------------------ 报告
