@@ -138,7 +138,7 @@ class Sim:
         self.stats = {"events": 0, "chats": 0, "joins": 0, "reports": 0, "bursts": 0,
                       "interrupts": 0,
                       "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0,
-                      "teases": 0, "tease_fail": 0, "rumors": 0}
+                      "teases": 0, "tease_fail": 0, "rumors": 0, "excludes": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
         self.settled = set()
         self.phase_index = 0
@@ -413,6 +413,22 @@ class Sim:
                     busy.add(i)
                     busy.add(j)
                     continue
+            # 阈值类：排挤（"大家都讨厌他" → 集体驱逐）—— B 类，让关系能无条件变差
+            if self.rng.random() < 0.04:
+                th_h = self.thresholds_lookup.get("exclude_hostility", 40.0)
+                th_n = int(self.thresholds_lookup.get("exclude_count", 3))
+                done = False
+                for j in range(n):
+                    if j == i or j in busy:
+                        continue
+                    haters = [k for k in range(n) if k != j and self.H[k][j] >= th_h]
+                    if len(haters) >= th_n:
+                        self.do_exclude(i, j, haters[:4])
+                        busy.add(i)
+                        done = True
+                        break
+                if done:
+                    continue
             # 附加行为：流言（负面染色，压力来源）；目标同样偏好敌对高者
             if self.rng.random() < 0.03:
                 c2 = [j for j in range(n) if j != i and j not in busy]
@@ -539,12 +555,34 @@ class Sim:
             self.stats["tease_fail"] += 1
         self.stats["teases"] += 1
 
+    def do_exclude(self, i, j, crowd):
+        """【排挤】（B 类：纯损害，判定来源＝**群体状态**）。
+
+        触发条件是「**大家都讨厌他**」——需要多个人同时对 j 敌对过阈，才构成集体驱逐。
+        因此它与任何一对个人关系无关：**不是「我讨厌你所以排挤你」，而是「大家都讨厌你」**。
+        这正是 §10.16 所说的 B 类（判定来源为「无」的纯损害行为），也是本作此前缺失的
+        「让关系无条件变差」的通道。
+
+        效果：被排挤者压力↑（§8.4）且**对参与者好感↓** —— 关系真的变差。
+        """
+        self.occupy(i, j, "exclude")
+        self.apply_event(j, i, "exclude_stress")
+        self.apply_event(j, i, "exclude_affinity")
+        for k in crowd:
+            if k != i:
+                self.apply_event(j, k, "exclude_affinity")
+        self.stats["excludes"] += 1
+
     def do_rumor(self, i, j):
         """流言（§10.1）：i 传关于 j 的话 → j 压力变化；旁观者"二手观测"。
 
         倾向由 i 对 j 的净态度决定：敌对压过好感则传负面（被传者压力↑）。
         """
+        # 流言的**本性就是负面**：无条件让「被传谣者恨传播者」——不要求"当前已敌对"。
+        # （早期实现用 `H > A` 作前置 → 死循环：H 起不来 → 永不判为负面 → 永不加敌对 → H 更起不来。）
+        # `negative` 只用于调节**强度**（倾向），不决定**有无**。
         negative = self.H[i][j] > self.A[i][j]
+        self.apply_event(j, i, "rumor_hostility")
         if negative:
             self.apply_event(i, j, "rumor_stress")
             self.apply_event(i, j, "tease_hostility")
@@ -702,9 +740,9 @@ class Sim:
         print("  接近饱和(>=95)比例：%.1f%%" % (saturated * 100))
         print("  事件 %d 次（闲聊 %d / 搭话 %d / 举报 %d）" % (
             self.stats["events"], self.stats["chats"], self.stats["joins"], self.stats["reports"]))
-        print("  调侃 %d 次（过火 %d）/ 流言 %d 次 / 被打断 %d 次" % (
+        print("  调侃 %d 次（过火 %d）/ 流言 %d 次 / 排挤 %d 次 / 被打断 %d 次" % (
             self.stats["teases"], self.stats["tease_fail"], self.stats["rumors"],
-            self.stats.get("interrupts", 0)))
+            self.stats.get("excludes", 0), self.stats.get("interrupts", 0)))
         print("  去重跳过 %d 次" % self.stats["dedup_skips"])
         print("  传导结算 %d 次 | 压力爆发 %d 次（平均每 %.1f 天一次）" % (
             self.stats["transmission_ticks"], self.stats["bursts"],
