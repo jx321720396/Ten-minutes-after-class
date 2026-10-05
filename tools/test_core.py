@@ -80,8 +80,8 @@ sim_nf.settled.clear()
 b2 = sim_nf.A[0][1]
 sim_nf.apply_event(0, 1, "topic_affinity")
 d_high = round(sim_nf.A[0][1] - b2, 3)
-check("负反馈：A=20 时增量 > A=90 时增量（%.2f vs %.2f）" % (d_low, d_high), d_low - d_high, 0.0, 999.0)
-check("负反馈：A=90 时增量被压到极小（<0.6）", 0.0 if d_high < 0.6 else 1.0, 0.0)
+check("负反馈生效：A=20 增量(%.2f) 应大于 A=90 增量(%.2f)" % (d_low, d_high), d_low > d_high)
+check("负反馈生效：A=90 时增量被压到极小（%.2f < 0.6）" % d_high, d_high < 0.6)
 check("增量是 0.1 的整数倍", abs(delta * 10 - round(delta * 10)) < 1e-9, delta)
 
 print("\n=== 3. 事件去重（同一对子同一规则每课间段只结算一次）===")
