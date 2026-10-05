@@ -22,7 +22,7 @@ data/
 │   ├─ social_events.csv      社会事件状态机（多阶段跨相位）✓
 │   └─ social_event_triggers.csv 社会事件触发条件（纯数值，禁日期记号）✓
 └─ balance/
-    ├─ w_events.csv        事件权重全表（含 tier: normal 1–3 / major 4–5）✓
+    ├─ w_events.csv        事件权重全表（含 tier: normal 1–3 / major 4–5；class: A–E 五分类）✓
     └─ npc_weights.csv     NPC 决策权重（alpha 派生系数 / tau0 / top_n）✓
 ```
 

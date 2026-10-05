@@ -510,11 +510,13 @@ class Sim:
         elif self.H[i][j] >= th["tease_taunt_hostility"] or self.A[i][j] < th["tease_taunt_affinity"]:
             self.apply_event(j, i, "tease_hostility")
             self.apply_event(j, i, "tease_stress")
+            # 围观者站哪边：由**他对被调侃者的态度**决定（与主行为同一套轴与阈值，表驱动）
             for k in audience:
-                if self.dims[k][2] >= 60:          # 高 F（情感型）更可能同情受害者
-                    self.apply_event(k, i, "tease_hostility")
-                else:
-                    self.apply_event(k, j, "tease_affinity")
+                if self.A[k][j] >= th["tease_stand_affinity"]:
+                    self.apply_event(k, i, "tease_hostility")     # 站被调侃者 → 不满发起者
+                elif self.H[k][j] >= th["tease_sneer_hostility"]:
+                    self.apply_event(k, j, "tease_affinity")      # 讨厌被调侃者 → 附和发起者
+                # 其余：中立，不表态
             self.stats["tease_fail"] += 1
         self.stats["teases"] += 1
 
