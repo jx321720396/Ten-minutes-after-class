@@ -130,6 +130,7 @@ class Sim:
         self.O[n - 1] = 50.0
         self.dims[n - 1] = [50.0] * 4
         self._init_relations()
+        self._init_belief_bias()   # 按 信念矩阵.md §3：初始值 = 先验 + 性格偏差
 
         # --- 时间与统计 ---
         self.day = 1
@@ -172,6 +173,31 @@ class Sim:
             for j in range(n):
                 if j != g:
                     self.A[g][j] = 50.0
+
+    def _init_belief_bias(self):
+        """按 `docs/design/信念矩阵.md` §3 补**初始信念偏差**。
+
+        文档规定：`B_X[i][j] = prior_X + bias_X(j) × w_bias`，其中
+            bias_A(j) = +k · [ (E_j−50)/50·0.5 + (F_j−50)/50·0.5 ]   外向 / 共情型「显得友善」→ 被高估好感
+            bias_H(j) = −bias_A(j)                                    同一人显得友善 → 被低估敌对
+            bias_T(j) = 0                                             信任没有「看起来」这回事
+
+        要点：**偏差是性格的函数，不是随机数** —— 让「话痨型总被高估亲近、冰山型总被低估好感」
+        成为**可预测的系统性错觉**。
+
+        ⚠️ 此前实现只写了纯先验（`B = prior`，全员同一值），漏了本项；
+        后果是开局**所有人对所有人的猜测完全相同**，既失去系统性错觉，也让搭话判据在开局无分化。
+        """
+        w = self.bp["w_bias"]
+        for i in range(self.N):
+            for j in range(self.N):
+                if i == j:
+                    continue
+                e_j, f_j = self.dims[j][0], self.dims[j][2]
+                bias_a = w * ((e_j - 50.0) / 50.0 * 0.5 + (f_j - 50.0) / 50.0 * 0.5)
+                self.B["affinity"][i][j] = clamp100(self.B["affinity"][i][j] + bias_a)
+                self.B["hostility"][i][j] = clamp100(self.B["hostility"][i][j] - bias_a)
+                # 信任不加偏差（bin_T 恒为 0）
 
     # ------------------------------------------------ 派生量
     def mult_personality(self, row, i):
