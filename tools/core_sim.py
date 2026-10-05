@@ -141,7 +141,7 @@ class Sim:
                       "interrupts": 0,
                       "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0,
                       "teases": 0, "tease_fail": 0, "rumors": 0, "excludes": 0,
-                      "roughhouse": 0}
+                      "roughhouse": 0, "sleeps": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
         self.settled = set()
         self.phase_index = 0
@@ -163,6 +163,7 @@ class Sim:
         self.phase_order = [r["phase_id"] for r in load_table("rules/phases.csv")]
         self.current_act = [None] * n     # 当前正在做/刚做完的行为（供音量统计）
         self.vol_log = []                 # 每个相位末的音量（标定观测用）
+        self.sleeping = [False] * n       # 睡觉中（§10.8）：本课间不做别的事，且别人不能与之交互
         self.in_conversation = [False] * n
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
@@ -436,14 +437,33 @@ class Sim:
             return True
         return False
 
+    def roll_sleep(self):
+        """每**课间段开始**掷一次睡觉（§10.8：睡 = 本段不做其他事）。
+
+        ⚠️ 必须在**段**粒度而非 tick 粒度判定 —— 早期误写在 `decide_and_act` 里，
+        结果每段掷 100 次、96% 的课间都在睡。规格的单位是"本课间"，不是"本 tick"。
+        """
+        if not self.allowed("sleep"):
+            return
+        p = self.probs.get("sleep", 0.0)
+        for i in range(self.N):
+            if self.sleeping[i]:
+                continue
+            if self.rng.random() < p * (1.0 + self.tag_bias(i, "alone_bias")):
+                self.sleeping[i] = True
+                self.current_act[i] = "sleep"
+                self.busy_until[i] = 10 ** 9
+                self.stats["sleeps"] += 1
+
     def decide_and_act(self):
         """一 tick 内的行为决策（简化：只挑一个行为执行）"""
         n = self.N
         order = list(range(n))
         self.rng.shuffle(order)
         busy = set()
+
         for i in order:
-            if i in busy or self.global_tick < self.busy_until[i]:
+            if self.sleeping[i] or i in busy or self.global_tick < self.busy_until[i]:
                 continue
             self.in_conversation[i] = False
             # 环境类：闲聊（概率触发）—— 上课段禁用（§3.3）
@@ -460,7 +480,7 @@ class Sim:
             # 意向类：当众调侃（需 ≥3 人围观；失败则目标受辱）
             # 目标选择**带偏好**：敌对越高 / 好感越低越容易被针对 —— 被讨厌的人会被反复打击，
             # 这正是"压力分化 → 个别爆发"的机制来源（不允许随机摊平）
-            cands_t = [j for j in range(n) if j != i and j not in busy and self.A[i][j] >= 20.0]
+            cands_t = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j] and self.A[i][j] >= 20.0]
             if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * (1.0 + self.tag_bias(i, "tease_bias")):
                 wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
                 j = self.rng.choices(cands_t, weights=wts, k=1)[0]
@@ -474,7 +494,7 @@ class Sim:
             th_rh = self.thresholds_lookup.get("roughhouse_affinity", 45.0)
             th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
             if self.allowed("roughhouse") and self.dims[i][0] >= th_rh and self.rng.random() < self.probs.get("roughhouse_p", 0.05):
-                others = [j for j in range(n) if j != i and j not in busy]
+                others = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j]]
                 if others:
                     # 追跑对象按外向度加权：越外向越可能一起闹（→ 同样的少数人反复搭配）
                     w_rh = [max(1.0, self.dims[j][0] - 30.0) for j in others]
@@ -506,7 +526,7 @@ class Sim:
                     continue
             # 附加行为：流言（负面染色，压力来源）；目标同样偏好敌对高者
             if self.allowed("rumor") and self.rng.random() < self.probs.get("rumor_p", 0.03):
-                c2 = [j for j in range(n) if j != i and j not in busy]
+                c2 = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j]]
                 if c2:
                     w2 = [max(1.0, 20.0 + self.H[i][j] - self.A[i][j] * 0.5) for j in c2]
                     j = self.rng.choices(c2, weights=w2, k=1)[0]
@@ -522,7 +542,7 @@ class Sim:
                     self.do_report(i, j)
                     break
             # 意向类：搭话
-            cands = [(j, self.gate(i, "join_chat", j)) for j in range(n) if j != i]
+            cands = [(j, self.gate(i, "join_chat", j)) for j in range(n) if j != i and not self.sleeping[j]]
             cands = [j for j, ok in cands if ok and j not in busy]
             if cands:
                 alpha = self.alpha(i)
@@ -850,6 +870,20 @@ class Sim:
         """原型简化：未参与互动即视为在原位学习（正式版按行为状态判定）"""
         return True
 
+    def settle_sleep(self):
+        """课间结束：睡了一整段的人**大幅减压**并醒来（§10.8）。
+
+        "睡觉"是唯一"用社交机会换压力缓解"的策略 —— 它让压力有了一条
+        **主动可控**的出口（此前只有闲聊被动减压与时间衰减）。
+        """
+        relief = self.probs.get("sleep_relief", 8.0)
+        for i in range(self.N):
+            if self.sleeping[i]:
+                self.Stress[i] = clamp100(self.Stress[i] - relief)
+                self.sleeping[i] = False
+                self.busy_until[i] = 0
+                self.current_act[i] = None
+
     def check_interrupt(self):
         """跨相位中断：行为还没做完就被「下课铃 / 上课铃」打断。
 
@@ -881,6 +915,8 @@ class Sim:
         for pidx, (phase, ticks) in enumerate(phases):
             self.phase_index = pidx
             self.phase, self.tick_in_phase = phase, 0
+            self.settle_sleep()               # 上一相位睡着的醒来（课间段结束才结算）
+            self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
             self.check_interrupt()            # 相位切换 → 未完成的行为被打断
             for _ in range(ticks):
                 self.tick()
@@ -972,7 +1008,8 @@ class Sim:
         print("  接近饱和(>=95)比例：%.1f%%" % (saturated * 100))
         print("  事件 %d 次（闲聊 %d / 搭话 %d / 举报 %d）" % (
             self.stats["events"], self.stats["chats"], self.stats["joins"], self.stats["reports"]))
-        print("  调侃 %d（过火 %d）/ 流言 %d / 排挤 %d / 打闹 %d / 被打断 %d" % (
+        print("  睡着 %d 人次 | 调侃 %d（过火 %d）/ 流言 %d / 排挤 %d / 打闹 %d / 被打断 %d" % (
+            self.stats.get("sleeps", 0),
             self.stats["teases"], self.stats["tease_fail"], self.stats["rumors"],
             self.stats.get("excludes", 0), self.stats.get("roughhouse", 0),
             self.stats.get("interrupts", 0)))
