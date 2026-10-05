@@ -172,8 +172,16 @@ class Sim:
         d = [(self.dims[i][k] - 50.0) / 50.0 for k in range(4)]
         return clamp(1.0 + sum(w[k] * d[k] for k in range(4)), 0.1, 1.2)
 
-    def m_relation(self, i, j):
-        """关系调制 M = clamp((A − H)/50, −1, +1)"""
+    def m_relation(self, i, j, tier="normal"):
+        """关系调制 M = clamp((A − H)/50, −1, +1)
+
+        **边界②：重大档（tier=major）禁止被关系反转** —— 取 max(0, M)，即"允许削弱、禁止翻转符号"。
+        否则「我们关系好，所以他举报我反而是好事」会塌掉欺凌线与信任崩塌线
+        （`report_hostility` / `leak_hostility` / `leak_trust` 都是 major）。
+        常规档保留反转：关系差时「聊了反而掉好感」是设计意图（§2.1）。
+        ⚠️ 注意不是 max(0, M)：那样关系差时伤害会归零，等于"被讨厌就不会被伤害"，同样不合理。
+        重大事件的语义是**伤害与关系无关**（关系好坏都会被举报，伤害一样）→ 直接不调制。
+        """
         return clamp((self.A[i][j] - self.H[i][j]) / 50.0, -1.0, 1.0)
 
     def m_state(self, i, negative):
@@ -222,7 +230,11 @@ class Sim:
             base = float(row["base"])
             e_val = base * self.mult_personality(row, i)
             if axis in AXES:
-                e_val *= self.m_relation(i, j)
+                # 边界②：重大档不做关系调制（M_eff = 1）
+                #   否则「关系好 → 举报反而是好事」会塌掉欺凌线与信任崩塌线；
+                #   也不是 max(0, M)（那样关系差时伤害归零，等于「被讨厌就不会被伤害」）
+                if row.get("tier", "normal") != "major":
+                    e_val *= self.m_relation(i, j)
             p_val = e_val + (0.0 if axis == "stress" else 0.0)  # 事件侧不含传导
             m = self.m_state(i, negative=(base < 0) == (axis in AXES))
             delta = r1(m * self.sat(p_val, axis)) if axis != "stress" else r1(self.sat(p_val, axis))
