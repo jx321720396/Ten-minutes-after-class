@@ -189,15 +189,27 @@ class Sim:
         后果是开局**所有人对所有人的猜测完全相同**，既失去系统性错觉，也让搭话判据在开局无分化。
         """
         w = self.bp["w_bias"]
+        k = self.bp.get("bias_observer_k", 0.0)
+        tr = self.bp.get("bias_trust_ratio", 0.0)
+
+        def perceived(j):
+            """对方「看起来」多友善：外向 + 共情 → 显得友善（被观察者项）"""
+            return (self.dims[j][0] - 50.0) / 50.0 * 0.5 + (self.dims[j][2] - 50.0) / 50.0 * 0.5
+
+        def observer(i):
+            """我自己多倾向于把人往好处想：共情 + 外向 → 乐观（观察者项）"""
+            return (self.dims[i][2] - 50.0) / 50.0 * 0.5 + (self.dims[i][0] - 50.0) / 50.0 * 0.5
+
         for i in range(self.N):
             for j in range(self.N):
                 if i == j:
                     continue
-                e_j, f_j = self.dims[j][0], self.dims[j][2]
-                bias_a = w * ((e_j - 50.0) / 50.0 * 0.5 + (f_j - 50.0) / 50.0 * 0.5)
+                # 双方性格共同决定：对方的可见特质 × 我自己的乐观程度
+                bias_a = w * perceived(j) * (1.0 + k * observer(i))
                 self.B["affinity"][i][j] = clamp100(self.B["affinity"][i][j] + bias_a)
                 self.B["hostility"][i][j] = clamp100(self.B["hostility"][i][j] - bias_a)
-                # 信任不加偏差（bin_T 恒为 0）
+                # 信任只受**观察者**影响（对方"看起来"与否无关）：乐观者更易先信任
+                self.B["trust"][i][j] = clamp100(self.B["trust"][i][j] + tr * w * observer(i) * 0.1)
 
     # ------------------------------------------------ 派生量
     def mult_personality(self, row, i):
