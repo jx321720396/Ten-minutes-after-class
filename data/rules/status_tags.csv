@@ -3,6 +3,6 @@
 # 说明：本表是「状态类」结算——触发后持续 N 天，每天施加固定效果。
 #   与 decay.csv（乘性衰减）、w_events.csv（一次性事件）是三种不同语义，不要混写。
 # 启动校验：days ≥ 1；tag_id 唯一；daily_* 为 0 时该列不生效
-tag_id,days,daily_stress,daily_trust,trigger,note
-heart_knot,3,5,0,压力爆发（stress ≥ 90）,心结：崩溃有回声，3 天内每天 +5 压力（§3.5）
-secret_alliance,7,0,1,守密超过 5 tick,秘密同盟：双方每日信任 +1（§10.14；7 天为稳定上限，条件失效则提前结束）
+tag_id,days,daily_stress,daily_trust,trigger,spread_ratio,spread_max,note
+heart_knot,3,5,0,压力爆发（stress ≥ 90）,0.25,2,心结：崩溃有回声（3 天、每天 +5）；爆发时会**传染**给与本人关系最鲜明的少数人（spread_ratio×在场人数，上限 spread_max）
+secret_alliance,7,0,1,守密超过 5 tick,0,0,秘密同盟：双方每日信任 +1（§10.14；7 天为稳定上限，条件失效则提前结束）

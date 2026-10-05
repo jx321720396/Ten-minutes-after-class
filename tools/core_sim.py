@@ -534,6 +534,30 @@ class Sim:
                 self.observe(k, j, "hostility")     # 二手观测（会带噪声）
         self.stats["rumors"] += 1
 
+    def spread_knot(self, i):
+        """爆发传染：把「心结」扩散给与 i 关系最鲜明的少数人。
+
+        情绪传染沿**关系**传播 —— 与爆发者关系越鲜明（无论亲密还是敌对，|A − H| 越大），
+        情绪共鸣越强、越容易被波及。这不是"随机撒点"，而是关系结构算出来的：
+          · 死党的朋友会替他焦虑
+          · 死对头也会因对手崩溃而兴奋/紧张
+          · 泛泛之交则不受影响
+        因此「连环爆发」的形态由班级关系结构决定，而非掷骰子。
+        """
+        tag = self.status_tags.get("heart_knot")
+        if not tag:
+            return
+        ratio, kmax = float(tag.get("spread_ratio", 0)), int(float(tag.get("spread_max", 0)))
+        if ratio <= 0 or kmax <= 0:
+            return
+        others = [j for j in range(self.N) if j != i and self.knot_days[j] == 0]
+        if not others:
+            return
+        others.sort(key=lambda j: -abs(self.A[i][j] - self.H[i][j]))   # 关系最鲜明者优先
+        pool = others[:max(1, int(len(others) * ratio))]
+        for j in self.rng.sample(pool, min(kmax, len(pool))):
+            self.knot_days[j] = int(float(tag["days"]))
+
     # ------------------------------------------------ 主循环
     def stress_drip(self):
         """涓流：独处恢复 / 学习累积（主文档 §8.4）"""
@@ -561,6 +585,7 @@ class Sim:
             if self.Stress[i] >= 90:
                 self.Stress[i] = clamp100(self.Stress[i] - 40)
                 self.knot_days[i] = int(float(self.status_tags["heart_knot"]["days"]))
+                self.spread_knot(i)          # 传染：让爆发有"连环"的可能
                 self.stats["bursts"] += 1
 
     def run_day(self):
