@@ -18,6 +18,8 @@
 | [`test_core.py`](test_core.py) | **一致性测试**：手算例（性格倍率 / 关系调制 / 软饱和 / round 0.1 / 负反馈）+ 不变式（决策禁读 `A[j][i]`、同种子同结果、数值范围、`tau > 0`） | `python tools/test_core.py` |
 | [`verify_formula.py`](verify_formula.py) | **公式对拍**：按 UIF §8 的 `(i,k,X,E,C,P,Δ)` 独立重算，与实现逐项比对（事件链 / 传导链 / 衰减链） | `python tools/verify_formula.py` |
 | [`calib_experiment.py`](calib_experiment.py) | **标定对照实验**：跑不同 `β` / 保留率 / 负反馈组合，输出均值、饱和率、SD（分化度） | `python tools/calib_experiment.py 25` |
+| [`check_config.py`](check_config.py) | **配置表启动校验**：档位一致性 / 取值域 / 门槛与先验关系 / 趋势性等 126 项，可接 CI | `python tools/check_config.py` |
+| [`md2docx.py`](md2docx.py) | **md → docx 导出**：标题 / 表格 / 代码块 / 行内格式，输出到 `docs/export/` | `python tools/md2docx.py --all` |
 
 参数：`--days`（天数）、`--seed`（随机种子，保证可复现）、`--npc`（NPC 数量）。
 

@@ -16,6 +16,7 @@
 | [`qa/`](qa/测试策略.md) | 测试策略与验收清单 | 验收依据 |
 | [`localization/`](localization/本地化说明.md) | 本地化流程与文案规范 | 文案交付依据 |
 | [`references/`](references/README.md) | 旧版规格与历史策划资料 | 参考，**不生效** |
+| [`export/`](export/README.md) | **导出产物（docx）**，由 md 自动生成 | 分发 / 提交用，勿手改 |
 | [`archive/`](archive/README.md) | 已废弃文档归档 | 仅考古 |
 
 ## 阅读路径
