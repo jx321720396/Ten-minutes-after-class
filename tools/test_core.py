@@ -1,4 +1,4 @@
-"""内核与文档一致性测试
+"""内核与文档一致性测试（含负反馈 `feedback` 的口径）
 
 用途：断言 tools/core_sim.py 的实现与 docs/design/ 里的公式一致，并检查关键不变式。
 运行：python tools/test_core.py
@@ -63,7 +63,25 @@ sim2.apply_event(0, 1, "topic_affinity")         # base=3, w_e=0.2, w_s=0.2
 delta = round(sim2.A[0][1] - before, 2)
 # 期望链：3 × clamp(1+0.2×1.0+0.2×0, 0.1, 1.2) = 3 × 1.2 = 3.6
 #         → × M(1.0) = 3.6 → sat(3.6, U=25) = 3.6/1.144 = 3.146 → round(0.1) = 3.1
-check("话题共鸣增量 = +3.1（含性格 ×1.2、软饱和与 round）", abs(delta - 3.1) < 0.011, delta)
+#         → × 负反馈 room = 1 − 1.0×60/100 = 0.4 → 3.1×0.4 = 1.24 → round = 1.2
+check("话题共鸣增量 = +1.2（含性格 ×1.2、软饱和、负反馈与 round）", abs(delta - 1.2) < 0.011, delta)
+
+# 负反馈专项：同一事件在低好感目标上增量更大（越满越难涨）
+sim_nf = Sim(seed=11, npc_count=4)
+sim_nf.dims[0] = [100.0, 50.0, 50.0, 50.0]
+sim_nf.H[0][1], sim_nf.Stress[0] = 0.0, 0.0
+sim_nf.A[0][1] = 20.0
+sim_nf.settled.clear()
+b1 = sim_nf.A[0][1]
+sim_nf.apply_event(0, 1, "topic_affinity")
+d_low = round(sim_nf.A[0][1] - b1, 3)
+sim_nf.A[0][1] = 90.0
+sim_nf.settled.clear()
+b2 = sim_nf.A[0][1]
+sim_nf.apply_event(0, 1, "topic_affinity")
+d_high = round(sim_nf.A[0][1] - b2, 3)
+check("负反馈：A=20 时增量 > A=90 时增量（%.2f vs %.2f）" % (d_low, d_high), d_low - d_high, 0.0, 999.0)
+check("负反馈：A=90 时增量被压到极小（<0.6）", 0.0 if d_high < 0.6 else 1.0, 0.0)
 check("增量是 0.1 的整数倍", abs(delta * 10 - round(delta * 10)) < 1e-9, delta)
 
 print("\n=== 3. 事件去重（同一对子同一规则每课间段只结算一次）===")

@@ -33,12 +33,16 @@ sim.dims[0] = [100.0, 40.0, 80.0, 60.0]          # E=100 S=40 F=80 J=60
 sim.Stress[0] = 0.0                               # 避开 M_state 歧义（压力区间系数）
 
 
-def independent_event(base, w, dims, A, H, U):
+def independent_event(base, w, dims, A, H, U, axis="affinity", target_val=None, fb=0.0):
     d = [(dims[k] - 50.0) / 50.0 for k in range(4)]
     mp = clamp(1.0 + sum(w[k] * d[k] for k in range(4)), 0.1, 1.2)
     m = clamp((A - H) / 50.0, -1.0, 1.0)
     e = base * mp * m
-    return r1(e / (1.0 + abs(e) / U)), mp, m
+    delta = r1(e / (1.0 + abs(e) / U))
+    # 负反馈：正向轴在写入点乘 (1 − fb·X/100)；负面轴不适用
+    if fb > 0 and axis not in ("hostility", "stress") and target_val is not None:
+        delta = r1(max(0.0, 1.0 - fb * target_val / 100.0) * delta)
+    return delta, mp, m
 
 
 for eid, A, H, U in [("topic_affinity", 60.0, 0.0, 25.0),
@@ -53,7 +57,8 @@ for eid, A, H, U in [("topic_affinity", 60.0, 0.0, 25.0),
     sim.apply_event(0, 1, eid)
     actual = round(tgt[0][1] - before, 3)
     w = [float(row["w_e"]), float(row["w_s"]), float(row["w_f"]), float(row["w_j"])]
-    expect, mp, m = independent_event(float(row["base"]), w, sim.dims[0], A, H, U)
+    expect, mp, m = independent_event(float(row["base"]), w, sim.dims[0], A, H, U,
+                                      axis=axis, target_val=before, fb=sim.feedback)
     check("%s (base=%s, M_p=%.2f, M=%.2f)" % (eid, row["base"], mp, m), actual, expect)
 
 # ============================================================ 2. 传导链
