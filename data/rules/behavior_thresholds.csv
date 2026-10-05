@@ -20,7 +20,7 @@ join_chat,affinity,>=,45,搭话被接纳的信念门槛（含对方外向度修�
 #   性格只应影响「是否发声」，不该影响「站哪边」。
 conformity,see,>=,25,【已废弃】旧语义：读真值敌对（信息层穿透，违反 §7.4）
 conformity,see_window,<=,14,从众：最近多少天内有**公开**敌对行为才算「我亲眼见过他在欺负 j」
-conformity_min,count,>=,2,从众：邻居里至少这么多人恨 j，从众者才跟着恨
+conformity,min,>=,2,从众：邻居里至少这么多人恨 j，从众者才跟着恨
 humiliate,bystanders,>=,4,当众羞辱：围观者达到此数则嘲讽升级为「羞辱」（计深层敌对）
 tease_stand,affinity,>=,55,围观者喜欢被调侃者 → 站被调侃者（看戏/不满发起者）
 tease_sneer,hostility,>=,40,围观者讨厌被调侃者 → 附和发起者（嫌弃）
