@@ -152,6 +152,7 @@ class Sim:
         # --- 环境层（班级级标量，不是第六轴，而是与个体/关系并列的第三层）---
         self.env = {r["param"]: float(r["value"]) for r in load_table("rules/environment.csv")}
         self.volume = self.env.get("init_volume", 20.0)
+        self.tag_rows = {r["tag_id"]: r for r in load_table("rules/tags.csv")}
         self.current_act = [None] * n     # 当前正在做/刚做完的行为（供音量统计）
         self.in_conversation = [False] * n
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
@@ -519,6 +520,7 @@ class Sim:
                     gain_t = self.B["trust"][i][j] / 100.0 * 2.0
                     risk_h = self.B["hostility"][i][j] / 100.0 * 2.0
                     u = alpha["affinity"] * gain_a + alpha["trust"] * gain_t - alpha["hostility"] * risk_h
+                    u += self.crowd_bias(i, "loud")   # 氛围项：吵则更想搭话（从众者）
                     scores.append(u)
                 if scores:
                     k = softmax(scores, self.tau(i), self.rng)
@@ -696,6 +698,46 @@ class Sim:
         rate = e.get("adapt_rate", 0.02)
         self.volume = clamp(self.volume + rate * (target - self.volume), 0.0, e.get("volume_max", 100.0))
 
+    def conformity(self, i):
+        """从众度 ∈ [0,1]：**大部分人从众，少数人有主见**。
+
+        · 高 F（情感型、在意氛围）→ 从众；
+        · 高 J（判断型，有自己的计划）+ 高 N（直觉型，脑内自成一套）→ 反从众。
+        从众者跟着环境走（吵就更想聊、静就更想学），反从众者不受环境影响 ——
+        所以「安静也要聊天」「吵闹也会学习」这两种人天然存在，**不需要特例**。
+        """
+        f, j, n = self.dims[i][2], self.dims[i][3], self.dims[i][1]
+        return clamp(0.5 + (f - 50.0) / 100.0 - (j - 50.0) / 100.0 * 0.5 - (n - 50.0) / 100.0 * 0.5,
+                     0.0, 1.0)
+
+    def crowd_bias(self, i, kind):
+        """环境氛围对行为意愿的加成（kind ∈ {"loud","quiet"}）：从众者受影响，反从众者不受。"""
+        conf = self.conformity(i)
+        v = self.volume / 100.0
+        if kind == "loud":
+            return conf * v
+        return conf * (1.0 - v)
+
+    def deviance_pressure(self):
+        """**偏离氛围 → 压力（而非禁止）** —— 「社会压力」的机制化。
+
+        你可以顶着氛围来，但要付代价：
+          · 安静教室里偏要聊天 → 压力上升（会被侧目）
+          · 吵闹教室里偏要学习 → 压力上升（"学不进去"）
+        低从众度者（如高 J 的所谓"学霸"）不是不被罚，而是**本来就少偏离、且扛得住**。
+        """
+        k = self.env.get("deviance_k", 0.0)
+        if k <= 0:
+            return
+        v = self.volume / 100.0
+        loud = ("chat", "join_chat", "tease", "roughhouse")
+        for i in range(self.N):
+            act = self.current_act[i] or "study"
+            if act in loud and v < 0.4:
+                self.Stress[i] = clamp100(self.Stress[i] + k * (0.4 - v) * 10.0)
+            elif act == "study" and v > 0.6:
+                self.Stress[i] = clamp100(self.Stress[i] + k * (v - 0.6) * 10.0)
+
     def noise_pressure(self):
         """超阈音量 → 压力。极慢的涓流（每次结算一次），怕吵程度由性格决定。"""
         e = self.env
@@ -739,6 +781,7 @@ class Sim:
     # ------------------------------------------------ 主循环
     def stress_drip(self):
         self.noise_pressure()      # 环境层：超阈音量 → 压力
+        self.deviance_pressure()   # 环境层：偏离氛围 → 压力（不是禁止，是代价）
         """涓流：独处恢复 / 学习累积（主文档 §8.4）"""
         for i in range(self.N):
             if self.in_conversation[i]:
