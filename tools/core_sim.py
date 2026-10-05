@@ -84,7 +84,8 @@ class Sim:
         self.bp = load_params("rules/belief.csv")
         self.probs = {r["behavior"]: float(r["base_p"]) for r in load_table("rules/behavior_probs.csv")}
         self.thresholds = load_table("rules/behavior_thresholds.csv")
-        self.decay = {r["axis"]: float(r["value"]) for r in load_table("rules/decay.csv")}
+        # decay.csv 采用 param,value 标量风格（注意键名已由 axis 改为 param）
+        self.decay = {r["param"]: float(r["value"]) for r in load_table("rules/decay.csv")}
         # 负反馈：传导增益随目标容纳度衰减（来自 transmission.csv 的 feedback）
         self.feedback = self.p.get("feedback", 0.0)
         self.event_rows = load_table("balance/w_events.csv")
@@ -135,7 +136,9 @@ class Sim:
         self.global_tick = 0
         self.next_action = [0] * n
         self.in_conversation = [False] * n
-        self.knot_days = [0] * n        # 「心结」剩余天数：爆发后 3 天，每天初始压力 +5（§3.5）
+        self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
+        self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
+        self.day_events = {}            # (i,j) -> 当天事件类结算次数，用于「有互动」判定
 
     # ------------------------------------------------ 初始化关系
     def _init_relations(self):
@@ -207,6 +210,7 @@ class Sim:
             self.stats["dedup_skips"] += 1
             return False
         self.settled.add(dkey)
+        self.day_events[(i, j)] = self.day_events.get((i, j), 0) + 1
         applied = False
         for row in self.event_rows:
             if row["event_id"] != event_id:
@@ -513,9 +517,9 @@ class Sim:
             if self.in_conversation[i]:
                 continue                      # 参与互动者已由 topic_stress 减压
             if self.doing_study(i):
-                self.Stress[i] = clamp100(self.Stress[i] + 1)   # 默认学习：压力缓升（每天 2 次结算）
+                self.Stress[i] = clamp100(self.Stress[i] + self.probs["study_stress"])
             else:
-                self.Stress[i] = clamp100(self.Stress[i] - 2)   # 独处恢复（每天 2 次结算）
+                self.Stress[i] = clamp100(self.Stress[i] + self.probs["alone_stress"])
 
     @staticmethod
     def doing_study(i):
@@ -532,7 +536,7 @@ class Sim:
         for i in range(self.N):
             if self.Stress[i] >= 90:
                 self.Stress[i] = clamp100(self.Stress[i] - 40)
-                self.knot_days[i] = 3          # 爆发后进入「心结」：3 天内每天 +5
+                self.knot_days[i] = int(float(self.status_tags["heart_knot"]["days"]))
                 self.stats["bursts"] += 1
 
     def run_day(self):
@@ -554,16 +558,18 @@ class Sim:
         # 「心结」：爆发后的 3 天里，每天先加 5 点压力（长线心理创伤，§3.5）
         for i in range(self.N):
             if self.knot_days[i] > 0:
-                self.Stress[i] = clamp100(self.Stress[i] + 5)
+                self.Stress[i] = clamp100(self.Stress[i] + float(self.status_tags["heart_knot"]["daily_stress"]))
                 self.knot_days[i] -= 1
         for i in range(self.N):
             for j in range(self.N):
                 if i == j:
                     continue
-                self.A[i][j] *= d["affinity"]
-                self.H[i][j] *= d["hostility"]
-                self.T[i][j] *= d["trust"]
-            self.Stress[i] *= d["stress"]
+                interacted = self.day_events.get((i, j), 0) >= d["interact_min_events"]
+                self.A[i][j] *= d["decay_a_interact"] if interacted else d["decay_a_no_interact"]
+                self.H[i][j] *= d["decay_h"]
+                self.T[i][j] *= d["decay_t"]
+            self.Stress[i] *= d["retain_s"]
+        self.day_events.clear()          # 新的一天，重置「有互动」判定
         self.day += 1
 
     # ------------------------------------------------ 报告

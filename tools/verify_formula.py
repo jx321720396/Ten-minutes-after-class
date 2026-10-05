@@ -97,12 +97,22 @@ print("\n=== 3. 跨天衰减链（§3.5）===")
 sim3 = Sim(seed=3, npc_count=3)
 sim3.A[0][1], sim3.H[0][1], sim3.T[0][1], sim3.Stress[0] = 60.0, 40.0, 50.0, 80.0
 # 期望值一律从 data/rules/decay.csv 读，避免"改了参数忘了改测试"
+# 本场景无事件结算 → 走「无互动」档 decay_a_no_interact
 d3 = dict(sim3.decay)
 sim3.settle_day()
-check("好感 ×%.2f" % d3["affinity"], sim3.A[0][1], round(60.0 * d3["affinity"], 3))
-check("敌对 ×%.2f" % d3["hostility"], sim3.H[0][1], round(40.0 * d3["hostility"], 3))
-check("信任 ×%.2f" % d3["trust"], sim3.T[0][1], round(50.0 * d3["trust"], 3))
-check("压力 ×%.2f" % d3["stress"], sim3.Stress[0], round(80.0 * d3["stress"], 3))
+check("好感(无互动) ×%.2f" % d3["decay_a_no_interact"], sim3.A[0][1],
+      round(60.0 * d3["decay_a_no_interact"], 3))
+check("敌对 ×%.2f" % d3["decay_h"], sim3.H[0][1], round(40.0 * d3["decay_h"], 3))
+check("信任 ×%.2f" % d3["decay_t"], sim3.T[0][1], round(50.0 * d3["decay_t"], 3))
+check("压力 ×%.2f" % d3["retain_s"], sim3.Stress[0], round(80.0 * d3["retain_s"], 3))
+
+# 附：验证「有互动」档生效（当天该对子有事件结算 → 用 decay_a_interact）
+sim3b = Sim(seed=3, npc_count=3)
+sim3b.A[0][1] = 60.0
+sim3b.day_events[(0, 1)] = 1                      # 模拟当天发生过一次事件结算
+sim3b.settle_day()
+check("好感(有互动) ×%.2f" % sim3b.decay["decay_a_interact"], sim3b.A[0][1],
+      round(60.0 * sim3b.decay["decay_a_interact"], 3))
 
 # ============================================================ 4. 报告 ④ 诊断
 print("\n=== 4. 诊断：无事件对子的好感轨迹（报告 ④ 的怀疑）===")

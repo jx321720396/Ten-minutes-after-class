@@ -16,8 +16,11 @@ data/
 │   ├─ belief.csv             信念矩阵更新参数（eta0_* / sigma_max_* / prior_* / lambda_b）✓
 │   ├─ behavior_probs.csv     环境类行为每 tick 基础概率 ✓
 │   ├─ behavior_thresholds.csv 阈值类行为触发条件（举报 / 爆发 / 道歉 / 安慰）✓
-│   ├─ decay.csv              跨天衰减系数（待创建）
-│   └─ phases.csv             相位时长与行为启用子集（待创建）
+│   ├─ decay.csv              跨天衰减（有/无互动两档 + 压力保留 + 有互动门槛）✓
+│   ├─ status_tags.csv        状态标签（心结 / 秘密同盟；参数外置，避免硬编码）✓
+│   ├─ phases.csv             相位时长 + 规则启用子集 + 玩家操作权限 ✓
+│   ├─ social_events.csv      社会事件状态机（多阶段跨相位）✓
+│   └─ social_event_triggers.csv 社会事件触发条件（纯数值，禁日期记号）✓
 └─ balance/
     ├─ w_events.csv        事件权重全表（含 tier: normal 1–3 / major 4–5）✓
     └─ npc_weights.csv     NPC 决策权重（alpha 派生系数 / tau0 / top_n）✓
