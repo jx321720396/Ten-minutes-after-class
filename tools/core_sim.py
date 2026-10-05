@@ -1314,3 +1314,132 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+class ObserverLayer:
+    """观察层：**只读**、**按透明度过滤**、**每个角色一份视角**的标签器。
+
+    为什么是「透明度的下属」（用户判断 + §7.4）：
+      「只读」只保证标签**不干扰**模拟；但若直接读真值矩阵，它对玩家就是**上帝视角** ——
+      低透明度角色的「藏」会在标签层被绕过。§7.4 的原则是「**凡是涉及感知的读取，
+      都要经透明度（+信任）过滤**」，而标签器的输出正是「**玩家感知到的班级结构**」，
+      因此它天然归这条原则管辖。
+
+    于是：**低透明度的人，他的关系看不透 → 标签器不会把他归进任何簇**
+    ——「藏着的人，连标签都藏住了」，这是 §7.4 精神的自然延伸。
+
+    规格来源：`docs/design/信念矩阵.md` §11（可见性档位 / null≠0 / 只读查询）。
+    阈值来源：§11.1 复用系统已有阈值（亲近 A≥60、敌对 H≥40），**不另定**。
+    """
+
+    def __init__(self, sim):
+        self.s = sim
+
+    # ---------- ① 可见性档位（§11.1 / §11.3：由「被观测者」的透明度决定）----------
+    def visibility(self, viewer, target):
+        """返回 'clear' / 'blurry' / 'sealed'。**由被观测者 O[target] 决定**，与 viewer 无关。"""
+        o = self.s.O[target]
+        if o >= 50.0:
+            return "clear"
+        if o >= 20.0:
+            return "blurry"
+        return "sealed"
+
+    # ---------- ② 该 viewer 能看见的关系矩阵 ----------
+    def seen_matrix(self, viewer, axis="affinity"):
+        """返回 viewer 眼中的 axis 关系矩阵（`None` = 看不见）。
+
+        · clear  → 真值（他演出来的就是真实的）
+        · blurry → **只知「有没有变化」，不知方向**（§11.2 `null ≠ 0`）→ 用中性基准代替
+        · sealed → `None`（你看不见 → 你不知道）
+        """
+        n = self.s.N
+        src = {"affinity": self.s.A, "hostility": self.s.H, "trust": self.s.T}[axis]
+        base = 50.0 if axis != "hostility" else 0.0
+        out = [[None] * n for _ in range(n)]
+        for k in range(n):                       # k = 被观测的「一边」
+            vis = self.visibility(viewer, k)
+            for m in range(n):
+                if k == m:
+                    continue
+                if vis == "clear":
+                    out[k][m] = src[k][m]
+                elif vis == "blurry":
+                    out[k][m] = base           # 只知「有变化」——不给方向，故取中性
+                # sealed: 保持 None
+        return out
+
+    # ---------- ③ 簇标签（每个角色一份视角）----------
+    def cluster_tags(self, viewer):
+        """viewer 眼中的小团体：按 §11.1 的强连接阈值 A≥60 取连通分量（≥3 人成簇）。
+
+        因为关系先经透明度过滤，"看不透的人"自然落不进任何簇。
+        """
+        n = self.s.N
+        seen = self.seen_matrix(viewer, "affinity")
+        # §11.1 的绝对阈值 A≥60 是**基线**；但实测好感均值已到 57，「60」在实际分布下不构成「强」连接
+        # （会连成一个 15 人的巨簇）。∴ 再加一条**相对**判据：这条边要比「双方各自的多数关系」都更亲近。
+        TH_A = 60.0
+        # 每个人可观测关系的分位基准（只统计他看得见的部分）
+        pct = {}
+        for i in range(n):
+            vals = sorted(v for v in seen[i] if v is not None)
+            pct[i] = vals[int(len(vals) * 0.75)] if len(vals) >= 3 else 10 ** 9
+        # 无向强连接图：双方都看得见 + 都过绝对阈值 + 都比各自 75 分位更高
+        adj = {i: set() for i in range(n)}
+        for i in range(n):
+            for j in range(i + 1, n):
+                a1 = seen[i][j]
+                a2 = seen[j][i]
+                if (a1 is not None and a2 is not None and a1 >= TH_A and a2 >= TH_A
+                        and a1 >= pct[i] and a2 >= pct[j]):
+                    adj[i].add(j)
+                    adj[j].add(i)
+        seen_set = set()
+        clusters = []
+        for i in range(n):
+            if i in seen_set:
+                continue
+            stack, comp = [i], []
+            while stack:
+                x = stack.pop()
+                if x in seen_set:
+                    continue
+                seen_set.add(x)
+                comp.append(x)
+                stack.extend(adj[x] - seen_set)
+            if len(comp) >= 3:
+                clusters.append(sorted(comp))
+        return sorted(clusters, key=lambda c: (-len(c), c[0]))
+
+    # ---------- ④ 孤立标签 ----------
+    def isolated_tags(self, viewer):
+        """viewer 眼中的「被孤立者」：**他人→他显著低，而他→他人接近正常**。
+
+        判据来自 §10.26.3：「全班都不喜欢他，而他还喜欢大家」——想融入但没人要他。
+        ⚠️ 同样只读 viewer 能看见的部分。
+        """
+        n = self.s.N
+        seen = self.seen_matrix(viewer, "affinity")
+        recv, give = {}, {}
+        for j in range(n):
+            r = [seen[k][j] for k in range(n) if k != j and seen[k][j] is not None]
+            g = [seen[j][k] for k in range(n) if k != j and seen[j][k] is not None]
+            if len(r) >= 3 and len(g) >= 3:
+                recv[j] = sum(r) / len(r)
+                give[j] = sum(g) / len(g)
+        if not recv:
+            return []
+        avg = sum(recv.values()) / len(recv)
+        out = []
+        for j in recv:
+            if recv[j] < avg - 15.0 and give[j] > recv[j] + 15.0:
+                out.append(j)
+        return sorted(out, key=lambda j: recv[j])
+
+    # ---------- 汇总：一份「某人眼中的班级格局」----------
+    def view(self, viewer):
+        return {
+            "viewer": viewer,
+            "clusters": self.cluster_tags(viewer),
+            "isolated": self.isolated_tags(viewer),
+        }
