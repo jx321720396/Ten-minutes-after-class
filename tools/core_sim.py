@@ -978,7 +978,10 @@ class Sim:
         高 F 者随大流，高 J / 高 N 者有自己的判断、不被裹挟 ——
         所以「敢替被孤立的人说话」这种人天然存在，**不必专门写一个"正义者"角色**。
         """
+        # `conformity_see` 的语义已随信息来源改变（§10.24）：
+        #   旧 = 「敌对值门槛」（读真值，已废弃）；新 = 「**公开敌对行为的可见窗口天数**」。
         see = self.thresholds_lookup.get("conformity_see", 25.0)
+        see_window = self.thresholds_lookup.get("conformity_see_window", 14.0)
         need = int(self.thresholds_lookup.get("conformity_min", 2.0))
         for i in range(self.N):
             conf = self.conformity(i)
@@ -987,8 +990,14 @@ class Sim:
             for j in range(self.N):
                 if i == j:
                     continue
+                # ⚠️ **不读真值敌对**（§7.4 不变式）：从众依循的是「**i 亲眼见过的敌对行为**」。
+                #    旧写法 `self.H[k][j] >= see` 是**信息层穿透** —— 低透明度的人把恨藏起来，
+                #    却仍会在这里扩散给从众者，直接破坏 §7.4「藏得住的人真的藏得住」。
+                #    现用 `hurt_day[k][j]`（**公开**的 major 负性事件：当众羞辱 / 举报 / 排挤）：
+                #    做过公开行为的人才被看见，藏着的人**不会被跟风**。
                 haters = [k for k in self.neighbor_idx[i]
-                          if k != j and not self.sleeping[k] and self.H[k][j] >= see]
+                          if k != j and not self.sleeping[k]
+                          and 0 <= self.day - self.hurt_day[k][j] <= see_window]
                 if len(haters) >= need:
                     # 跟着恨：人数越多、从众度越高，跟得越紧（走统一影响公式，scale 传从众度）
                     self.apply_event(i, j, "conformity_hostility",
