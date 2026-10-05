@@ -86,9 +86,16 @@ for k in ("tease_laugh_affinity", "tease_taunt_hostility", "tease_stand_affinity
     check("阈值键存在：%s" % k, k in th)
 
 print("=== 6. behavior_probs ===")
+# 本表混有两类行：① 行为概率（行为名与 behaviors.csv 一致）→ 必须在 [0,1]；
+#                  ② 数值参数（涓流值 / 减压幅度 / 发生概率上限等）→ 只要求是有限数。
+# （曾把 sleep_relief=8.0 当概率校验而误报，故按"是否为行为名"分流。）
+KNOWN_B = {r["behavior"] for r in load("rules/behaviors.csv")}
 for r in load("rules/behavior_probs.csv"):
     v = float(r["base_p"])
-    check("%s ∈ [0,1] 或涓流值" % r["behavior"], (0.0 <= v <= 1.0) or r["behavior"].endswith(("_stress",)))
+    if r["behavior"] in KNOWN_B:
+        check("%s 概率 ∈ [0,1]" % r["behavior"], 0.0 <= v <= 1.0, v)
+    else:
+        check("%s 是有限数值参数" % r["behavior"], abs(v) < 10000, v)
 
 print("=== 7. phases ===")
 ph = load("rules/phases.csv")
