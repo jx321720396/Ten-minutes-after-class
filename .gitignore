@@ -43,3 +43,7 @@ reasonix.toml
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# ---- 临时脚本与片段（.tmp-* / .frag-* 前缀）----
+.tmp-*
+.frag-*
