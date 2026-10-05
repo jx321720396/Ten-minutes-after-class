@@ -1,0 +1,18 @@
+# NPC 决策权重（alpha 派生系数与意向温度）
+# 依据：docs/design/NPC行为决策.md §4.3/§4.4
+# 说明：alpha_X_raw 由 MBTI 四维线性组合派生后再归一化（Σalpha = 1）
+param,value,note
+alpha_a_base,0.5,好感权重基数
+alpha_a_f,0.5,F 维度对好感的贡献（情感型更在意好感）
+alpha_a_e,0.3,E 维度对好感的贡献
+alpha_t_base,0.5,信任权重基数
+alpha_t_j,0.5,J 维度对信任的贡献（判断型更在意信任）
+alpha_h_base,0.5,敌对权重基数
+alpha_h_f,0.5,F 维度对敌对的负向贡献（低 F 更在意对抗）
+alpha_h_j,0.3,J 维度对敌对的负向贡献
+alpha_s_base,0.5,压力消解权重基数
+alpha_s_e,0.5,E 维度对压力消解的负向贡献（内向型更在意减压）
+tau0,1.0,意向温度基准
+tau_j,0.3,J 对温度的抑制（高 J 更确定、温度更低）
+tau_stress_mult,1.5,压力≥70 时温度放大（更冲动）
+top_n,5,参与 softmax 采样的候选数上限

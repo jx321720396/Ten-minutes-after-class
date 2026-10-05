@@ -12,14 +12,18 @@ data/
 ├─ characters/
 │   └─ seeds.csv          24 角色种子表（对应 主文档 §11.4）
 ├─ rules/
-│   ├─ transmission.csv   传导参数：theta_A / theta_H / sigma / beta / epsilon（主文档 §7.2）
-│   ├─ decay.csv          跨天衰减系数（主文档 §3.5）
-│   └─ phases.csv         相位时长与规则启用子集（主文档 §3.2、§3.3）
+│   ├─ transmission.csv       传导与软饱和参数（theta_* / beta_* / u_* / settle_interval / epsilon）✓
+│   ├─ belief.csv             信念矩阵更新参数（eta0_* / sigma_max_* / prior_* / lambda_b）✓
+│   ├─ behavior_probs.csv     环境类行为每 tick 基础概率 ✓
+│   ├─ behavior_thresholds.csv 阈值类行为触发条件（举报 / 爆发 / 道歉 / 安慰）✓
+│   ├─ decay.csv              跨天衰减系数（待创建）
+│   └─ phases.csv             相位时长与行为启用子集（待创建）
 └─ balance/
-    └─ w_events.csv       统一增量公式的事件权重全表（主文档 §6.1）
+    ├─ w_events.csv        事件权重全表（含 tier: normal 1–3 / major 4–5）✓
+    └─ npc_weights.csv     NPC 决策权重（alpha 派生系数 / tau0 / top_n）✓
 ```
 
-（上述 CSV 为规划文件，M1 阶段创建。）
+> 以上 CSV **已创建**（2026-10-05），参数初值见文件内注释；标定后按 `balance/` 前缀分支调整并记录 CHANGELOG。
 
 ## CSV 约定
 
