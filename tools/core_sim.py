@@ -111,6 +111,9 @@ class Sim:
         n = self.N
         self.A = [[0.0] * n for _ in range(n)]
         self.H = [[0.0] * n for _ in range(n)]
+        # 深层敌对（§10.22）：只由 tier=major 的负性事件写入，**永不衰减**。
+        # H 存的仍是「总敌对」，H_deep 是其中「忘不掉的那一部分」。
+        self.H_deep = [[0.0] * n for _ in range(n)]
         self.T = [[0.0] * n for _ in range(n)]
         self.O = [0.0] * n
         self.Stress = [0.0] * n
@@ -343,6 +346,12 @@ class Sim:
             p_val = e_val + (0.0 if axis == "stress" else 0.0)  # 事件侧不含传导
             m = self.m_state(i, negative=(base < 0) == (axis in AXES))
             delta = r1(m * self.sat(p_val, axis)) if axis != "stress" else r1(self.sat(p_val, axis))
+            if axis == "hostility" and row.get("tier") == "major":
+                # 重大负性事件 → 同时写入**永不衰减**的深层（§10.22）。
+                # ⚠️ 不经 room_for：负反馈是给「表层摩擦」用的，若也套在深层上，
+                #    仇恨会自己封顶（越满越涨不动），「不可消减」就名存实亡了。
+                self.H_deep[i][j] = min(100.0, self.H_deep[i][j] + abs(delta))
+                self.stats["deep_writes"] = self.stats.get("deep_writes", 0) + 1
             if axis == "stress":
                 self.Stress[i] = clamp100(self.Stress[i] + delta)
             else:
@@ -1115,7 +1124,10 @@ class Sim:
                     continue
                 interacted = self.day_events.get((i, j), 0) >= d["interact_min_events"]
                 self.A[i][j] *= d["decay_a_interact"] if interacted else d["decay_a_no_interact"]
-                self.H[i][j] *= d["decay_h"]
+                # 两层敌对（§10.22）：深层原样保留，只衰减**表层**。
+                # 「表层怒火会消，但心结永远在」—— 所以「可以原谅，但忘不了」。
+                deep = self.H_deep[i][j]
+                self.H[i][j] = deep + (self.H[i][j] - deep) * d["decay_h"]
                 self.T[i][j] *= d["decay_t"]
             self.Stress[i] *= d["retain_s"]
         self.day_events.clear()          # 新的一天，重置「有互动」判定
