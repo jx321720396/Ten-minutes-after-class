@@ -580,14 +580,47 @@ class Sim:
         return {a: sorted(v) for a, v in groups.items() if len(v) >= 2}
 
     def join_feedback(self, i, j):
-        """i 想加入 j 的活动时，**这次判定会接受还是拒绝**（UI 用绿/红）。
+        """i 想加入 j 的活动时，**概率与结果**（UI 用：玩家侧要展示「投色子」的过程）。
 
-        与 `do_join_chat` 用同一套判据（信念 + 对方外向度），但**只读、不结算** ——
-        供 UI 预览颜色，不产生任何副作用。
+        与 `do_join_chat` 用**同一套判据**（信念 + 对方外向度），但**只读、不结算**。
+
+        ⚠️ **成功率必须从「信念」算，不能从真值算**（§7.4 感知层）：
+        `B_A[i][j]` 是「i 以为 j 对自己多有好感」。所以：
+          · 展示这个概率**不泄露任何隐藏信息**（玩家看到的只是自己的猜测）；
+          · **概率高也可能失败** —— 「我以为他喜欢我」≠「他真的喜欢我」。
+        ∴ 掷骰不是装饰，而是**认知偏差的具象化**。
+
+        返回 `{"p": 成功率, "ok": 是否通过}`。`p` 由「信念 − 门槛」映射到 0~1（供骰子展示）。
         """
+        threshold = self.thresholds_lookup.get("join_chat_affinity", 45)
         accept = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
-        ok = accept >= self.thresholds_lookup.get("join_chat_affinity", 45) and self.Stress[j] <= 70
-        return "accept" if ok else "reject"
+        blocked = self.Stress[j] > 70                      # 对方压力过高 → 必然拒绝
+        # 把「离门槛的距离」映射成 0~1 的把握度：门槛处 0.5，每 ±20 点好感变化 ±0.5
+        p = 0.5 + (accept - threshold) / 40.0
+        p = max(0.0, min(1.0, p))
+        if blocked:
+            p = 0.0
+        return {"p": round(p, 2), "ok": (not blocked) and accept >= threshold}
+
+    # ---------- 玩家侧判定展示（NPC 静默，玩家可见过程）----------
+    def verdict(self, i, j, kind="join_chat"):
+        """**一次判定的展示包**（用户设计）：NPC 之间静默出结果，涉及玩家时展示三拍。
+
+        三拍 = ① 当前成功率（由**信念**算）→ ② 掷骰 → ③ 结果。
+
+        与判定本身**完全分离**：判定用 `do_join_chat` / `do_tease` 等照常静默执行，
+        本方法只是**只读地取出「此刻玩家会看到的那个概率与结果」**，不参与结算。
+        """
+        if kind == "join_chat":
+            fb = self.join_feedback(i, j)
+            return {
+                "kind": kind,
+                "p": fb["p"],                    # ① 成功率（信念算得，不泄露真值）
+                "roll": self.rng.random(),       # ② 掷骰（展示用）
+                "ok": fb["ok"],                  # ③ 结果
+                "note": "成功率来自「你以为对方怎么看你」，不是事实 —— 把握大也可能被拒。",
+            }
+        return None
 
     def roll_sleep(self):
         """每**课间段开始**掷一次睡觉（§10.8：睡 = 本段不做其他事）。
