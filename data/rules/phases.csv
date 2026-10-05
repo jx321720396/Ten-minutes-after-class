@@ -1,0 +1,16 @@
+# 相位定义（时长 + 规则启用子集 + 玩家操作权限）
+# 依据：主文档 §3.2 tick 定义、§3.3 上课发酵层、§18.3 主循环
+# 启动校验：
+#   ① 课间 + 上课 的 tick_count 合计 = 480（一天）
+#   ② kind=class 的 active_rules 不得包含 §3.3 禁用行为
+#      （talk/tease/comfort/ask/apologize/report/chat 等主动社交行为）
+#   ③ active_rules 中的规则名必须在代码规则注册表内存在，否则启动报错
+#   ④ player_control = 1 当且仅当 kind = break
+#   ⑤ order 连续且不重复
+phase_id,order,kind,tick_count,player_control,active_rules,settle_at_end
+morning_break,1,break,100,1,all,0
+morning_class,2,class,90,0,study_together|rumor|stress_drip|transmission,0
+lunch_break,3,break,100,1,all,0
+afternoon_class,4,class,90,0,study_together|rumor|stress_drip|transmission,0
+afternoon_break,5,break,100,1,all,0
+day_settle,6,settle,0,0,none,1

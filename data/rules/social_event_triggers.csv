@@ -1,0 +1,11 @@
+# 社会事件触发条件（纯数值驱动）
+# 依据：主文档 §13.2 通用规范、docs/design/社会事件.md §2/§7
+# 启动校验：
+#   ① op ∈ {<, >, >=, <=}
+#   ② **静态扫描：metric / op / value 中不得出现日期类记号**（如 day、第N天、week、周一）——不变式 1
+#   ③ metric 必须在运行时「可计算指标注册表」内，否则启动报错
+# 同一 trigger_rule 的多行是**或**关系（任一满足即触发）
+trigger_rule,metric,op,value,note
+leader_crisis,faction_split_index,>,0.6,阵营分裂指数过阈（出现 ≥2 个稳定簇且簇间平均敌对高）
+leader_crisis,leader_influence,<,30,现任班长影响力（被听从度之和）跌破阈值
+leader_crisis,player_propose,==,1,玩家攒够人望后主动提议改选

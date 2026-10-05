@@ -1,0 +1,12 @@
+# 社会事件表（多阶段、跨相位、全体参与、结果改变结构）
+# 依据：主文档 §13 社会事件、docs/design/社会事件.md §4
+# 与「重大事件」的区别：重大事件是**单次多轴联动**；社会事件是**多阶段状态机**，会改变结构（身份 / 标签）
+# 启动校验：
+#   ① base_tier = major ⇔ 其阶段内事件的 base ∈ [4,5]（常规档为 [1,3]）
+#   ② stages 里的相位名必须能在 phases.csv 找到，且 kind 匹配（如「实际投票」须落在 class 相位）
+#   ③ concurrency ∈ {0,1}（0 = 进行中不得并发其他社会事件）
+#   ④ cooldown_days ≥ 1，同一局内重复触发须过冷却
+#   ⑤ 静态扫描：**禁止日期类记号**（不变式 1：不得出现「第 N 天必然发生 X」）
+# stages 格式：阶段名@相位（| 分隔）；各阶段时长**待标定**
+event_id,trigger_rule,stages,concurrency,base_tier,cooldown_days
+committee_election,leader_crisis,酝酿@break|提名@break|模拟投票@break|实际投票@class|公布@settle,0,major,10
