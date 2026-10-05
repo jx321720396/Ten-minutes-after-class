@@ -93,8 +93,11 @@ class Sim:
         self.behaviors = {r["behavior"]: {"duration": int(float(r["duration"])),
                                          "payoff": float(r["payoff"]),
                                          "kind": r["kind"],
-                                         "noise": float(r.get("noise", 0))}
+                                         "noise": float(r.get("noise", 0)),
+                                         "join_mode": (r.get("join_mode") or "none").strip()}
                           for r in load_table("rules/behaviors.csv")}
+        # 「当前活动」的分组查询用：谁此刻正在做哪个活动
+        self.activity_log = []            # 每段一个快照（只读查询用，不参与结算）
         # 负反馈：传导增益随目标容纳度衰减（来自 transmission.csv 的 feedback）
         self.feedback = self.p.get("feedback", 0.0)
         self.event_rows = load_table("balance/w_events.csv")
@@ -511,6 +514,80 @@ class Sim:
         if behavior == "chat":
             return True
         return False
+
+    def free_join(self):
+        """**「别人做什么，我也跟着做什么」**（用户设计）—— `join_mode = free` 的活动可自由跟随。
+
+        与 `join_chat`（accept 类，需对方判定）相对：学习 / 睡觉这类活动**不需要谁同意**，
+        但它同样会「传染」—— 而**传染强度由 `conformity(i)` 决定**（§10.19 从众度：
+        高 F 随大流、高 J·高 N 有主见）。于是「从众」第一次从**意愿层**落到**行为层**：
+
+          · `conformity(i)` 管「我倾向做什么」（氛围影响意愿，原有）
+          · `free_join` 管「我具体跟谁做」（看到别人在做，我也做，新增）
+
+        只看**邻居**（看得见才谈得上跟随），且只跟随**当前真在做的**活动。
+        """
+        rates = self.probs
+        for i in range(self.N):
+            if self.sleeping[i] or self.busy_until[i] > self.global_tick:
+                continue
+            # ⚠️ **「学习」是个例外**：它是 `default` 状态、不占用时间槽，因此**不体现在 `current_act` 里**。
+            #    但现实中它恰恰最常被跟随（"看他摊开书，我也学"）。
+            #    判定：邻居此刻**既不忙、也不在做别的事** → 他在学习 → 可跟着学。
+            acts = []
+            for k in self.neighbor_idx[i]:
+                if k == i or self.sleeping[k]:
+                    continue
+                a = self.current_act[k]
+                if a and self.behaviors.get(a, {}).get("join_mode") == "free":
+                    acts.append(a)
+                elif (not a) and self.busy_until[k] <= self.global_tick:
+                    acts.append("study")
+            cands = acts
+            if not cands:
+                continue
+            # 从众度高的人更容易跟着做；反从众的人（conformity≈0）基本不跟
+            conf = self.conformity(i)
+            if conf <= 0.05:
+                continue
+            if self.rng.random() < rates.get("free_join_rate", 0.0) * conf:
+                a = self.rng.choice(cands)
+                if a == "sleep" and self.allowed("sleep"):
+                    self.sleeping[i] = True
+                    self.current_act[i] = "sleep"
+                    self.busy_until[i] = 10 ** 9
+                elif a == "study":
+                    self.current_act[i] = None    # None = 默认状态 = 在学习
+                self.stats["free_joins"] = self.stats.get("free_joins", 0) + 1
+
+    # ---------- 只读查询（供 UI 画圈 / 上绿红，零副作用）----------
+    def activity_of(self, i):
+        """某人此刻在做什么（UI 用）。"""
+        return self.current_act[i]
+
+    def active_circles(self):
+        """**当前的「活动圈」**：按「此刻在做同一件事」分组（**只读**）。
+
+        「圈」= 正在做同一个活动的人。与簇标签器（长期好感格局）不同，它是**实时、局部、可见**的 ——
+        对应 §15.1 的「小人在教室的物理位置就是涌现的第一画面」。不同活动即不同颜色的圈。
+        """
+        groups = {}
+        for i in range(self.N):
+            a = self.current_act[i]
+            if not a:
+                continue
+            groups.setdefault(a, []).append(i)
+        return {a: sorted(v) for a, v in groups.items() if len(v) >= 2}
+
+    def join_feedback(self, i, j):
+        """i 想加入 j 的活动时，**这次判定会接受还是拒绝**（UI 用绿/红）。
+
+        与 `do_join_chat` 用同一套判据（信念 + 对方外向度），但**只读、不结算** ——
+        供 UI 预览颜色，不产生任何副作用。
+        """
+        accept = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
+        ok = accept >= self.thresholds_lookup.get("join_chat_affinity", 45) and self.Stress[j] <= 70
+        return "accept" if ok else "reject"
 
     def roll_sleep(self):
         """每**课间段开始**掷一次睡觉（§10.8：睡 = 本段不做其他事）。
@@ -1184,6 +1261,7 @@ class Sim:
             self.phase, self.tick_in_phase = phase, 0
             self.settle_sleep()               # 上一相位睡着的醒来（课间段结束才结算）
             self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
+            self.free_join()                  # 「别人做什么我也跟着做」（free 类活动，§10.31）
             self.check_interrupt()            # 相位切换 → 未完成的行为被打断
             for _ in range(ticks):
                 self.tick()
