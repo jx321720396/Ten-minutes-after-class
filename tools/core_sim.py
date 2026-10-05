@@ -480,16 +480,20 @@ class Sim:
         raw = {
             "affinity": self.nw["alpha_a_base"] + self.nw["alpha_a_f"] * self.dims[i][2] / 100.0
                         + self.nw["alpha_a_e"] * self.dims[i][0] / 100.0,
+            # 感知型（高 P）更容易信任（与 alpha_h 同向，均为「感知型更随性」）
             "trust": self.nw["alpha_t_base"] + self.nw["alpha_t_j"] * self.dims[i][3] / 100.0,
             "hostility": self.nw["alpha_h_base"] + self.nw["alpha_h_f"] * (1 - self.dims[i][2] / 100.0)
-                         + self.nw["alpha_h_j"] * (1 - self.dims[i][3] / 100.0),
+                         # 用户确认的设计意图：**感知型（高 P）更容易信任、也更容易记恨** ——
+                         # 两行都跟 P。原 alpha_h 写的是 (1−P)，方向与意图相反，已翻转。
+                         + self.nw["alpha_h_j"] * (self.dims[i][3] / 100.0),
             "stress": self.nw["alpha_s_base"] + self.nw["alpha_s_e"] * (1 - self.dims[i][0] / 100.0),
         }
         total = sum(raw.values())
         return {k: v / total for k, v in raw.items()}
 
     def tau(self, i):
-        t = self.nw["tau0"] * (1 + self.nw["tau_j"] * (1 - self.dims[i][3] / 100.0))
+        # 「高 J 温度更低」：J 强度用 arg_j
+        t = self.nw["tau0"] * (1 + self.nw["tau_j"] * (0.5 - self.arg_j(i) / 2.0))
         if self.Stress[i] >= 70:
             t *= self.nw["tau_stress_mult"]
         return max(t, 0.01)
@@ -906,6 +910,19 @@ class Sim:
                   "report", "move"}
         return behavior not in banned
 
+    def arg_j(self, i):
+        """J（判断型）强度 ∈ [-1,1]：`dims[3]` 是**感知度 P**（0 端=判断 J），故 J 强度 = (50 − P)/50。
+
+        ⚠️ 本会话曾有 6 处调用点各按不同语义用 `dims[3]`，导致「J 越高越怕吵」的注释
+        与实现方向**相反**且长期未被发现。∴ 统一约定（§数据模型 维度方向约定）：
+        **凡公式要表达「J」的，一律用这个助手**，禁止再手写 `(dims[3] − 50)`。
+        """
+        return (50.0 - self.dims[i][3]) / 50.0
+
+    def arg_i(self, i):
+        """内向强度 ∈ [-1,1]：`dims[0]` 是外向 E，故内向 = (50 − E)/50。"""
+        return (50.0 - self.dims[i][0]) / 50.0
+
     def conformity(self, i):
         """从众度 ∈ [0,1]：**大部分人从众，少数人有主见**。
 
@@ -914,9 +931,13 @@ class Sim:
         从众者跟着环境走（吵就更想聊、静就更想学），反从众者不受环境影响 ——
         所以「安静也要聊天」「吵闹也会学习」这两种人天然存在，**不需要特例**。
         """
-        f, j, n = self.dims[i][2], self.dims[i][3], self.dims[i][1]
-        return clamp(0.5 + (f - 50.0) / 100.0 - (j - 50.0) / 100.0 * 0.5 - (n - 50.0) / 100.0 * 0.5,
-                     0.0, 1.0)
+        # 高 F（情感型、在意氛围）→ 从众；高 J（判断型）+ 高 N（直觉型）→ 反从众。
+        # ⚠️ 原式误把 dims[3] 当 J 用，实际让 **J 型更从众**（与文档相反）；
+        #    现改用 arg_j（J 强度）与 arg_n（N 强度），方向与文档一致。
+        f = (self.dims[i][2] - 50.0) / 100.0
+        j = self.arg_j(i) / 2.0
+        n = (self.dims[i][1] - 50.0) / 100.0
+        return clamp(0.5 + f - j * 0.5 - n * 0.5, 0.0, 1.0)
 
     def crowd_bias(self, i, kind):
         """环境氛围对行为意愿的加成（kind ∈ {"loud","quiet"}）：从众者受影响，反从众者不受。"""
@@ -957,7 +978,8 @@ class Sim:
         k = e.get("stress_k", 0.0)
         fj, fe = e.get("fear_j", 0.0), e.get("fear_e", 0.0)
         for i in range(self.N):
-            fear = fj * (self.dims[i][3] - 50.0) / 50.0 + fe * (50.0 - self.dims[i][0]) / 50.0
+            # J 越高越受不了吵（§10.18 原意）—— 用助手，避免与 P 混淆
+            fear = fj * self.arg_j(i) + fe * self.arg_i(i)
             fear = max(0.0, fear)
             # ⚠️ 加上**基础项**：嘈杂环境对**所有人**都有压力，不只是「怕吵的人」。
             # 此前只在 fear 上做文章，导致 stress_k 放大 12 倍仍无效 —— 因为压力只压到了少数内向/专注者。
@@ -1016,7 +1038,7 @@ class Sim:
         """
         e = self.env
         fj, fe = e.get("fear_j", 0.0), e.get("fear_e", 0.0)
-        f = fj * (self.dims[i][3] - 50.0) / 50.0 + fe * (50.0 - self.dims[i][0]) / 50.0
+        f = fj * self.arg_j(i) + fe * self.arg_i(i)
         return max(0.0, f)
 
     def noise_hostility(self):
