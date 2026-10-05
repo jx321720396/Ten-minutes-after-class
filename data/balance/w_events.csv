@@ -22,6 +22,7 @@ exclude_stress,stress,5,0,0,0.4,0.2,major,B,被小团体明确排斥（§8.4；�
 exclude_affinity,affinity,-4,0,0,0.2,0.3,major,B,被排挤后对参与者的好感下降（让关系真变差）
 leak_stress,stress,5,0,0,0.4,0.2,major,B,秘密被泄露（须先有秘密交换）
 leak_trust,trust,-5,0,0,0.3,0.2,major,B,秘密被泄露
+humiliate_hostility,hostility,4,-0.2,0,0.3,0.2,major,B,当众羞辱：被一群人看着嘲笑 —— 写进永不衰减的深层敌对（§10.23）
 leak_hostility,hostility,4,0,0,0.2,0,major,B,秘密被泄露
 tease_laugh_stress,stress,-2,0,0,0.3,0,normal,E,被逗笑（调侃的正面结果）
 tease_success_affinity,affinity,2,0,0,0.3,0,normal,E,当众调侃成功（双方 + 围观者）
