@@ -15,6 +15,8 @@ report_hostility,hostility,5,0,0,0.2,-0.3,major,B,被举报
 comfort_target_stress,stress,-3,0.2,0,0.4,0,normal,A,安慰他人
 comfort_target_affinity,affinity,3,0,0,0.3,0,normal,A,安慰他人
 comfort_target_trust,trust,3,0,0,0.5,0,normal,A,安慰他人
+roughhouse_affinity,affinity,2,0.3,0,0.2,0,normal,A,追逐打闹：参与者互相好感↑
+roughhouse_hostility,hostility,3,0.3,0,0,-0.3,normal,B,追逐打闹：被吵到的旁观者讨厌参与者（敌对种子）
 exclude_stress,stress,5,0,0,0.4,0.2,major,B,被小团体明确排斥（§8.4；重大档，伤害与关系无关）
 exclude_affinity,affinity,-4,0,0,0.2,0.3,major,B,被排挤后对参与者的好感下降（让关系真变差）
 leak_stress,stress,5,0,0,0.4,0.2,major,B,秘密被泄露（须先有秘密交换）
