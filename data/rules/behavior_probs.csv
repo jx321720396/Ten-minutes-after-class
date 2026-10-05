@@ -10,4 +10,5 @@ pass_note,0.0,传纸条（闲聊触发后按判定改写，无独立基础概率
 eavesdrop,1.0,窃听（未进行任何主行为时自动触发）
 study_stress,1.0,涓流：默认学习时每次结算压力 +1（每天 2 次）
 alone_stress,-2.0,涓流：独处（未参与任何互动）时每次结算压力 −2
+burst_p_max,0.5,压力爆发：满压（stress=100）时的日爆发概率；实际 p = burst_p_max × (stress−theta)/(100−theta)
 study,1.0,学习（默认行为：无主行为且未走动时自动进入）
