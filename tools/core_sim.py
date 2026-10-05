@@ -153,6 +153,10 @@ class Sim:
         self.env = {r["param"]: float(r["value"]) for r in load_table("rules/environment.csv")}
         self.volume = self.env.get("init_volume", 20.0)
         self.tag_rows = {r["tag_id"]: r for r in load_table("rules/tags.csv")}
+        # 相位 -> 允许的行为集（§3.3：上课段只跑规则子集；"all" = 全部允许）
+        self.phase_rules = {r["phase_id"]: (r["active_rules"] or "none").split("|")
+                            for r in load_table("rules/phases.csv")}
+        self.phase_order = [r["phase_id"] for r in load_table("rules/phases.csv")]
         self.current_act = [None] * n     # 当前正在做/刚做完的行为（供音量统计）
         self.vol_log = []                 # 每个相位末的音量（标定观测用）
         self.in_conversation = [False] * n
@@ -438,8 +442,8 @@ class Sim:
             if i in busy or self.global_tick < self.busy_until[i]:
                 continue
             self.in_conversation[i] = False
-            # 环境类：闲聊（概率触发）
-            if self.rng.random() < self.probs["chat"]:
+            # 环境类：闲聊（概率触发）—— 上课段禁用（§3.3）
+            if self.allowed("chat") and self.rng.random() < self.probs["chat"]:
                 j = self.pick_target(i)
                 if j is not None:
                     self.do_chat(i, j)
@@ -450,7 +454,7 @@ class Sim:
             # 目标选择**带偏好**：敌对越高 / 好感越低越容易被针对 —— 被讨厌的人会被反复打击，
             # 这正是"压力分化 → 个别爆发"的机制来源（不允许随机摊平）
             cands_t = [j for j in range(n) if j != i and j not in busy and self.A[i][j] >= 20.0]
-            if len(cands_t) >= 3 and self.rng.random() < 0.18:
+            if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < 0.18:
                 wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
                 j = self.rng.choices(cands_t, weights=wts, k=1)[0]
                 audience = [k for k in range(n) if k not in (i, j) and k not in busy]
@@ -462,7 +466,7 @@ class Sim:
             # 意向类：追逐打闹 —— 敌对种子（参与者好感↑ / 旁观者敌对↑）
             th_rh = self.thresholds_lookup.get("roughhouse_affinity", 45.0)
             th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
-            if self.dims[i][0] >= th_rh and self.rng.random() < 0.05:
+            if self.allowed("roughhouse") and self.dims[i][0] >= th_rh and self.rng.random() < 0.05:
                 others = [j for j in range(n) if j != i and j not in busy]
                 if others:
                     # 追跑对象按外向度加权：越外向越可能一起闹（→ 同样的少数人反复搭配）
@@ -478,7 +482,7 @@ class Sim:
                         busy.add(j)
                         continue
             # 阈值类：排挤（"大家都讨厌他" → 集体驱逐）—— B 类，让关系能无条件变差
-            if self.rng.random() < 0.04:
+            if self.allowed("exclude") and self.rng.random() < 0.04:
                 th_h = self.thresholds_lookup.get("exclude_hostility", 40.0)
                 th_n = int(self.thresholds_lookup.get("exclude_count", 3))
                 done = False
@@ -494,7 +498,7 @@ class Sim:
                 if done:
                     continue
             # 附加行为：流言（负面染色，压力来源）；目标同样偏好敌对高者
-            if self.rng.random() < 0.03:
+            if self.allowed("rumor") and self.rng.random() < 0.03:
                 c2 = [j for j in range(n) if j != i and j not in busy]
                 if c2:
                     w2 = [max(1.0, 20.0 + self.H[i][j] - self.A[i][j] * 0.5) for j in c2]
@@ -698,6 +702,23 @@ class Sim:
         target = clamp(target, 0.0, e.get("volume_max", 100.0))
         rate = e.get("adapt_rate", 0.02)
         self.volume = clamp(self.volume + rate * (target - self.volume), 0.0, e.get("volume_max", 100.0))
+
+    def allowed(self, behavior):
+        """当前相位是否允许该行为（§3.3：上课段只跑规则子集）。
+
+        `phases.csv` 用 `study_together|rumor|stress_drip|transmission` 描述上课段允许的规则；
+        这里把它翻译成"行为白名单"——**上课时禁用的行为** = 一切主动社交。
+        """
+        if not hasattr(self, "phase_rules"):
+            return True
+        pid = self.phase_order[self.phase_index] if 0 <= self.phase_index < len(self.phase_order) else None
+        rules = self.phase_rules.get(pid, ["all"])
+        if "all" in rules:
+            return True
+        banned = {"chat", "join_chat", "pass_note", "tease", "ask_help", "inform",
+                  "comfort", "apologize", "share_secret", "roughhouse", "exclude",
+                  "report", "move"}
+        return behavior not in banned
 
     def conformity(self, i):
         """从众度 ∈ [0,1]：**大部分人从众，少数人有主见**。

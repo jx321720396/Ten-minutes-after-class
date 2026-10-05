@@ -5,7 +5,7 @@
 # 启动校验：① 所有 value ∈ (0, 1]；② decay_a_interact ≥ decay_a_no_interact；
 #           ③ 必含且仅含下列 6 行，缺一报错
 param,value,note
-decay_a_no_interact,0.935,好感：当天该对子无互动
+decay_a_no_interact,0.93,好感：当天该对子无互动
 decay_a_interact,0.98,好感：当天该对子有互动（须 ≥ decay_a_no_interact）
 decay_h,0.95,敌对：时间冲淡矛盾但需时间沉积（0.90 时「敌人」立不住，稳态仅 ~0.4，见 §10.17）
 decay_t,0.93,信任：需要持续维护
