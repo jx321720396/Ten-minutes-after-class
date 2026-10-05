@@ -154,6 +154,7 @@ class Sim:
         self.volume = self.env.get("init_volume", 20.0)
         self.tag_rows = {r["tag_id"]: r for r in load_table("rules/tags.csv")}
         self.current_act = [None] * n     # 当前正在做/刚做完的行为（供音量统计）
+        self.vol_log = []                 # 每个相位末的音量（标定观测用）
         self.in_conversation = [False] * n
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
@@ -735,8 +736,10 @@ class Sim:
             act = self.current_act[i] or "study"
             if act in loud and v < 0.4:
                 self.Stress[i] = clamp100(self.Stress[i] + k * (0.4 - v) * 10.0)
-            elif act == "study" and v > 0.6:
-                self.Stress[i] = clamp100(self.Stress[i] + k * (v - 0.6) * 10.0)
+            elif act == "study" and v > 0.72:
+                # 阈值取 0.72 而非 0.6：否则"音量略高于阈"就惩罚全部学习者，
+                # 而 study 是默认行为 → 等于给全班加压力（实测会把爆发从 20 推到 70+）
+                self.Stress[i] = clamp100(self.Stress[i] + k * (v - 0.72) * 10.0)
 
     def noise_pressure(self):
         """超阈音量 → 压力。极慢的涓流（每次结算一次），怕吵程度由性格决定。"""
@@ -832,6 +835,7 @@ class Sim:
                 self.tick()
                 self.tick_in_phase += 1
                 total_ticks += 1
+            self.vol_log.append(round(self.volume, 1))   # 相位末采样
         self.settle_day()
         return total_ticks
 
