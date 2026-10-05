@@ -96,11 +96,13 @@ check("传导 Δ_A（C=%.3f, net=%.2f）" % (c_val, net), actual_d, expect_d)
 print("\n=== 3. 跨天衰减链（§3.5）===")
 sim3 = Sim(seed=3, npc_count=3)
 sim3.A[0][1], sim3.H[0][1], sim3.T[0][1], sim3.Stress[0] = 60.0, 40.0, 50.0, 80.0
+# 期望值一律从 data/rules/decay.csv 读，避免"改了参数忘了改测试"
+d3 = dict(sim3.decay)
 sim3.settle_day()
-check("好感 ×0.95", sim3.A[0][1], 57.0)
-check("敌对 ×0.90", sim3.H[0][1], 36.0)
-check("信任 ×0.93", sim3.T[0][1], 46.5)
-check("压力 ×0.50", sim3.Stress[0], 40.0)
+check("好感 ×%.2f" % d3["affinity"], sim3.A[0][1], round(60.0 * d3["affinity"], 3))
+check("敌对 ×%.2f" % d3["hostility"], sim3.H[0][1], round(40.0 * d3["hostility"], 3))
+check("信任 ×%.2f" % d3["trust"], sim3.T[0][1], round(50.0 * d3["trust"], 3))
+check("压力 ×%.2f" % d3["stress"], sim3.Stress[0], round(80.0 * d3["stress"], 3))
 
 # ============================================================ 4. 报告 ④ 诊断
 print("\n=== 4. 诊断：无事件对子的好感轨迹（报告 ④ 的怀疑）===")

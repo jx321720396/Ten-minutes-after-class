@@ -18,6 +18,8 @@ comfort_target_trust,trust,3,0,0,0.5,0,normal,安慰他人
 leak_stress,stress,5,0,0,0.4,0.2,major,秘密被泄露（须先有秘密交换）
 leak_trust,trust,-5,0,0,0.3,0.2,major,秘密被泄露
 leak_hostility,hostility,4,0,0,0.2,0,major,秘密被泄露
+tease_success_affinity,affinity,2,0,0,0.3,0,normal,当众调侃成功（双方 + 围观者）
+rumor_stress,stress,3,0,0,0.4,0.2,normal,被流言击中（压力来源）
 topic_trust,trust,3,0,0.3,0.2,0,normal,话题共鸣
 topic_affinity,affinity,3,0.2,0.2,0,0,normal,话题共鸣
 topic_stress,stress,-2,0.3,0,0.2,0,normal,话题共鸣
