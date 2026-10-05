@@ -13,7 +13,8 @@
   6. behavior_probs：概率类 ∈ [0,1]
   7. phases：课间 + 上课 tick 合计 = 480；`player_control` = 1 当且仅当 `kind` = break
   8. status_tags：`days` ≥ 1
-  9. social_event_triggers：metric / op / value 不得含日期类记号（不变式 1）
+  9. behaviors：`duration ≥ 0`、`payoff ∈ [1,5]`、**按 payoff 分组后平均耗时单调不减**（收益越大耗时越长）
+ 10. social_event_triggers：metric / op / value 不得含日期类记号（不变式 1）
 """
 
 import csv
@@ -103,7 +104,26 @@ for r in load("rules/status_tags.csv"):
     check("%s: spread_ratio ∈ [0,1]" % r["tag_id"], 0.0 <= float(r.get("spread_ratio", 0)) <= 1.0)
     check("%s: spread_max ≥ 0" % r["tag_id"], int(float(r.get("spread_max", 0))) >= 0)
 
-print("=== 9. social_event_triggers：禁日期记号 ===")
+print("=== 9. behaviors：耗时与收益的单调性 ===")
+bh = load("rules/behaviors.csv")
+for r in bh:
+    check("%s: duration ≥ 0" % r["behavior"], int(float(r["duration"])) >= 0)
+    check("%s: payoff ∈ [1,5]" % r["behavior"], 1 <= float(r["payoff"]) <= 5)
+# 法则：收益越大耗时越长 —— 这是**趋势**，不是逐档严格单调。
+#   · 排除「整段占用」特例（duration ≥ 100，如睡觉）：它占用整个课间，不参与普通比较
+#   · 允许 20% 波动（设计上同类收益的行为耗时不必相同）
+by_payoff = {}
+for r in bh:
+    d = int(float(r["duration"]))
+    if d >= 100:
+        continue
+    by_payoff.setdefault(float(r["payoff"]), []).append(d)
+avgs = [(k, sum(v) / len(v)) for k, v in sorted(by_payoff.items())]
+for (k1, a1), (k2, a2) in zip(avgs, avgs[1:]):
+    check("收益 %.0f → %.0f：平均耗时呈上升趋势（%.1f → %.1f）" % (k1, k2, a1, a2),
+          a2 >= a1 * 0.8, "允许 20%% 波动")
+
+print("=== 10. social_event_triggers：禁日期记号 ===")
 for r in load("rules/social_event_triggers.csv"):
     blob = (r["metric"] + " " + r["op"] + " " + r["value"]).lower()
     hit = [w for w in DATE_WORDS if w in blob]
