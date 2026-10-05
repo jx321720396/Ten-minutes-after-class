@@ -480,7 +480,13 @@ class Sim:
             # 意向类：当众调侃（需 ≥3 人围观；失败则目标受辱）
             # 目标选择**带偏好**：敌对越高 / 好感越低越容易被针对 —— 被讨厌的人会被反复打击，
             # 这正是"压力分化 → 个别爆发"的机制来源（不允许随机摊平）
-            cands_t = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j] and self.A[i][j] >= 20.0]
+            # 调侃候选：**好意 / 挑衅双轨**（§10.12 修订）——
+            #   好意 A ≥ 40；或挑衅式（**i 猜测 j 对自己敌对** B_H ≥ 25，或发起者对目标 A < 25）。
+#   ⚠️ 挑衅式读的是**信念** B_H[i][j] 而非真值 H[j][i] —— 决策只读信念（§18.7 不变式 3）。
+            #   修复前只有「A ≥ 20」这一条，与 §10.16 的嘲讽档判据互斥，使嘲讽档永远发不出来。
+            cands_t = [j for j in range(n)
+                       if j != i and j not in busy and not self.sleeping[j]
+                       and (self.A[i][j] >= 40.0 or self.B["hostility"][i][j] >= 25.0 or self.A[i][j] < 25.0)]
             if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * (1.0 + self.tag_bias(i, "tease_bias")):
                 wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
                 j = self.rng.choices(cands_t, weights=wts, k=1)[0]
