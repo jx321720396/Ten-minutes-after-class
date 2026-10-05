@@ -594,13 +594,18 @@ class Sim:
         """
         threshold = self.thresholds_lookup.get("join_chat_affinity", 45)
         accept = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
-        blocked = self.Stress[j] > 70                      # 对方压力过高 → 必然拒绝
-        # 把「离门槛的距离」映射成 0~1 的把握度：门槛处 0.5，每 ±20 点好感变化 ±0.5
-        p = 0.5 + (accept - threshold) / 40.0
+        # 把「离门槛的距离」映射成 0~1 的**渐变把握度**：门槛处 0.5，斜率放平（每 100 点好感变化 ±1.0）。
+        #    初版用 /40，结果 `accept` 稍低于门槛就掉到 0（实测全班落在 0~17%），
+        #    展示失去信息量。**把握应该是渐变的，不是"跨过门槛才有分"。**
+        p = 0.5 + (accept - threshold) / 100.0
         p = max(0.0, min(1.0, p))
-        if blocked:
-            p = 0.0
-        return {"p": round(p, 2), "ok": (not blocked) and accept >= threshold}
+        # ⚠️ 对方压力过高时**降低把握，而不是归零** ——
+        #    初版写 `if Stress[j] > 70: p = 0`，而全班压力普遍偏高，结果**成功率恒为 0%**，
+        #    展示毫无信息量（玩家永远看到 0%）。**压力是程度，不是闸门。**
+        hot = max(0.0, self.Stress[j] - 50.0) / 50.0        # 0 ~ 1
+        p = max(0.0, p * (1.0 - 0.6 * hot))
+        ok = accept >= threshold and self.Stress[j] <= 70   # 判定本身保留硬闸门（与 do_join_chat 一致）
+        return {"p": round(p, 2), "ok": ok}
 
     # ---------- 玩家侧判定展示（NPC 静默，玩家可见过程）----------
     def verdict(self, i, j, kind="join_chat"):
