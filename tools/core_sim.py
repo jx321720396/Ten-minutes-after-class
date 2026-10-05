@@ -915,6 +915,36 @@ class Sim:
             fear = max(0.0, fear)
             self.Stress[i] = clamp100(self.Stress[i] + excess * k * fear)
 
+    def conformity_hostility(self):
+        """从众 → 敌对（§10.24）：**「大家都讨厌他，那我也讨厌他」**。
+
+        这是把「散落的敌意」变成「集体围攻」的枢纽。排挤要求
+        「**≥3 人同时对同一目标敌对 ≥40**」（`behavior_thresholds.csv`），
+        而单靠一对一摩擦永远凑不齐那么多人 —— 之前实测就是：一个人到处欺负别人、
+        其他人各有一条互怼边，**「被围攻」的格局出现不了**。
+
+        有了从众，旁观者会**跟着已有的敌意走** —— 「欺凌」这才可能成立。
+
+        从众度由性格给出（§10.19 `conformity`），**不需要特例**：
+        高 F 者随大流，高 J / 高 N 者有自己的判断、不被裹挟 ——
+        所以「敢替被孤立的人说话」这种人天然存在，**不必专门写一个"正义者"角色**。
+        """
+        see = self.thresholds_lookup.get("conformity_see", 25.0)
+        need = int(self.thresholds_lookup.get("conformity_min", 2.0))
+        for i in range(self.N):
+            conf = self.conformity(i)
+            if conf <= 0.05:
+                continue                    # 有主见的人不被裹挟
+            for j in range(self.N):
+                if i == j:
+                    continue
+                haters = [k for k in self.neighbor_idx[i]
+                          if k != j and not self.sleeping[k] and self.H[k][j] >= see]
+                if len(haters) >= need:
+                    # 跟着恨：人数越多、从众度越高，跟得越紧（走统一影响公式，scale 传从众度）
+                    self.apply_event(i, j, "conformity_hostility",
+                                     scale=conf * len(haters) / float(max(1, need)))
+
     def noise_of(self, j):
         """j 此刻的噪音贡献（来自 behaviors.csv 的 noise 列；0 = 安静）。"""
         return float(self.behaviors.get(self.current_act[j], {}).get("noise", 0.0))
@@ -1000,6 +1030,7 @@ class Sim:
     def stress_drip(self):
         self.noise_pressure()      # 环境层：超阈音量 → 压力
         self.noise_hostility()     # 环境层：超阈音量 → 定向敌对（单向，§10.21）
+        self.conformity_hostility()  # 社会层：从众 → 跟着恨（§10.24，让排挤凑得齐人）
         self.deviance_pressure()   # 环境层：偏离氛围 → 压力（不是禁止，是代价）
         """涓流：独处恢复 / 学习累积（主文档 §8.4）"""
         for i in range(self.N):

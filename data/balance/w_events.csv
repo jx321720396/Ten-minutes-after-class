@@ -16,6 +16,7 @@ comfort_target_stress,stress,-3,0.2,0,0.4,0,normal,A,安慰他人
 comfort_target_affinity,affinity,3,0,0,0.3,0,normal,A,安慰他人
 comfort_target_trust,trust,3,0,0,0.5,0,normal,A,安慰他人
 roughhouse_affinity,affinity,2,0.3,0,0.2,0,normal,A,追逐打闹：参与者互相好感↑
+conformity_hostility,hostility,3,0,0,0.4,0,normal,B,从众：看到多人敌视某人，自己也跟着敌视（scale = 从众度 × 恨他的人数量）
 noise_hostility,hostility,3,0,0,0.3,0,normal,B,音量氛围：怕吵者敌视最吵的邻居（**单向**——吵闹者不会反过来恨安静的人）
 roughhouse_hostility,hostility,3,0.3,0,0,-0.3,normal,B,追逐打闹：被吵到的旁观者讨厌参与者（敌对种子）
 exclude_stress,stress,5,0,0,0.4,0.2,major,B,被小团体明确排斥（§8.4；重大档，伤害与关系无关）
