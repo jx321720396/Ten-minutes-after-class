@@ -447,7 +447,10 @@ class Sim:
                 continue
             self.in_conversation[i] = False
             # 环境类：闲聊（概率触发）—— 上课段禁用（§3.3）
-            if self.allowed("chat") and self.rng.random() < self.probs["chat"]:
+            # 标签调制（§11、§18.9）：爱学习 → 更少闲聊；爱聊天 → 更多闲聊
+            chat_gain = 1.0 + self.tag_bias(i, "chat_bias") - self.tag_bias(i, "study_bias")
+            chat_gain = max(0.1, chat_gain)
+            if self.allowed("chat") and self.rng.random() < self.probs["chat"] * chat_gain:
                 j = self.pick_target(i)
                 if j is not None:
                     self.do_chat(i, j)
@@ -458,7 +461,7 @@ class Sim:
             # 目标选择**带偏好**：敌对越高 / 好感越低越容易被针对 —— 被讨厌的人会被反复打击，
             # 这正是"压力分化 → 个别爆发"的机制来源（不允许随机摊平）
             cands_t = [j for j in range(n) if j != i and j not in busy and self.A[i][j] >= 20.0]
-            if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18):
+            if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * (1.0 + self.tag_bias(i, "tease_bias")):
                 wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
                 j = self.rng.choices(cands_t, weights=wts, k=1)[0]
                 audience = [k for k in range(n) if k not in (i, j) and k not in busy]
@@ -530,6 +533,7 @@ class Sim:
                     risk_h = self.B["hostility"][i][j] / 100.0 * 2.0
                     u = alpha["affinity"] * gain_a + alpha["trust"] * gain_t - alpha["hostility"] * risk_h
                     u += self.crowd_bias(i, "loud")   # 氛围项：吵则更想搭话（从众者）
+                    u += self.tag_bias(i, "chat_bias") - self.tag_bias(i, "alone_bias")  # 标签项
                     scores.append(u)
                 if scores:
                     k = softmax(scores, self.tau(i), self.rng)
@@ -920,6 +924,20 @@ class Sim:
         """跨天结算（§3.5）"""
         self.try_burst()                      # 每日一次：压力爆发按概率判定
         d = self.decay
+        # 信念遗忘回归（`belief.lambda_b`）：每天把信念向先验缓慢拉回 —— 信念不能"只学不忘"，
+        # 否则久了会固执地停在某个旧印象上（§18.9 列为未落实项，本轮补齐）。
+        lam = self.bp.get("lambda_b", 0.0)
+        if lam > 0:
+            prior = {"affinity": self.bp["prior_a"], "hostility": self.bp["prior_h"],
+                     "trust": self.bp["prior_t"]}
+            for i in range(self.N):
+                for j in range(self.N):
+                    if i == j:
+                        continue
+                    for ax in AXES:
+                        cur = self.B[ax][i][j]
+                        self.B[ax][i][j] = clamp100(cur + lam * (prior[ax] - cur))
+
         # 「心结」：爆发后的 3 天里，每天先加 5 点压力（长线心理创伤，§3.5）
         for i in range(self.N):
             if self.knot_days[i] > 0:
