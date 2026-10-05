@@ -779,10 +779,18 @@ class Sim:
         """
         self.occupy(i, j, "exclude")
         self.apply_event(j, i, "exclude_stress")
+        # 双向：**「他恨上了排斥他的人」**
         self.apply_event(j, i, "exclude_affinity")
         for k in crowd:
             if k != i:
                 self.apply_event(j, k, "exclude_affinity")
+        # 双向：**「大家不跟他玩了」**（§10.24.4 补齐）
+        # ⚠️ 反向效果此前缺失，导致「被孤立」只表现为「受害者单向记恨」，
+        #    而**观察不到全班对他的疏远** —— 孤立因此不是一个可观测的**状态**。
+        self.apply_event(i, j, "exclude_affinity")
+        for k in crowd:
+            if k != i:
+                self.apply_event(k, j, "exclude_affinity")
         self.stats["excludes"] += 1
 
     def do_rumor(self, i, j):
