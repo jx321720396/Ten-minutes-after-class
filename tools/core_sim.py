@@ -85,8 +85,8 @@ class Sim:
         self.probs = {r["behavior"]: float(r["base_p"]) for r in load_table("rules/behavior_probs.csv")}
         self.thresholds = load_table("rules/behavior_thresholds.csv")
         self.decay = {r["axis"]: float(r["value"]) for r in load_table("rules/decay.csv")}
-        # 负反馈：传导增益随目标容纳度衰减（0 = 关闭；1.0 = 满强度）
-        self.feedback = 0.0
+        # 负反馈：传导增益随目标容纳度衰减（来自 transmission.csv 的 feedback）
+        self.feedback = self.p.get("feedback", 0.0)
         self.event_rows = load_table("balance/w_events.csv")
         self.nw = load_params("balance/npc_weight" + "s.csv")
         seeds = load_table("characters/seeds.csv")
@@ -179,6 +179,16 @@ class Sim:
             return 1.5
         return 1.0
 
+    def room_for(self, axis, value):
+        """负反馈：正向轴越接近饱和，增益越小（负面轴不适用）。
+
+        · 好感 / 信任：越满越难涨 —— 这就是阻止「30 天全班一起封顶」的机制
+        · 敌对 / 压力：不加负反馈，否则「敌意升级」会被压死
+        """
+        if self.feedback <= 0 or axis in ("hostility", "stress"):
+            return 1.0
+        return max(0.0, 1.0 - self.feedback * value / 100.0)
+
     def sat(self, u, axis):
         key = {"affinity": "u_a", "hostility": "u_h", "trust": "u_t", "stress": "u_s"}[axis]
         U = self.p.get(key, 25.0)
@@ -211,6 +221,8 @@ class Sim:
                 self.Stress[i] = clamp100(self.Stress[i] + delta)
             else:
                 target = {"affinity": self.A, "hostility": self.H, "trust": self.T}[axis]
+                # 统一写入点：正向轴乘负反馈（越满越难涨）
+                delta = r1(self.room_for(axis, target[i][j]) * delta)
                 target[i][j] = clamp100(target[i][j] + delta)
             applied = True
             self.stats["events"] += 1
@@ -247,11 +259,10 @@ class Sim:
                 denom = w_sum + self.p["epsilon"]
                 net_a = (num["affinity"] - num["hostility"]) / denom
                 net_h = (num["hostility"] - num["affinity"]) / denom
-                # 负反馈：越接近饱和，传导增益越小 —— 让"差异化"存在，而不是全班一起封顶
-                room_a = 1.0 - self.feedback * true["affinity"][i][k] / 100.0
-                room_h = 1.0 - self.feedback * true["hostility"][i][k] / 100.0
+                # 负反馈：越接近饱和，传导增益越小（与事件侧同一口径）
+                room_a = self.room_for("affinity", true["affinity"][i][k])
                 deltas["affinity"][i][k] = r1(room_a * self.sat(beta["affinity"] * net_a, "affinity"))
-                deltas["hostility"][i][k] = r1(room_h * self.sat(beta["hostility"] * net_h, "hostility"))
+                deltas["hostility"][i][k] = r1(self.sat(beta["hostility"] * net_h, "hostility"))
                 deltas["trust"][i][k] = r1(self.sat(beta["trust"] * num["trust"] / denom, "trust"))
 
         for ax in AXES:
