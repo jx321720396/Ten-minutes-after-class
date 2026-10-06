@@ -16,6 +16,9 @@
 1. 安装 **Godot 4.7.2**（标准版，非 .NET）。
 2. 打开 Godot → `Import` → 选择本目录的 `project.godot`。
 3. 按 `F5` 运行，入口是 `scenes/ui/main_menu.tscn`（主菜单 → 新游戏/继续/设置/关于）。
+4. 跑测试（**不需要 Godot**）：`bash tools/run_tests.sh` —— 离线六道门 + 铁律测试
+   （`tests/invariants/`）；装了 Godot 时加跑 GUT 单测，用 `--godot "<Godot 可执行文件完整路径>"` 指定即可，
+   详见 [`tools/README.md`](tools/README.md)。
 
 导出与构建配置见 `docs/production/比赛提交清单.md`。
 
