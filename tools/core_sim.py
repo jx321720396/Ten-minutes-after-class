@@ -45,6 +45,14 @@ def r1(v):
     return round(v, 1)
 
 
+def sigmoid(z):
+    """logistic 函数：p ∈ (0,1)，没有 0/1 硬闸门（§6.4）"""
+    if z >= 0:
+        return 1.0 / (1.0 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1.0 + e)
+
+
 def softmax(scores, tau, rng):
     if tau <= 0:
         raise ValueError("tau 必须 > 0（NPC行为决策 §8 不变式 5）")
@@ -176,6 +184,8 @@ class Sim:
         self.current_act = [None] * n     # 当前正在做/刚做完的行为（供音量统计）
         self.vol_log = []                 # 每个相位末的音量（标定观测用）
         self.sleeping = [False] * n       # 睡觉中（§10.8）：本课间不做别的事，且别人不能与之交互
+        # --- 举报把柄（§10.2）：目击到的「标签行为痕迹」虚拟层 ---
+        self.witness_day = [[-999] * n for _ in range(n)]   # witness_day[i][j] = i 最近目击 j 违规的日
         # --- 空间层（§15.1、§10.17.2 种子一）：座位表 + 邻接 ---
         self.seats = load_table("rules/seats.csv")
         self.seat_pos = {r["seat_id"]: (int(r["row"]), int(r["col"])) for r in self.seats}
@@ -505,15 +515,21 @@ class Sim:
             t *= self.nw["tau_stress_mult"]
         return max(t, 0.01)
 
-    def gate(self, i, behavior, j):
-        """门槛（硬条件）：不通过则不进入候选集"""
-        if behavior == "join_chat":
-            return self.A[i][j] >= 30 and self.Stress[i] <= 80
-        if behavior == "report":
-            return self.H[i][j] >= 60
-        if behavior == "chat":
-            return True
-        return False
+    def join_gate_utility(self, i, j):
+        """决策侧软门槛：低于门槛只降低概率，不把候选排除（§6.4）。
+
+        硬门槛曾被写成 `A[i][j] >= 30 and Stress[i] <= 80`，于是「概率低也想试一把」
+        的戏剧性被消灭。改为两个 sigmoid 之和再减 1，落在 (−1, +1)：
+        越过门槛给正分、低于门槛给负分，乘以 `join_chat_gate_weight` 后加进 U_b。
+        """
+        th = self.thresholds_lookup
+        ga = th.get("join_chat_gate_affinity", 30.0)
+        gs = th.get("join_chat_gate_stress", 80.0)
+        scale = th.get("join_chat_gate_scale", 8.0)
+        w = th.get("join_chat_gate_weight", 4.0)
+        za = (self.A[i][j] - ga) / scale
+        zs = (gs - self.Stress[i]) / scale
+        return w * (sigmoid(za) + sigmoid(zs) - 1.0)
 
     def free_join(self):
         """**「别人做什么，我也跟着做什么」**（用户设计）—— `join_mode = free` 的活动可自由跟随。
@@ -579,33 +595,30 @@ class Sim:
             groups.setdefault(a, []).append(i)
         return {a: sorted(v) for a, v in groups.items() if len(v) >= 2}
 
-    def join_feedback(self, i, j):
-        """i 想加入 j 的活动时，**概率与结果**（UI 用：玩家侧要展示「投色子」的过程）。
+    def join_score(self, i, j):
+        """判定侧 score：信念 B_A + 对方外向度 − 对方压力惩罚（§6.4）。
 
-        与 `do_join_chat` 用**同一套判据**（信念 + 对方外向度），但**只读、不结算**。
-
-        ⚠️ **成功率必须从「信念」算，不能从真值算**（§7.4 感知层）：
-        `B_A[i][j]` 是「i 以为 j 对自己多有好感」。所以：
-          · 展示这个概率**不泄露任何隐藏信息**（玩家看到的只是自己的猜测）；
-          · **概率高也可能失败** —— 「我以为他喜欢我」≠「他真的喜欢我」。
-        ∴ 掷骰不是装饰，而是**认知偏差的具象化**。
-
-        返回 `{"p": 成功率, "ok": 是否通过}`。`p` 由「信念 − 门槛」映射到 0~1（供骰子展示）。
+        压力是程度不是闸门：`hot ∈ [0,1]` 乘上 `join_chat_stress_penalty` 压低 score，
+        而不是把 p 归零。
         """
-        threshold = self.thresholds_lookup.get("join_chat_affinity", 45)
-        accept = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
-        # 把「离门槛的距离」映射成 0~1 的**渐变把握度**：门槛处 0.5，斜率放平（每 100 点好感变化 ±1.0）。
-        #    初版用 /40，结果 `accept` 稍低于门槛就掉到 0（实测全班落在 0~17%），
-        #    展示失去信息量。**把握应该是渐变的，不是"跨过门槛才有分"。**
-        p = 0.5 + (accept - threshold) / 100.0
-        p = max(0.0, min(1.0, p))
-        # ⚠️ 对方压力过高时**降低把握，而不是归零** ——
-        #    初版写 `if Stress[j] > 70: p = 0`，而全班压力普遍偏高，结果**成功率恒为 0%**，
-        #    展示毫无信息量（玩家永远看到 0%）。**压力是程度，不是闸门。**
-        hot = max(0.0, self.Stress[j] - 50.0) / 50.0        # 0 ~ 1
-        p = max(0.0, p * (1.0 - 0.6 * hot))
-        ok = accept >= threshold and self.Stress[j] <= 70   # 判定本身保留硬闸门（与 do_join_chat 一致）
-        return {"p": round(p, 2), "ok": ok}
+        base = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
+        hot = max(0.0, self.Stress[j] - 50.0) / 50.0
+        penalty = self.thresholds_lookup.get("join_chat_stress_penalty", 12.0)
+        return base - penalty * hot
+
+    def join_probability(self, i, j):
+        """判定侧概率：p = σ((score − θ)/scale)，永不为 0/1（§6.4）。"""
+        th = self.thresholds_lookup
+        theta = th.get("join_chat_affinity", 45.0)
+        scale = th.get("join_chat_scale", 10.0)
+        return sigmoid((self.join_score(i, j) - theta) / scale)
+
+    def join_feedback(self, i, j):
+        """只读：返回玩家侧会看到的成功率 `p`（§10.32）。
+
+        `p` 从信念 `B` 算（不泄露真值）；**实际掷骰在 `do_join_chat` 里做**。
+        """
+        return {"p": round(self.join_probability(i, j), 2)}
 
     # ---------- 玩家侧判定展示（NPC 静默，玩家可见过程）----------
     def verdict(self, i, j, kind="join_chat"):
@@ -618,11 +631,12 @@ class Sim:
         """
         if kind == "join_chat":
             fb = self.join_feedback(i, j)
+            roll = self.rng.random()
             return {
                 "kind": kind,
                 "p": fb["p"],                    # ① 成功率（信念算得，不泄露真值）
-                "roll": self.rng.random(),       # ② 掷骰（展示用）
-                "ok": fb["ok"],                  # ③ 结果
+                "roll": roll,                    # ② 掷骰
+                "ok": roll < fb["p"],            # ③ 结果（与 do_join_chat 同一 p，无硬闸门）
                 "note": "成功率来自「你以为对方怎么看你」，不是事实 —— 把握大也可能被拒。",
             }
         return None
@@ -644,6 +658,49 @@ class Sim:
                 self.current_act[i] = "sleep"
                 self.busy_until[i] = 10 ** 9
                 self.stats["sleeps"] += 1
+
+    def phone_exposure(self):
+        """举报把柄虚拟层（§10.2）：带手机者课间可能被目击「玩手机」。
+
+        目击者 = 非睡觉的邻居（看得见才谈得上目击）。被目击一次，
+        目击者获得 `report_witness_window` 天内的举报把柄。
+        这是「标签 → 行为痕迹 → 目击」的链路，**不追溯流言源头**。
+        """
+        p = self.probs.get("phone_expose_p", 0.0)
+        if p <= 0:
+            return
+        for j in range(self.N):
+            if self.sleeping[j] or "带手机" not in self.character_tags[j]:
+                continue
+            if self.rng.random() >= p:
+                continue
+            for i in self.neighbor_idx[j]:
+                if i == j or self.sleeping[i]:
+                    continue
+                self.witness_day[i][j] = self.day
+
+    def roll_reports(self):
+        """举报判定（§10.2）：每段课间对有把柄的候选掷一次骰，而不是每 tick。
+
+        概率 = report_p × σ(z)，其中 z 由敌对、好感、信任共同决定——
+        好友几乎不举报（A/T 高把 z 压低），但概率永不为 0。
+        """
+        th_rep = self.thresholds_lookup.get("report_hostility", 60.0)
+        sc_rep = self.thresholds_lookup.get("report_scale", 8.0)
+        win = self.thresholds_lookup.get("report_witness_window", 7.0)
+        w_a = self.thresholds_lookup.get("report_affinity_penalty", 3.0)
+        w_t = self.thresholds_lookup.get("report_trust_penalty", 2.0)
+        p_rep = self.probs.get("report_p", 0.05)
+        for i in range(self.N):
+            if self.sleeping[i]:
+                continue
+            for j in range(self.N):
+                if i == j or self.sleeping[j] or self.day - self.witness_day[i][j] > win:
+                    continue
+                z = (self.H[i][j] - th_rep) / sc_rep - w_a * self.A[i][j] / 100.0 - w_t * self.T[i][j] / 100.0
+                if self.rng.random() < p_rep * sigmoid(z):
+                    self.do_report(i, j)
+                    break
 
     def decide_and_act(self):
         """一 tick 内的行为决策（简化：只挑一个行为执行）"""
@@ -757,16 +814,8 @@ class Sim:
                     busy.add(i)
                     busy.add(j)
                     continue
-            # 阈值类：举报（敌对累积到阈值即发生）
-            for j in range(n):
-                if i == j or self.H[i][j] < 60:
-                    continue
-                if self.rng.random() < self.probs.get("report_p", 0.05):  # 避免每 tick 都触发
-                    self.do_report(i, j)
-                    break
             # 意向类：搭话
-            cands = [(j, self.gate(i, "join_chat", j)) for j in range(n) if j != i and not self.sleeping[j]]
-            cands = [j for j, ok in cands if ok and j not in busy]
+            cands = [j for j in range(n) if j != i and not self.sleeping[j] and j not in busy]
             if cands:
                 alpha = self.alpha(i)
                 scores = []
@@ -777,6 +826,7 @@ class Sim:
                     u = alpha["affinity"] * gain_a + alpha["trust"] * gain_t - alpha["hostility"] * risk_h
                     u += self.crowd_bias(i, "loud")   # 氛围项：吵则更想搭话（从众者）
                     u += self.tag_bias(i, "chat_bias") - self.tag_bias(i, "alone_bias")  # 标签项
+                    u += self.join_gate_utility(i, j)   # 软门槛：低门槛仍可有小概率发起（§6.4）
                     scores.append(u)
                 if scores:
                     k = softmax(scores, self.tau(i), self.rng)
@@ -841,26 +891,29 @@ class Sim:
         self.observe(j, i, "affinity")
         self.stats["chats"] += 1
 
-    def do_join_chat(self, i, j):
-        """搭话：走对方回应判定（拒绝则反噬）。
+    def do_join_chat(self, i, j, roll=None):
+        """搭话判定侧：**p = σ((score − θ)/scale) 掷骰**（§6.4）。
 
-        判据 = **信念** `B_A[i][j]`（i 眼中"对方对我多有好感"）+ 对方**外向度**修正；
-        门槛来自 `behavior_thresholds.csv` 的 `join_chat_affinity`（默认 45，**高于** `prior_a`=40）。
-        ⚠️ 早期实现用 `B_A >= 40`，而先验正好是 40 → 永远通过 → 「好感扣减」路径从不触发（§10.17）。
+        没有硬闸门：概率低也可能被接纳、概率高也可能被拒。
+        `roll` 可由调用方（玩家 UI）预先掷好，保证「三拍展示」与实际结算一致。
         """
         self.in_conversation[i] = True
         self.in_conversation[j] = True
         self.occupy(i, j, "join_chat", quiet=True)   # 同一场对话：只计一个声源
-        accept = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
-        if accept >= self.thresholds_lookup["join_chat_affinity"] and self.Stress[j] <= 70:
+        p = self.join_probability(i, j)
+        if roll is None:
+            roll = self.rng.random()
+        if roll < p:
             self.do_chat(i, j)
             self.stats["joins"] += 1
+            self.stats["join_accepts"] = self.stats.get("join_accepts", 0) + 1
         else:
             self.apply_event(i, j, "reject_affinity")
             self.apply_event(i, j, "reject_hostility")
             self.apply_event(i, j, "reject_stress")
             self.observe(i, j, "affinity")
             self.stats["joins"] += 1
+            self.stats["join_rejects"] = self.stats.get("join_rejects", 0) + 1
             self.stats["skipped_events"] += 1
 
     def do_report(self, i, j):
@@ -903,6 +956,7 @@ class Sim:
             # 判定只看「有多少人在看」—— 这是纯粹的处境条件，与是谁无关（无特例）。
             if len(audience) >= th.get("humiliate_bystanders", 3.0):
                 self.apply_event(j, i, "humiliate_hostility")
+                self.hurt_day[i][j] = self.day   # 施害者视角：i 当众羞辱了 j（§10.25）
                 self.stats["humiliations"] = self.stats.get("humiliations", 0) + 1
             self.stats["tease_fail"] += 1
         self.stats["teases"] += 1
@@ -1300,6 +1354,9 @@ class Sim:
             self.settle_sleep()               # 上一相位睡着的醒来（课间段结束才结算）
             self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
             self.free_join()                  # 「别人做什么我也跟着做」（free 类活动，§10.31）
+            if phase == "break":
+                self.phone_exposure()         # 举报把柄：课间目击「带手机」等标签行为痕迹（§10.2）
+                self.roll_reports()           # 举报判定：每段一次，有把柄才掷骰（§10.2）
             self.check_interrupt()            # 相位切换 → 未完成的行为被打断
             for _ in range(ticks):
                 self.tick()
