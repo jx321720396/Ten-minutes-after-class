@@ -1,6 +1,6 @@
 # tests/ —— 测试
 
-> 状态：骨架 ｜ 维护者：程序 / 测试 ｜ 最后更新：2026-10-04
+> 状态：GUT 9.7.1 已接入 ｜ 维护者：程序 / 测试 ｜ 最后更新：2026-10-06
 > 策略依据：[`../docs/qa/测试策略.md`](../docs/qa/测试策略.md)
 
 ## 目录规划
@@ -14,25 +14,28 @@ tests/
 └─ emergence/     涌现验收：主文档 §15 的 13 条现象用例
 ```
 
-## 框架选型（待定，M1 前决定）
+## 框架选型（已定：GUT 9.7.1）
 
 | 方案 | 优点 | 备注 |
 |---|---|---|
-| **GUT** | 生态成熟、社区用例多 | 作为默认候选 |
-| gdUnit4 | 断言与套件功能更丰富 | 若需要参数化与报告再评估 |
+| **GUT** | 生态成熟、社区用例多 | **已选定并接入**：`addons/gut/`（v9.7.1，对应 Godot 4.7.x） |
+| gdUnit4 | 断言与套件功能更丰富 | 未采用；如后续需要参数化与报告再评估 |
 
-选定后需在 `addons/` 下安装，并在本文件与 `../docs/qa/测试策略.md` 中记录版本。
+版本记录（2026-10-06）：GUT **9.7.1**（官方兼容表对应 Godot 4.7.x），同步记录于 `../docs/qa/测试策略.md`。
 
-## 运行方式（规划）
+## 运行方式
 
 ```bash
-# 单测（需先安装测试框架）
+# 单测（GUT 9.7.1，已接入）
 godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit
 
-# 无头整局（确定性检查：同种子同结果）
+# Windows 本机未把 Godot 加入 PATH 时，用 console 版全路径（普通版抓不到 headless 输出）：
+# "E:/godot/Godot_v4.7.2-stable_win64_console.exe" --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit
+
+# 无头整局（规划中：待内核落地）
 godot --headless --path . --script tests/integration/run_term.gd -- --days=30 --seed=12345
 
-# 批量标定
+# 批量标定（规划中）
 godot --headless --path . --script tests/balance/run_batch.gd -- --runs=100 --seed=1
 ```
 
@@ -42,4 +45,4 @@ godot --headless --path . --script tests/balance/run_batch.gd -- --runs=100 --se
 
 ## 现状
 
-当前目录仅有本说明文件（M0）。测试框架与用例在 M1 随规则实现同步建立——**每条规则合入时必须带对应单测**（见 `../CONTRIBUTING.md` 第 8 节 PR 流程）。
+已接入 GUT 9.7.1（`addons/gut/`），`tests/unit/` 有冒烟用例 `test_smoke.gd`；其余子目录随规则实现建立——**每条规则合入时必须带对应单测**（见 `../CONTRIBUTING.md` 第 8 节 PR 流程）。
