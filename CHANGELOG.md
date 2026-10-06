@@ -11,6 +11,11 @@
 
 - **教室呈现路线定为 2D 先行（用户决策）**：课间空间用 `scenes/Classroom2D.tscn`（`tools/bake_classroom_2d.gd` 烘焙的静态场景）+ `scenes/characters/*.tscn`（16 个角色场景）跑通代码与玩法；`assets/models/classroom/`（Sketchfab 3D 教室，CC BY 4.0）暂作备用素材，**画风优化排在 D14 内容冻结之后**；团队分工任务单同步标注。
 ### 新增
+- **铁律测试脚手架 + 一键测试脚本 + 逐 tick 对拍导出（2026-10-06）**：
+  · **`tests/invariants/`**：三条铁律的自动化守门脚本（Python 离线检查，不依赖引擎）——`check_no_character_id.py`（扫 `scripts/systems/`、`scripts/npc/` 的角色名 / 角色编号硬编码）、`check_observer_readonly.py`（静态扫观察层写矩阵 + 运行时给 `A/H/T/O` 装计数代理，统计观察层更新期间的读写次数，**写数必须为 0**）、`check_magic_numbers.py`（扫 `scripts/core|systems|npc` 的硬编码数值，结构常量白名单在脚本内维护）；公共设施 `_common.py`，说明见 `tests/invariants/README.md`。目标目录未落地时标 **`SKIP`「暂时没测到」**并正常退出（骨架期不崩、不误判红）。
+  · **`tools/run_tests.sh`**：一键跑「六道门 + 铁律测试 + Godot 侧 GUT 单测」；Godot 路径查找顺序为 `--godot` > `$GODOT_BIN` > 仓库根 `.godot_path` > `PATH`，找不到只跳过 Godot 段；强制 `PYTHONIOENCODING=utf-8`（本机 GBK 控制台下六道门会因 `✓` 抛 `UnicodeEncodeError`）。
+  · **`tools/export_ticks.py`**：hook 内核 `tick` 导出同种子逐 tick 关键状态（关系三轴 / 透明度 / 压力统计 + 矩阵哈希），作为 GDScript 移植的**对拍基建**（冲刺计划 D6–D9）；产物默认落 `tools/out/`（已 gitignore）。
+  · 配套：`.gitignore` 新增 `.godot_path`、`/tools/out/`；`tools/README.md`、`tests/README.md`、`docs/qa/测试策略.md` 同步更新。
 - **安卓导出配置完成（2026-10-06）**：新增 `export_presets.cfg`——Windows Desktop + Android 双导出预设（包名 `com.xiake.tenminutes`；Android 使用内置模板，非 Gradle 自定义构建）；`project.godot` 开启 `textures/vram_compression/import_etc2_astc`（移动端 ETC2/ASTC 纹理导入格式）；教室 3D 素材 `.import` 同步为 Godot 4.7.2 导入状态。
 - **接入 GUT 测试框架（9.7.1，Godot 4.7.x 对应版）**：`addons/gut/` 入库并在 `project.godot` 启用编辑器插件；`tests/unit/test_smoke.gd` 冒烟用例跑通（`godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit`）；版本记录于 `tests/README.md` 与 `docs/qa/测试策略.md`。
 ### 变更
