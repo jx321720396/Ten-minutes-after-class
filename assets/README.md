@@ -9,7 +9,8 @@ assets/
 ├─ icons/            应用与界面图标（icon.svg 为项目图标）
 ├─ models/           3D 模型（classroom/ 教室场景，第三方，见 CREDITS.md）
 ├─ textures/         贴图
-│   └─ clueboard/    线索板（推理板）素材：粉笔、板擦、板面
+│   ├─ clueboard/    线索板（推理板）素材：粉笔、板擦、板面
+│   └─ classroom/    3D 教室像素贴图：地砖、木纹、墙面、黑板报、窗帘、张贴纸
 ├─ audio/
 │   ├─ bgm/          背景音乐（OGG）
 │   └─ sfx/          音效（OGG / WAV）
