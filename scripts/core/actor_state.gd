@@ -2,12 +2,13 @@ class_name ActorState
 extends RefCounted
 ## 个体属性（长度 N，主文档 §18.2）。
 ##
-## 平铺：opacity / stress 是长度 N 的向量；mbti 是 4×N（dim 0=E、1=N、2=F、3=P），
+## 平铺：opacity / stress 是长度 N 的向量；mbti 是 4×N，
 ## mbti[dim][i] 存于 _mbti[dim * N + i]。
 ## 读写一律走访问器；§18.2 的 `var opacity` / `var stress` 与 §4.1 的
 ## 访问器 `opacity(i)` / `stress(i)` 同名，故底层数组私有化。
 
-const MBTI_DIMS: int = 4
+## MBTI 四维（E/N/F/P）；COUNT 作维度计数哨兵，避免魔法数字 4。
+enum MBTI { E, N, F, P, COUNT }
 
 var _opacity: PackedFloat32Array
 var _stress: PackedFloat32Array
@@ -20,7 +21,7 @@ func _init(n: int) -> void:
 	_n = maxi(n, 0)
 	_opacity.resize(_n)
 	_stress.resize(_n)
-	_mbti.resize(MBTI_DIMS * _n)
+	_mbti.resize(MBTI.COUNT * _n)
 
 
 ## 个体数量。
@@ -42,9 +43,9 @@ func stress(i: int) -> float:
 	return _stress[i]
 
 
-## i 的 MBTI 维度值（dim：0=E、1=N、2=F、3=P）；越界返回 0。
+## i 的 MBTI 维度值（dim 顺序见 MBTI 枚举：E/N/F/P）；越界返回 0。
 func mbti(i: int, dim: int) -> float:
-	if not _in_bounds(i) or dim < 0 or dim >= MBTI_DIMS:
+	if not _in_bounds(i) or dim < 0 or dim >= MBTI.COUNT:
 		return 0.0
 	return _mbti[dim * _n + i]
 
@@ -63,7 +64,7 @@ func set_stress(i: int, value: float) -> void:
 
 
 func set_mbti(i: int, dim: int, value: float) -> void:
-	if not _in_bounds(i) or dim < 0 or dim >= MBTI_DIMS:
+	if not _in_bounds(i) or dim < 0 or dim >= MBTI.COUNT:
 		return
 	_mbti[dim * _n + i] = clampf(value, 0.0, 100.0)
 
