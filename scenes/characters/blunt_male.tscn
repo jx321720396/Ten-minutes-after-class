@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://cqerfvdm3qkdx"]
+
+[ext_resource type="Texture2D" uid="uid://dh3ot508tnc8s" path="res://assets/textures/characters/直接男.png" id="1_c4v6a"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hviou"]
+atlas = ExtResource("1_c4v6a")
+
+[node name="Blunt_male" type="Sprite2D" unique_id=831498492]
+texture = SubResource("AtlasTexture_hviou")

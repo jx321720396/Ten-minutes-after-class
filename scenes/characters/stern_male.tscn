@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://cdglsjjqe6bk6"]
+
+[ext_resource type="Texture2D" uid="uid://3n2ccsh7kcam" path="res://assets/textures/characters/严肃男.png" id="1_vs7mn"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hviou"]
+atlas = ExtResource("1_vs7mn")
+
+[node name="Stern_male" type="Sprite2D" unique_id=1865367770]
+texture = SubResource("AtlasTexture_hviou")

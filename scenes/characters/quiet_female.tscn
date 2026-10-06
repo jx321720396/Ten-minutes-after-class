@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://dhir0rd4p6mgv"]
+
+[ext_resource type="Texture2D" uid="uid://bqcbrtqmffuuj" path="res://assets/textures/characters/安静女.png" id="1_poujg"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hviou"]
+atlas = ExtResource("1_poujg")
+
+[node name="Quiet_female" type="Sprite2D" unique_id=1506970641]
+texture = SubResource("AtlasTexture_hviou")

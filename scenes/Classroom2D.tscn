@@ -1,0 +1,565 @@
+[gd_scene format=3 uid="uid://df2c8lwu13xgf"]
+
+[node name="Classroom2D" type="Node2D" unique_id=776520385]
+
+[node name="Room" type="Node2D" parent="." unique_id=111643514]
+
+[node name="后墙" type="ColorRect" parent="Room" unique_id=1898181930]
+offset_right = 1920.0
+offset_bottom = 300.0
+mouse_filter = 2
+color = Color(0.87, 0.86, 0.82, 1)
+
+[node name="地板" type="ColorRect" parent="Room" unique_id=225750121]
+offset_top = 300.0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+color = Color(0.78, 0.63, 0.47, 1)
+
+[node name="踢脚线" type="ColorRect" parent="Room" unique_id=1480751701]
+offset_top = 290.0
+offset_right = 1920.0
+offset_bottom = 300.0
+mouse_filter = 2
+color = Color(0.62, 0.58, 0.52, 1)
+
+[node name="黑板外框" type="ColorRect" parent="Room" unique_id=2063417729]
+offset_left = 648.0
+offset_top = 48.0
+offset_right = 1272.0
+offset_bottom = 312.0
+mouse_filter = 2
+color = Color(0.42, 0.33, 0.22, 1)
+
+[node name="黑板" type="ColorRect" parent="Room" unique_id=188457534]
+offset_left = 660.0
+offset_top = 60.0
+offset_right = 1260.0
+offset_bottom = 300.0
+mouse_filter = 2
+color = Color(0.16, 0.35, 0.26, 1)
+
+[node name="粉笔槽" type="ColorRect" parent="Room" unique_id=1993286778]
+offset_left = 648.0
+offset_top = 312.0
+offset_right = 1272.0
+offset_bottom = 324.0
+mouse_filter = 2
+color = Color(0.55, 0.45, 0.32, 1)
+
+[node name="讲台" type="ColorRect" parent="Room" unique_id=1014188594]
+offset_left = 880.0
+offset_top = 320.0
+offset_right = 1040.0
+offset_bottom = 376.0
+mouse_filter = 2
+color = Color(0.66, 0.55, 0.4, 1)
+
+[node name="左窗" type="Node2D" parent="Room" unique_id=344862274]
+position = Vector2(120, 70)
+
+[node name="玻璃" type="ColorRect" parent="Room/左窗" unique_id=2046575802]
+offset_right = 400.0
+offset_bottom = 180.0
+mouse_filter = 2
+color = Color(0.68, 0.82, 0.92, 1)
+
+[node name="外框" type="Line2D" parent="Room/左窗" unique_id=369194954]
+points = PackedVector2Array(0, 0, 400, 0, 400, 180, 0, 180, 0, 0)
+width = 6.0
+default_color = Color(0.55, 0.6, 0.65, 1)
+
+[node name="竖框" type="Line2D" parent="Room/左窗" unique_id=770488860]
+points = PackedVector2Array(200, 0, 200, 180)
+width = 5.0
+default_color = Color(0.55, 0.6, 0.65, 1)
+
+[node name="横框" type="Line2D" parent="Room/左窗" unique_id=1208907873]
+points = PackedVector2Array(0, 90, 400, 90)
+width = 5.0
+default_color = Color(0.55, 0.6, 0.65, 1)
+
+[node name="右窗" type="Node2D" parent="Room" unique_id=1606003030]
+position = Vector2(1400, 70)
+
+[node name="玻璃" type="ColorRect" parent="Room/右窗" unique_id=452166149]
+offset_right = 400.0
+offset_bottom = 180.0
+mouse_filter = 2
+color = Color(0.68, 0.82, 0.92, 1)
+
+[node name="外框" type="Line2D" parent="Room/右窗" unique_id=19341633]
+points = PackedVector2Array(0, 0, 400, 0, 400, 180, 0, 180, 0, 0)
+width = 6.0
+default_color = Color(0.55, 0.6, 0.65, 1)
+
+[node name="竖框" type="Line2D" parent="Room/右窗" unique_id=670969357]
+points = PackedVector2Array(200, 0, 200, 180)
+width = 5.0
+default_color = Color(0.55, 0.6, 0.65, 1)
+
+[node name="横框" type="Line2D" parent="Room/右窗" unique_id=256507984]
+points = PackedVector2Array(0, 90, 400, 90)
+width = 5.0
+default_color = Color(0.55, 0.6, 0.65, 1)
+
+[node name="Desks" type="Node2D" parent="." unique_id=1091112864]
+
+[node name="Desk01" type="Node2D" parent="Desks" unique_id=1607313660]
+position = Vector2(320, 600)
+
+[node name="桌面" type="ColorRect" parent="Desks/Desk01" unique_id=1579567403]
+offset_right = 200.0
+offset_bottom = 18.0
+mouse_filter = 2
+color = Color(0.8, 0.6, 0.36, 1)
+
+[node name="左桌腿" type="ColorRect" parent="Desks/Desk01" unique_id=1862358264]
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 32.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="右桌腿" type="ColorRect" parent="Desks/Desk01" unique_id=1482798883]
+offset_left = 168.0
+offset_top = 18.0
+offset_right = 182.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="椅背横条" type="ColorRect" parent="Desks/Desk01" unique_id=852611802]
+offset_left = 40.0
+offset_top = 76.0
+offset_right = 160.0
+offset_bottom = 90.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背左柱" type="ColorRect" parent="Desks/Desk01" unique_id=1827231581]
+offset_left = 40.0
+offset_top = 90.0
+offset_right = 50.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背右柱" type="ColorRect" parent="Desks/Desk01" unique_id=1717672134]
+offset_left = 150.0
+offset_top = 90.0
+offset_right = 160.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅面" type="ColorRect" parent="Desks/Desk01" unique_id=414364358]
+offset_left = 40.0
+offset_top = 116.0
+offset_right = 160.0
+offset_bottom = 132.0
+mouse_filter = 2
+color = Color(0.56, 0.42, 0.28, 1)
+
+[node name="Desk02" type="Node2D" parent="Desks" unique_id=90604436]
+position = Vector2(740, 600)
+
+[node name="桌面" type="ColorRect" parent="Desks/Desk02" unique_id=1196989000]
+offset_right = 200.0
+offset_bottom = 18.0
+mouse_filter = 2
+color = Color(0.8, 0.6, 0.36, 1)
+
+[node name="左桌腿" type="ColorRect" parent="Desks/Desk02" unique_id=1356546692]
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 32.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="右桌腿" type="ColorRect" parent="Desks/Desk02" unique_id=1914463201]
+offset_left = 168.0
+offset_top = 18.0
+offset_right = 182.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="椅背横条" type="ColorRect" parent="Desks/Desk02" unique_id=1888395646]
+offset_left = 40.0
+offset_top = 76.0
+offset_right = 160.0
+offset_bottom = 90.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背左柱" type="ColorRect" parent="Desks/Desk02" unique_id=360368244]
+offset_left = 40.0
+offset_top = 90.0
+offset_right = 50.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背右柱" type="ColorRect" parent="Desks/Desk02" unique_id=1283418914]
+offset_left = 150.0
+offset_top = 90.0
+offset_right = 160.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅面" type="ColorRect" parent="Desks/Desk02" unique_id=913858551]
+offset_left = 40.0
+offset_top = 116.0
+offset_right = 160.0
+offset_bottom = 132.0
+mouse_filter = 2
+color = Color(0.56, 0.42, 0.28, 1)
+
+[node name="Desk03" type="Node2D" parent="Desks" unique_id=432628855]
+position = Vector2(1160, 600)
+
+[node name="桌面" type="ColorRect" parent="Desks/Desk03" unique_id=1871938947]
+offset_right = 200.0
+offset_bottom = 18.0
+mouse_filter = 2
+color = Color(0.8, 0.6, 0.36, 1)
+
+[node name="左桌腿" type="ColorRect" parent="Desks/Desk03" unique_id=853260370]
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 32.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="右桌腿" type="ColorRect" parent="Desks/Desk03" unique_id=1192114795]
+offset_left = 168.0
+offset_top = 18.0
+offset_right = 182.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="椅背横条" type="ColorRect" parent="Desks/Desk03" unique_id=29293261]
+offset_left = 40.0
+offset_top = 76.0
+offset_right = 160.0
+offset_bottom = 90.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背左柱" type="ColorRect" parent="Desks/Desk03" unique_id=538144066]
+offset_left = 40.0
+offset_top = 90.0
+offset_right = 50.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背右柱" type="ColorRect" parent="Desks/Desk03" unique_id=951613406]
+offset_left = 150.0
+offset_top = 90.0
+offset_right = 160.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅面" type="ColorRect" parent="Desks/Desk03" unique_id=1448977923]
+offset_left = 40.0
+offset_top = 116.0
+offset_right = 160.0
+offset_bottom = 132.0
+mouse_filter = 2
+color = Color(0.56, 0.42, 0.28, 1)
+
+[node name="Desk04" type="Node2D" parent="Desks" unique_id=1943131497]
+position = Vector2(1580, 600)
+
+[node name="桌面" type="ColorRect" parent="Desks/Desk04" unique_id=965745303]
+offset_right = 200.0
+offset_bottom = 18.0
+mouse_filter = 2
+color = Color(0.8, 0.6, 0.36, 1)
+
+[node name="左桌腿" type="ColorRect" parent="Desks/Desk04" unique_id=433327677]
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 32.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="右桌腿" type="ColorRect" parent="Desks/Desk04" unique_id=1671293204]
+offset_left = 168.0
+offset_top = 18.0
+offset_right = 182.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="椅背横条" type="ColorRect" parent="Desks/Desk04" unique_id=1738234333]
+offset_left = 40.0
+offset_top = 76.0
+offset_right = 160.0
+offset_bottom = 90.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背左柱" type="ColorRect" parent="Desks/Desk04" unique_id=397209823]
+offset_left = 40.0
+offset_top = 90.0
+offset_right = 50.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背右柱" type="ColorRect" parent="Desks/Desk04" unique_id=167439858]
+offset_left = 150.0
+offset_top = 90.0
+offset_right = 160.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅面" type="ColorRect" parent="Desks/Desk04" unique_id=1725916269]
+offset_left = 40.0
+offset_top = 116.0
+offset_right = 160.0
+offset_bottom = 132.0
+mouse_filter = 2
+color = Color(0.56, 0.42, 0.28, 1)
+
+[node name="Desk05" type="Node2D" parent="Desks" unique_id=1901038581]
+position = Vector2(320, 900)
+
+[node name="桌面" type="ColorRect" parent="Desks/Desk05" unique_id=1854741318]
+offset_right = 200.0
+offset_bottom = 18.0
+mouse_filter = 2
+color = Color(0.8, 0.6, 0.36, 1)
+
+[node name="左桌腿" type="ColorRect" parent="Desks/Desk05" unique_id=919057488]
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 32.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="右桌腿" type="ColorRect" parent="Desks/Desk05" unique_id=62924364]
+offset_left = 168.0
+offset_top = 18.0
+offset_right = 182.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="椅背横条" type="ColorRect" parent="Desks/Desk05" unique_id=645256711]
+offset_left = 40.0
+offset_top = 76.0
+offset_right = 160.0
+offset_bottom = 90.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背左柱" type="ColorRect" parent="Desks/Desk05" unique_id=877623541]
+offset_left = 40.0
+offset_top = 90.0
+offset_right = 50.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背右柱" type="ColorRect" parent="Desks/Desk05" unique_id=1415446024]
+offset_left = 150.0
+offset_top = 90.0
+offset_right = 160.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅面" type="ColorRect" parent="Desks/Desk05" unique_id=622234289]
+offset_left = 40.0
+offset_top = 116.0
+offset_right = 160.0
+offset_bottom = 132.0
+mouse_filter = 2
+color = Color(0.56, 0.42, 0.28, 1)
+
+[node name="Desk06" type="Node2D" parent="Desks" unique_id=2130064732]
+position = Vector2(740, 900)
+
+[node name="桌面" type="ColorRect" parent="Desks/Desk06" unique_id=1308718638]
+offset_right = 200.0
+offset_bottom = 18.0
+mouse_filter = 2
+color = Color(0.8, 0.6, 0.36, 1)
+
+[node name="左桌腿" type="ColorRect" parent="Desks/Desk06" unique_id=948590630]
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 32.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="右桌腿" type="ColorRect" parent="Desks/Desk06" unique_id=779871493]
+offset_left = 168.0
+offset_top = 18.0
+offset_right = 182.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="椅背横条" type="ColorRect" parent="Desks/Desk06" unique_id=2060681384]
+offset_left = 40.0
+offset_top = 76.0
+offset_right = 160.0
+offset_bottom = 90.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背左柱" type="ColorRect" parent="Desks/Desk06" unique_id=1107152876]
+offset_left = 40.0
+offset_top = 90.0
+offset_right = 50.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背右柱" type="ColorRect" parent="Desks/Desk06" unique_id=2067934863]
+offset_left = 150.0
+offset_top = 90.0
+offset_right = 160.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅面" type="ColorRect" parent="Desks/Desk06" unique_id=1050501061]
+offset_left = 40.0
+offset_top = 116.0
+offset_right = 160.0
+offset_bottom = 132.0
+mouse_filter = 2
+color = Color(0.56, 0.42, 0.28, 1)
+
+[node name="Desk07" type="Node2D" parent="Desks" unique_id=1136745559]
+position = Vector2(1160, 900)
+
+[node name="桌面" type="ColorRect" parent="Desks/Desk07" unique_id=210432756]
+offset_right = 200.0
+offset_bottom = 18.0
+mouse_filter = 2
+color = Color(0.8, 0.6, 0.36, 1)
+
+[node name="左桌腿" type="ColorRect" parent="Desks/Desk07" unique_id=910220814]
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 32.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="右桌腿" type="ColorRect" parent="Desks/Desk07" unique_id=728958722]
+offset_left = 168.0
+offset_top = 18.0
+offset_right = 182.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="椅背横条" type="ColorRect" parent="Desks/Desk07" unique_id=1101221779]
+offset_left = 40.0
+offset_top = 76.0
+offset_right = 160.0
+offset_bottom = 90.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背左柱" type="ColorRect" parent="Desks/Desk07" unique_id=134261264]
+offset_left = 40.0
+offset_top = 90.0
+offset_right = 50.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背右柱" type="ColorRect" parent="Desks/Desk07" unique_id=390110886]
+offset_left = 150.0
+offset_top = 90.0
+offset_right = 160.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅面" type="ColorRect" parent="Desks/Desk07" unique_id=930988076]
+offset_left = 40.0
+offset_top = 116.0
+offset_right = 160.0
+offset_bottom = 132.0
+mouse_filter = 2
+color = Color(0.56, 0.42, 0.28, 1)
+
+[node name="Desk08" type="Node2D" parent="Desks" unique_id=288778247]
+position = Vector2(1580, 900)
+
+[node name="桌面" type="ColorRect" parent="Desks/Desk08" unique_id=1389057474]
+offset_right = 200.0
+offset_bottom = 18.0
+mouse_filter = 2
+color = Color(0.8, 0.6, 0.36, 1)
+
+[node name="左桌腿" type="ColorRect" parent="Desks/Desk08" unique_id=826007518]
+offset_left = 18.0
+offset_top = 18.0
+offset_right = 32.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="右桌腿" type="ColorRect" parent="Desks/Desk08" unique_id=263595542]
+offset_left = 168.0
+offset_top = 18.0
+offset_right = 182.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(0.46, 0.34, 0.22, 1)
+
+[node name="椅背横条" type="ColorRect" parent="Desks/Desk08" unique_id=1417079436]
+offset_left = 40.0
+offset_top = 76.0
+offset_right = 160.0
+offset_bottom = 90.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背左柱" type="ColorRect" parent="Desks/Desk08" unique_id=1412114472]
+offset_left = 40.0
+offset_top = 90.0
+offset_right = 50.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅背右柱" type="ColorRect" parent="Desks/Desk08" unique_id=466538583]
+offset_left = 150.0
+offset_top = 90.0
+offset_right = 160.0
+offset_bottom = 116.0
+mouse_filter = 2
+color = Color(0.4, 0.3, 0.2, 1)
+
+[node name="椅面" type="ColorRect" parent="Desks/Desk08" unique_id=16586759]
+offset_left = 40.0
+offset_top = 116.0
+offset_right = 160.0
+offset_bottom = 132.0
+mouse_filter = 2
+color = Color(0.56, 0.42, 0.28, 1)
+
+[node name="Students" type="Node2D" parent="." unique_id=1624147797]

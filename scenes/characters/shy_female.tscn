@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://hjxcw500d1e3"]
+
+[ext_resource type="Texture2D" uid="uid://pkjylo6hxbtr" path="res://assets/textures/characters/社恐女.png" id="1_3ghsf"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hviou"]
+atlas = ExtResource("1_3ghsf")
+
+[node name="Shy_female" type="Sprite2D" unique_id=1081928024]
+texture = SubResource("AtlasTexture_hviou")
