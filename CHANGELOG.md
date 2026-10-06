@@ -10,6 +10,32 @@
 ## [未发布]
 
 ### 变更
+- **目标引擎定稿：Godot 4.6（GDScript）（用户决策）**：参赛作品使用 Godot 制作，规格与数值资产（主文档、`data/` 参数表、Python 内核与六道门）全部延续；移植目标为 GDScript，逐项对拍 24 项单测。相关文档已统一为 Godot 表述：AGENTS.md、主文档 §18（架构/数据模型/规则接口）、README、路线图注记、冲刺计划（见冲刺计划 §5 清单）。
+- **引擎表述终清理（用户决策）**：移除全仓「曾评估其它引擎」的历史注记与对比表述，统一为 Godot 4.6（GDScript）唯一引擎定稿表述；涉及 AGENTS.md、主文档引擎注记、路线图、冲刺计划（§0 / 不做清单 / §5 清单全部勾结）、里程碑.md 补引擎注记。
+- **《聚光灯 21 天冲刺计划》定为 10/18 提交版（Godot）**：垂直切片（8 人班 × 30 天，§17.1 第一版 7 行为）对齐 2026 聚光灯创作挑战（主题「涌现」），**提交目标日 10/18**（用户确认，较创作期默认截止提前 3 天），从提交日倒排 D6–D18 里程碑，含引擎复核结论、不做清单、提交清单映射与风险止损。
+- **举报载体层 + 施害者视角修正后的重标定（六道门全绿）**：
+  · **修一处方向错误**：`do_tease` 羞辱分支原来只经 `apply_event(j, i, "humiliate_hostility")` 记下 `hurt_day[j][i]`（受害者对施害者的敌意），漏记「施害者 i → 受害者 j」——排挤判据因此凑不齐「多少人欺负过 j」。补记 `hurt_day[i][j]` 后，排挤 20 局上场率 **60% → 90%**。
+  · **参数重标**：`interrupted_stress` 1.35 → **1.25**（爆发均值 26.0）、`exclude_p` 0.04 → **0.06**、`humiliate_bystanders` 4 → **3**、`report_hostility` 60 → **40**、`report_p` 0.05/每 tick → **0.10/每段**、`phone_expose_p` 0.30 → **0.60**。
+  · **六道门复跑全绿**：`check_config` 176 / `test_core` 24 / `verify_formula` 4 / `check_docs` 5 / `check_metrics` 分布判据 / `diversity_report`（举报 15%、排挤 90%、羞辱 100%、爆发 100%、锁死 0/20）。
+- **举报载体层（用户设计，已采纳）：举报必须有「把柄」，好友几乎不举报**：
+  · **载体**：新增 `witness_day[i][j]` 虚拟层——带手机者课间以 `phone_expose_p` 概率被目击「玩手机」，目击者（非睡觉邻居）获得 `report_witness_window` 天内的举报把柄。**目击是一手观察，不追溯流言源头**（尊重小纸条流言的源头上限）。
+  · **好友约束并入统一公式**：`z = (H−θ_H)/scale_H − w_A·A/100 − w_T·T/100`，`p = report_p × σ(z)`——A/T 高把 z 压低，好友举报概率趋近 0 但永不为 0。
+  · **可见性前提**：标签本身不可见（§9.6），但行为痕迹可见——"看见他玩手机"才构成把柄，解决「没有信任度/透明度就看不见标签」的问题。
+  · 参数：`behavior_probs.csv` 新增 `phone_expose_p`；`behavior_thresholds.csv` 新增 `report_witness_window / report_affinity_penalty / report_trust_penalty`。
+  · 同步更新 §10.2、§9.6。
+- **判定全面概率化：移除硬门槛，sigmoid + 掷骰（用户设计，已采纳）**：
+  · **决策侧**：不再有 0/1 硬门槛——意向类候选不再被 `A≥30 且 stress≤80` 排除，改为软门槛项 `w_gate × [σ((A−θ_A)/scale) + σ((θ_S−stress)/scale) − 1]` 加进 `U_b`，低概率也能发起；阈值类（举报）改为 `p = report_p × σ((H−60)/scale)`。
+  · **判定侧**：搭话接纳由硬闸门改为 `p = σ((score − θ)/scale)` → `Bernoulli(p)`——概率再低也可能被接纳、再高也可能被拒；`join_feedback` 只给 `p`，实际掷骰在 `do_join_chat`（`roll` 可外传，保证玩家三拍展示与实际结算一致）。
+  · **玩家优势**：玩家跳过决策侧（人自己决定发起），只过判定侧（§12.1、§6.4）。
+  · 参数：`behavior_thresholds.csv` 新增 `join_chat_scale/stress_penalty/gate_affinity/gate_stress/gate_scale/gate_weight` 与 `report_scale`。
+  · **验证**：`check_config` 172 项 / `test_core` 24 项 / `verify_formula` 4 项 / `check_docs` 5 项 / `check_metrics` 分布判据 / `diversity_report` 全部达标。
+  · 同步更新 §6.4、§10.32.4、§12.1、§18.6。
+- **新增统一判定公式（§6.4）：所有判定统一为「决策 / 判定」两段式**（用户设计，已采纳）：
+  · **决策侧（做不做）**：`触发强度 s = gate(硬门槛) × 采样强度`——环境类 `p_base × 修正系数`、阈值类 `0/1`、意向类 `softmax(U_b/τ)`；读自己的真值 + 对他人的信念 `B`。
+  · **判定侧（成不成）**：`p = clamp(0.5 + (score − θ)/100, 0, 1)`，`score = f(参与者 A/H/T + 性格 + 状态)`；判定侧读真值。
+  · **与用户提法的等价关系**：「触发判定（想不想）＝决策侧」「决策判定（能不能）＝判定侧」；经确认**沿用旧术语「决策 / 判定」**，仅补统一公式并在 §18.5 注明等价关系。
+  · **同一公式两种输入**：内部结算读真值、UI 展示成功率从信念 `B` 重算（§10.32.3），不泄露隐藏信息。
+  · 同步更新 §10 总则、§10.16（新增第 4 条边界）、§18.5、§18.6。
 - **Notion《规则汇总》编号重排（v1.3）**：章节号对齐 v3.0 快照（四架构/五态度/六公式/七传导/八情绪/九可见性/十一人物/十三简报），仓库 `§` 锡点自此在 Notion 可对号；删除合并残留的重复小节；「人物行为设计」章处理待定（见下）。**绑定组定为同抽**：小情侣（01/02）、班委团体抽中其一整组入局，按组内人数占名额，Notion §11.4 与 `docs/design/数据模型.md` §1 已同步。
 - **五轴 + 传导线复核**：Notion《规则汇总》删除线性旧版「第五章 影响力传导机制」（v1 残留），仅保留非线性版（阈值 + 竞争归一化 + tanh 饱和）；数值表预留按难度分档覆盖结构（`easy/standard/hard`，初始共用、标定后分化），见 `docs/design/数据模型.md` §2.4；基础透明度以角色种子（`opacity_init`）为准，MBTI 公式降级为新角色默认值生成器（Notion §5.2 已同步）。
 - **班级人数改为难度动态**：24 人 NPC 角色池按难度随机抽取 8/16/24 人，玩家另算（本局 9/17/25 节点，标准档等同原固定 17 人设计）；同步修正 `AGENTS.md`、`README.md`、`docs/design/`、`docs/art/` 中的“17 人”表述，Notion《规则汇总》已同步至 v1.2。绑定关系（小情侣、班委）的抽取约束待细化。
@@ -483,6 +509,7 @@
 - 建立工程目录约定：`autoload/`、`data/`、`tests/`、`shaders/`、`assets/{audio,fonts}`。
 - 增加 `.github/` 协作规范：Issue 模板、PR 模板、CI 结构校验工作流。
 - 增强 `.gitignore` / `.editorconfig` / `.gitattributes`（Godot 4 导出产物、Reasonix 本地配置、GDScript 缩进与换行规范化）。
+- 新增教室 3D 场景资产 `assets/models/classroom/`（Sketchfab「Classroom」by Zeps3D，**CC BY 4.0 需署名**；glTF 2.0 + 14 张贴图，Godot 原生导入为 3D 场景），许可原文 `LICENSE-classroom.txt`，已登记 `assets/CREDITS.md`，`assets/README.md` 目录结构补 `models/`。
 
 ---
 

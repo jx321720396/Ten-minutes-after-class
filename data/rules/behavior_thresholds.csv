@@ -1,7 +1,11 @@
 # 阈值类行为的触发条件（确定性：条件满足即发生）
 # 依据：主文档 §10.2（举报）、§8.5（爆发）、docs/design/NPC行为决策.md §3
 behavior,metric,op,value,note
-report,hostility,>=,60,举报：对某人的敌对累积到阈值即触发
+report,hostility,>=,40,举报：对某人的敌对累积到阈值即触发（sigmoid 拐点）
+report,scale,>=,8,举报软门槛 sigmoid 坡度（H 低于 40 仍有极小概率）
+report,witness_window,<=,7,举报把柄有效期：最近多少天内目击过对方的标签行为痕迹
+report,affinity_penalty,>=,1.5,好友惩罚：A/100 每单位压低 z 的量（好友几乎不举报）
+report,trust_penalty,>=,1.0,信任惩罚：T/100 每单位压低 z 的量
 burst,stress,>=,70,压力爆发**入口**：进入高压区（§8.3 的 70–90）后每日判定，不是到点必爆
 apologize_trigger,hostility,>=,30,道歉可发起的最低敌对
 comfort_trigger,target_stress,>=,70,安慰可发起的目标压力门槛
@@ -13,15 +17,22 @@ tease_laugh,hostility,<,25,玩笑档：敌对上限
 tease_taunt,hostility,>=,40,嘲讽档：敌对下限
 tease_taunt,affinity,<,25,嘲讽档：低好感触发
 # 搭话是否被接纳：判据 = 信念 B_A（i 眼中对方对 i 的好感）+ 对方外向度修正，
-# 门槛须**高于** belief.csv 的 prior_a(=40)，否则先验恰好等于门槛 → 永远通过（关系只涨不跌）
-join_chat,affinity,>=,45,搭话被接纳的信念门槛（含对方外向度修正后）
+# θ（join_chat_affinity）是 p=0.5 的拐点而非闸门，须**高于** belief.csv 的 prior_a(=40)，
+# 否则先验恰好等于拐点 → 开局 p 约 0.5（关系只涨不跌的老毛病会回来）
+join_chat,affinity,>=,45,搭话被接纳的 sigmoid 拐点（含对方外向度修正后）
+join_chat,scale,>=,10,加入判定 sigmoid 坡度（score−θ 除以它；越大越缓）
+join_chat,stress_penalty,>=,12,对方压力对 score 的压制（压力是程度不是闸门）
+join_chat,gate_affinity,>=,30,决策侧软门槛：我对他好感低于此值仍有小概率发起
+join_chat,gate_stress,>=,80,决策侧软门槛：我压力高于此值仍有小概率发起
+join_chat,gate_scale,>=,8,决策侧软门槛 sigmoid 坡度
+join_chat,gate_weight,>=,4,决策侧软门槛在 U_b 中的权重
 # 调侃时**围观者**的立场（与主行为同一套轴、同一套阈值 —— 围观分裂也走表驱动）：
 #   围观者站谁，由「他对被调侃者的态度」决定，而不是由他的性格决定；
 #   性格只应影响「是否发声」，不该影响「站哪边」。
 conformity,see,>=,25,【已废弃】旧语义：读真值敌对（信息层穿透，违反 §7.4）
 conformity,see_window,<=,14,从众：最近多少天内有**公开**敌对行为才算「我亲眼见过他在欺负 j」
 conformity,min,>=,2,从众：邻居里至少这么多人恨 j，从众者才跟着恨
-humiliate,bystanders,>=,4,当众羞辱：围观者达到此数则嘲讽升级为「羞辱」（计深层敌对）
+humiliate,bystanders,>=,3,当众羞辱：围观者达到此数则嘲讽升级为「羞辱」（计深层敌对）
 tease_stand,affinity,>=,55,围观者喜欢被调侃者 → 站被调侃者（看戏/不满发起者）
 tease_sneer,hostility,>=,40,围观者讨厌被调侃者 → 附和发起者（嫌弃）
 # 【排挤】（B 类：判定来源为「群体状态」而非任何一对个人关系）
