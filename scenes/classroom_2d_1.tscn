@@ -1,0 +1,140 @@
+[gd_scene format=3 uid="uid://630uw6qmcfss"]
+
+[ext_resource type="Texture2D" uid="uid://b7rpheokm6obn" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_wall.png" id="1_18w50"]
+[ext_resource type="Texture2D" uid="uid://cxska83h5dp3q" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_floor.png" id="2_k8o1j"]
+[ext_resource type="Texture2D" uid="uid://bubdmc2vfs2vt" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/wall_clock.png" id="3_b00aj"]
+[ext_resource type="Texture2D" uid="uid://c5dsr3ans7d4j" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/classroom_book_unit.png" id="4_ag7vm"]
+[ext_resource type="Texture2D" uid="uid://8ln5i7ytrrt8" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/classroom_plant.png" id="5_ljsd7"]
+[ext_resource type="Texture2D" uid="uid://bet4rvjhikemc" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/classroom_map.png" id="6_knj6t"]
+[ext_resource type="Texture2D" uid="uid://dwsxdliy8kcpc" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/school_window.png" id="7_0krb8"]
+[ext_resource type="Texture2D" uid="uid://c36n3kef645yk" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/school_bored.png" id="8_nbe45"]
+[ext_resource type="Texture2D" uid="uid://dn4p8s0iei316" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/classroom_door.png" id="9_wdb4q"]
+[ext_resource type="Texture2D" uid="uid://ccani1e10umhe" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/main_desk.png" id="10_a4d2c"]
+[ext_resource type="Texture2D" uid="uid://oddii4p1f6kl" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/school_books.png" id="11_k0whj"]
+[ext_resource type="Texture2D" uid="uid://b578byi1856kc" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/bin.png" id="12_x4mrf"]
+[ext_resource type="Texture2D" uid="uid://mc2y3w7uli4h" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/big_plant.png" id="13_2sk3k"]
+[ext_resource type="Texture2D" uid="uid://wjnf3o1wi2f4" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_Desk_1.png" id="14_wxey2"]
+[ext_resource type="Texture2D" uid="uid://dmqgi8ycdvugi" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_Desk_2.png" id="15_mv37i"]
+[ext_resource type="Texture2D" uid="uid://gv564hf5tts8" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_Desk_3.png" id="16_sa3me"]
+[ext_resource type="Texture2D" uid="uid://bvsrlwiea0bpc" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_Desk_4.png" id="17_3rws1"]
+[ext_resource type="Texture2D" uid="uid://cncacsykjeb70" path="res://assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_Desk_5.png" id="18_wd6yg"]
+
+[node name="Classroom2D" type="Node2D" unique_id=1057412939]
+
+[node name="Room" type="Node2D" parent="." unique_id=577407189]
+
+[node name="BackWall" type="Sprite2D" parent="Room" unique_id=679804097]
+texture_repeat = 1
+scale = Vector2(4, 4)
+texture = ExtResource("1_18w50")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 480, 64)
+
+[node name="Floor" type="Sprite2D" parent="Room" unique_id=374598291]
+texture_repeat = 1
+position = Vector2(0, 256)
+scale = Vector2(4, 4)
+texture = ExtResource("2_k8o1j")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 480, 224)
+
+[node name="Clock" type="Sprite2D" parent="Room" unique_id=910194084]
+position = Vector2(110, 70)
+scale = Vector2(4, 4)
+texture = ExtResource("3_b00aj")
+
+[node name="Bookshelf" type="Sprite2D" parent="Room" unique_id=1657522887]
+position = Vector2(340, 140)
+scale = Vector2(4, 4)
+texture = ExtResource("4_ag7vm")
+
+[node name="Plant" type="Sprite2D" parent="Room" unique_id=843953607]
+position = Vector2(520, 160)
+scale = Vector2(4, 4)
+texture = ExtResource("5_ljsd7")
+
+[node name="Map" type="Sprite2D" parent="Room" unique_id=2072435578]
+position = Vector2(740, 128)
+scale = Vector2(4, 4)
+texture = ExtResource("6_knj6t")
+
+[node name="Window" type="Sprite2D" parent="Room" unique_id=576669102]
+position = Vector2(990, 128)
+scale = Vector2(4, 4)
+texture = ExtResource("7_0krb8")
+
+[node name="Blackboard" type="Sprite2D" parent="Room" unique_id=1758308291]
+position = Vector2(1300, 120)
+scale = Vector2(4, 4)
+texture = ExtResource("8_nbe45")
+
+[node name="Door" type="Sprite2D" parent="Room" unique_id=1623439264]
+position = Vector2(1780, 128)
+scale = Vector2(4, 4)
+texture = ExtResource("9_wdb4q")
+
+[node name="TeacherDesk" type="Sprite2D" parent="Room" unique_id=302759721]
+position = Vector2(960, 380)
+scale = Vector2(4, 4)
+texture = ExtResource("10_a4d2c")
+
+[node name="Books" type="Sprite2D" parent="Room" unique_id=2137875378]
+position = Vector2(1040, 340)
+scale = Vector2(4, 4)
+texture = ExtResource("11_k0whj")
+
+[node name="TrashBin" type="Sprite2D" parent="Room" unique_id=1690887617]
+position = Vector2(100, 950)
+scale = Vector2(4, 4)
+texture = ExtResource("12_x4mrf")
+
+[node name="BigPlant" type="Sprite2D" parent="Room" unique_id=1706426061]
+position = Vector2(1820, 900)
+scale = Vector2(4, 4)
+texture = ExtResource("13_2sk3k")
+
+[node name="Desks" type="Node2D" parent="." unique_id=289274379]
+
+[node name="Desk01" type="Sprite2D" parent="Desks" unique_id=1860856619]
+position = Vector2(420, 640)
+scale = Vector2(4, 4)
+texture = ExtResource("14_wxey2")
+
+[node name="Desk02" type="Sprite2D" parent="Desks" unique_id=1779760730]
+position = Vector2(840, 640)
+scale = Vector2(4, 4)
+texture = ExtResource("15_mv37i")
+
+[node name="Desk03" type="Sprite2D" parent="Desks" unique_id=2051038558]
+position = Vector2(1260, 640)
+scale = Vector2(4, 4)
+texture = ExtResource("16_sa3me")
+
+[node name="Desk04" type="Sprite2D" parent="Desks" unique_id=893689075]
+position = Vector2(1680, 640)
+scale = Vector2(4, 4)
+texture = ExtResource("17_3rws1")
+
+[node name="Desk05" type="Sprite2D" parent="Desks" unique_id=1105890382]
+position = Vector2(420, 920)
+scale = Vector2(4, 4)
+texture = ExtResource("18_wd6yg")
+
+[node name="Desk06" type="Sprite2D" parent="Desks" unique_id=2020468142]
+position = Vector2(840, 920)
+scale = Vector2(4, 4)
+texture = ExtResource("14_wxey2")
+
+[node name="Desk07" type="Sprite2D" parent="Desks" unique_id=844767187]
+position = Vector2(1260, 920)
+scale = Vector2(4, 4)
+texture = ExtResource("15_mv37i")
+
+[node name="Desk08" type="Sprite2D" parent="Desks" unique_id=78968035]
+position = Vector2(1680, 920)
+scale = Vector2(4, 4)
+texture = ExtResource("16_sa3me")
+
+[node name="Students" type="Node2D" parent="." unique_id=758810014]
