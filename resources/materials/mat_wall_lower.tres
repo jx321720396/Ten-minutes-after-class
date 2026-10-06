@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cbc41m3h7tjor"]
+
+[ext_resource type="Texture2D" uid="uid://jyungqhdj6ja" path="res://assets/textures/classroom/scene_classroom_wall_lower.png" id="1_tex"]
+
+[resource]
+albedo_texture = ExtResource("1_tex")
+roughness = 0.8
+uv1_scale = Vector3(1.5, 1.5, 1.5)
+uv1_triplanar = true
+texture_filter = 2

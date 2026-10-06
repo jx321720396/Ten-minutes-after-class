@@ -1,0 +1,127 @@
+[gd_scene format=3 uid="uid://veknwyi71j7a"]
+
+[ext_resource type="Material" path="res://resources/materials/mat_wood.tres" id="1_wood"]
+[ext_resource type="Material" uid="uid://dhcw5m2hvm365" path="res://resources/materials/mat_dais.tres" id="2_dais"]
+[ext_resource type="Material" path="res://resources/materials/mat_paper.tres" id="3_paper"]
+
+[sub_resource type="BoxMesh" id="Box_dais"]
+material = ExtResource("2_dais")
+size = Vector3(1.6071777, 0.16604981, 1.654718)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cvm0p"]
+albedo_color = Color(0.65882355, 0.5803922, 0.47843137, 1)
+roughness = 0.7
+
+[sub_resource type="BoxMesh" id="BoxMesh_hviou"]
+material = SubResource("StandardMaterial3D_cvm0p")
+size = Vector3(3.5195313, 0.17504883, 1.4934387)
+
+[sub_resource type="BoxMesh" id="Box_body"]
+material = ExtResource("1_wood")
+size = Vector3(1.6, 0.8, 0.6)
+
+[sub_resource type="BoxMesh" id="Box_top"]
+material = ExtResource("1_wood")
+size = Vector3(1.75, 0.05, 0.72)
+
+[sub_resource type="BoxMesh" id="Box_rim_long"]
+material = ExtResource("1_wood")
+size = Vector3(1.75, 0.05, 0.04)
+
+[sub_resource type="BoxMesh" id="Box_rim_short"]
+material = ExtResource("1_wood")
+size = Vector3(0.04, 0.05, 0.72)
+
+[sub_resource type="StandardMaterial3D" id="Mat_cup"]
+albedo_color = Color(0.3, 0.5, 0.85, 1)
+roughness = 0.5
+
+[sub_resource type="CylinderMesh" id="Cyl_cup"]
+material = SubResource("Mat_cup")
+top_radius = 0.045
+bottom_radius = 0.045
+height = 0.1
+radial_segments = 8
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="Mat_pen_red"]
+albedo_color = Color(0.9, 0.3, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="Box_pen_red"]
+material = SubResource("Mat_pen_red")
+size = Vector3(0.012, 0.15, 0.012)
+
+[sub_resource type="StandardMaterial3D" id="Mat_pen_green"]
+albedo_color = Color(0.35, 0.75, 0.4, 1)
+
+[sub_resource type="BoxMesh" id="Box_pen_green"]
+material = SubResource("Mat_pen_green")
+size = Vector3(0.012, 0.15, 0.012)
+
+[sub_resource type="StandardMaterial3D" id="Mat_pen_yellow"]
+albedo_color = Color(0.95, 0.8, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="Box_pen_yellow"]
+material = SubResource("Mat_pen_yellow")
+size = Vector3(0.012, 0.15, 0.012)
+
+[sub_resource type="QuadMesh" id="Quad_paper"]
+material = ExtResource("3_paper")
+size = Vector2(0.21, 0.27)
+
+[node name="Podium" type="Node3D" unique_id=671205868]
+
+[node name="Dais2" type="MeshInstance3D" parent="." unique_id=437971093]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.17302491, 0.5215047)
+mesh = SubResource("Box_dais")
+
+[node name="Dais3" type="MeshInstance3D" parent="." unique_id=261524962]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1820752, 1.0453842)
+mesh = SubResource("BoxMesh_hviou")
+
+[node name="Lectern" type="Node3D" parent="." unique_id=819103780]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 0)
+
+[node name="Body" type="MeshInstance3D" parent="Lectern" unique_id=646566223]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+mesh = SubResource("Box_body")
+
+[node name="Top" type="MeshInstance3D" parent="Lectern" unique_id=598344547]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.825, 0)
+mesh = SubResource("Box_top")
+
+[node name="RimFront" type="MeshInstance3D" parent="Lectern" unique_id=1049837104]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, -0.34)
+mesh = SubResource("Box_rim_long")
+
+[node name="RimBack" type="MeshInstance3D" parent="Lectern" unique_id=1200328056]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0.34)
+mesh = SubResource("Box_rim_long")
+
+[node name="RimLeft" type="MeshInstance3D" parent="Lectern" unique_id=1456604302]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.855, 0.875, 0)
+mesh = SubResource("Box_rim_short")
+
+[node name="RimRight" type="MeshInstance3D" parent="Lectern" unique_id=1372124503]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.855, 0.875, 0)
+mesh = SubResource("Box_rim_short")
+
+[node name="PenCup" type="MeshInstance3D" parent="Lectern" unique_id=952119881]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.9, 0.1)
+mesh = SubResource("Cyl_cup")
+
+[node name="PenRed" type="MeshInstance3D" parent="Lectern" unique_id=631595904]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.535, 0.95, 0.09)
+mesh = SubResource("Box_pen_red")
+
+[node name="PenGreen" type="MeshInstance3D" parent="Lectern" unique_id=1486934672]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.565, 0.96, 0.11)
+mesh = SubResource("Box_pen_green")
+
+[node name="PenYellow" type="MeshInstance3D" parent="Lectern" unique_id=1161935849]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.94, 0.125)
+mesh = SubResource("Box_pen_yellow")
+
+[node name="Paper" type="MeshInstance3D" parent="Lectern" unique_id=1885185935]
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, -0.35, 0.852, 0.05)
+mesh = SubResource("Quad_paper")
