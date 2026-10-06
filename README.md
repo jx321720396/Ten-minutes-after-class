@@ -7,7 +7,7 @@
 - **引擎**：Godot 4.6（Mobile 渲染器，1920×1080，横屏）
 - **语言**：GDScript
 - **平台目标**：Windows / Android（TapTap 渠道）
-- **当前阶段**：里程碑 M0 — 仓库与框架搭建（骨架已可打开，玩法系统待实现）
+- **当前阶段**：M1 核心循环 + 参赛冲刺（2026 聚光灯创作挑战，主题「涌现」，10/18 提交；Python 内核已标定完成，Godot 工程推进中）
 
 ---
 
@@ -28,6 +28,7 @@
 ├─ project.godot            Godot 项目定义（勿手改，用编辑器）
 ├─ assets/                  美术 / 音频 / 字体等原始资源
 │   ├─ icons/               图标
+│   ├─ models/              3D 模型（classroom/ 教室场景，见 assets/README.md）
 │   ├─ textures/            贴图（clueboard/ 线索板素材）
 │   ├─ audio/               音频（bgm/ sfx/，见 assets/README.md）
 │   └─ fonts/               字体
@@ -41,6 +42,7 @@
 ├─ scripts/                 脚本（与 scenes/ 同构：ui/ game/ core/ npc/ systems/）
 ├─ shaders/                 着色器
 ├─ tests/                   测试（GUT / gdUnit4）
+├─ tools/                   离线标定与校验工具（Python：内核、六道门、参数扫描）
 └─ .github/                 Issue / PR 模板与 CI
 ```
 
