@@ -8,6 +8,7 @@
 | 资源 | 类型 | 作者 / 来源 | 链接 | 许可 | 需署名 | 使用位置 |
 |---|---|---|---|---|---|---|
 | （示例）霞鹜文楷 | 字体 | lxgw | https://github.com/lxgw/LxgwWenKai | OFL-1.1 | 是 | UI 正文 |
+| Classroom（教室 3D 场景） | 3D 模型（glTF 2.0） | Zeps3D | https://sketchfab.com/3d-models/classroom-7f981d3e0b6445108d684abf3f2fd4ab | CC BY 4.0 | 是 | 课间教室场景 `assets/models/classroom/`（许可原文 `LICENSE-classroom.txt`） |
 |  |  |  |  |  |  |  |
 
 > 说明：上表首行为格式示例，**使用前请核实许可条款**；未实际引用的资源请删除该行。

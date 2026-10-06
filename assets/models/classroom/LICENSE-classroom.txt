@@ -1,0 +1,11 @@
+Model Information:
+* title:	Classroom
+* source:	https://sketchfab.com/3d-models/classroom-7f981d3e0b6445108d684abf3f2fd4ab
+* author:	Zeps3D (https://sketchfab.com/Zeps3D)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Classroom" (https://sketchfab.com/3d-models/classroom-7f981d3e0b6445108d684abf3f2fd4ab) by Zeps3D (https://sketchfab.com/Zeps3D) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
