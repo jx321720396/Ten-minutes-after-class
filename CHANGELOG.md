@@ -12,6 +12,7 @@
 - **教室呈现路线定为 2D 先行（用户决策）**：课间空间用 `scenes/Classroom2D.tscn`（`tools/bake_classroom_2d.gd` 烘焙的静态场景）+ `scenes/characters/*.tscn`（16 个角色场景）跑通代码与玩法；`assets/models/classroom/`（Sketchfab 3D 教室，CC BY 4.0）暂作备用素材，**画风优化排在 D14 内容冻结之后**；团队分工任务单同步标注。
 ### 新增
 - **安卓导出配置完成（2026-10-06）**：新增 `export_presets.cfg`——Windows Desktop + Android 双导出预设（包名 `com.xiake.tenminutes`；Android 使用内置模板，非 Gradle 自定义构建）；`project.godot` 开启 `textures/vram_compression/import_etc2_astc`（移动端 ETC2/ASTC 纹理导入格式）；教室 3D 素材 `.import` 同步为 Godot 4.7.2 导入状态。
+- **接入 GUT 测试框架（9.7.1，Godot 4.7.x 对应版）**：`addons/gut/` 入库并在 `project.godot` 启用编辑器插件；`tests/unit/test_smoke.gd` 冒烟用例跑通（`godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit`）；版本记录于 `tests/README.md` 与 `docs/qa/测试策略.md`。
 ### 变更
 - **核实 2026 聚光灯官方规则并预填比赛提交清单（策划，2026-10-06）**：确认投稿截止 **2026-10-21 12:00**（需通过审核，可换稿至 10-21 23:59）、**官方建议 10-18 前提交**（与冲刺计划一致）；双端奖要求**同一页面同时上传 Android + PC**；全程参与奖要求**开发周期内 ≥5 篇开发者日志**（不可同日连发、每篇含截图/短视频、带指定标签）+ **试玩人数 ≥ 50**；无引擎限制。仍待核实：Android 最低版本与 TapTap 客户端要求、素材原创性条款、AI 素材条款、知识产权与独家性条款、包体大小限制。
 - **引擎版本升级 Godot 4.6.3 → 4.7.2（用户决策）**：项目改用 Godot 4.7.2 开发；`project.godot` 的 `config/features` 由 `"4.6"` 升至 `"4.7"`，`.godot` 缓存与 `.import` 随 4.7.2 导入重建。文档中的引擎版本声明同步更新：AGENTS.md、README、主文档 §18 引擎定稿、路线图、里程碑、冲刺计划、PR 模板。
