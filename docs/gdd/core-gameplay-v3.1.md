@@ -2141,7 +2141,7 @@ self.H_deep[i][j] *= d["deep_decay"]      # 0.995/天
 > 本章是**程序实现的唯一依据**，汇总自 `docs/design/` 各篇。策划只需读 §1–§17；程序从本章入手。
 > 对应的分篇文档仍保留（含更细的推导、手算例与待确认项），但**本章内容自包含**——两处冲突时以本章为准。
 
-> **引擎定稿（2026-10-06）**：Godot 4.6（GDScript）。本章以 Godot / GDScript 约定为准；`docs/design/` 各篇中的 GDScript 代码块即实际实现语言。
+> **引擎定稿（2026-10-06）**：Godot 4.7.2（GDScript）。本章以 Godot / GDScript 约定为准；`docs/design/` 各篇中的 GDScript 代码块即实际实现语言。
 
 ## 18.1 架构总览
 
