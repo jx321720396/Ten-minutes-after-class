@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://doxg48drbyjhw"]
+
+[ext_resource type="Texture2D" uid="uid://cwucpjim4on0n" path="res://assets/textures/characters/傲娇男.png" id="1_hutnk"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hviou"]
+atlas = ExtResource("1_hutnk")
+
+[node name="Tsundere_male" type="Sprite2D" unique_id=934094940]
+texture = SubResource("AtlasTexture_hviou")

@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://doobenpffsn80"]
+
+[ext_resource type="Texture2D" uid="uid://brpc30om1ql54" path="res://assets/textures/characters/敏感男.png" id="1_n0vwm"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hviou"]
+atlas = ExtResource("1_n0vwm")
+
+[node name="Sensitive_male" type="Sprite2D" unique_id=1316973210]
+texture = SubResource("AtlasTexture_hviou")

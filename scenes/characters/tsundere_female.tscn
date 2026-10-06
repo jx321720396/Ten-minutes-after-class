@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://cjtlf50s7mvur"]
+
+[ext_resource type="Texture2D" uid="uid://cpappu6et8k7" path="res://assets/textures/characters/傲娇女.png" id="1_uc2pg"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hviou"]
+atlas = ExtResource("1_uc2pg")
+
+[node name="Tsundere_female" type="Sprite2D" unique_id=1122848883]
+texture = SubResource("AtlasTexture_hviou")

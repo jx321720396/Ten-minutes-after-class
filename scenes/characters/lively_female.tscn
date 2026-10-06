@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://beh7thj7tl6mv"]
+
+[ext_resource type="Texture2D" uid="uid://bjr67elnke5dl" path="res://assets/textures/characters/活泼女.png" id="1_21p65"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hviou"]
+atlas = ExtResource("1_21p65")
+
+[node name="Lively_female" type="Sprite2D" unique_id=1765071936]
+texture = SubResource("AtlasTexture_hviou")

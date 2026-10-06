@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://cpw7iit0xs8o2"]
+
+[ext_resource type="Texture2D" uid="uid://cmjeypj7tmiqe" path="res://assets/textures/characters/社恐男.png" id="1_vb2tm"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hviou"]
+atlas = ExtResource("1_vb2tm")
+
+[node name="Shy_male" type="Sprite2D" unique_id=1081928024]
+texture = SubResource("AtlasTexture_hviou")

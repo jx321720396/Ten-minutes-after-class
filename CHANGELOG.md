@@ -479,6 +479,7 @@
 - 补齐仓库级文档：`README.md`、`CONTRIBUTING.md`、`AGENTS.md`、`LICENSE`。
 
 ### 新增
+- **2D 教室原型场景（临时占位版，静态场景）**：新增独立场景 `scenes/Classroom2D.tscn`（109 个真实节点，编辑器点开即可见、可选中、可拖拽、可直接替换贴图），不改动既有主菜单 / 线索板场景。教室（后墙 / 地板 / 踢脚线 / 黑板 / 粉笔槽 / 讲台 / 两扇窗户）与 8 套课桌椅（桌面 / 两条桌腿 / 椅面 / 椅背）全部用内置 `ColorRect` / `Line2D` 色块临时代替美术素材，桌椅排成 2 排 × 4 列。8 个学生（4 男 4 女，取自 D 盘《人物素材库》的 活泼 / 安静 / 热情 / 社恐 × 男女，已复制至 `assets/textures/characters/`）用 `Sprite2D` 加载单张立绘，每人挂 `scripts/game/student_bob.gd`（`sin` 上下浮动 + 轻微左右摆动，周期与相位逐人随机，避免全班同步；子节点换成 `AnimatedSprite2D` 时自动播放 `idle` 动画）。节点内容由一次性烘焙脚本 `tools/bake_classroom_2d.gd` 产出：改完脚本里的布局常量后重跑 `godot --headless --path . --script res://tools/bake_classroom_2d.gd` 即重新生成场景（会覆盖场景文件）；人物素材缺失时退回彩色人形色块占位并 `push_warning` 提示待替换路径。运行：`godot --path . res://scenes/Classroom2D.tscn`。
 - 建立工程目录约定：`autoload/`、`data/`、`tests/`、`shaders/`、`assets/{audio,fonts}`。
 - 增加 `.github/` 协作规范：Issue 模板、PR 模板、CI 结构校验工作流。
 - 增强 `.gitignore` / `.editorconfig` / `.gitattributes`（Godot 4 导出产物、Reasonix 本地配置、GDScript 缩进与换行规范化）。
