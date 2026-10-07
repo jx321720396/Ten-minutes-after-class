@@ -100,11 +100,13 @@ func _draw() -> void:
 	draw_style_box(sb, rect)
 
 	# 尖尾巴：三角形，底部中点指向 head_offset
-	var poly := PackedVector2Array([
-		Vector2(o.x - t * 0.6, o.y - t),
-		Vector2(o.x + t * 0.6, o.y - t),
-		o,
-	])
+	var poly := PackedVector2Array(
+		[
+			Vector2(o.x - t * 0.6, o.y - t),
+			Vector2(o.x + t * 0.6, o.y - t),
+			o,
+		]
+	)
 	draw_colored_polygon(poly, fill_color)
 
 	# 可选：三个省略点
