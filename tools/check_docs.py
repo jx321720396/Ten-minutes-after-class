@@ -113,21 +113,76 @@ def main():
     bad = []
     # ⚠️ 两种写法都要覆盖：`` `param` = 1.2 `` 与 `` `param = 1.2` ``（`=` 在反引号**内**）。
     #    初版只写了前一种，而文档实际多用后一种 → **门根本没匹配上，是个「假的绿」**。
-    PAT_EQ = re.compile(r"`([a-z_]{4,})\s*[=＝]\s*([0-9]+(?:\.[0-9]+)?)`|`([a-z_]{4,})`\s*[=＝]\s*([0-9]+(?:\.[0-9]+)?)")
-    for m in PAT_EQ.finditer(doc):
-        k = m.group(1) or m.group(3)
-        v = m.group(2) or m.group(4)
+    PAT_BQ = re.compile(r"`([a-z_]{4,})\s*[=＝]\s*([0-9]+(?:\.[0-9]+)?)`|`([a-z_]{4,})`\s*[=＝]\s*([0-9]+(?:\.[0-9]+)?)")
+    # 2026-10-07 补强①：**无反引号**的 `name = 1.2` 此前完全不扫 ——
+    #   文档 §10.28.3 的 `noise_base_fear = 1.3`（配置为 2.8）因此长期漏过。
+    #   只在**代码块内**与**表格行内**扫，避免把正文叙述里的数字误当参数值。
+    PAT_PLAIN = re.compile(r"\b([a-z_]{4,})\s*[=＝]\s*([0-9]+(?:\.[0-9]+)?)\b")
+    # 「历史对照」语境豁免：**必须是明确的过去 / 对照记号**。
+    # ⚠️ 2026-10-07 补强②：**移除「默认」** —— 它太宽，把「当前默认 `stress_k = 0`」这条
+    #   **真错**也放过了（配置早已是 0.40）。同类过于宽泛的豁免（`关闭`、`= 0 =`）一并移除。
+    HIST = re.compile(r"早先|旧值|曾|修复前|改为|原|实测扫描|实测：|对照|→|历史|当时|已废弃|已由|替代|设|若|即关闭|可关闭")
+
+    hits = []                       # (参数名, 文档写的值, 所在行文本)
+
+    def _add(name, value, line_text):
+        hits.append((name, value, line_text))
+
+    for m in PAT_BQ.finditer(doc):
+        _add(m.group(1) or m.group(3), m.group(2) or m.group(4),
+             doc[doc.rfind("\n", 0, m.start()) + 1: doc.find("\n", m.end())])
+    for blk in re.finditer(r"```[\s\S]*?```", doc):
+        for ln in blk.group(0).split("\n"):
+            for m in PAT_PLAIN.finditer(ln):
+                _add(m.group(1), m.group(2), ln)
+    for ln in doc.split("\n"):
+        if not ln.lstrip().startswith("|"):
+            continue
+        for m in PAT_PLAIN.finditer(ln):
+            _add(m.group(1), m.group(2), ln)
+
+    for k, v, line in hits:
         if k in _BEHAVIORS[0]:
             continue                        # 行为名不是参数
         if k in cfg and not any(abs(float(v) - float(c)) < 1e-9 for c in cfg[k]):
-            # 允许"历史记录"语境：同行出现「早先 / 旧 / 曾 / 修复前」则不报
-            line = doc[doc.rfind("\n", 0, m.start()) + 1: doc.find("\n", m.end())]
-            # 「历史对照」语境一律放过：标定扫描记录、改前对照、演变记录
-            if re.search(r"早先|旧值|曾|修复前|改为|原|实测扫描|实测：|对照|→|历史|当时|默认|关闭|= 0 =", line):
+            if HIST.search(line):
                 continue
             bad.append("%s = %s（配置为 %s）" % (k, v, sorted(cfg[k])))
     check("文档里引用的参数值都与 data/ 一致", not bad,
           "不一致：%s" % bad[:5])
+
+    # ---------- ②b data/ 各表的 note 与 value 是否脱节（§3.4.1 纪律④）----------
+    print("\n  — ②b data/ 表的 note 与 value 是否一致 —")
+    drift = []
+    for sub in ("rules", "balance"):
+        d = os.path.join(ROOT, "data", sub)
+        if not os.path.isdir(d):
+            continue
+        for fn in sorted(os.listdir(d)):
+            if not fn.endswith(".csv"):
+                continue
+            rows = [ln for ln in read(os.path.join(d, fn)).split("\n")
+                    if ln.strip() and not ln.startswith("#")]
+            if not rows:
+                continue
+            rdr = csv.DictReader(rows)
+            keycol = next((c for c in ("param", "behavior", "event_id")
+                           if c in (rdr.fieldnames or [])), None)
+            if not keycol:
+                continue
+            for r in rdr:
+                val = r.get("value") or r.get("base_p") or r.get("base")
+                note = r.get("note") or ""
+                if not val:
+                    continue
+                # 注释里写「默认 X」而 X ≠ 本行实测值 → 改值没改注释的典型症状
+                # （实例如 environment.csv 的 `stress_k,0.40,…默认 0…`）
+                for m in re.finditer(r"默认\s*([0-9]+(?:\.[0-9]+)?)", note):
+                    if abs(float(m.group(1)) - float(val)) > 1e-9:
+                        drift.append("%s/%s：note 写「默认 %s」，实测值为 %s"
+                                     % (fn, r[keycol], m.group(1), val))
+    check("data/ 各表的 note 与 value 一致（「默认 X」≠ 值即报）", not drift,
+          "；".join(drift[:5]))
 
     # ---------- ③ 行内代码损坏 ----------
     print("\n  — ③ 行内代码损坏（被 shell 吃掉 → 空括号）—")
