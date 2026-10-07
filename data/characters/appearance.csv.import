@@ -2,11 +2,11 @@
 
 importer="csv_translation"
 type="Translation"
-uid="uid://ce5pqwc3tr0nv"
+uid="uid://cpxdflslikdno"
 
 [deps]
 
-source_file="res://data/rules/difficulty.csv"
+source_file="res://data/characters/appearance.csv"
 
 [params]
 
