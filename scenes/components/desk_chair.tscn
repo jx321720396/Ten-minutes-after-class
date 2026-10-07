@@ -1,0 +1,99 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://resources/materials/mat_wood.tres" id="1_wood"]
+[ext_resource type="Material" path="res://resources/materials/mat_metal_frame.tres" id="2_metal"]
+
+[sub_resource type="BoxMesh" id="Box_top"]
+material = ExtResource("1_wood")
+size = Vector3(0.66, 0.04, 0.46)
+
+[sub_resource type="BoxMesh" id="Box_shelf"]
+material = ExtResource("2_metal")
+size = Vector3(0.6, 0.1, 0.4)
+
+[sub_resource type="BoxMesh" id="Box_desk_leg"]
+material = ExtResource("2_metal")
+size = Vector3(0.035, 0.72, 0.035)
+
+[sub_resource type="BoxMesh" id="Box_desk_foot"]
+material = ExtResource("2_metal")
+size = Vector3(0.035, 0.035, 0.42)
+
+[sub_resource type="BoxMesh" id="Box_seat"]
+material = ExtResource("1_wood")
+size = Vector3(0.4, 0.03, 0.38)
+
+[sub_resource type="BoxMesh" id="Box_back"]
+material = ExtResource("1_wood")
+size = Vector3(0.4, 0.2, 0.025)
+
+[sub_resource type="BoxMesh" id="Box_chair_front_leg"]
+material = ExtResource("2_metal")
+size = Vector3(0.03, 0.43, 0.03)
+
+[sub_resource type="BoxMesh" id="Box_chair_rear_leg"]
+material = ExtResource("2_metal")
+size = Vector3(0.03, 0.9, 0.03)
+
+[node name="DeskChair" type="Node3D"]
+
+[node name="Desk" type="Node3D" parent="."]
+
+[node name="Top" type="MeshInstance3D" parent="Desk"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.74, 0)
+mesh = SubResource("Box_top")
+
+[node name="Shelf" type="MeshInstance3D" parent="Desk"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+mesh = SubResource("Box_shelf")
+
+[node name="LegFL" type="MeshInstance3D" parent="Desk"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.29, 0.36, 0.19)
+mesh = SubResource("Box_desk_leg")
+
+[node name="LegFR" type="MeshInstance3D" parent="Desk"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.29, 0.36, 0.19)
+mesh = SubResource("Box_desk_leg")
+
+[node name="LegBL" type="MeshInstance3D" parent="Desk"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.29, 0.36, -0.19)
+mesh = SubResource("Box_desk_leg")
+
+[node name="LegBR" type="MeshInstance3D" parent="Desk"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.29, 0.36, -0.19)
+mesh = SubResource("Box_desk_leg")
+
+[node name="FootL" type="MeshInstance3D" parent="Desk"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.29, 0.05, 0)
+mesh = SubResource("Box_desk_foot")
+
+[node name="FootR" type="MeshInstance3D" parent="Desk"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.29, 0.05, 0)
+mesh = SubResource("Box_desk_foot")
+
+[node name="Chair" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.45)
+
+[node name="Seat" type="MeshInstance3D" parent="Chair"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.445, 0)
+mesh = SubResource("Box_seat")
+
+[node name="Back" type="MeshInstance3D" parent="Chair"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.78, -0.175)
+mesh = SubResource("Box_back")
+
+[node name="LegFL" type="MeshInstance3D" parent="Chair"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.215, 0.16)
+mesh = SubResource("Box_chair_front_leg")
+
+[node name="LegFR" type="MeshInstance3D" parent="Chair"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0.215, 0.16)
+mesh = SubResource("Box_chair_front_leg")
+
+[node name="LegBL" type="MeshInstance3D" parent="Chair"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.45, -0.17)
+mesh = SubResource("Box_chair_rear_leg")
+
+[node name="LegBR" type="MeshInstance3D" parent="Chair"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0.45, -0.17)
+mesh = SubResource("Box_chair_rear_leg")

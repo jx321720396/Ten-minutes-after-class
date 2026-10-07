@@ -3,7 +3,6 @@ extends Control
 const SCENE_SETTINGS = preload("res://scenes/ui/settings_menu.tscn")
 const SCENE_ABOUT = preload("res://scenes/ui/about_menu.tscn")
 const SCENE_CONFIRM = preload("res://scenes/ui/confirm_dialog.tscn")
-const SAVE_PATH = "user://savegame.dat"
 
 @onready var continue_btn: Button = $VBoxContainer/ContinueGame
 @onready var new_game_btn: Button = $VBoxContainer/NewGame
@@ -42,7 +41,7 @@ func _ready():
 	add_child(confirm_dialog)
 
 func _has_save() -> bool:
-	return FileAccess.file_exists(SAVE_PATH)
+	return Save.has_save()
 
 func _on_new_game():
 	if _has_save():
@@ -76,7 +75,7 @@ func _on_close_about():
 
 func _on_confirm_clear():
 	confirm_dialog.visible = false
-	DirAccess.remove_absolute(SAVE_PATH)
+	Save.delete()
 	_start_new_game()
 
 func _on_confirm_keep():

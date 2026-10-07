@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Material" path="res://resources/materials/mat_curtain.tres" id="1_curtain"]
+
+[sub_resource type="BoxMesh" id="Box_upper"]
+material = ExtResource("1_curtain")
+size = Vector3(0.42, 1.1, 0.08)
+
+[sub_resource type="BoxMesh" id="Box_tie"]
+material = ExtResource("1_curtain")
+size = Vector3(0.26, 0.07, 0.11)
+
+[sub_resource type="BoxMesh" id="Box_lower"]
+material = ExtResource("1_curtain")
+size = Vector3(0.5, 0.82, 0.08)
+
+[node name="Curtain" type="Node3D"]
+
+[node name="Upper" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.55, 0)
+mesh = SubResource("Box_upper")
+
+[node name="Tie" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.14, 0)
+mesh = SubResource("Box_tie")
+
+[node name="Lower" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.59, 0)
+mesh = SubResource("Box_lower")
