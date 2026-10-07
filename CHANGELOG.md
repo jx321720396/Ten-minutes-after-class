@@ -9,6 +9,10 @@
 
 ## [未发布]
 
+- **玩家点击与情绪反馈计划（2026-10-07，素材/文档）**：生成透明落点标记 `assets/textures/ui/movement/click_destination_v01.png`；新增 `docs/superpowers/plans/2026-10-07-player-click-emotion-feedback.md`，规划实际寻路终点反馈、WASD取消、放松/生气/哭泣/开心男女两组气泡、可见事件摘要与暂停协调。八张既有气泡待确认实际素材路径，本次未实施组件。
+
+- **人物底部活动圈计划（2026-10-07，文档）**：新增 `docs/superpowers/plans/2026-10-07-activity-foot-rings.md`，明确统一个人圈、交互成功后的异色融合、真实会话分组、活动结束拆分及 3D 程序渲染方案；现有按行为名称汇总的接口不能直接作为融合成员来源。本次仅生成计划。
+
 - **内核策划符合性审查（2026-10-07，文档）**：新增 `docs/qa/2026-10-07-内核策划符合性审查.md`，记录玩家自动发起行为、行动入口权限/占用缺检、伪中断、空间与透明度未落实等复现证据，以及六道门、Godot 单测和对拍护栏的实际状态；本次未修改内核实现。
 
 - **时间组件计划案（2026-10-07，文档）**：新增 `docs/superpowers/plans/2026-10-07-time-component.md`，覆盖唯一内核时间源、五阶段实时换算、3D 教室时间 HUD、明确相位边界、嵌套暂停、日末简报、30 天结束与存档交接，并分解为五项实施任务。转笔演出暂停及按路径距离计算移动耗时保留为未裁决提案；本次未实现组件。
@@ -17,6 +21,14 @@
 
 - **教室呈现路线定为 2D 先行（用户决策）**：课间空间用 `scenes/Classroom2D.tscn`（`tools/bake_classroom_2d.gd` 烘焙的静态场景）+ `scenes/characters/*.tscn`（16 个角色场景）跑通代码与玩法；`assets/models/classroom/`（Sketchfab 3D 教室，CC BY 4.0）暂作备用素材，**画风优化排在 D14 内容冻结之后**；团队分工任务单同步标注。
 ### 新增
+- **玩家操控组件（阶段 3：真实空间交互的第一步，2026-10-07）**：新增 `scripts/game/player_controller.gd`（`class_name PlayerController`），把玩家从「演示级点击移动」升级为正式操控 —— **双输入 + 桌椅阻挡 + 内核位置同步**三件一起做，避免只加 WASD 却仍穿桌、远程聊天。
+  · **WASD 手动行走**：按镜头地面方向连续移动（斜向归一化、松键即停），输入动作由代码注册（不手改 `project.godot`）；**位置允许连续变化**，不再每步吸附到站立点；
+  · **鼠标左键点地面自动寻路**：网格 A*（`AStarGrid2D`）绕开桌椅走合法路线，再次点击更换目的地；按下 WASD 立刻取消自动行走、松键不恢复旧路线；点地面时在吸附半径内优先落到「合法且空闲」的站立点；
+  · **桌椅阻挡**：障碍矩形**从场景派生**（只取 `Seats/*/Desk` 子树 —— `Chair` 在 z=-0.45 正是座位站位，不能当障碍），按 `movement.csv` 的 `player_radius` 外扩；WASD 逐帧滑动（先整体、再单轴），不穿家具；
+  · **内核位置同步**：内核新增 `set_position` / `position_of` / `distance_between` / `is_busy`（GDScript 与 Python 同步，**只读记录、不动矩阵**）；玩家位置由 PlayerController、NPC 位置由 `classroom_roam.gd` 每帧写回内核，为后续「互动按距离判范围」铺路（本轮未启用范围判定）；
+  · **统一速度**：手动与自动共用 `data/rules/movement.csv` 的 `meters_per_tick`（0.13 m/tick，≈ 旧「固定 15 tick 走完一段」的观感），耗时随实际行走距离变化；`actor_walker.gd` 新增 `walk_to_at_speed()` / `move_by()` / `stop_manual()`；
+  · **控制权限**：上课 / 简报 / 暂停 / 转笔演出 / 占用型行为进行中均停用（`can_control()`），占用状态来自内核 `is_busy`；点击 UI 不触发移动（只收 `_unhandled_input`）；
+  · **测试**：新增 `tests/unit/test_player_controller.gd`（7 例：阻挡 / 滑动 / 格网换算 / 位置往返 / 越界忽略 / 占用查询）。GUT `tests/unit` **126/126 全绿**、集成 `test_time_scene` 5/5。
 - **时间 HUD 倒计时改为直接显示秒数（2026-10-07，用户决策）**：课间 / 上课的剩余时间不再折算成 `mm:ss`，直接给秒数 —— 满段课间显示 `课间剩余 100 秒`、上课显示 `发酵中 · 本阶段约剩余 15 秒`。倒计时仍**向上取整、边界显示 0、不出现负数**（`_mmss()` → `_seconds_text()`）；`tests/integration/test_time_scene.gd` 三处断言同步。上一版 `mm:ss` 的表述保留在下方历史条目里，不追改。
 - **内核规则收口（阶段 2：行为完成与中断）（2026-10-07）**：把「行为完成」变成内核里**可观测的事件点**，为后续「完成才发信息」的规则（阶段 5 的玩家闲聊线索）留挂点。
   · **新增 `_settle_finished_actions()` / `settle_finished_actions()`**（在每个 tick 最前面调用）：占用到期即「这件事做完了」—— 清 `current_act`、清 `busy_phase`，并把行为名写进 `last_finished`（仅本 tick 有效）。

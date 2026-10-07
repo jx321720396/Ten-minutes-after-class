@@ -43,12 +43,6 @@ const CIRCLE_RADIUS := 1.2
 @export var seats_path: NodePath = ^"../Seats"
 @export var actors_path: NodePath = ^"../Actors"
 
-@export_group("玩家")
-## 允许点地面让玩家走过去
-@export var player_click_to_move: bool = true
-## 与家具的最小净距（米）：点击点比这更近就吸附到最近站立点
-@export var furniture_clearance: float = 0.55
-
 @export_group("站立点标记")
 ## 画一圈可见标记（关掉即只保留逻辑点）
 @export var show_stand_markers: bool = true
@@ -113,7 +107,9 @@ func _process(delta: float) -> void:
 		return
 	# 只课间推进决策；上课段不发起新走动（§10.4）
 	if not is_break_phase():
+		_sync_positions_to_core()
 		return
+	_sync_positions_to_core()
 	_decide_timer += delta
 	if _decide_timer < decide_interval:
 		return
@@ -147,20 +143,21 @@ func _home_seconds() -> float:
 	return minf(_move_seconds, maxf(remaining * 0.8, 0.5))
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not enabled or not player_click_to_move or _core == null:
+## ⚠️ 玩家输入**已移交** PlayerController（scripts/game/player_controller.gd）：
+## 鼠标点击寻路 + WASD 手动行走共用一套移动执行与权限检查，避免两个组件同时拉动玩家。
+## 本组件只管 NPC 走动；玩家的位置同样由这里同步给内核。
+##
+## 把每个人物（含玩家）的当前站位同步到内核（空间层接口）—— 内核据此判定交互范围。
+## 位置是「表现层喂进来的只读状态」：内核不自己算移动，也不因位置改变任何矩阵。
+func _sync_positions_to_core() -> void:
+	if _core == null:
 		return
-	# 上课 / 日末简报期间玩家操作被锁：命令入口直接拒绝（不能只靠隐藏按钮）
-	if not bool(_snapshot.get("player_control", false)) or _player_index < 0:
-		return
-	var button := event as InputEventMouseButton
-	if button == null or not button.pressed or button.button_index != MOUSE_BUTTON_LEFT:
-		return
-	var target: Variant = _ground_target(button.position)
-	if target == null:
-		return
-	_move_actor_to(_player_index, _resolve_ground_target(target), true)
-	get_viewport().set_input_as_handled()
+	for i in range(_actor_count):
+		var actor: Node3D = _actors[i]
+		if actor == null:
+			continue
+		var pos := actor.global_position
+		_core.set_position(i, pos.x, pos.z)
 
 
 ## 当前是否处于课间段（读时钟快照；尚未绑定时按课间处理）。
@@ -406,40 +403,7 @@ func _release_point(i: int) -> void:
 	_point_of_actor.erase(i)
 
 
-# ------------------------------------------------------------------ 玩家点地面
-## 屏幕点 → 地面（y=0 平面）交点；无交点返回 null。
-func _ground_target(screen_pos: Vector2) -> Variant:
-	var camera := get_viewport().get_camera_3d()
-	if camera == null:
-		return null
-	var origin := camera.project_ray_origin(screen_pos)
-	var direction := camera.project_ray_normal(screen_pos)
-	if absf(direction.y) < 0.0001:
-		return null
-	var distance := -origin.y / direction.y
-	if distance <= 0.0:
-		return null
-	return origin + direction * distance
-
-
-## 点击点若离家具太近，吸附到最近的站立点（避免站进桌椅里）。
-func _resolve_ground_target(point: Vector3) -> Vector3:
-	if _is_clear(point):
-		return point
-	var nearest := _nearest_point(point)
-	if nearest.is_empty():
-		return point
-	return _point_positions[nearest]
-
-
-func _is_clear(point: Vector3) -> bool:
-	if absf(point.x) > 4.6 or absf(point.z) > 5.6:
-		return false
-	for point_id in _owner_of_point.keys():
-		var seat_pos: Vector3 = _point_positions[point_id]
-		if seat_pos.distance_to(point) < furniture_clearance:
-			return false
-	return true
+# ------------------------------------------------------------------ 空间同步（→ 内核）
 
 
 func _nearest_point(point: Vector3) -> String:

@@ -91,6 +91,9 @@ var _busy_phase: Array = []
 var _busy_act: Array = []
 ## 本 tick **刚完成**的行为（到期收尾时写入），给「行为完成才发信息」做挂点（如玩家闲聊线索）
 var _last_finished: Array = []
+## 空间层：节点在教室里的真实平面位置（米，世界坐标；由表现层 / 内核空间层写入）
+var _pos_x: Array = []
+var _pos_z: Array = []
 var _knot_days: Array = []
 var _vol_log: Array = []
 var _day_events: Dictionary = {}
@@ -269,6 +272,11 @@ func _reset_runtime(n: int) -> void:
 	_witness_day = []
 	for _i in range(n):
 		_next_action.append(0)
+		# --- 空间层：节点在教室里的真实平面位置（米，世界坐标；由表现层 / 内核空间层写入）---
+		# 依据：主文档 §10.5 / §15.1；策划 2026-10-07 裁决第 4 项「加临时位置与交互范围」。
+		# ⚠️ 本层**只记录**：内核不自己算移动，也不因位置改变任何矩阵 —— 位置只用于范围判定与展示。
+		_pos_x.append(0.0)
+		_pos_z.append(0.0)
 		_busy_until.append(0)
 		_busy_phase.append(-1)
 		_busy_act.append(null)
@@ -1595,6 +1603,35 @@ func _decide_and_act() -> void:
 
 
 ## 选交互目标：邻居优先（§10.15 相邻修正）。neighbors_only 时只在邻居里选。
+## 节点此刻是否正处在占用型行为中（§10.4 行为耗时）—— 表现层权限判定用（如玩家操控）。
+func is_busy(i: int) -> bool:
+	if i < 0 or i >= _n:
+		return false
+	return _global_tick < _busy_until[i]
+
+
+## 写入节点在教室里的真实平面位置（米）。越界静默忽略（表现层防御性调用）。
+func set_position(i: int, x: float, z: float) -> void:
+	if i < 0 or i >= _n:
+		return
+	_pos_x[i] = x
+	_pos_z[i] = z
+
+
+## 节点当前位置 (x, z)，单位米。
+func position_of(i: int) -> Vector2:
+	if i < 0 or i >= _n:
+		return Vector2.ZERO
+	return Vector2(_pos_x[i], _pos_z[i])
+
+
+## 两点的平面距离（米）—— 空间层判定（交互范围 / 活动圈）的统一口径。
+func distance_between(i: int, j: int) -> float:
+	var a := position_of(i)
+	var b := position_of(j)
+	return a.distance_to(b)
+
+
 ## 目标此刻能否接受一次新交互（集中只读判定）。
 ##
 ## §10.8 睡眠排除 + **行为耗时占用**：`_busy_until` 未到的人不能被拉去做新交互

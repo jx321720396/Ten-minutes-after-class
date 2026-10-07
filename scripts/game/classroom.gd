@@ -9,6 +9,7 @@ extends Node3D
 @onready var clock: SimulationClock = $Clock
 @onready var time_hud: TimeHUD = $TimeHUD
 @onready var roam: Node = $Roam
+@onready var player: PlayerController = $Player
 
 
 func _ready() -> void:
@@ -23,6 +24,7 @@ func _ready() -> void:
 		return
 	time_hud.bind_clock(clock)
 	roam.bind_clock(clock)
+	player.bind_clock(clock)
 	clock.time_updated.connect(_sync_state_mirror)
 	time_hud.continue_requested.connect(_on_continue_requested)
 
