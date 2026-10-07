@@ -1,6 +1,6 @@
 # 第三方资源登记（CREDITS）
 
-> 状态：生效 ｜ 维护者：全体 ｜ 最后更新：2026-10-04
+> 状态：生效 ｜ 维护者：全体 ｜ 最后更新：2026-10-06
 > 规则：**未在本文件登记的第三方资源禁止合入仓库**（见 [`README.md`](README.md)、[`../CONTRIBUTING.md`](../CONTRIBUTING.md) 第 6 节）。
 
 ## 登记表
@@ -9,6 +9,7 @@
 |---|---|---|---|---|---|---|
 | （示例）霞鹜文楷 | 字体 | lxgw | https://github.com/lxgw/LxgwWenKai | OFL-1.1 | 是 | UI 正文 |
 | Classroom（教室 3D 场景） | 3D 模型（glTF 2.0） | Zeps3D | https://sketchfab.com/3d-models/classroom-7f981d3e0b6445108d684abf3f2fd4ab | CC BY 4.0 | 是 | 课间教室场景 `assets/models/classroom/`（许可原文 `LICENSE-classroom.txt`） |
+| 教室像素贴图 ×8（`assets/textures/classroom/`） | 贴图 | 团队自制（AI 生成 + 手工修整） | 本仓库 | CC BY 4.0 | 是 | 3D 教室场景材质：地砖/木纹/墙裙/上墙/黑板报/软木板/纸张/窗帘 |
 |  |  |  |  |  |  |  |
 
 > 说明：上表首行为格式示例，**使用前请核实许可条款**；未实际引用的资源请删除该行。
