@@ -24,6 +24,15 @@ func _ready() -> void:
 	time_hud.bind_clock(clock)
 	roam.bind_clock(clock)
 	clock.time_updated.connect(_sync_state_mirror)
+	time_hud.continue_requested.connect(_on_continue_requested)
+
+
+## 日末简报的「进入第 N 天」：只有在 report 状态才成功；学期结束或依赖缺失时明确报开发状态，
+## 不假装成功（计划 §6：不提供虚假的成功恢复）。
+func _on_continue_requested() -> void:
+	if clock.continue_after_report():
+		return
+	push_warning("Classroom：未能进入下一天（学期已结束，或完整存档 / 简报组件尚未接入）——" + "时间停留在当前边界。")
 
 
 func _core_from_state() -> Variant:
