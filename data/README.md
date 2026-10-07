@@ -21,7 +21,10 @@ data/
 │   ├─ decay.csv              跨天衰减（有/无互动两档 + 压力保留 + 有互动门槛）✓
 │   ├─ status_tags.csv        状态标签（心结 / 秘密同盟；参数外置，避免硬编码）✓
 │   ├─ phases.csv             相位时长 + 规则启用子集 + 玩家操作权限 ✓
+│   ├─ time_presentation.csv  相位显示名 + 实时标称时长 + 游戏内时长（时间组件）✓
+│   ├─ time_runtime.csv       学期长度 term_days + 每帧 tick 预算（时间组件）✓
 │   ├─ seats.csv              座位表（seat_id / row / col / kind；决定相邻关系）✓
+│   ├─ stand_points.csv       站立点表（课间走动目标；世界坐标在场景 StandPoints/*）✓
 │   ├─ difficulty.csv         难度档 → NPC 数量（+ `default` 列 = 新游戏默认档）✓
 │   ├─ social_events.csv      社会事件状态机（多阶段跨相位）✓
 │   └─ social_event_triggers.csv 社会事件触发条件（纯数值，禁日期记号）✓
@@ -45,6 +48,9 @@ data/
 |---|---|
 | `characters/seeds.csv` | `id`、`alias`、`archetype`、`mbti`、`e`、`n`、`f`、`p`、`opacity_init`、`identity_seed`、`tags_init`、`initial_relations` |
 | `characters/appearance.csv` | `id`、`alias`、`gender`、`sprite`（表现层立绘绑定，**不参与行为判定**） |
+| `rules/stand_points.csv` | `point_id`、`kind`、`note`（课间走动目标；世界坐标在场景 `StandPoints/<point_id>`） |
+| `rules/time_presentation.csv` | `phase_id`、`display_name`、`real_duration_seconds`、`game_duration_seconds` |
+| `rules/time_runtime.csv` | `key`、`value`、`note`（`term_days` / `max_ticks_per_frame`） |
 | `rules/difficulty.csv` | `difficulty`、`npc_count`、`default`（新游戏默认档） |
 | `rules/transmission.csv` | `theta_a`、`theta_h`、`sigma`、`beta_affinity`、`beta_hostility`、`epsilon` |
 | `rules/decay.csv` | `axis`、`no_interaction`、`interacted`、`note` |
