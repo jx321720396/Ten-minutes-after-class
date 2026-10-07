@@ -26,7 +26,7 @@
 
 ## 一键跑测试
 
-[`run_tests.sh`](run_tests.sh) 把「六道门（`tools/*.py`）+ 铁律测试（`tests/invariants/`）+ Godot 侧 GUT 单测」串成一条命令：
+[`run_tests.sh`](run_tests.sh) 把「六道门（`tools/*.py`）+ 铁律测试（`tests/invariants/`）+ 逐 tick 对拍（`tests/integration/`）+ Godot 侧 GUT 单测」串成一条命令：
 
 ```bash
 bash tools/run_tests.sh                                      # 自动探测 Godot
