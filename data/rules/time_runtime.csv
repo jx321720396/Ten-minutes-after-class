@@ -1,0 +1,6 @@
+# 时间运行时参数（时间组件）
+# 依据：主文档 §3.4（学期长度）、docs/superpowers/plans/2026-10-07-time-component.md §2/§4。
+# 列：key | value | note
+key,value,note
+term_days,30,学期长度（天）：第 30 天结束后停止模拟，不给可操作的第 31 天
+max_ticks_per_frame,8,每帧最多补的模拟 tick 数（性能预算，不影响 tick 总数；积压保留、禁止跳 tick）
