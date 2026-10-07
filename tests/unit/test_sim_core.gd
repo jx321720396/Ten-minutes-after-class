@@ -64,6 +64,30 @@ func test_event_sink_day_settled_and_behavior() -> void:
 	assert_eq(events[-1]["payload"]["day"], 1, "day_settled 结算第 1 天")
 
 
+func test_player_action_chat_and_validation() -> void:
+	# D11 缺口③：玩家显式行动，来源固定玩家、目标指定
+	var core := _core()
+	var me := 8   # 玩家 = n-1
+	assert_false(core.player_action("chat", me)["ok"], "目标=玩家应拒绝")
+	assert_false(core.player_action("chat", -1)["ok"], "目标 OOB 应拒绝")
+	assert_false(core.player_action("bogus", 0)["ok"], "未知 kind 应拒绝")
+	var events: Array = []
+	core.event_sink = func(e: Dictionary) -> void: events.append(e)
+	var before_a := core.affinity(0, me)
+	var before_h := core.hostility(0, me)
+	var r := core.player_action("chat", 0, "学习")
+	assert_true(r["ok"], "chat 应成功")
+	assert_eq(r["target"], 0, "target 回显")
+	assert_eq(r["topic"], "学习", "topic 透传")
+	assert_eq(events.size(), 1, "应派发 1 条 chat 事件")
+	assert_eq(events[0]["payload"]["kind"], "chat", "事件 kind=chat")
+	assert_almost_eq(r["affinity_delta"], snapped(core.affinity(0, me) - before_a, 0.1), 0.0001, "affinity_delta 与矩阵变化一致")
+	assert_almost_eq(r["hostility_delta"], snapped(core.hostility(0, me) - before_h, 0.1), 0.0001, "hostility_delta 与矩阵变化一致")
+	var r2 := core.player_action("chat", 1)
+	assert_false(r2["ok"], "玩家忙应拒绝第二次行动")
+	assert_eq(r2.get("error"), "player_busy", "错误码 player_busy")
+
+
 func test_deterministic_report() -> void:
 	var a := _core()
 	a.run_day()
