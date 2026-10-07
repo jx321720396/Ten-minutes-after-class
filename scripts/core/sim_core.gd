@@ -12,7 +12,9 @@ extends RefCounted
 ## dims 为 dim-major（d*n+i），DIMS 顺序 e/n/f/p。
 ##
 ## D8 交付：统一影响公式（apply_event）+ 传导（transmission）+ 涓流（stress_drip
-## 及环境层/社会层）移植自 tools/core_sim.py；行为决策/跨天衰减/压力爆发仍为 D9/D10。
+## 及环境层/社会层）；D9 交付：压力爆发（try_burst/spread_knot）+ 跨天衰减
+## （settle_day：各轴衰减 + 深/浅层敌对 + 信念遗忘回归）。行为决策（decide_and_act
+## 及 do_report/do_tease 等 7 行为）仍为 D10。
 
 const DIMS := ["e", "n", "f", "p"]
 const AXES := ["affinity", "hostility", "trust"]
@@ -376,8 +378,104 @@ func _tick() -> void:
 		_stress_drip()
 
 
-## 跨天结算（D7 占位：仅推进天数；D8 补衰减/遗忘，D9 补压力爆发/心结）。
+# ------------------------------------------------------------------ 跨天结算（D9：§3.5 / §10.22 / §10.29）
+## 概率爆发（不是「到点必爆」，§3.5 / §8.3）。压力跨过入口阈值 burst_stress 后**每天判定一次**：
+##   p = burst_p_max × severity，severity = (stress − θ) / (100 − θ)。
+## severity 同时放大波及范围与心结时长 —— 「拖得越久、压力越高、爆得越大」。
+func _try_burst() -> void:
+	var th := float(_thresholds_lookup.get("burst_stress", 70.0))
+	var pmax := float(_probs.get("burst_p_max", 0.0))
+	if pmax <= 0.0:
+		return
+	var tag: Dictionary = _status_tags.get("heart_knot", {})
+	for i in range(_n):
+		var s := _stress[i]
+		if s < th:
+			continue
+		var severity := clampf((s - th) / (100.0 - th), 0.0, 1.0)
+		if _rng.random() >= pmax * severity:
+			continue
+		_stress[i] = _clamp100(s - 40.0)
+		if not tag.is_empty():
+			_knot_days[i] = maxi(_knot_days[i], roundi(float(tag["days"]) * (1.0 + severity)))
+		_spread_knot(i, severity)
+		_stats["bursts"] = int(_stats["bursts"]) + 1
+
+
+## 爆发传染：把「心结」扩散给与 i 关系最鲜明的少数人（|A − H| 越大越容易被波及）。
+## 关系最鲜明者优先（稳定排序等价 Python list.sort：键值相同按 j 升序）。
+func _spread_knot(i: int, severity: float) -> void:
+	var tag: Dictionary = _status_tags.get("heart_knot", {})
+	if tag.is_empty():
+		return
+	var ratio := float(tag.get("spread_ratio", 0))
+	var kmax := int(float(tag.get("spread_max", 0)))
+	if ratio <= 0.0 or kmax <= 0:
+		return
+	var others: Array = []
+	for j in range(_n):
+		if j != i and _knot_days[j] == 0:
+			others.append(j)
+	if others.is_empty():
+		return
+	others.sort_custom(func(a, b):
+		var ka := -absf(_a[i * _n + a] - _h[i * _n + a])
+		var kb := -absf(_a[i * _n + b] - _h[i * _n + b])
+		if ka != kb:
+			return ka < kb
+		return a < b
+	)
+	var pool_size := maxi(1, int(float(others.size()) * ratio))
+	var pool: Array = others.slice(0, pool_size)
+	var kmax_eff := roundi(float(kmax) * (1.0 + severity))
+	var days_eff := roundi(float(tag["days"]) * (1.0 + severity))
+	for j in _rng.sample(pool, mini(kmax_eff, pool.size())):
+		_knot_days[j] = maxi(_knot_days[j], days_eff)
+
+
+## 跨天结算（§3.5）：压力爆发概率判定 → 信念遗忘回归 → 心结每日加压 → 各轴衰减。
 func _settle_day() -> void:
+	_try_burst()
+	# 信念遗忘回归（lambda_b）：每天把信念向先验缓慢拉回（§18.9，本轮补齐）。
+	var lam := float(_bp.get("lambda_b", 0.0))
+	if lam > 0.0:
+		var prior_a := float(_bp["prior_a"])
+		var prior_h := float(_bp["prior_h"])
+		var prior_t := float(_bp["prior_t"])
+		for i in range(_n):
+			for j in range(_n):
+				if i == j:
+					continue
+				var idx := i * _n + j
+				_b_a[idx] = _clamp100(_b_a[idx] + lam * (prior_a - _b_a[idx]))
+				_b_h[idx] = _clamp100(_b_h[idx] + lam * (prior_h - _b_h[idx]))
+				_b_t[idx] = _clamp100(_b_t[idx] + lam * (prior_t - _b_t[idx]))
+	# 「心结」：爆发后的几天里，每天先加压（长线心理创伤，§3.5）。
+	for i in range(_n):
+		if _knot_days[i] > 0:
+			_stress[i] = _clamp100(_stress[i] + float(_status_tags["heart_knot"]["daily_stress"]))
+			_knot_days[i] -= 1
+	# 各轴衰减：深层敌对原样保留、只衰减表层（§10.22），深层极慢衰减（§10.29）。
+	var decay_h := float(_decay["decay_h"])
+	var decay_t := float(_decay["decay_t"])
+	var decay_a_interact := float(_decay["decay_a_interact"])
+	var decay_a_no_interact := float(_decay["decay_a_no_interact"])
+	var deep_decay := float(_decay["deep_decay"])
+	var interact_min := float(_decay["interact_min_events"])
+	var retain_s := float(_decay["retain_s"])
+	for i in range(_n):
+		for j in range(_n):
+			if i == j:
+				continue
+			var idx := i * _n + j
+			var interacted := float(_day_events.get("%d,%d" % [i, j], 0)) >= interact_min
+			_a[idx] *= decay_a_interact if interacted else decay_a_no_interact
+			_h_deep[idx] *= deep_decay
+			var deep := _h_deep[idx]
+			var surf := maxf(0.0, _h[idx] - deep)
+			_h[idx] = minf(100.0, deep + surf * decay_h)
+			_t[idx] *= decay_t
+		_stress[i] *= retain_s
 	_day_events.clear()
 	_day += 1
 
