@@ -7,7 +7,7 @@ event_id,axis,base,w_e,w_s,w_f,w_j,tier,class,note
 tease_stress,stress,3,-0.3,0,0.5,0,normal,E,被当众调侃
 tease_hostility,hostility,3,0,0,0.4,0.2,normal,E,被当众调侃
 tease_affinity,affinity,-2,0,0,0.3,0,normal,E,被当众调侃
-reject_stress,stress,3,0.2,0,0.3,0,normal,C,被拒绝搭话
+reject_stress,stress,2,0.2,0,0.3,0,normal,C,被拒绝搭话（3→2：判定改读真值后拒绝次数 +38%，2026-10-07 重标定）
 reject_hostility,hostility,3,0,0,0.2,0.3,normal,C,被拒绝搭话
 reject_affinity,affinity,-3,0,0,0.2,0,normal,C,被拒绝搭话
 report_stress,stress,5,0,0,0.3,-0.4,major,B,被举报（须敌对累积到阈值）
