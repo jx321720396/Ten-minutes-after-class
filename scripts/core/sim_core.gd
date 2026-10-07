@@ -18,6 +18,8 @@ extends RefCounted
 
 const DIMS := ["e", "n", "f", "p"]
 const AXES := ["affinity", "hostility", "trust"]
+## 玩家可通过 player_action 发起的行为（与 data/rules/behaviors.csv 的行名一致）
+const PLAYER_KINDS := ["chat", "join_chat", "tease", "rumor", "report", "roughhouse", "exclude"]
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
 const OBSERVER_LAYER = preload("res://scripts/systems/observer/observer_layer.gd")
@@ -1058,7 +1060,15 @@ func _settle_sleep() -> void:
 func _check_interrupt() -> void:
 	var cost := float(_probs.get("interrupted_stress", 0.0))
 	for i in range(_n):
-		if _busy_phase[i] >= 0 and _busy_phase[i] != _phase_index:
+		if _busy_phase[i] < 0:
+			continue
+		# 只有**尚未完成**的行为才算被打断（内核策划符合性审查 P1-04）：
+		# busy_until <= global_tick 说明它早就做完了，此时只清理占用记录、不施加压力代价。
+		# 修复前只要有 busy_phase 记录且跨了相位就加压力，把「已完成」误判成「被铃声打断」。
+		if _busy_until[i] <= _global_tick:
+			_busy_phase[i] = -1
+			continue
+		if _busy_phase[i] != _phase_index:
 			_busy_until[i] = 0
 			_busy_phase[i] = -1
 			if cost > 0.0:
@@ -1330,8 +1340,10 @@ func _decide_and_act() -> void:
 	var busy: Array = []
 	for _k in range(n):
 		busy.append(false)
+	# 玩家（末位节点，§4.1）由人的主动选择驱动，**不参与 NPC 自主决策**（§12.1）；
+	# 但它仍是被交互对象 —— 下方候选集合与 _pick_target 都不排除末位。
 	var order: Array = []
-	for _k in range(n):
+	for _k in range(n - 1):
 		order.append(_k)
 	_rng.shuffle(order)
 	for i in order:
@@ -1354,7 +1366,7 @@ func _decide_and_act() -> void:
 			if (
 				j != i
 				and not busy[j]
-				and not _sleeping[j]
+				and _can_interact_with(j)
 				and _are_neighbors(i, j)
 				and (_a[i * n + j] >= 40.0 or _b_h[i * n + j] >= 25.0 or _a[i * n + j] < 25.0)
 			):
@@ -1393,7 +1405,7 @@ func _decide_and_act() -> void:
 		):
 			var others: Array = []
 			for j in range(n):
-				if j != i and not busy[j] and not _sleeping[j]:
+				if j != i and not busy[j] and _can_interact_with(j):
 					others.append(j)
 			if not others.is_empty():
 				var w_rh: Array = []
@@ -1448,7 +1460,7 @@ func _decide_and_act() -> void:
 		if _allowed("rumor") and _rng.random() < float(_probs["rumor_p"]):
 			var c2: Array = []
 			for j in range(n):
-				if j != i and not busy[j] and not _sleeping[j]:
+				if j != i and not busy[j] and _can_interact_with(j):
 					c2.append(j)
 			if not c2.is_empty():
 				var w2: Array = []
@@ -1474,7 +1486,7 @@ func _decide_and_act() -> void:
 				if (
 					j != i
 					and not busy[j]
-					and not _sleeping[j]
+					and _can_interact_with(j)
 					and _stress[j] >= float(_thresholds_lookup["comfort_trigger_target_stress"])
 					and _a[i * n + j] >= need_cf
 				):
@@ -1500,7 +1512,7 @@ func _decide_and_act() -> void:
 				need_h = base_h + (extro_h - base_h) * (e_i - 50.0) / 50.0
 			var cands_h: Array = []
 			for j in range(n):
-				if j != i and not busy[j] and not _sleeping[j] and _a[i * n + j] >= need_h:
+				if j != i and not busy[j] and _can_interact_with(j) and _a[i * n + j] >= need_h:
 					cands_h.append(j)
 			if not cands_h.is_empty():
 				var w_h: Array = []
@@ -1516,7 +1528,7 @@ func _decide_and_act() -> void:
 			var th_ap := float(_thresholds_lookup["apologize_trigger_hostility"])
 			var cands_ap: Array = []
 			for j in range(n):
-				if j != i and not busy[j] and not _sleeping[j] and _h[i * n + j] >= th_ap:
+				if j != i and not busy[j] and _can_interact_with(j) and _h[i * n + j] >= th_ap:
 					cands_ap.append(j)
 			if not cands_ap.is_empty():
 				var w_ap: Array = []
@@ -1530,7 +1542,7 @@ func _decide_and_act() -> void:
 		# 意向类：搭话（softmax 采样）
 		var cands: Array = []
 		for j in range(n):
-			if j != i and not _sleeping[j] and not busy[j]:
+			if j != i and not busy[j] and _can_interact_with(j):
 				cands.append(j)
 		if not cands.is_empty():
 			var alpha := _alpha(i)
@@ -1557,11 +1569,23 @@ func _decide_and_act() -> void:
 
 
 ## 选交互目标：邻居优先（§10.15 相邻修正）。neighbors_only 时只在邻居里选。
+## 目标此刻能否接受一次新交互（集中只读判定，§10.8 睡眠排除）。
+##
+## ⚠️ **P1-03 待标定**：更严格的判定还应排除「尚未结束的占用」
+##    （`_global_tick < _busy_until[j]`），但 10 局 × 30 天实测它会让交互密度锐减 ——
+##    好感均值 56.3 → 19.9、压力爆发 8.2 → 61.1。当前标定基线正是靠「忙碌中的人也会被
+##    拉进新交互」撑起来的，所以这项修正必须与 `data/rules/behavior_probs.csv` /
+##    `behaviors.csv` 的重新标定一起上（内核策划符合性审查 P1-03）。
+##    集中在这里是为了让标定完成时只需改这一处。
+func _can_interact_with(j: int) -> bool:
+	return not _sleeping[j]
+
+
 func _pick_target(i: int, neighbors_only: bool = false) -> int:
 	if neighbors_only:
 		var others: Array = []
 		for j in _neighbor_idx[i]:
-			if not _sleeping[j]:
+			if _can_interact_with(j):
 				others.append(j)
 		if others.is_empty():
 			return -1
@@ -1569,7 +1593,7 @@ func _pick_target(i: int, neighbors_only: bool = false) -> int:
 	var w_nb := float(_probs["neighbor_pick_mult"])
 	var pool: Array = []
 	for j in range(_n):
-		if j == i or _sleeping[j]:
+		if j == i or not _can_interact_with(j):
 			continue
 		pool.append([j, w_nb if _neighbor_idx[i].has(j) else 1.0])
 	if pool.is_empty():
@@ -1798,12 +1822,29 @@ func _do_apologize(i: int, j: int) -> void:
 # ------------------------------------------------------------------ 玩家行动（D11 缺口③）
 ## 玩家显式行动：来源固定玩家（n-1）、目标由玩家指定，走与 NPC 相同的 do_* 统一影响公式，
 ## 不做 NPC 自动决策。返回结果字典供表现层渲染反馈；topic 暂作透传记录。
+## 玩家行动的可执行性校验：返回空串表示可以做，否则返回错误码。
+## 与 NPC 共用同一套「能不能做」门槛（§3.3 相位权限、§10.8 目标睡眠）——
+## 内核策划符合性审查 P1-02：不能只靠 UI 隐藏按钮，内核入口必须自己拒绝。
+func _player_action_error(kind: String, target: int, me: int) -> String:
+	if target < 0 or target >= _n or target == me:
+		return "invalid_target"
+	if not PLAYER_KINDS.has(kind):
+		return "unknown_kind"
+	if _sleeping[me] or _global_tick < _busy_until[me]:
+		return "player_busy"
+	if not _allowed(kind):
+		return "phase_not_allowed"
+	if not _can_interact_with(target):
+		return "target_unavailable"
+	return ""
+
+
 func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 	var me := _n - 1
-	if target < 0 or target >= _n or target == me:
-		return {"ok": false, "error": "invalid_target"}
-	if _sleeping[me] or _global_tick < _busy_until[me]:
-		return {"ok": false, "error": "player_busy"}
+	# 「能不能做」先过公共门槛，再执行具体行为（玩家可跳过「想不想」，不能跳过「能不能」）
+	var blocked := _player_action_error(kind, target, me)
+	if not blocked.is_empty():
+		return {"ok": false, "error": blocked}
 	var a_before := _a[target * _n + me]  # 目标→玩家的好感（行动前的反应基线）
 	var h_before := _h[target * _n + me]
 	var accepted := true
