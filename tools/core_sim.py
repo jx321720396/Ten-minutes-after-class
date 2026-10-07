@@ -408,7 +408,15 @@ class Sim:
         true = {"affinity": self.A, "hostility": self.H, "trust": self.T}
         deltas = {ax: [[0.0] * n for _ in range(n)] for ax in AXES}
 
+        # 预计算感知表：perceive(j, k, ax) 只依赖被感知者 j、目标 k、轴，
+        # **与观察者 i 无关**，而它原本写在 `for i` 的内层 —— 每个 (j,k,ax) 被重算 n 次。
+        # 提到循环外先算一次（n²·3 次，而非 n³·3 次），结果逐位不变：
+        # perceive 是纯函数，其入参 A/H/T/O 在本函数内直到下方 apply 之前都不被改动。
+        seen = {ax: [[self.perceive(j, k, ax) for k in range(n)] for j in range(n)]
+                for ax in AXES}
+
         for i in range(n):
+            A_i = self.A[i]
             for k in range(n):
                 if i == k:
                     continue
@@ -417,13 +425,13 @@ class Sim:
                 for j in range(n):
                     if j == i or j == k:
                         continue
-                    w = self.A[i][j] / 100.0  # 听从度
+                    w = A_i[j] / 100.0  # 听从度
                     if w <= 0:
                         continue
                     w_sum += w
                     for ax in AXES:
                         # σ = max(0, 感知_X(j→k) − θ)
-                        perceived = self.perceive(j, k, ax)
+                        perceived = seen[ax][j][k]
                         num[ax] += w * max(0.0, perceived - th[ax])
                 if w_sum <= 0:
                     continue

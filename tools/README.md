@@ -40,8 +40,12 @@ bash tools/run_tests.sh --no-godot                           # 只跑离线部�
 - 找不到 Godot 时**只跳过 Godot 段**，六道门与铁律测试照跑；退出码 0 = 全部通过（跳过不算失败）。
 - Windows 必须用 **console 版**可执行文件才能拿到 headless 输出（见 [`../tests/README.md`](../tests/README.md)）。
 - 脚本已强制 `PYTHONIOENCODING=utf-8` —— 本机 GBK 控制台下六道门会因 `✓` 抛 `UnicodeEncodeError`。
+- **耗时**：全套离线测试约 **45 秒**（其中第四 / 第五道门各约 18 秒，其余七项合计不到 1 秒）。
+  两道重门默认**多进程并行**——局与局互相独立（各自 `Sim(seed)` + 各自 `random.Random(seed)`），
+  结果与串行**逐位一致**；调试时可加 `--jobs 1` 强制串行（见 `tools/check_metrics.py` 抬头）。
 
 参数：`--days`（天数）、`--seed`（随机种子，保证可复现）、`--npc`（NPC 数量）。
+第四 / 第五道门另有 `--seeds`（局数，默认 100）与 `--jobs`（并行进程数，默认按核数、上限 16）。
 
 ## 已验证的结论（2026-10-05）
 
