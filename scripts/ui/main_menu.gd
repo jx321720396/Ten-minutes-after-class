@@ -3,17 +3,20 @@ extends Control
 const SCENE_SETTINGS = preload("res://scenes/ui/settings_menu.tscn")
 const SCENE_ABOUT = preload("res://scenes/ui/about_menu.tscn")
 const SCENE_CONFIRM = preload("res://scenes/ui/confirm_dialog.tscn")
+const SCENE_ENCYCLOPEDIA = preload("res://scenes/ui/encyclopedia.tscn")
 const SCENE_CLASSROOM := "res://scenes/game/classroom3D.tscn"
 
 @onready var continue_btn: Button = $VBoxContainer/ContinueGame
 @onready var new_game_btn: Button = $VBoxContainer/NewGame
 @onready var setting_btn: Button = $VBoxContainer/Setting
 @onready var about_btn: Button = $VBoxContainer/About
+@onready var encyclopedia_btn: Button = $VBoxContainer/Encyclopedia
 @onready var exit_btn: Button = $VBoxContainer/Exit
 
 var settings_panel: Control
 var about_panel: Control
 var confirm_dialog: Control
+var encyclopedia_panel: Control
 
 
 func _ready():
@@ -21,6 +24,7 @@ func _ready():
 	continue_btn.pressed.connect(_on_continue)
 	setting_btn.pressed.connect(_on_settings)
 	about_btn.pressed.connect(_on_about)
+	encyclopedia_btn.pressed.connect(_on_encyclopedia)
 	exit_btn.pressed.connect(_on_quit)
 
 	continue_btn.disabled = not _has_save()
@@ -41,6 +45,11 @@ func _ready():
 	confirm_dialog.confirmed_keep.connect(_on_confirm_keep)
 	confirm_dialog.cancelled.connect(_on_cancel_confirm)
 	add_child(confirm_dialog)
+
+	encyclopedia_panel = SCENE_ENCYCLOPEDIA.instantiate()
+	encyclopedia_panel.visible = false
+	encyclopedia_panel.closed.connect(_on_close_encyclopedia)
+	add_child(encyclopedia_panel)
 
 
 func _has_save() -> bool:
@@ -75,6 +84,12 @@ func _on_continue():
 		# TODO: 实现游戏场景加载
 		pass
 
+
+func _on_encyclopedia():
+	encyclopedia_panel.visible = true
+
+func _on_close_encyclopedia():
+	encyclopedia_panel.visible = false
 
 func _on_settings():
 	settings_panel.visible = true
