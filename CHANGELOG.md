@@ -11,6 +11,8 @@
 
 - **教室呈现路线定为 2D 先行（用户决策）**：课间空间用 `scenes/Classroom2D.tscn`（`tools/bake_classroom_2d.gd` 烘焙的静态场景）+ `scenes/characters/*.tscn`（16 个角色场景）跑通代码与玩法；`assets/models/classroom/`（Sketchfab 3D 教室，CC BY 4.0）暂作备用素材，**画风优化排在 D14 内容冻结之后**；团队分工任务单同步标注。
 ### 新增
+- **玩家专属闲聊情报（文档设计，2026-10-07）**：玩家主动与某人闲聊时，对方会透露一名随机其他同学与自己的关系；该情报仅由玩家获得，不改变关系矩阵，NPC 闲聊不具备此预设机制。
+- **闲聊情报数量挂钩透明度（文档设计，2026-10-07）**：闲聊对象透明度 O < 50 时透露 1 条关系信息，O ≥ 50 时透露 2 条；沿用透明度可见性边界，NPC 闲聊仍不触发。
 - **「NPC 主动接近他人」三条行为落地：安慰 / 求助 / 道歉和解（2026-10-07）**：
   · **动机**：玩法上「NPC 会不会来找你」是 §12.5 承诺的核心体验，但三条最直接的通道一直**只有数据、没有实现** —— `behaviors.csv` 早已为 `comfort` / `ask_help` / `apologize` 留好位置（`kind=intent`、耗时 50/20/50、`join_mode`、`allowed()` 的上课段禁用集也已包含它们），`w_events.csv` 有 `comfort_target_*`，`behavior_thresholds.csv` 有 `comfort_trigger_target_stress` / `apologize_trigger_hostility`；而 `core_sim.py` 里**没有** `do_comfort` / `do_ask_help` / `do_apologize`（§18.9 此前误记为「已实装」）。
   · **实现**：`tools/core_sim.py` 新增三个方法 + `decide_and_act` 中三个意向类入口（**必须排在末尾无门槛的搭话回退块之前**，否则永远被抢先）。三者同守 §6.4 两段式：**门槛读我自己的立场、判定读真值**；决策侧一律不读 `A[j][i] / H[j][i]`（§18.7 不变式 3）。
