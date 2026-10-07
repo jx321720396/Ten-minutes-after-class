@@ -11,6 +11,11 @@
 
 - **教室呈现路线定为 2D 先行（用户决策）**：课间空间用 `scenes/Classroom2D.tscn`（`tools/bake_classroom_2d.gd` 烘焙的静态场景）+ `scenes/characters/*.tscn`（16 个角色场景）跑通代码与玩法；`assets/models/classroom/`（Sketchfab 3D 教室，CC BY 4.0）暂作备用素材，**画风优化排在 D14 内容冻结之后**；团队分工任务单同步标注。
 ### 新增
+- **铁律测试脚手架 + 一键测试脚本 + 逐 tick 对拍导出（2026-10-06）**：
+  · **`tests/invariants/`**：三条铁律的自动化守门脚本（Python 离线检查，不依赖引擎）——`check_no_character_id.py`（扫 `scripts/systems/`、`scripts/npc/` 的角色名 / 角色编号硬编码）、`check_observer_readonly.py`（静态扫观察层写矩阵 + 运行时给 `A/H/T/O` 装计数代理，统计观察层更新期间的读写次数，**写数必须为 0**）、`check_magic_numbers.py`（扫 `scripts/core|systems|npc` 的硬编码数值，结构常量白名单在脚本内维护）；公共设施 `_common.py`，说明见 `tests/invariants/README.md`。目标目录未落地时标 **`SKIP`「暂时没测到」**并正常退出（骨架期不崩、不误判红）。
+  · **`tools/run_tests.sh`**：一键跑「六道门 + 铁律测试 + Godot 侧 GUT 单测」；Godot 路径查找顺序为 `--godot` > `$GODOT_BIN` > 仓库根 `.godot_path` > `PATH`，找不到只跳过 Godot 段；强制 `PYTHONIOENCODING=utf-8`（本机 GBK 控制台下六道门会因 `✓` 抛 `UnicodeEncodeError`）。
+  · **`tools/export_ticks.py`**：hook 内核 `tick` 导出同种子逐 tick 关键状态（关系三轴 / 透明度 / 压力统计 + 矩阵哈希），作为 GDScript 移植的**对拍基建**（冲刺计划 D6–D9）；产物默认落 `tools/out/`（已 gitignore）。
+  · 配套：`.gitignore` 新增 `.godot_path`、`/tools/out/`；`tools/README.md`、`tests/README.md`、`docs/qa/测试策略.md` 同步更新。
 - **3D 教室场景（画风探索 / 备用素材）**：`scenes/game/classroom3D.tscn` 按像素卡通风参考图手搭完整教室（无脚本，全部节点可在检查器调整）——米黄墙 + 绿墙裙、右侧大窗与系带窗帘、左侧走廊高窗 + 门 + 绿色公告栏、后墙「文明班级」黑板报 + 课表栏 + 储物柜、前墙黑板、讲台；17 套桌椅按 `data/rules/seats.csv` 命名为 `Seats/P0`–`P16`（4×4 网格 + 讲桌旁 P0），坐标为**米制**（根节点无缩放，1 单位 = 1 m；教室 10.4 m × 12.4 m、层高 3.46 m）。部件拆为 `scenes/components/` 下的 `desk_chair`、`podium`、`window_tall`、`window_high`、`curtain`、`ceiling_light`、`back_wall`、`front_wall`、`floor`；共享材质在 `resources/materials/`，像素贴图在 `assets/textures/classroom/`；`scenes/game/classroom3D_pixel.tscn` 以 1/3 分辨率渲染再放大。**注：不改变「2D 先行」的呈现路线，本场景作画风探索与备用素材。**
 - **安卓导出配置完成（2026-10-06）**：新增 `export_presets.cfg`——Windows Desktop + Android 双导出预设（包名 `com.xiake.tenminutes`；Android 使用内置模板，非 Gradle 自定义构建）；`project.godot` 开启 `textures/vram_compression/import_etc2_astc`（移动端 ETC2/ASTC 纹理导入格式）；教室 3D 素材 `.import` 同步为 Godot 4.7.2 导入状态。
 - **接入 GUT 测试框架（9.7.1，Godot 4.7.x 对应版）**：`addons/gut/` 入库并在 `project.godot` 启用编辑器插件；`tests/unit/test_smoke.gd` 冒烟用例跑通（`godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit`）；版本记录于 `tests/README.md` 与 `docs/qa/测试策略.md`。
@@ -506,10 +511,19 @@
 - **补全主文档两块规格 + 明确三条原则**：① **玩家与 NPC 行为一致**——共用全部 15 个行为与同一套判定，玩家独有仅「打听 / 推理板 / 情报日志」3 项，主文档新增完整 **§12 玩家操作映射**（原为「待迁入」占位，含时间成本说明：行为消耗 tick = 天然操作预算）；② **标签可见性**——标签默认对玩家不可见，经「观察（透明度档位）/ 被告知（`T ≥ 70` 且 `A ≥ 50`）/ 推断（行为痕迹累计）」三条路径解锁，且标签必然留下行为痕迹，主文档新增 **§9.6**、[`信念矩阵.md`](docs/design/信念矩阵.md) 新增 §11.8；③ **一切事件由数值驱动**——主文档 §10 总则新增声明：所有触发条件都是五轴的函数，禁止按天数 / 轮次 / 剧本触发。另在 §11 标签层处标注可见性指引。
 - **新增 NPC 行为决策算法（`docs/design/NPC行为决策.md`）**：行为触发分三类——**环境类**（闲聊 / 传纸条 / 走动 / 窃听 / 睡觉，固定基础概率 × 修正系数）、**阈值类**（举报 / 压力爆发，条件满足即发生）、**意向类**（搭话 / 调侃 / 安慰 / 求助 / 道歉 / 秘密交换，门槛 → 意向评分 `U_b = Σ α_X·Δ_X^pred` → `softmax(U_b/τ)` 采样）。`α` 由 MBTI 四维派生、`τ` 由 J 与压力调制；候选集先过门槛再取 top-5 采样；含可复现性约束（种子化 RNG、按角色索引升序决策）与不变式（决策禁读 `A[j][i]`、禁角色 ID 判断、`τ > 0`）。主文档 §10 开头新增「行为触发方式总则」表并链向该文档。
 
+### 修复
+- **举报的作用对象写反 + `hurt_day` 方向污染（2026-10-07，用户裁决「一起修」）**：
+  · **举报（P0）**：`core_sim.do_report` 的两处效果曾写作 `apply_event(i, j, …)`，于是**被举报者压力恒为 0**、`report_hostility` 与深层 `H_deep` 记到了**举报者**一侧 —— 与 §10.2「举报会大幅提升**被举报者**的压力值」、§6.3 major 档（压力 +5 / 敌对 +5）相反。实测量化：修前 Δ压力[被举报者] = **0.0**、ΔH[举报者 → 被举报者] 净 **−0.4**（+4.6 被 −5 抵消）；修后 Δ压力[被举报者] = **+4.3**、ΔH[被举报者 → 举报者] = **+4.2**（含深层 `H_deep`）、ΔH[举报者 → 被举报者] 干净回落 **−5**。**此前举报能触发、却几乎不改变班级。**
+  · **`hurt_day` 根因（连带）**：该表由 `apply_event` 内部按 `(i, j)` 自动维护，而 `apply_event(i, j, …)` 的 `(i, j)` 是「**被作用方 → 作用方**」，读者（§10.25 排挤、§10.24 从众）要的却是「**施害者 → 受害者**」—— 两者在一次调用里**恰好相反**，导致**受害者被同时记成施害者**（排挤/从众判据被虚增）。原实现（见「举报载体层」条）只**补记**了正确条目、未删除错误条目。现改为由调用点 `mark_hurt(施害者, 受害者)` 单点决定方向，`apply_event` 不再写该表。
+  · **平衡复验（参数未动）**：`check_config` 176 ✓ / `test_core` **30** ✓（新增 §3.5「举报的作用对象」、§3.6「当众羞辱的 hurt_day」两组方向回归断言 —— 门只对拍数值，方向写反不会被拦住）/ `verify_formula` **11** ✓（新增 `report_hostility`、`report_stress` 两条对拍，并让 `independent_event` 支持 `tier=major` 与压力轴；此前汇总行硬编码打印「4 项」，现按实际计数）/ `check_metrics` 分布判据 ✓（爆发均值 26.9、好感均值 59.1、SD 21.2、饱和 0.0%）/ `diversity_report` 20 局 ✓：**举报上场率 15% → 25%（3 → 6 次）**，排挤 90% → 80%（111 → 74 次，阈值 ≥70%），羞辱 100%、深层锁死 0/20。
+  · 同步更新主文档 §10.25.2（`hurt_day` 的维护位置与方向说明）。
+  · **同时收口一处既有文档漂移**：主文档写 `interrupted_stress = 1.20`，而 `data/rules/behavior_probs.csv` 为 **1.25**（本文件「举报载体层」条亦记录 1.35 → 1.25）——第六道门 `check_docs` 因此长期报红。已按配置更正文档，六道门全部转绿。
+
 ### 移除
 - **3D 教室场景内的日光与可见灯具模型**：删 `Sun`（`DirectionalLight3D`，原仅 0.25）、`Room/CeilingFixtures/Light1–6`（`ceiling_light.tscn` 实例）与 `Projector` 投影仪（含 `Rod`/`Body`/`Lens` 及专用 `sub_resource`）——改为**纯室内人工光**（`Lamp1–6` 六盏 `OmniLight3D` + `FillBack`/`FillFront`，全部 `shadow_enabled = false`），消除吊挂模型对俯视取景的遮挡并降低移动端实时光源开销。
 
 ### 文档
+- **新增音效清单（`docs/audio/音效清单.md`）**：79 个播放点 / **50 条原始素材**，按 P0/P1/P2 分三段（**素材优先级 = 它覆盖的播放点中最高的那一档**，素材必须先服务最早交付的批次）；每条素材含中文名、母线、覆盖播放点、复用变体策略，每个播放点含触发时机、复用素材 + 变体参数、可见性约束。复用后 50 条素材覆盖 79 个播放点，**节省 29 条（37%）**。写入两条贯穿红线：**不得用音效泄露玩家看不到的信息**（§9）、**NPC ↔ NPC 判定一律静默**（§10.32.1，三拍只对涉及玩家的判定播放）。配套：`docs/audio/音频设计.md` §3 的九行旧骨架收口为指向该清单（保留原「不得泄露信息」约束），§5「完整 SFX 清单」待办勾掉（**总包体预算**仍待定，见音效清单 §8）。
 - 新增 `docs/production/团队分工任务单.md`：6 人冲刺期分工（策划 / 内核程序 / 表现程序 / 美术 / 音频+内容 / QA+发布），含四项接口契约（内核↔表现 API、`data/` 表、资产、场景与脚本）、逐人任务与验收标准、每日检查表、风险替代方案、提交清单责任映射。
 - 建立 `docs/` 文档体系：文档索引、GDD 入口与契约登记、技术设计、制作管理、视听规范、测试策略、本地化说明、历史资料归档。
 - 归档 v1.0 / v2.0 策划资料至 `docs/references/`，v3.0 玩法规格快照归档至 `docs/references/core-gameplay-v3.0-20261003.md`。
