@@ -17,11 +17,26 @@ func _last(core: SimCore) -> int:
 	return int(core.node_count()) - 1
 
 
-## 跑完一个课间段，让内核进入上午上课（§3.3 禁止主动社交）。
+## 把玩家自身状态清干净（不睡、不忙）—— 玩家可能在段首被 NPC 搭话而处于占用中，
+## 那会先命中 player_busy。本辅助用于单独验证「相位权限」「目标状态」等其它判据。
+func _free_player(core: SimCore) -> void:
+	var me := _last(core)
+	var busy_until: Array = core._busy_until
+	busy_until[me] = 0
+	core._busy_until = busy_until
+	var sleeping: Array = core._sleeping
+	sleeping[me] = false
+	core._sleeping = sleeping
+
+
+## 跑完一个课间段，让内核真正进入上午上课（§3.3 禁止主动社交）。
+## 注意：finish_time_boundary() 只推进相位游标、**不跑段首结算**（`_begin_phase`）——
+## 铃声中断清理发生在上课段第一个 tick，所以这里要再推一 tick（与真实时钟一致）。
 func _enter_class(core: SimCore) -> void:
 	for _i in range(TICKS_BREAK):
 		core.advance_tick()
 	core.finish_time_boundary()
+	core.advance_tick()
 	assert_eq(str(core.time_snapshot()["kind"]), "class", "应已进入上课段")
 
 
@@ -47,6 +62,7 @@ func test_player_cannot_act_during_class() -> void:
 	# P1-02：上课段玩家的行动入口必须**自己拒绝**，不能只靠 UI 隐藏按钮。
 	var core := _core()
 	_enter_class(core)
+	_free_player(core)
 
 	var result: Dictionary = core.player_action("chat", 0)
 	assert_false(result["ok"], "上课段不能发起社交")
@@ -56,6 +72,7 @@ func test_player_cannot_act_during_class() -> void:
 func test_player_cannot_act_on_sleeping_target() -> void:
 	# P1-02：目标在睡觉时不能交互（§10.8）。
 	var core := _core()
+	_free_player(core)
 	var sleeping: Array = core._sleeping
 	sleeping[0] = true
 	core._sleeping = sleeping
