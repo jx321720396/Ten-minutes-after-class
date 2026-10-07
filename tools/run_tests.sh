@@ -220,7 +220,19 @@ for inv in $INVARIANTS; do
   fi
 done
 
-# ------------------------------------------------------------------ ③ Godot
+# ------------------------------------------------------- ③ 逐 tick 对拍（离线）
+printf '\n=== 对拍：Python ↔ GDScript 逐 tick ===\n'
+if [ -f "tests/integration/test_tick_parity.py" ]; then
+  if [ -n "$GODOT_BIN" ]; then
+    run_step "对拍 test_tick_parity" "$PYTHON" "tests/integration/test_tick_parity.py" --godot "$GODOT_BIN"
+  else
+    run_step "对拍 test_tick_parity" "$PYTHON" "tests/integration/test_tick_parity.py"
+  fi
+else
+  mark_skip "对拍（tests/integration/test_tick_parity.py 不存在）"
+fi
+
+# ------------------------------------------------------------------ ④ Godot
 printf '\n=== Godot 段 ===\n'
 if [ -z "$GODOT_BIN" ]; then
   mark_skip "Godot 段（未指定 Godot 可执行文件）"
@@ -229,6 +241,8 @@ elif [ ! -f "addons/gut/gut_cmdln.gd" ]; then
 else
   run_step "GUT 单测（tests/unit）" \
     "$GODOT_BIN" --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit
+  run_step "GUT 涌现验收（tests/emergence，当前全部 pending）" \
+    "$GODOT_BIN" --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/emergence -gexit
 fi
 
 # ------------------------------------------------------------------ 汇总

@@ -45,7 +45,6 @@ jobs:
   gdscript:
     name: GDScript 格式与静态检查
     runs-on: ubuntu-latest
-    continue-on-error: true   # 骨架阶段仅提示；代码稳定后在分支保护中设为必需
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -53,7 +52,25 @@ jobs:
           python-version: '3.11'
       - name: 安装 gdtoolkit
         run: pip install 'gdtoolkit==4.*'
-      - name: gdformat --check
-        run: gdformat --check scripts/ || echo "::warning title=格式::存在未按 gdformat 格式化的脚本"
-      - name: gdlint
-        run: gdlint scripts/ || echo "::warning title=静态检查::gdlint 报告了问题"
+      - name: gdformat --check（不符合格式即失败）
+        run: |
+          if ! gdformat --check scripts/; then
+            echo "::error title=格式::存在未按 gdformat 格式化的脚本，差异如下（本地跑 gdformat scripts/ 即可自动修正）"
+            gdformat --diff scripts/ || true
+            exit 1
+          fi
+      - name: gdlint（静态检查有问题即失败）
+        run: gdlint scripts/
+
+  offline-gates:
+    name: 离线六道门 + 铁律测试 + 对拍自检
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 一键跑离线测试（六道门 + 铁律 + 对拍）
+        run: |
+          export PYTHONIOENCODING=utf-8
+          bash tools/run_tests.sh --no-godot
