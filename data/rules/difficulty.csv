@@ -1,0 +1,6 @@
+# 难度档位 → NPC 数量（铁律 3：数值集中 data/，不落脚本）
+# 契约 §4.1 SimCore.new(seed, difficulty)：difficulty ∈ {1,2,3}
+difficulty,npc_count
+1,8
+2,16
+3,24

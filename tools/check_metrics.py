@@ -14,8 +14,8 @@
 即：**允许每局不同，但不允许平均不对、也不允许全员畸形。**
 
 运行：
-  python tools/check_metrics.py                     # 默认 8 个种子
-  python tools/check_metrics.py --seeds 20 --days 30
+  python tools/check_metrics.py                     # 默认 40 个种子（长尾指标需要大样本）
+  python tools/check_metrics.py --seeds 60 --days 30
 """
 
 import argparse
@@ -25,7 +25,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core_sim import Sim  # noqa: E402
 
-SEEDS = [12345, 42, 7, 2024, 999, 31415, 2718, 1618]
+# 默认种子集 **40**（2026-10-07 由 8 提到 40）。
+# 起因：爆发次数是**长尾**指标 —— 少数几局就能主导均值，8 局会系统性误判。
+# 实测同一份代码只换种子集：8 局 → 11.6 / 20 局 → 13.6 / 40 局 → 17.8 / 60 局 → 21.9。
+# 门必须跑在大样本上，否则「达标」只是拟合了那几个种子（§3.4.1 第六条）。
+SEEDS = [12345, 42, 2024, 999, 31415, 2718, 1618] + list(range(1, 34))   # 7 + 33 = 40，无重复
 
 
 def run_one(seed, days, npc, verbose=False):
@@ -67,7 +71,9 @@ def main():
     ap.add_argument("--seeds", type=int, default=len(SEEDS))
     a = ap.parse_args()
 
-    seeds = SEEDS[: a.seeds] if a.seeds <= len(SEEDS) else SEEDS + list(range(a.seeds - len(SEEDS)))
+    # 超出默认集时用 1000+ 的种子续接，避免与默认集重复
+    seeds = (SEEDS[: a.seeds] if a.seeds <= len(SEEDS)
+             else SEEDS + list(range(1000, 1000 + a.seeds - len(SEEDS))))
     print("=== 玩法指标门（分布判据 ：%d 局 × %d 天）===" % (len(seeds), a.days))
     rows = [run_one(sd, a.days, a.npc, verbose=True) for sd in seeds]
 

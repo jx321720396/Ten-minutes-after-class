@@ -80,6 +80,76 @@ def load_table(rel):
     return list(csv.DictReader(rows))
 
 
+def select_roster(seeds, bindings, target, neutral):
+    """主文档 §11.5「正式版」抽取：绑定组成员强制纳入 + MBTI 四维极性贪心补齐。
+
+    与 `scripts/core/roster_selector.gd` 逐字一致：**不消费随机数**，同一种子名单固定、
+    跨种子也不变。替换原「随机抽 npc_count 个」的简化实现。
+    """
+    by_alias = {row["alias"]: row for row in seeds}
+    # ① 绑定组成员（from 与 to 中出现的非 * 别名，按绑定表行序去重）
+    forced_aliases = []
+    for b in bindings:
+        f = b.get("from") or ""
+        t = b.get("to") or ""
+        if f and f != "*" and f not in forced_aliases:
+            forced_aliases.append(f)
+        if t and t != "*" and t not in forced_aliases:
+            forced_aliases.append(t)
+    selected = []
+    chosen = set()
+    for a in forced_aliases:
+        row = by_alias.get(a)
+        if row is not None:
+            selected.append(row)
+            chosen.add(a)
+    # ② 极性覆盖 + 贪心补齐：每步挑「覆盖最多尚未覆盖极性槽」的人，同分取种子行序第一
+    covered = set()
+    for row in selected:
+        _mark_roster(covered, row, neutral)
+    while len(selected) < target:
+        best = None
+        best_new = -1
+        for row in seeds:
+            alias = row["alias"]
+            if alias in chosen:
+                continue
+            new_slots = _new_slots_roster(covered, row, neutral)
+            if new_slots > best_new:
+                best_new = new_slots
+                best = row
+        if best is None:
+            break
+        selected.append(best)
+        chosen.add(best["alias"])
+        _mark_roster(covered, best, neutral)
+    return selected
+
+
+def _slot_keys_roster(row, neutral):
+    """一行角色的四维极性槽：d_high / d_low（恰为中性给空串，不占槽）。"""
+    keys = []
+    for d in DIMS:
+        v = float(row.get(d, "") or 0)
+        if v > neutral:
+            keys.append("%s_high" % d)
+        elif v < neutral:
+            keys.append("%s_low" % d)
+        else:
+            keys.append("")
+    return keys
+
+
+def _mark_roster(covered, row, neutral):
+    for k in _slot_keys_roster(row, neutral):
+        if k:
+            covered.add(k)
+
+
+def _new_slots_roster(covered, row, neutral):
+    return sum(1 for k in _slot_keys_roster(row, neutral) if k and k not in covered)
+
+
 # ---------------------------------------------------------------- 内核
 class Sim:
     def __init__(self, seed=12345, npc_count=16, verbose=False):
@@ -112,10 +182,11 @@ class Sim:
         self.nw = load_params("balance/npc_weight" + "s.csv")
         seeds = load_table("characters/seeds.csv")
 
-        # --- 抽角色（简化：随机取 npc_count 个；§11.5 的绑定组/原型去重留待正式版）---
-        pool = seeds[:]
-        self.rng.shuffle(pool)
-        self.chars = pool[:npc_count]
+        # --- 抽角色（§11.5 正式版：绑定组成员强制纳入 + 四维极性贪心补齐）---
+        # 与 scripts/core/roster_selector.gd 逐字一致，不消费随机数（名单跨种子固定）。
+        bindings = load_table("characters/bindings.csv")
+        neutral = load_params("rules/kernel_params.csv")["mbti_neutral"]
+        self.chars = select_roster(seeds, bindings, npc_count, neutral)
         self.N = npc_count + 1  # 索引 N-1 为玩家
 
         # --- 状态矩阵 ---
@@ -603,12 +674,19 @@ class Sim:
         return {a: sorted(v) for a, v in groups.items() if len(v) >= 2}
 
     def join_score(self, i, j):
-        """判定侧 score：信念 B_A + 对方外向度 − 对方压力惩罚（§6.4）。
+        """判定侧 score：**被请求者的真值好感 `A[j][i]`** + 对方外向度 − 对方压力惩罚（§6.4）。
+
+        判定读真值 —— 「他会不会接纳我」由**他的真实态度**决定，不由我的猜测决定；
+        我的猜测只进两处：决策侧（要不要去试）与展示层（成功率）。两者之差就是误判，
+        也正是本作「信息不对称」的来源（§9.4、§10.32.3）。
+
+        ⚠️ 这里读 `A[j][i]`（别人对我的态度）**不违反** §18.7 不变式 3 ——
+        该不变式禁止的是**决策路径**读它；本方法属**判定路径**，规格要求它读真值。
 
         压力是程度不是闸门：`hot ∈ [0,1]` 乘上 `join_chat_stress_penalty` 压低 score，
         而不是把 p 归零。
         """
-        base = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
+        base = self.A[j][i] + (self.dims[j][0] - 50.0) * 0.3
         hot = max(0.0, self.Stress[j] - 50.0) / 50.0
         penalty = self.thresholds_lookup.get("join_chat_stress_penalty", 12.0)
         return base - penalty * hot
@@ -623,9 +701,19 @@ class Sim:
     def join_feedback(self, i, j):
         """只读：返回玩家侧会看到的成功率 `p`（§10.32）。
 
-        `p` 从信念 `B` 算（不泄露真值）；**实际掷骰在 `do_join_chat` 里做**。
+        ⚠️ 这里**必须用信念 `B_A`**（我猜对方对我多有好感），**不得用真值** ——
+        否则等于把对方心里的真实态度直接告诉玩家（§10.32.3「不泄露隐藏信息」）。
+
+        于是**显示值与实际结算值（`join_probability`，读真值）刻意不同**：
+        「我明明有 80% 把握却被拒」正是认知偏差的具象化，不是 bug（§10.32.4）。
         """
-        return {"p": round(self.join_probability(i, j), 2)}
+        th = self.thresholds_lookup
+        hot = max(0.0, self.Stress[j] - 50.0) / 50.0
+        score = (self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
+                 - th.get("join_chat_stress_penalty", 12.0) * hot)
+        theta = th.get("join_chat_affinity", 45.0)
+        scale = th.get("join_chat_scale", 10.0)
+        return {"p": round(sigmoid((score - theta) / scale), 2)}
 
     # ---------- 玩家侧判定展示（NPC 静默，玩家可见过程）----------
     def verdict(self, i, j, kind="join_chat"):
@@ -643,7 +731,7 @@ class Sim:
                 "kind": kind,
                 "p": fb["p"],                    # ① 成功率（信念算得，不泄露真值）
                 "roll": roll,                    # ② 掷骰
-                "ok": roll < fb["p"],            # ③ 结果（与 do_join_chat 同一 p，无硬闸门）
+                "ok": roll < self.join_probability(i, j),   # ③ 结果（与 do_join_chat 同一 p：读真值）
                 "note": "成功率来自「你以为对方怎么看你」，不是事实 —— 把握大也可能被拒。",
             }
         return None
@@ -712,11 +800,10 @@ class Sim:
     def decide_and_act(self):
         """一 tick 内的行为决策（简化：只挑一个行为执行）"""
         n = self.N
-        order = list(range(n))
-        self.rng.shuffle(order)
+        # 决策顺序按索引升序（与 scripts/core/sim_core.gd 一致；不消费随机数，取代随机顺序）
         busy = set()
 
-        for i in order:
+        for i in range(n):
             if self.sleeping[i] or i in busy or self.global_tick < self.busy_until[i]:
                 continue
             self.in_conversation[i] = False

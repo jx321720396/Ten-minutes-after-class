@@ -1,0 +1,16 @@
+# 内核硬编码系数（从 tools/core_sim.py 抽取，供 GDScript 内核读取）
+# 动机：满足「数值不落脚本」铁律 —— 参考实现的写死数值统一迁到本表。
+# 说明：这些不是「规则阈值」，而是初始化/归一化的结构系数；规则阈值仍在各自 CSV。
+param,value,note
+init_affinity_base,20,初始好感基线：A = 20 + random*20
+init_affinity_spread,20,初始好感随机幅度
+init_hostility_spread,15,初始敌对：H = random*15
+init_trust_base,20,初始信任基线：T = 20 + random*20
+init_trust_spread,20,初始信任随机幅度
+mbti_neutral,50,MBTI 四维中性值（老师节点四维亦用 50）
+mbti_scale,50,MBTI 归一化除数：(x − 50) / 50
+bias_e_weight,0.5,信念偏差 E 维权重（perceived 与 observer 共用）
+bias_f_weight,0.5,信念偏差 F 维权重（同上）
+bias_trust_scale,0.1,信任偏差额外缩放（trust_bias = tr × w × observer × 此值）
+opacity_default,50,透明度缺省值（seeds 未填 opacity_init 时的回退）
+saturated_threshold,95,报告统计「接近饱和」判定阈值
