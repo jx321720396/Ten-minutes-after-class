@@ -20,19 +20,19 @@ const DIMS := ["e", "n", "f", "p"]
 const AXES := ["affinity", "hostility", "trust"]
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
-const _ObserverLayer = preload("res://scripts/systems/observer/observer_layer.gd")
+const OBSERVER_LAYER = preload("res://scripts/systems/observer/observer_layer.gd")
 
 # —— 关系 / 个体状态（float64 平铺，与 Python 逐位一致）——
-var _a := PackedFloat64Array()      # 好感 A  n*n
-var _h := PackedFloat64Array()      # 敌对 H  n*n
-var _h_deep := PackedFloat64Array() # 深层敌对 n*n（§10.22，永不衰减）
-var _t := PackedFloat64Array()      # 信任 T  n*n
-var _o := PackedFloat64Array()      # 透明度 O  n
-var _stress := PackedFloat64Array() # 压力 Stress  n
-var _dims := PackedFloat64Array()   # MBTI 四维（dim-major）DIMS.size()*n
-var _b_a := PackedFloat64Array()    # 信念·好感 n*n
-var _b_h := PackedFloat64Array()    # 信念·敌对 n*n
-var _b_t := PackedFloat64Array()    # 信念·信任 n*n
+var _a := PackedFloat64Array()  # 好感 A  n*n
+var _h := PackedFloat64Array()  # 敌对 H  n*n
+var _h_deep := PackedFloat64Array()  # 深层敌对 n*n（§10.22，永不衰减）
+var _t := PackedFloat64Array()  # 信任 T  n*n
+var _o := PackedFloat64Array()  # 透明度 O  n
+var _stress := PackedFloat64Array()  # 压力 Stress  n
+var _dims := PackedFloat64Array()  # MBTI 四维（dim-major）DIMS.size()*n
+var _b_a := PackedFloat64Array()  # 信念·好感 n*n
+var _b_h := PackedFloat64Array()  # 信念·敌对 n*n
+var _b_t := PackedFloat64Array()  # 信念·信任 n*n
 
 var _rng: MtRandom
 var _seed := 0
@@ -43,18 +43,19 @@ var _tick_in_phase := 0
 var _phase_index := 0
 var _global_tick := 0
 var _volume := 0.0
-var _active_phases: Array = []   # 非 settle 段（课间/上课）顺序，供单步推进（D11）
-var _phase_setup_done := false   # 当前段是否已跑段首一次性结算（D11）
+var _active_phases: Array = []  # 非 settle 段（课间/上课）顺序，供单步推进（D11）
+var _phase_setup_done := false  # 当前段是否已跑段首一次性结算（D11）
 
 ## 事件出口（D11 缺口④）：表现层把此回调绑到 EventBus 四信号，内核零 autoload 依赖。
-## 收到 {"type": String, "payload": Dictionary}；type ∈ event_happened / day_settled / tag_changed / stress_burst。
-var event_sink: Callable = Callable()
+## 收到 {"type": String, "payload": Dictionary}；
+## type ∈ event_happened / day_settled / tag_changed / stress_burst。
+var event_sink: Callable = Callable()  # gdlint:ignore = class-definitions-order
 
 # —— 配置 ——
-var _p: Dictionary = {}             # transmission 参数（含 settle_interval）
-var _bp: Dictionary = {}            # belief 参数（先验 / 学习率 / 偏差）
-var _kp: Dictionary = {}            # kernel 硬编码系数（kernel_params.csv）
-var _probs: Dictionary = {}         # behavior_probs：行为 -> 基础概率
+var _p: Dictionary = {}  # transmission 参数（含 settle_interval）
+var _bp: Dictionary = {}  # belief 参数（先验 / 学习率 / 偏差）
+var _kp: Dictionary = {}  # kernel 硬编码系数（kernel_params.csv）
+var _probs: Dictionary = {}  # behavior_probs：行为 -> 基础概率
 var _thresholds_lookup: Dictionary = {}
 var _decay: Dictionary = {}
 var _behaviors: Dictionary = {}
@@ -69,8 +70,8 @@ var _seats: Array = []
 var _seat_pos: Dictionary = {}
 var _seat_of: Array = []
 var _neighbors: Dictionary = {}
-var _neighbor_idx: Array = []        # 角色 → 邻居角色索引（对称，对应 Python assign_seats 的 neighbor_idx）
-var _feedback := 0.0                  # 负反馈强度（transmission.csv 的 feedback）
+var _neighbor_idx: Array = []  # 角色 → 邻居角色索引（对称，对应 Python assign_seats 的 neighbor_idx）
+var _feedback := 0.0  # 负反馈强度（transmission.csv 的 feedback）
 
 # —— 角色 / 相位 / 运行态 ——
 var _chars: Array = []
@@ -89,9 +90,9 @@ var _vol_log: Array = []
 var _day_events: Dictionary = {}
 var _settled: Dictionary = {}
 var _stats: Dictionary = {}
-var _hurt_day: Array = []             # 施害者侧证据：最近一次 i 对 j 做重大敌对行为的日（§8.4）
-var _exclude_last_day: Array = []     # 排挤冷却：同一目标最近被驱逐的日（§10.25）
-var _witness_day: Array = []          # 举报把柄：i 最近目击 j 违规的日（§10.2）
+var _hurt_day: Array = []  # 施害者侧证据：最近一次 i 对 j 做重大敌对行为的日（§8.4）
+var _exclude_last_day: Array = []  # 排挤冷却：同一目标最近被驱逐的日（§10.25）
+var _witness_day: Array = []  # 举报把柄：i 最近目击 j 违规的日（§10.2）
 
 
 func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
@@ -114,10 +115,8 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 
 	# 抽角色（§11.5 正式版：绑定组 + 极性覆盖，不消费随机数）
 	_chars = RosterSelector.new().select(
-		_rows(tables, "characters/seeds"),
-		_bindings,
-		npc_count,
-		float(_kp["mbti_neutral"]))
+		_rows(tables, "characters/seeds"), _bindings, npc_count, float(_kp["mbti_neutral"])
+	)
 
 	_alloc(n)
 
@@ -224,12 +223,27 @@ func _reset_runtime(n: int) -> void:
 	_day_events = {}
 	_settled = {}
 	_stats = {
-		"events": 0, "chats": 0, "joins": 0, "reports": 0, "bursts": 0,
-		"interrupts": 0, "transmission_ticks": 0, "skipped_events": 0,
-		"dedup_skips": 0, "teases": 0, "tease_fail": 0, "rumors": 0,
-		"excludes": 0, "roughhouse": 0, "sleeps": 0, "deep_writes": 0,
-		"noise_grudges": 0, "free_joins": 0, "join_accepts": 0,
-		"join_rejects": 0, "humiliations": 0,
+		"events": 0,
+		"chats": 0,
+		"joins": 0,
+		"reports": 0,
+		"bursts": 0,
+		"interrupts": 0,
+		"transmission_ticks": 0,
+		"skipped_events": 0,
+		"dedup_skips": 0,
+		"teases": 0,
+		"tease_fail": 0,
+		"rumors": 0,
+		"excludes": 0,
+		"roughhouse": 0,
+		"sleeps": 0,
+		"deep_writes": 0,
+		"noise_grudges": 0,
+		"free_joins": 0,
+		"join_accepts": 0,
+		"join_rejects": 0,
+		"humiliations": 0,
 	}
 	_next_action = []
 	_busy_until = []
@@ -450,7 +464,7 @@ func _tick() -> void:
 		_stress_drip()
 
 
-# ------------------------------------------------------------------ 事件出口（D11 缺口④：内核 → 表现层，零 autoload 依赖）
+# -------------------------------------------------- 事件出口（D11 缺口④：内核 → 表现层，零 autoload 依赖）
 ## 向注入的事件出口派发一条事件（type + payload）。event_sink 为空时无副作用（headless/测试）。
 func _emit(type: String, payload: Dictionary) -> void:
 	if event_sink.is_valid():
@@ -500,12 +514,13 @@ func _spread_knot(i: int, severity: float) -> void:
 			others.append(j)
 	if others.is_empty():
 		return
-	others.sort_custom(func(a, b):
-		var ka := -absf(_a[i * _n + a] - _h[i * _n + a])
-		var kb := -absf(_a[i * _n + b] - _h[i * _n + b])
-		if ka != kb:
-			return ka < kb
-		return a < b
+	others.sort_custom(
+		func(a, b):
+			var ka := -absf(_a[i * _n + a] - _h[i * _n + a])
+			var kb := -absf(_a[i * _n + b] - _h[i * _n + b])
+			if ka != kb:
+				return ka < kb
+			return a < b
 	)
 	var pool_size := maxi(1, int(float(others.size()) * ratio))
 	var pool: Array = others.slice(0, pool_size)
@@ -564,7 +579,7 @@ func _settle_day() -> void:
 	_emit("day_settled", {"day": _day - 1, "stats": _stats.duplicate(true)})
 
 
-# ------------------------------------------------------------------ 统一影响公式（UIF，docs/design/统一影响公式.md）
+# -------------------------------------------------- 统一影响公式（UIF，docs/design/统一影响公式.md）
 ## 四舍五入到 0.1（Python round(x,1)；结构常量 0.1 已白名单）。
 func _r1(v: float) -> float:
 	return snapped(v, 0.1)
@@ -575,8 +590,10 @@ func _mult_personality(row: Dictionary, i: int) -> float:
 	var neutral := float(_kp["mbti_neutral"])
 	var scale := float(_kp["mbti_scale"])
 	var w := [
-		float(str(row["w_e"])), float(str(row["w_s"])),
-		float(str(row["w_f"])), float(str(row["w_j"])),
+		float(str(row["w_e"])),
+		float(str(row["w_s"])),
+		float(str(row["w_f"])),
+		float(str(row["w_j"])),
 	]
 	var total := 1.0
 	for k in range(DIMS.size()):
@@ -617,8 +634,8 @@ func _sat(u: float, axis: String) -> float:
 		key = "u_t"
 	elif axis == "stress":
 		key = "u_s"
-	var U := float(_p.get(key, 25.0))
-	return u / (1.0 + absf(u) / U)
+	var u_cap := float(_p.get(key, 25.0))
+	return u / (1.0 + absf(u) / u_cap)
 
 
 ## 统一影响公式落表：Δ = M_state · sat(P)；P = base·scale·M_personality(·M_relation)。
@@ -725,7 +742,9 @@ func _transmission() -> void:
 			var denom := w_sum + eps
 			var net_a := (num_a - num_h) / denom
 			var net_h := (num_h - num_a) / denom
-			d_a[i * n + k] = _r1(_room_for("affinity", _a[i * n + k]) * _sat(beta_a * net_a, "affinity"))
+			d_a[i * n + k] = _r1(
+				_room_for("affinity", _a[i * n + k]) * _sat(beta_a * net_a, "affinity")
+			)
 			d_h[i * n + k] = _r1(_sat(beta_h * net_h, "hostility"))
 			d_t[i * n + k] = _r1(_sat(beta_t * num_t / denom, "trust"))
 	for i in range(n):
@@ -872,7 +891,9 @@ func _conformity_hostility() -> void:
 				if span >= 0 and span <= see_window:
 					haters.append(k)
 			if haters.size() >= need:
-				_apply_event(i, j, "conformity_hostility", conf * float(haters.size()) / float(maxi(1, need)))
+				_apply_event(
+					i, j, "conformity_hostility", conf * float(haters.size()) / float(maxi(1, need))
+				)
 
 
 func _deviance_pressure() -> void:
@@ -952,7 +973,10 @@ func _observe(i: int, j: int, axis: String, weight: float = 1.0) -> void:
 	var bias := 0.0
 	if axis == "affinity":
 		# 外观偏差：外向/共情越高越「看起来友善」（与 Python 逐字一致：50/50 基准、各 0.5 权重）
-		bias = float(_bp["w_bias"]) * _friendly_bias(j, float(_kp["mbti_neutral"]), float(_kp["mbti_scale"]), 0.5, 0.5)
+		bias = (
+			float(_bp["w_bias"])
+			* _friendly_bias(j, float(_kp["mbti_neutral"]), float(_kp["mbti_scale"]), 0.5, 0.5)
+		)
 	var obs := _clamp100(true_val + sigma * z + bias)
 	var eta_key := "eta0_a"
 	if axis == "hostility":
@@ -1002,14 +1026,27 @@ func _softmax(scores: Array, tau: float) -> int:
 ## 意向权重 alpha：MBTI 四维线性组合后归一化（Σ=1，§4.3）。
 func _alpha(i: int) -> Dictionary:
 	var raw := {
-		"affinity": float(_nw["alpha_a_base"]) + float(_nw["alpha_a_f"]) * _dims[2 * _n + i] / 100.0 \
-				+ float(_nw["alpha_a_e"]) * _dims[i] / 100.0,
+		"affinity":
+		(
+			float(_nw["alpha_a_base"])
+			+ float(_nw["alpha_a_f"]) * _dims[2 * _n + i] / 100.0
+			+ float(_nw["alpha_a_e"]) * _dims[i] / 100.0
+		),
 		"trust": float(_nw["alpha_t_base"]) + float(_nw["alpha_t_j"]) * (1.0 + _arg_j(i)) / 2.0,
-		"hostility": float(_nw["alpha_h_base"]) + float(_nw["alpha_h_f"]) * (1.0 - _dims[2 * _n + i] / 100.0) \
-				+ float(_nw["alpha_h_j"]) * (1.0 + _arg_j(i)) / 2.0,
+		"hostility":
+		(
+			float(_nw["alpha_h_base"])
+			+ float(_nw["alpha_h_f"]) * (1.0 - _dims[2 * _n + i] / 100.0)
+			+ float(_nw["alpha_h_j"]) * (1.0 + _arg_j(i)) / 2.0
+		),
 		"stress": float(_nw["alpha_s_base"]) + float(_nw["alpha_s_e"]) * (1.0 - _dims[i] / 100.0),
 	}
-	var total := float(raw["affinity"]) + float(raw["trust"]) + float(raw["hostility"]) + float(raw["stress"])
+	var total := (
+		float(raw["affinity"])
+		+ float(raw["trust"])
+		+ float(raw["hostility"])
+		+ float(raw["stress"])
+	)
 	return {
 		"affinity": float(raw["affinity"]) / total,
 		"trust": float(raw["trust"]) / total,
@@ -1060,8 +1097,11 @@ func _join_probability(i: int, j: int) -> float:
 ## 正是认知偏差的具象化，不是 bug（§10.32.4）。
 func _join_feedback(i: int, j: int) -> Dictionary:
 	var hot := maxf(0.0, _stress[j] - 50.0) / 50.0
-	var score := _b_a[i * _n + j] + (_dims[j] - 50.0) * 0.3 \
+	var score := (
+		_b_a[i * _n + j]
+		+ (_dims[j] - 50.0) * 0.3
 		- float(_thresholds_lookup["join_chat_stress_penalty"]) * hot
+	)
 	var theta := float(_thresholds_lookup["join_chat_affinity"])
 	var scale := float(_thresholds_lookup["join_chat_scale"])
 	return {"p": snapped(_sigmoid((score - theta) / scale), 0.01)}
@@ -1158,7 +1198,11 @@ func _roll_reports() -> void:
 		for j in range(_n):
 			if i == j or _sleeping[j] or _day - _witness_day[i * _n + j] > win:
 				continue
-			var z := (_h[i * _n + j] - th_rep) / sc_rep - w_a * _a[i * _n + j] / 100.0 - w_t * _t[i * _n + j] / 100.0
+			var z := (
+				(_h[i * _n + j] - th_rep) / sc_rep
+				- w_a * _a[i * _n + j] / 100.0
+				- w_t * _t[i * _n + j] / 100.0
+			)
 			if _rng.random() < p_rep * _sigmoid(z):
 				_do_report(i, j)
 				break
@@ -1188,18 +1232,32 @@ func _decide_and_act() -> void:
 		# 意向类：当众调侃（需物理接近 + ≥3 人围观；目标偏好敌对高 / 好感低者）
 		var cands_t: Array = []
 		for j in range(n):
-			if j != i and not busy[j] and not _sleeping[j] and _are_neighbors(i, j) \
-					and (_a[i * n + j] >= 40.0 or _b_h[i * n + j] >= 25.0 or _a[i * n + j] < 25.0):
+			if (
+				j != i
+				and not busy[j]
+				and not _sleeping[j]
+				and _are_neighbors(i, j)
+				and (_a[i * n + j] >= 40.0 or _b_h[i * n + j] >= 25.0 or _a[i * n + j] < 25.0)
+			):
 				cands_t.append(j)
-		if _allowed("tease") and cands_t.size() >= 3 \
-				and _rng.random() < float(_probs["tease_p"]) * (1.0 + _tag_bias(i, "tease_bias")):
+		if (
+			_allowed("tease")
+			and cands_t.size() >= 3
+			and _rng.random() < float(_probs["tease_p"]) * (1.0 + _tag_bias(i, "tease_bias"))
+		):
 			var wts: Array = []
 			for t in cands_t:
 				wts.append(maxf(1.0, pow((100.0 - _a[i * n + t]) + _h[i * n + t], 2.0)))
 			var tgt: int = int(_rng.choices(cands_t, wts, 1)[0])
 			var audience: Array = []
 			for k in _neighbor_idx[i]:
-				if _neighbor_idx[tgt].has(k) and k != i and k != tgt and not busy[k] and not _sleeping[k]:
+				if (
+					_neighbor_idx[tgt].has(k)
+					and k != i
+					and k != tgt
+					and not busy[k]
+					and not _sleeping[k]
+				):
 					audience.append(k)
 			if audience.size() >= 3:
 				_do_tease(i, tgt, audience)
@@ -1209,8 +1267,11 @@ func _decide_and_act() -> void:
 		# 意向类：追逐打闹（敌对种子：参与者好感↑ / 旁观者敌对↑）
 		var th_rh := float(_thresholds_lookup["roughhouse_affinity"])
 		var th_rc := int(_thresholds_lookup["roughhouse_count"])
-		if _allowed("roughhouse") and _dims[i] >= th_rh \
-				and _rng.random() < float(_probs["roughhouse_p"]):
+		if (
+			_allowed("roughhouse")
+			and _dims[i] >= th_rh
+			and _rng.random() < float(_probs["roughhouse_p"])
+		):
 			var others: Array = []
 			for j in range(n):
 				if j != i and not busy[j] and not _sleeping[j]:
@@ -1229,7 +1290,7 @@ func _decide_and_act() -> void:
 					bys = _rng.sample(bys, mini(bys.size(), 4))
 					# 打闹只吵到邻座（i、j 邻居并集，去重升序取前 3）
 					var nb: Array = []
-					for k in (_neighbor_idx[i] + _neighbor_idx[tgt]):
+					for k in _neighbor_idx[i] + _neighbor_idx[tgt]:
 						if k != i and k != tgt and not _sleeping[k]:
 							nb.append(k)
 					var nb_set := {}
@@ -1291,7 +1352,11 @@ func _decide_and_act() -> void:
 				var gain_a := _b_a[i * n + c] / 100.0 * 3.0
 				var gain_t := _b_t[i * n + c] / 100.0 * 2.0
 				var risk_h := _b_h[i * n + c] / 100.0 * 2.0
-				var u := float(alpha["affinity"]) * gain_a + float(alpha["trust"]) * gain_t - float(alpha["hostility"]) * risk_h
+				var u := (
+					float(alpha["affinity"]) * gain_a
+					+ float(alpha["trust"]) * gain_t
+					- float(alpha["hostility"]) * risk_h
+				)
 				u += _crowd_bias(i, "loud")
 				u += _tag_bias(i, "chat_bias") - _tag_bias(i, "alone_bias")
 				u += _join_gate_utility(i, c)
@@ -1398,15 +1463,19 @@ func _do_report(i: int, j: int) -> void:
 ## 当众调侃（§10.12）：方向由绝对阈值判档；围观者按「他对被调侃者的态度」站队。
 func _do_tease(i: int, j: int, audience: Array) -> void:
 	_occupy(i, j, "tease")
-	if _a[i * _n + j] >= float(_thresholds_lookup["tease_laugh_affinity"]) \
-			and _h[i * _n + j] < float(_thresholds_lookup["tease_laugh_hostility"]):
+	if (
+		_a[i * _n + j] >= float(_thresholds_lookup["tease_laugh_affinity"])
+		and _h[i * _n + j] < float(_thresholds_lookup["tease_laugh_hostility"])
+	):
 		_apply_event(i, j, "tease_success_affinity")
 		_apply_event(j, i, "tease_success_affinity")
 		for k in audience:
 			_apply_event(k, j, "tease_success_affinity")
 		_apply_event(j, i, "tease_laugh_stress")
-	elif _h[i * _n + j] >= float(_thresholds_lookup["tease_taunt_hostility"]) \
-			or _a[i * _n + j] < float(_thresholds_lookup["tease_taunt_affinity"]):
+	elif (
+		_h[i * _n + j] >= float(_thresholds_lookup["tease_taunt_hostility"])
+		or _a[i * _n + j] < float(_thresholds_lookup["tease_taunt_affinity"])
+	):
 		_apply_event(j, i, "tease_hostility")
 		_apply_event(j, i, "tease_stress")
 		for k in audience:
@@ -1474,7 +1543,7 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 		return {"ok": false, "error": "invalid_target"}
 	if _sleeping[me] or _global_tick < _busy_until[me]:
 		return {"ok": false, "error": "player_busy"}
-	var a_before := _a[target * _n + me]   # 目标→玩家的好感（行动前的反应基线）
+	var a_before := _a[target * _n + me]  # 目标→玩家的好感（行动前的反应基线）
 	var h_before := _h[target * _n + me]
 	var accepted := true
 	match kind:
@@ -1522,7 +1591,7 @@ func _player_audience(j: int) -> Array:
 func _player_bystanders(j: int) -> Array:
 	var me := _n - 1
 	var nb := {}
-	for k in (_neighbor_idx[me] + _neighbor_idx[j]):
+	for k in _neighbor_idx[me] + _neighbor_idx[j]:
 		if k != me and k != j and not _sleeping[k]:
 			nb[k] = true
 	var sorted: Array = nb.keys()
@@ -1584,8 +1653,21 @@ func _allowed(behavior: String) -> bool:
 	var rules: Array = _phase_rules.get(pid, ["all"])
 	if rules.has("all"):
 		return true
-	var banned := ["chat", "join_chat", "pass_note", "tease", "ask_help", "inform",
-		"comfort", "apologize", "share_secret", "roughhouse", "exclude", "report", "move"]
+	var banned := [
+		"chat",
+		"join_chat",
+		"pass_note",
+		"tease",
+		"ask_help",
+		"inform",
+		"comfort",
+		"apologize",
+		"share_secret",
+		"roughhouse",
+		"exclude",
+		"report",
+		"move"
+	]
 	return not banned.has(behavior)
 
 
@@ -1617,18 +1699,44 @@ func report() -> String:
 
 	var lines: Array = []
 	lines.append("=== 内核运行统计（seed=%d, 天数=%d, 节点=%d）===" % [_seed, _day - 1, n])
-	lines.append("  好感：min %.1f / 中位 %.1f / 均值 %.1f / max %.1f" % [
-		aff[0], aff[aff.size() / 2], mean, aff[aff.size() - 1]])
+	lines.append(
+		(
+			"  好感：min %.1f / 中位 %.1f / 均值 %.1f / max %.1f"
+			% [aff[0], aff[aff.size() / 2], mean, aff[aff.size() - 1]]
+		)
+	)
 	lines.append("  接近饱和(>=%.0f)比例：%.1f%%" % [sat_th, saturated * 100.0])
-	lines.append("  事件 %d 次（闲聊 %d / 搭话 %d / 举报 %d）" % [
-		_stats["events"], _stats["chats"], _stats["joins"], _stats["reports"]])
-	lines.append("  睡着 %d 人次 | 调侃 %d（过火 %d）/ 流言 %d / 排挤 %d / 打闹 %d / 被打断 %d" % [
-		_stats["sleeps"], _stats["teases"], _stats["tease_fail"], _stats["rumors"],
-		_stats["excludes"], _stats["roughhouse"], _stats["interrupts"]])
+	lines.append(
+		(
+			"  事件 %d 次（闲聊 %d / 搭话 %d / 举报 %d）"
+			% [_stats["events"], _stats["chats"], _stats["joins"], _stats["reports"]]
+		)
+	)
+	lines.append(
+		(
+			"  睡着 %d 人次 | 调侃 %d（过火 %d）/ 流言 %d / 排挤 %d / 打闹 %d / 被打断 %d"
+			% [
+				_stats["sleeps"],
+				_stats["teases"],
+				_stats["tease_fail"],
+				_stats["rumors"],
+				_stats["excludes"],
+				_stats["roughhouse"],
+				_stats["interrupts"]
+			]
+		)
+	)
 	lines.append("  去重跳过 %d 次" % _stats["dedup_skips"])
-	lines.append("  传导结算 %d 次 | 压力爆发 %d 次（平均每 %.1f 天一次）" % [
-		_stats["transmission_ticks"], _stats["bursts"],
-		float(_day - 1) / float(maxi(1, _stats["bursts"]))])
+	lines.append(
+		(
+			"  传导结算 %d 次 | 压力爆发 %d 次（平均每 %.1f 天一次）"
+			% [
+				_stats["transmission_ticks"],
+				_stats["bursts"],
+				float(_day - 1) / float(maxi(1, _stats["bursts"]))
+			]
+		)
+	)
 	lines.append("  信念平均误差 |B − 真值|：%.1f" % err)
 	return "\n".join(lines)
 
@@ -1703,6 +1811,36 @@ func activity_of(i: int) -> String:
 	return _current_act[i]
 
 
+# ------------------------------------------------- 表现层只读：角色身份 + 座位
+## i 的别名（名字牌用）；玩家自身没有别名 → 空串。
+func alias(i: int) -> String:
+	if i < 0 or i >= _chars.size():
+		return ""
+	return str(_chars[i].get("alias", ""))
+
+
+## i 在种子表里的编号（"01"…"24"）；玩家自身 → 空串。
+## 表现层用它查 data/characters/appearance.csv（外观绑定在 data/，不在脚本里判断角色名）。
+func character_id(i: int) -> String:
+	if i < 0 or i >= _chars.size():
+		return ""
+	return str(_chars[i].get("id", ""))
+
+
+## i 坐的座位号（seats.csv 的 seat_id，如 "P7"）；越界 → 空串。
+## ⚠️ 座位由 _assign_seats() 消费内核 RNG 随机分配，表现层必须读这里、不得自行随机，
+##    否则画面上「谁挨着谁」会与内核判定用的邻接关系不一致（§15.1 空间聚散）。
+func seat_of(i: int) -> String:
+	if i < 0 or i >= _seat_of.size():
+		return ""
+	return str(_seat_of[i])
+
+
+## i 是不是玩家自身（玩家恒为最后一个节点，§4.1）。
+func is_player(i: int) -> bool:
+	return i == _n - 1
+
+
 ## 观察层（只读）：当前「活动圈」—— 按「此刻在做同一件事」分组（§15.1，≥2 人才成圈）。
 func get_activity_circles() -> Dictionary:
 	var groups := {}
@@ -1724,12 +1862,12 @@ func get_activity_circles() -> Dictionary:
 
 ## 观察层（只读）：viewer 眼中的小团体簇（§11.1，A≥60 强连接连通分量）。
 func get_clusters(viewer: int = -1) -> Array:
-	return _ObserverLayer.new(self).cluster_tags(viewer)
+	return OBSERVER_LAYER.new(self).cluster_tags(viewer)
 
 
 ## 观察层（只读）：viewer 眼中的「被孤立者」（§10.26.3）。
 func get_isolated(viewer: int = -1) -> Array:
-	return _ObserverLayer.new(self).isolated_tags(viewer)
+	return OBSERVER_LAYER.new(self).isolated_tags(viewer)
 
 
 # ------------------------------------------------------------------ 内部工具

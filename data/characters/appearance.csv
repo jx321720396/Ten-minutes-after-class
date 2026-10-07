@@ -1,0 +1,35 @@
+# 外观呈现表（表现层资产绑定）
+# 依据：主文档 §11.4（身份/标签）、§11.5（抽取）；铁律 §11.1 —— 本表**不参与任何行为判定**，
+#      只把「内核给出的角色编号」映射到一张立绘，供课间空间摆放人物。
+# 素材：assets/textures/characters/*.png 共 16 张（8 性格 × 男女），
+#      每张立绘一个场景 scenes/characters/<sprite>.tscn（贴图路径只在场景里写一次，
+#      换素材只改场景，本表不用动）。
+# ⚠️ sprite 初稿判据 = tags + MBTI 四维 + 别名的性别指向，**待策划（A）复核**：
+#     24 角色复用 16 张立绘（同一性格同一性别共用一张），后续若补素材只改本表。
+# 列：id 角色编号（对齐 seeds.csv）| alias 别名（人工核对用）| gender male/female |
+#     sprite 立绘名（对应 scenes/characters/<sprite>.tscn）| note 初稿判据
+id,alias,gender,sprite,note
+01,陈阳,male,warm_male,ESFJ｜E70 F75 爱谈恋爱→热情
+02,林晚,female,sensitive_female,ISFJ｜F80 与 01 绑定→敏感
+03,张渊,male,quiet_male,INTJ｜E15 爱学习→安静
+04,周敏,female,stern_female,ISTJ｜J90 爱学习→严肃
+05,吴哲,male,quiet_male,INTP｜E20 爱学习→安静
+06,赵蕊,female,lively_female,ENFP｜E85 N75 爱八卦→活泼
+07,孙悦,female,lively_female,ESFP｜E90 爱聊天→活泼
+08,郑浩,male,blunt_male,ENTP｜E80 爱调侃→直接
+09,许静,female,shy_female,INFP｜E10 F90 高敏感→社恐
+10,何川,male,quiet_male,INFJ｜E20 N90 嘴严→安静
+11,王磊,male,lively_male,ESFP｜E88 爱聊天→活泼
+12,刘畅,male,warm_male,ENFJ｜E82 F85 爱调和→热情
+13,马强,male,blunt_male,ESTP｜E85 爱调侃→直接
+14,韩雪,female,stern_female,ESTJ｜J85 实名举报→严肃
+15,苏晴,female,shy_female,INTJ｜E10 透明度 15→社恐
+16,沈浪,male,quiet_male,ISTP｜E25 爱独处→安静
+17,顾言,male,tsundere_male,ENTJ｜嘴硬心软→傲娇
+18,唐糖,female,shy_female,ISFJ｜E35 守密倾向高→社恐
+19,罗杰,male,blunt_male,ISTP｜E30 标签带手机→直接
+20,叶梓,female,quiet_female,INTP｜E20 标签带手机→安静
+21,佳豪,male,warm_male,ENFJ｜E78 F82 爱调和→热情
+22,白柔,female,sensitive_female,ISFJ｜E40 F70 泄密→敏感
+23,温雅,female,tsundere_female,ENFJ｜F75 泄密｜操纵→傲娇
+24,李峥,male,stern_male,ESTJ｜J95 班长 举报→严肃

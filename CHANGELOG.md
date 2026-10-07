@@ -9,16 +9,47 @@
 
 ## [未发布]
 
+- **场景按钮连接（2026-10-07）**：新游戏直接进入用户指定的 `scenes/game/classroom3D.tscn` 3D 教室；Esc 打开暂停菜单，可继续、打开设置和返回主菜单。修复菜单场景搬迁后的资源引用，保留已有存档确认弹窗。当前仅接通场景导航，继续游戏的存档恢复仍待实现。
+
 - **教室呈现路线定为 2D 先行（用户决策）**：课间空间用 `scenes/Classroom2D.tscn`（`tools/bake_classroom_2d.gd` 烘焙的静态场景）+ `scenes/characters/*.tscn`（16 个角色场景）跑通代码与玩法；`assets/models/classroom/`（Sketchfab 3D 教室，CC BY 4.0）暂作备用素材，**画风优化排在 D14 内容冻结之后**；团队分工任务单同步标注。
 ### 新增
 - **玩家专属闲聊情报（文档设计，2026-10-07）**：玩家主动与某人闲聊时，对方会透露一名随机其他同学与自己的关系；该情报仅由玩家获得，不改变关系矩阵，NPC 闲聊不具备此预设机制。
 - **闲聊情报数量挂钩透明度（文档设计，2026-10-07）**：闲聊对象透明度 O < 50 时透露 1 条关系信息，O ≥ 50 时透露 2 条；沿用透明度可见性边界，NPC 闲聊仍不触发。
+- **课间空间人物落位：16 人局（16 NPC + 玩家 = 17 节点）真的「看得见人」了（2026-10-07）**：
+  · **数据**：新增 `data/characters/appearance.csv`（24 角色 → 16 张立绘的**呈现**绑定；`sprite` 初稿按 `tags + MBTI 四维 + 别名性别指向` 推得，**待策划复核**；依铁律 §11.1，本表不参与任何行为判定）。`data/rules/difficulty.csv` 加 `default` 列（新游戏默认档 = 难度 2 / 16 NPC，避免把「默认选哪档」写死在脚本里）。
+  · **内核只读 API**：`SimCore` 新增 `alias(i)` / `character_id(i)` / `seat_of(i)` / `is_player(i)` 四个访问器（只读、不改公式、不消费 RNG），表现层不必再读内核私有成员。
+  · **表现**：新增 `scripts/game/classroom_actors.gd`，挂在 `scenes/game/classroom3D.tscn` 的 `Actors` 节点上 —— 按 `seat_of(i)` 找到 `Seats/<seat_id>`，把 `scenes/characters/<sprite>.tscn` 的立绘做成 `Sprite3D` 纸片人（高 1.35 m、绕 Y 跟随相机、最近邻过滤）摆在椅子上，附 `Label3D` 名字牌（玩家显示「我」，用发光色块标记）。
+  · **接线**：`main_menu.gd` 的「新游戏」先 `GameState.start_game(seed, 默认难度)` 再切教室 —— 此前只切场景、**没有内核实例**，教室里一个人都不会有。
+  · **实测**：临时探针（用完已删）两种链路都过 —— 直接注入内核时 17 人全部落位、座位与 `data/rules/seats.csv` 一一对应；经主菜单「新游戏」时 `current_scene = Classroom3D`、`Actors` 子节点 17 个；另渲染一张 1920×1080 截图目视确认（人物坐在课桌后、朝向镜头、中文名字牌正常显示、「我」用发光色块标记）。
+  · **素材注记**：`活泼女.png` 画布 254×428（其余 15 张均 160×438），按高度等比缩放后明显偏宽，待美术（D）复核是否裁切重导。
+  · **已知缺口（本次范围外）**：难度 3（24 NPC / 25 节点）在 `SimCore._assign_seats()` 越界崩溃 —— `seats.csv` 只有 17 个座位（P0–P16），`sim_core.gd:361` 的 `ids[i]` 取空；GUT 另有 3 项既存失败（`behaviors` 期望 17 行而实际 18 行、`test_sim_core_d10` 两例），与本次改动无关。
+- **离线测试基建：六道门进 CI、铁律哨兵夹具、三个测试目录、逐 tick 对拍器（2026-10-07）**：
+  · **六道门 + 铁律测试接入 CI**：`.github/workflows/ci.yml` 新增 `offline-gates` job（`bash tools/run_tests.sh --no-godot`），每次 push/PR 自动跑；`gdscript` job 去掉 `continue-on-error` 与告警兜底，`gdformat --check` / `gdlint` 失败即阻断并打印格式差异。
+  · **铁律哨兵夹具**：新增 `tests/invariants/fixtures/`（故意违反铁律、但语法合法的小样本）；三个铁律脚本增加「哨兵自检」——先断言能抓到夹具里的违规，再扫真实目录，扫描器失效会被立刻发现。
+  · **补齐测试目录**：新增 `tests/integration/`（无头整局 `run_term.gd`）、`tests/balance/`（批量标定 `run_batch.gd`）、`tests/emergence/`（主文档第十六章 13 条现象：`cases.md` 验收契约 + `test_emergence.gd` GUT 骨架）。
+  · **逐 tick 对拍器**：新增 `tests/integration/test_tick_parity.py`（Python ↔ GDScript 逐 tick 比对 `A/H/T/O/stress` 均值，相对误差 ≤ 1%）与 GDScript 侧导出入口 `export_ticks_gd.gd`，自带「偏 5% 必须判红」的哨兵。
+  · `tools/run_tests.sh` 新增逐 tick 对拍段，Godot 段增加 emergence 的 GUT 运行。
+  · **未改动任何游戏脚本与数据**；测试种子数（8 → 100）**不在本次改动内** —— 主线同批已自行完成，并附带多进程并行加速。
+- **转笔判定布局v02（2026-10-07）**：导出当前 `classroom3D.tscn` 摄像机真实截图，并生成小尺寸纸片人＋底部判定卡片概念稿，位于 `docs/art/ui_mockups/pen_check_v02/`；记录生成图的背景重绘与尺寸偏差，未修改游戏代码或场景。
+- **转笔判定UI设计稿（2026-10-07）**：`docs/art/ui_mockups/pen_check_design_v01.md` 及两张配套PNG，展示3D教室＋纸片人背景下的底部判定卡片、接纳／拒绝反馈，并提供透明笔素材；仅设计交付，未修改代码或场景。
+- **UI 首轮视觉提案（2026-10-07）**：新增 `docs/art/ui_mockups/ui_core_direction_v01.png` 与 `docs/art/UI绘制审阅说明.md`，展示课间、加入活动判定和每日简报的风格方向，记录相位、版本范围及交付规格冲突；属于待审概念稿，尚非可导入切图包。
+- **新增《UI 图清单》美术交付单（2026-10-07）**：`docs/art/UI图清单.md` —— 依据主文档 §9/§10.20/§10.31/§10.32/§12/§13/§14/§15/§17 汇总**要绘制的全部 UI 图**：7 组共 31 项界面（局外框架 7 / 课间主视图 HUD 9 / 操作层 4 / 信息层 4 / 结算与报告 4 / 社会事件 1 / 提示类 2），逐项标注必须呈现的内容、依据章节、版本归属（第一版 10/18 提交 **25 张界面**，其中 5 张已有场景待重绘；M2 6 张；M3 视排期）与仓库现状；另含素材型交付清单（情绪与行为图标、关系线四档、活动圈与绿红反馈、切图与封面截图）与 7 条绑定呈现规则（透明度决定线型、暖好感冷敌对、情绪图标不暴露数值、活动圈秒级与簇天级并存、成功率从信念算、标签默认不可见、UI 不呈现原始数值）。`docs/art/视觉风格指南.md` §3 的粗表改为速览并链接至本清单（完整清单只在此维护一处）。
+
 - **「NPC 主动接近他人」三条行为落地：安慰 / 求助 / 道歉和解（2026-10-07）**：
   · **动机**：玩法上「NPC 会不会来找你」是 §12.5 承诺的核心体验，但三条最直接的通道一直**只有数据、没有实现** —— `behaviors.csv` 早已为 `comfort` / `ask_help` / `apologize` 留好位置（`kind=intent`、耗时 50/20/50、`join_mode`、`allowed()` 的上课段禁用集也已包含它们），`w_events.csv` 有 `comfort_target_*`，`behavior_thresholds.csv` 有 `comfort_trigger_target_stress` / `apologize_trigger_hostility`；而 `core_sim.py` 里**没有** `do_comfort` / `do_ask_help` / `do_apologize`（§18.9 此前误记为「已实装」）。
   · **实现**：`tools/core_sim.py` 新增三个方法 + `decide_and_act` 中三个意向类入口（**必须排在末尾无门槛的搭话回退块之前**，否则永远被抢先）。三者同守 §6.4 两段式：**门槛读我自己的立场、判定读真值**；决策侧一律不读 `A[j][i] / H[j][i]`（§18.7 不变式 3）。
   · **事件与阈值**：`w_events.csv` 新增 17 行（求助 8 / 道歉 8 / 安慰成本 1）；`behavior_thresholds.csv` 新增 12 键；`behavior_probs.csv` 新增 `comfort_p` / `ask_help_p` / `apologize_p`。
   · **实测**（10 局 ×30 天，标准档 16 NPC）：安慰 **163** 次（其中 NPC→玩家 10）、求助 **1567** 次（其中 NPC→玩家 69）、道歉 **14** 次（全部在 NPC 之间）。
 - **`apply_event` 新增 `no_modulation` 通道（2026-10-07）**：跳过关系调制 `M(i,j)`，与 `tier=major` 同口径。用于**修复类行为** —— 道歉的门槛保证 `H ≥ 30` → `M` 常为负 → 常规档会把「敌对回落」乘负 `M` **翻成敌对上升**（越道歉越糟）。这是「关系调制」与「修复行为」的结构性冲突，不是配置问题。
+
+- **铁律测试脚手架 + 一键测试脚本 + 逐 tick 对拍导出（2026-10-06）**：
+  · **`tests/invariants/`**：三条铁律的自动化守门脚本（Python 离线检查，不依赖引擎）——`check_no_character_id.py`（扫 `scripts/systems/`、`scripts/npc/` 的角色名 / 角色编号硬编码）、`check_observer_readonly.py`（静态扫观察层写矩阵 + 运行时给 `A/H/T/O` 装计数代理，统计观察层更新期间的读写次数，**写数必须为 0**）、`check_magic_numbers.py`（扫 `scripts/core|systems|npc` 的硬编码数值，结构常量白名单在脚本内维护）；公共设施 `_common.py`，说明见 `tests/invariants/README.md`。目标目录未落地时标 **`SKIP`「暂时没测到」**并正常退出（骨架期不崩、不误判红）。
+  · **`tools/run_tests.sh`**：一键跑「六道门 + 铁律测试 + Godot 侧 GUT 单测」；Godot 路径查找顺序为 `--godot` > `$GODOT_BIN` > 仓库根 `.godot_path` > `PATH`，找不到只跳过 Godot 段；强制 `PYTHONIOENCODING=utf-8`（本机 GBK 控制台下六道门会因 `✓` 抛 `UnicodeEncodeError`）。
+  · **`tools/export_ticks.py`**：hook 内核 `tick` 导出同种子逐 tick 关键状态（关系三轴 / 透明度 / 压力统计 + 矩阵哈希），作为 GDScript 移植的**对拍基建**（冲刺计划 D6–D9）；产物默认落 `tools/out/`（已 gitignore）。
+  · 配套：`.gitignore` 新增 `.godot_path`、`/tools/out/`；`tools/README.md`、`tests/README.md`、`docs/qa/测试策略.md` 同步更新。
+- **3D 教室场景（画风探索 / 备用素材）**：`scenes/game/classroom3D.tscn` 按像素卡通风参考图手搭完整教室（无脚本，全部节点可在检查器调整）——米黄墙 + 绿墙裙、右侧大窗与系带窗帘、左侧走廊高窗 + 门 + 绿色公告栏、后墙「文明班级」黑板报 + 课表栏 + 储物柜、前墙黑板、讲台；17 套桌椅按 `data/rules/seats.csv` 命名为 `Seats/P0`–`P16`（4×4 网格 + 讲桌旁 P0），坐标为**米制**（根节点无缩放，1 单位 = 1 m；教室 10.4 m × 12.4 m、层高 3.46 m）。部件拆为 `scenes/components/` 下的 `desk_chair`、`podium`、`window_tall`、`window_high`、`curtain`、`ceiling_light`、`back_wall`、`front_wall`、`floor`；共享材质在 `resources/materials/`，像素贴图在 `assets/textures/classroom/`；`scenes/game/classroom3D_pixel.tscn` 以 1/3 分辨率渲染再放大。**注：不改变「2D 先行」的呈现路线，本场景作画风探索与备用素材。**
+- **安卓导出配置完成（2026-10-06）**：新增 `export_presets.cfg`——Windows Desktop + Android 双导出预设（包名 `com.xiake.tenminutes`；Android 使用内置模板，非 Gradle 自定义构建）；`project.godot` 开启 `textures/vram_compression/import_etc2_astc`（移动端 ETC2/ASTC 纹理导入格式）；教室 3D 素材 `.import` 同步为 Godot 4.7.2 导入状态。
+- **接入 GUT 测试框架（9.7.1，Godot 4.7.x 对应版）**：`addons/gut/` 入库并在 `project.godot` 启用编辑器插件；`tests/unit/test_smoke.gd` 冒烟用例跑通（`godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit`）；版本记录于 `tests/README.md` 与 `docs/qa/测试策略.md`。
 
 ### 修复
 - **当众羞辱判据「恒真」二次修复（P0，用户决策，2026-10-07）**：§10.23「被围着才算羞辱」的区分**从未生效** —— 1000 局实测**羞辱 / 过火 = 1.00**。
@@ -38,13 +69,6 @@
 - **道歉在当前标定下近乎不可达**：§10.11 的「双方敌对 ≥30」实测几乎不成立 —— 30 天 `H` 上限仅 19–24，`H ≥ 20` 的（有向）对子·tick 占比 **0.000%**。与 §10.24.3 记载的排挤问题**同源：敌对缺少积累通道**（§10.17）。当前**保留文档的 30**（不改规格），道歉只在冲突真正升级过的局里出现。若要道歉成为常客，该修的是「敌对能不能涨上去」。
 - **前端判断**：`comfort` / `ask_help` 的「内向门槛抬高」用**连续插值**而非二分（`E=50` 恰为文档默认值），避免 `E=50` 处的门槛跳变（UIF §2.6 边界③）。
 
-  · **`tests/invariants/`**：三条铁律的自动化守门脚本（Python 离线检查，不依赖引擎）——`check_no_character_id.py`（扫 `scripts/systems/`、`scripts/npc/` 的角色名 / 角色编号硬编码）、`check_observer_readonly.py`（静态扫观察层写矩阵 + 运行时给 `A/H/T/O` 装计数代理，统计观察层更新期间的读写次数，**写数必须为 0**）、`check_magic_numbers.py`（扫 `scripts/core|systems|npc` 的硬编码数值，结构常量白名单在脚本内维护）；公共设施 `_common.py`，说明见 `tests/invariants/README.md`。目标目录未落地时标 **`SKIP`「暂时没测到」**并正常退出（骨架期不崩、不误判红）。
-  · **`tools/run_tests.sh`**：一键跑「六道门 + 铁律测试 + Godot 侧 GUT 单测」；Godot 路径查找顺序为 `--godot` > `$GODOT_BIN` > 仓库根 `.godot_path` > `PATH`，找不到只跳过 Godot 段；强制 `PYTHONIOENCODING=utf-8`（本机 GBK 控制台下六道门会因 `✓` 抛 `UnicodeEncodeError`）。
-  · **`tools/export_ticks.py`**：hook 内核 `tick` 导出同种子逐 tick 关键状态（关系三轴 / 透明度 / 压力统计 + 矩阵哈希），作为 GDScript 移植的**对拍基建**（冲刺计划 D6–D9）；产物默认落 `tools/out/`（已 gitignore）。
-  · 配套：`.gitignore` 新增 `.godot_path`、`/tools/out/`；`tools/README.md`、`tests/README.md`、`docs/qa/测试策略.md` 同步更新。
-- **3D 教室场景（画风探索 / 备用素材）**：`scenes/game/classroom3D.tscn` 按像素卡通风参考图手搭完整教室（无脚本，全部节点可在检查器调整）——米黄墙 + 绿墙裙、右侧大窗与系带窗帘、左侧走廊高窗 + 门 + 绿色公告栏、后墙「文明班级」黑板报 + 课表栏 + 储物柜、前墙黑板、讲台；17 套桌椅按 `data/rules/seats.csv` 命名为 `Seats/P0`–`P16`（4×4 网格 + 讲桌旁 P0），坐标为**米制**（根节点无缩放，1 单位 = 1 m；教室 10.4 m × 12.4 m、层高 3.46 m）。部件拆为 `scenes/components/` 下的 `desk_chair`、`podium`、`window_tall`、`window_high`、`curtain`、`ceiling_light`、`back_wall`、`front_wall`、`floor`；共享材质在 `resources/materials/`，像素贴图在 `assets/textures/classroom/`；`scenes/game/classroom3D_pixel.tscn` 以 1/3 分辨率渲染再放大。**注：不改变「2D 先行」的呈现路线，本场景作画风探索与备用素材。**
-- **安卓导出配置完成（2026-10-06）**：新增 `export_presets.cfg`——Windows Desktop + Android 双导出预设（包名 `com.xiake.tenminutes`；Android 使用内置模板，非 Gradle 自定义构建）；`project.godot` 开启 `textures/vram_compression/import_etc2_astc`（移动端 ETC2/ASTC 纹理导入格式）；教室 3D 素材 `.import` 同步为 Godot 4.7.2 导入状态。
-- **接入 GUT 测试框架（9.7.1，Godot 4.7.x 对应版）**：`addons/gut/` 入库并在 `project.godot` 启用编辑器插件；`tests/unit/test_smoke.gd` 冒烟用例跑通（`godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit`）；版本记录于 `tests/README.md` 与 `docs/qa/测试策略.md`。
 ### 变更
 - **测试模拟提速约 8.5×：全套离线测试 382s → 45s（2026-10-07）**。样本量提到 100 后套件涨到约 6 分钟，逐帧排查出两处**结构性**浪费，两处都**不改变任何仿真结果**：
   · **① `transmission()` 重复计算感知值（`tools/core_sim.py`）**：`perceive(j, k, axis)` 只依赖被感知者 `j`、目标 `k`、轴，**与观察者 `i` 无关**，却写在 `for i` 的内层 —— 每个 `(j,k,ax)` 被重算 **n 次**（n³ 而非 n²）。现提到循环外先算一张表：单局 `perceive` / `hash01` 调用量降 16 倍（2.16M → 197k）。

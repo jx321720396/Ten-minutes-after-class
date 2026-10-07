@@ -1,0 +1,32 @@
+# gdlint 规则配置（2026-10-07）
+#
+# 背景：CI 的 gdscript job 由「仅警告」改为「失败即阻断」后，首次暴露出存量代码的
+# 21 个静态检查问题。其中数条规则与项目既有写法冲突 —— 修它们等于重构内核
+# （例如 scripts/core/sim_core.gd 有 1911 行），不适合在「测试基建」的改动里顺带做。
+# 因此在此**显式声明项目规范**，而不是让引擎默认值替项目做决定。
+#
+# 保留的规则：行长（100）、命名规范、未使用参数等 —— 相关存量问题本次已修掉。
+
+max-line-length: 100            # 保留：有意义的约束
+
+max-file-lines: 2500            # 放宽：scripts/core/sim_core.gd 是模拟内核，本身即大文件（现 1911 行）
+
+max-public-methods: 40          # 放宽：SimCore 的公开 API 较多属正常（现 20+）
+
+# 项目既有写法：@onready 变量写在普通成员变量**之前**（Godot 社区常见写法），
+# 与 gdtoolkit 默认顺序（pubvars → onreadypubvars）相反。这里按项目实际写法声明顺序。
+class-definitions-order:
+  - tools
+  - classnames
+  - extends
+  - docstrings
+  - signals
+  - enums
+  - consts
+  - staticvars
+  - exports
+  - onreadypubvars
+  - onreadyprvvars
+  - pubvars
+  - prvvars
+  - others

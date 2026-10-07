@@ -3,6 +3,7 @@ extends Control
 const SCENE_SETTINGS = preload("res://scenes/ui/settings_menu.tscn")
 const SCENE_ABOUT = preload("res://scenes/ui/about_menu.tscn")
 const SCENE_CONFIRM = preload("res://scenes/ui/confirm_dialog.tscn")
+const SCENE_CLASSROOM := "res://scenes/game/classroom3D.tscn"
 
 @onready var continue_btn: Button = $VBoxContainer/ContinueGame
 @onready var new_game_btn: Button = $VBoxContainer/NewGame
@@ -13,6 +14,7 @@ const SCENE_CONFIRM = preload("res://scenes/ui/confirm_dialog.tscn")
 var settings_panel: Control
 var about_panel: Control
 var confirm_dialog: Control
+
 
 func _ready():
 	new_game_btn.pressed.connect(_on_new_game)
@@ -40,8 +42,10 @@ func _ready():
 	confirm_dialog.cancelled.connect(_on_cancel_confirm)
 	add_child(confirm_dialog)
 
+
 func _has_save() -> bool:
 	return Save.has_save()
+
 
 func _on_new_game():
 	if _has_save():
@@ -49,38 +53,64 @@ func _on_new_game():
 	else:
 		_start_new_game()
 
-func _start_new_game():
-	# TODO: 实现游戏场景
-	pass
+
+func _start_new_game() -> void:
+	# §4.1 契约：先建本局唯一的内核实例，再切课间空间——教室只读 GameState.sim_core
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	GameState.start_game(rng.randi(), _default_difficulty())
+	var error := get_tree().change_scene_to_file(SCENE_CLASSROOM)
+	if error != OK:
+		push_error("无法进入教室：%s" % error_string(error))
+
+
+## 默认难度：取 data/rules/difficulty.csv 中标了 default=1 的档（数值不落脚本）。
+# 难度选择 UI 待做；当前先固定默认档（16 NPC + 玩家 = 17 节点）。
+func _default_difficulty() -> int:
+	var rows: Array = ConfigLoader.new().get_table("rules/difficulty").get("rows", [])
+	for row in rows:
+		if str(row.get("default", "0")) == "1":
+			return int(str(row["difficulty"]))
+	push_warning("difficulty.csv 里没有 default=1 的档，回退难度 1")
+	return 1
+
 
 func _on_continue():
 	if _has_save():
 		# TODO: 实现游戏场景加载
 		pass
 
+
 func _on_settings():
 	settings_panel.visible = true
+
 
 func _on_about():
 	about_panel.visible = true
 
+
 func _on_quit():
 	get_tree().quit()
+
 
 func _on_close_settings():
 	settings_panel.visible = false
 
+
 func _on_close_about():
 	about_panel.visible = false
+
 
 func _on_confirm_clear():
 	confirm_dialog.visible = false
 	Save.delete()
 	_start_new_game()
 
+
 func _on_confirm_keep():
 	confirm_dialog.visible = false
 	_start_new_game()
+
 
 func _on_cancel_confirm():
 	confirm_dialog.visible = false
