@@ -17,6 +17,15 @@
 
 - **教室呈现路线定为 2D 先行（用户决策）**：课间空间用 `scenes/Classroom2D.tscn`（`tools/bake_classroom_2d.gd` 烘焙的静态场景）+ `scenes/characters/*.tscn`（16 个角色场景）跑通代码与玩法；`assets/models/classroom/`（Sketchfab 3D 教室，CC BY 4.0）暂作备用素材，**画风优化排在 D14 内容冻结之后**；团队分工任务单同步标注。
 ### 新增
+- **内核规则收口（阶段 1：权限与占用）（2026-10-07）**：按策划裁决执行「先收口规则、再统一标定」的第一步。
+  · **禁止并发占用**：`can_interact_with()` / `_can_interact_with()` 正式启用「未结束的占用不能接受新交互」（GDScript 与 Python 同步）。忙碌者**仍可被旁观、被议论、被环境影响** —— 该判定只用于「挑交互目标」，不用于围观者 / 旁白 / 环境查询。
+  · **占用时长累积而非覆盖**：`occupy()` / `_occupy()` 改为取 `max(现值, 当前 + 耗时)`，使「加入一场进行中的活动」不会把别人的占用改短（群聊按同一个交互管理）。
+  · **前置统计**（按策划要求「先量再判断调耗时 / 机会 / 概率」，3–5 局 × 30 天 × 16 NPC）：
+    - 空闲占比 **2.6% → 5.9%**；平均可达目标数 **16.00 → 0.95**；每日活动量 **1548 → 1039**；
+    - 忙碌构成（收口前）：闲聊链 **81%**（主动 37.5% + 被动参与 43.9%）、join_chat 7.0%、comfort 5.0%、ask_help 2.8%、roughhouse 2.5%、tease 1.2%。
+    - **结论：互动密度问题不在「概率」** —— 每个人的可交互对象已不足 1 个，提高概率只会增加失败尝试；要动的是占用 / 耗时。按裁决**暂不调数值**。
+  · **已知中间状态（如实保留）**：`check_metrics` 好感均值 19.9（目标 45–65）、压力爆发 61.1（目标 15–30）不达标；这是「规则已正确、数值待重标定」的中间态，标定按计划在阶段 6 统一进行，不逐项回补。
+  · **GUT**：`tests/unit` 116 例（`test_player_cannot_act_during_class` 的流程假设已修正 —— `finish_time_boundary()` 只推相位游标，铃声中断清理发生在上课段第一个 tick）。
 - **时间组件落地：唯一内核时间源 + 实时驱动 + 时间 HUD（2026-10-07）**（计划见 `docs/superpowers/plans/2026-10-07-time-component.md`；Task 1–4 已实现，本条即 Task 5 的文档收口）：
   · **内核边界接口**（Task 1）：`SimCore.time_snapshot()`（8 字段只读快照：day / phase_id / kind / phase_index / tick_in_phase / tick_count / global_tick / player_control）与 `finish_time_boundary()`（显式完成段边界，复用 `_transition_if_needed` 与跨天 `_settle_day`，**不跑 `_tick()`**；tick 未耗尽时 changed=false，重复调用不重复结算、不重复发事件）。边界后把 `tick_in_phase` 归零 —— 否则快照会出现「phase_id 已是下一段、tick 还是上一段满值」的自相矛盾状态，实时驱动会误判「剩余 0 秒」并跳掉一整段。
   · **配置**（Task 2）：新增 `data/rules/time_presentation.csv`（阶段显示名 + 实时标称时长 + 游戏内时长：课间 100 秒 / 上课 15 秒、settle 为 0）与 `data/rules/time_runtime.csv`（`term_days=30`、`max_ticks_per_frame=8`）；**相位顺序 / tick 数 / 权限仍只从 `phases.csv` 读**，新表不重复定义。

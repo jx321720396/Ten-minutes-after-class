@@ -1569,16 +1569,15 @@ func _decide_and_act() -> void:
 
 
 ## 选交互目标：邻居优先（§10.15 相邻修正）。neighbors_only 时只在邻居里选。
-## 目标此刻能否接受一次新交互（集中只读判定，§10.8 睡眠排除）。
+## 目标此刻能否接受一次新交互（集中只读判定）。
 ##
-## ⚠️ **P1-03 待标定**：更严格的判定还应排除「尚未结束的占用」
-##    （`_global_tick < _busy_until[j]`），但 10 局 × 30 天实测它会让交互密度锐减 ——
-##    好感均值 56.3 → 19.9、压力爆发 8.2 → 61.1。当前标定基线正是靠「忙碌中的人也会被
-##    拉进新交互」撑起来的，所以这项修正必须与 `data/rules/behavior_probs.csv` /
-##    `behaviors.csv` 的重新标定一起上（内核策划符合性审查 P1-03）。
-##    集中在这里是为了让标定完成时只需改这一处。
+## §10.8 睡眠排除 + **行为耗时占用**：`_busy_until` 未到的人不能被拉去做新交互
+## （策划 2026-10-07 裁决：禁止同时参与第二个占用型交互；群聊算同一个交互，
+## 靠 `_occupy` 的时长**累积**而不是覆盖）。
+## **忙碌者仍可被旁观、被议论、被环境影响** —— 本判定只用于「挑交互目标」，
+## 不用于围观者 / 旁白 / 环境查询。
 func _can_interact_with(j: int) -> bool:
-	return not _sleeping[j]
+	return not _sleeping[j] and _global_tick >= _busy_until[j]
 
 
 func _pick_target(i: int, neighbors_only: bool = false) -> int:
@@ -1616,8 +1615,11 @@ func _occupy(i: int, j: int, behavior: String, quiet: bool = false) -> void:
 	_current_act[j] = null if quiet else behavior
 	var dur := int(_behaviors.get(behavior, {}).get("duration", 0))
 	if dur > 0:
-		_busy_until[i] = _global_tick + dur
-		_busy_until[j] = _global_tick + dur
+		# 时长**累积**而不是覆盖（策划 2026-10-07：「群聊作为同一个交互管理，
+		# 不能靠覆盖占用实现」）—— 否则加入一场进行中的活动会把已占用的时长改短。
+		var until := _global_tick + dur
+		_busy_until[i] = maxi(_busy_until[i], until)
+		_busy_until[j] = maxi(_busy_until[j], until)
 		_busy_phase[i] = _phase_index
 		_busy_phase[j] = _phase_index
 

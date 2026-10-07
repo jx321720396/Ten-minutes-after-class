@@ -942,7 +942,7 @@ class Sim:
         跨 tick 的占用看 `busy_until` —— 只看本 tick 的局部 `busy` 集合，
         会让「还在做上一个行为」的人被反复拉进新交互（内核策划符合性审查 P1-03）。
         """
-        return not self.sleeping[j]
+        return (not self.sleeping[j]) and self.global_tick >= self.busy_until[j]
 
     def pick_target(self, i, neighbors_only=False):
         """选交互目标。**邻居优先**（§10.15 相邻修正）——
@@ -981,8 +981,11 @@ class Sim:
         self.current_act[j] = None if quiet else behavior
         dur = self.behaviors.get(behavior, {}).get("duration", 0)
         if dur > 0:
-            self.busy_until[i] = self.global_tick + dur
-            self.busy_until[j] = self.global_tick + dur
+            # 时长**累积**而不是覆盖（策划 2026-10-07：「群聊作为同一个交互管理，
+            # 不能靠覆盖占用实现」）—— 否则加入一场进行中的活动会把已占用的时长改短。
+            until = self.global_tick + dur
+            self.busy_until[i] = max(self.busy_until[i], until)
+            self.busy_until[j] = max(self.busy_until[j], until)
             self.busy_phase[i] = self.phase_index
             self.busy_phase[j] = self.phase_index
 
