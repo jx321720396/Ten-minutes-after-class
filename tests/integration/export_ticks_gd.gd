@@ -13,7 +13,7 @@ extends SceneTree
 ## 现状：`scripts/core/` 的 GDScript 内核尚未移植（冲刺计划 D8–D9），本入口明确跳过；
 ## 内核落地后在此接入同种子整局运行 + 逐 tick 采样。
 
-const KERNEL_PATH := "res://scripts/core/term.gd"
+const KERNEL_PATH := "res://scripts/core/sim_core.gd"
 
 
 func _initialize() -> void:
@@ -24,7 +24,7 @@ func _initialize() -> void:
 	var out_path: String = args.get("out", "tools/out/ticks_gd.jsonl")
 
 	if not ResourceLoader.exists(KERNEL_PATH):
-		print("[parity] SKIP：scripts/core/term.gd 尚未落地（冲刺计划 D8–D9），不执行导出。")
+		print("[parity] SKIP：scripts/core/sim_core.gd 缺失，不执行导出。")
 		print("[parity] 参数已解析：days=%d seed=%d npc=%d out=%s" % [days, seed_value, npc, out_path])
 		quit(0)
 		return
@@ -33,7 +33,12 @@ func _initialize() -> void:
 	#   1) 用 seed_value 建立确定性 RNG，跑 days 天
 	#   2) 每个 tick 采样一次（字段与 tools/export_ticks.py 完全一致）
 	#   3) 写到 out_path（jsonl，UTF-8）
-	print("[parity] 内核已就位，待接入逐 tick 导出（days=%d seed=%d npc=%d）" % [days, seed_value, npc])
+	# ⚠️ 现状：**仍未接入**（内核尚未暴露「逐 tick 快照」接口）。这里必须如实报 SKIP，
+	#    不能退出码 0 + 空输出让对拍脚本误判 —— 否则一键脚本会把「没测到」显示成通过
+	#    （内核策划符合性审查「对拍护栏失效」）。
+	print("[parity] SKIP：逐 tick 导出尚未接入（内核需提供 tick 快照接口）；days=%d seed=%d npc=%d" % [
+		days, seed_value, npc,
+	])
 	quit(0)
 
 

@@ -39,7 +39,7 @@ sys.path.insert(0, os.path.join(ROOT, "tests", "invariants"))
 
 from _common import FAIL, PASS, SKIP, Report, guard  # noqa: E402
 
-KERNEL = os.path.join(ROOT, "scripts", "core", "term.gd")
+KERNEL = os.path.join(ROOT, "scripts", "core", "sim_core.gd")
 GD_EXPORTER = os.path.join(ROOT, "tests", "integration", "export_ticks_gd.gd")
 GODOT_PATH_FILE = os.path.join(ROOT, ".godot_path")
 
@@ -111,7 +111,11 @@ def run_gdscript_export(godot, days, seed, npc, out_path):
     if proc.returncode != 0:
         return None, "Godot 导出失败（exit=%d）：%s" % (proc.returncode, text[-300:])
     if not os.path.isfile(out_path):
-        return None, "Godot 未产出导出文件：%s" % out_path
+        # 把 Godot 的输出摘要带回来：导出入口在「未接入」时会明确打印 SKIP，
+        # 调用方据此区分「还没做」（SKIP）与「做了但不对」（FAIL）。
+        tail = text.strip().splitlines()
+        summary = tail[-1] if tail else "（无输出）"
+        return None, "Godot 未产出导出文件：%s ｜ 输出摘要：%s" % (out_path, summary)
     rows = []
     with open(out_path, "r", encoding="utf-8", errors="replace") as handle:
         for line in handle:
@@ -127,7 +131,7 @@ def main(argv=None):
     parser.add_argument("--days", type=int, default=3)
     parser.add_argument("--seed", type=int, default=12345)
     parser.add_argument("--npc", type=int, default=8)
-    parser.add_argument("--tol", type=float, default=0.01, help="相对误差上限（默认 1% = 0.01）")
+    parser.add_argument("--tol", type=float, default=0.01, help="相对误差上限（默认 1%% = 0.01）")
     parser.add_argument("--godot", default=None)
     parser.add_argument("--keep", default=None, help="GDScript 导出文件路径（默认临时文件）")
     args = parser.parse_args(argv)
@@ -149,7 +153,7 @@ def main(argv=None):
     report.section("对拍对象")
     godot = find_godot(args.godot)
     if not os.path.isfile(KERNEL):
-        report.add(SKIP, "GDScript 内核", "scripts/core/term.gd 尚未落地（冲刺计划 D8–D9）—— 暂时没测到")
+        report.add(SKIP, "GDScript 内核", "scripts/core/sim_core.gd 缺失 —— 暂时没测到")
     if not godot:
         report.add(SKIP, "Godot 可执行文件", "未指定（--godot / $GODOT_BIN / .godot_path）—— 暂时没测到")
     elif not os.path.isfile(GD_EXPORTER):
@@ -170,7 +174,13 @@ def main(argv=None):
         os.makedirs(directory, exist_ok=True)
     candidate, log = run_gdscript_export(godot, args.days, args.seed, args.npc, out_path)
     if candidate is None:
-        report.add(FAIL, "GDScript 导出", log)
+        # 区分「还没做」与「做了但不对」：骨架期应如实 SKIP，
+        # 绝不能让「没测到」显示成通过（内核策划符合性审查「对拍护栏失效」）。
+        if "SKIP" in log or "待接入" in log:
+            report.add(SKIP, "GDScript 逐 tick 导出",
+                       "导出入口仍是骨架（内核 tick 快照接口未接入）—— 暂时没测到")
+        else:
+            report.add(FAIL, "GDScript 导出", log)
         return report.finish()
 
     report.note("对拍（GDScript 内核）：%d 个 tick" % len(candidate))

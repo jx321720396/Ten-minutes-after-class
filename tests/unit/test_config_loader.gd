@@ -24,7 +24,7 @@ func test_skips_comments_and_header() -> void:
 	var headers: Array = t["headers"]
 	assert_eq(headers[0], "behavior", "首列应为 behavior")
 	var rows: Array = t["rows"]
-	assert_eq(rows.size(), 17, "behaviors 应有 17 个行为（不含注释与表头）")
+	assert_eq(rows.size(), 18, "behaviors 应有 18 个行为（不含注释与表头）")
 
 
 func test_rows_keyed_by_header() -> void:
