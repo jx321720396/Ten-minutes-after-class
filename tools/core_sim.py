@@ -783,11 +783,10 @@ class Sim:
     def decide_and_act(self):
         """一 tick 内的行为决策（简化：只挑一个行为执行）"""
         n = self.N
-        order = list(range(n))
-        self.rng.shuffle(order)
+        # 决策顺序按索引升序（与 scripts/core/sim_core.gd 一致；不消费随机数，取代随机顺序）
         busy = set()
 
-        for i in order:
+        for i in range(n):
             if self.sleeping[i] or i in busy or self.global_tick < self.busy_until[i]:
                 continue
             self.in_conversation[i] = False
