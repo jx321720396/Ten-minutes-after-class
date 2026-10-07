@@ -17,6 +17,7 @@
 
 - **教室呈现路线定为 2D 先行（用户决策）**：课间空间用 `scenes/Classroom2D.tscn`（`tools/bake_classroom_2d.gd` 烘焙的静态场景）+ `scenes/characters/*.tscn`（16 个角色场景）跑通代码与玩法；`assets/models/classroom/`（Sketchfab 3D 教室，CC BY 4.0）暂作备用素材，**画风优化排在 D14 内容冻结之后**；团队分工任务单同步标注。
 ### 新增
+- **时间 HUD 倒计时改为直接显示秒数（2026-10-07，用户决策）**：课间 / 上课的剩余时间不再折算成 `mm:ss`，直接给秒数 —— 满段课间显示 `课间剩余 100 秒`、上课显示 `发酵中 · 本阶段约剩余 15 秒`。倒计时仍**向上取整、边界显示 0、不出现负数**（`_mmss()` → `_seconds_text()`）；`tests/integration/test_time_scene.gd` 三处断言同步。上一版 `mm:ss` 的表述保留在下方历史条目里，不追改。
 - **内核规则收口（阶段 2：行为完成与中断）（2026-10-07）**：把「行为完成」变成内核里**可观测的事件点**，为后续「完成才发信息」的规则（阶段 5 的玩家闲聊线索）留挂点。
   · **新增 `_settle_finished_actions()` / `settle_finished_actions()`**（在每个 tick 最前面调用）：占用到期即「这件事做完了」—— 清 `current_act`、清 `busy_phase`，并把行为名写进 `last_finished`（仅本 tick 有效）。
   · **新增字段 `_busy_act` / `busy_act`**：记录占用中的行为名。被动参与方（`quiet` 一方）的 `current_act` 会被清成空以保持「同一场对话只算一个声源」，但「他到底在做什么」必须记得住，否则完成时无从判定做完了什么。

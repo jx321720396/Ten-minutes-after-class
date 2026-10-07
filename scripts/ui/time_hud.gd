@@ -168,12 +168,12 @@ func _refresh(snapshot_data: Dictionary) -> void:
 		return
 	_action.visible = false
 
-	var remaining := _mmss(float(snapshot_data.get("remaining_seconds", 0.0)))
+	var remaining := _seconds_text(float(snapshot_data.get("remaining_seconds", 0.0)))
 	if str(snapshot_data.get("kind", "")) == "class":
-		_detail.text = "发酵中 · 本阶段约剩余 %s" % remaining
+		_detail.text = "发酵中 · 本阶段约剩余 %s 秒" % remaining
 		_detail.modulate = COLOR_LOCKED
 		return
-	_detail.text = "课间剩余 %s" % remaining
+	_detail.text = "课间剩余 %s 秒" % remaining
 	_detail.modulate = COLOR_SUB
 
 
@@ -185,11 +185,10 @@ func _show_action(text: String) -> void:
 	_action.text = text
 
 
-## 倒计时格式：向上取整、边界 00:00、不出现负数（计划 §3）。
-func _mmss(seconds: float) -> String:
-	var total := int(ceilf(maxf(seconds, 0.0)))
-	var minutes := floori(float(total) / 60.0)
-	return "%02d:%02d" % [minutes, total % 60]
+## 倒计时格式：**直接给剩余秒数**（向上取整、边界 0、不出现负数）。
+## 用户 2026-10-07 决策：不折算成 mm:ss —— 课间满段 100 秒就显示「100 秒」。
+func _seconds_text(seconds: float) -> String:
+	return "%d" % int(ceilf(maxf(seconds, 0.0)))
 
 
 func _show_toast(text: String) -> void:
