@@ -955,9 +955,12 @@ func _join_gate_utility(i: int, j: int) -> float:
 	return w * (_sigmoid(za) + _sigmoid(zs) - 1.0)
 
 
-## 搭话判定侧 score：信念 B_A + 对方外向度 − 对方压力惩罚（§6.4）。
+## 搭话判定侧 score：**被请求者的真值好感 A[j][i]** + 对方外向度 − 对方压力惩罚（§6.4）。
+## 判定读真值 ——「他会不会接纳我」由他的真实态度决定，不由我的猜测决定；我的猜测只进
+## 决策侧（要不要去试）与展示层（成功率）。读 A[j][i] 不违反 §18.7 不变式 3 ——
+## 该不变式禁止的是**决策路径**读它；本方法属**判定路径**，规格要求它读真值。
 func _join_score(i: int, j: int) -> float:
-	var base := _b_a[i * _n + j] + (_dims[j] - 50.0) * 0.3
+	var base := _a[j * _n + i] + (_dims[j] - 50.0) * 0.3
 	var hot := maxf(0.0, _stress[j] - 50.0) / 50.0
 	var penalty := float(_thresholds_lookup["join_chat_stress_penalty"])
 	return base - penalty * hot
@@ -970,9 +973,16 @@ func _join_probability(i: int, j: int) -> float:
 	return _sigmoid((_join_score(i, j) - theta) / scale)
 
 
-## 只读：玩家侧看到的成功率 p（从信念算，不泄露真值；§10.32）。
+## 只读：玩家侧看到的成功率 p（从信念 B_A 算，不泄露真值；§10.32.3）。
+## 显示值与实际结算值（_join_probability 读真值）刻意不同 ——「我明明有 80% 把握却被拒」
+## 正是认知偏差的具象化，不是 bug（§10.32.4）。
 func _join_feedback(i: int, j: int) -> Dictionary:
-	return {"p": snapped(_join_probability(i, j), 0.01)}
+	var hot := maxf(0.0, _stress[j] - 50.0) / 50.0
+	var score := _b_a[i * _n + j] + (_dims[j] - 50.0) * 0.3 \
+		- float(_thresholds_lookup["join_chat_stress_penalty"]) * hot
+	var theta := float(_thresholds_lookup["join_chat_affinity"])
+	var scale := float(_thresholds_lookup["join_chat_scale"])
+	return {"p": snapped(_sigmoid((score - theta) / scale), 0.01)}
 
 
 ## 一次判定的展示包（只读，不参与结算；实际掷骰在 _do_join_chat 里做，D11 玩家侧用）。
@@ -984,7 +994,7 @@ func _verdict(i: int, j: int, kind: String = "join_chat") -> Dictionary:
 			"kind": kind,
 			"p": fb["p"],
 			"roll": roll,
-			"ok": roll < float(fb["p"]),
+			"ok": roll < _join_probability(i, j),
 			"note": "成功率来自「你以为对方怎么看你」，不是事实 —— 把握大也可能被拒。",
 		}
 	return {}
