@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cvxfbvoik66dv"]
 
-[ext_resource type="Script" uid="uid://bojyrsv0ghj7b" path="res://ui/confirm_dialog.gd" id="1_confirm"]
-[ext_resource type="StyleBox" uid="uid://b8x2ehcxgjtpy" path="res://ui/new_style_box_flat.tres" id="2_0nu4o"]
+[ext_resource type="Script" uid="uid://bojyrsv0ghj7b" path="res://scripts/ui/confirm_dialog.gd" id="1_confirm"]
+[ext_resource type="StyleBox" uid="uid://b8x2ehcxgjtpy" path="res://resources/new_style_box_flat.tres" id="2_0nu4o"]
 
 [node name="ConfirmDialog" type="Control" unique_id=1932078758]
 layout_mode = 3

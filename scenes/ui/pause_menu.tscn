@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://ckhk7pqoo1clw"]
 
-[ext_resource type="Script" uid="uid://bimyujatl3f57" path="res://ui/pause_menu.gd" id="1_pause"]
-[ext_resource type="PackedScene" uid="uid://yh1nvljgb0uw" path="res://ui/settings_menu.tscn" id="2_settings"]
+[ext_resource type="Script" uid="uid://bimyujatl3f57" path="res://scripts/ui/pause_menu.gd" id="1_pause"]
+[ext_resource type="PackedScene" uid="uid://yh1nvljgb0uw" path="res://scenes/ui/settings_menu.tscn" id="2_settings"]
 
 [sub_resource type="FontVariation" id="FontVariation_title"]
 outline_size = 4

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cc7c5bw525vga"]
 
-[ext_resource type="Script" uid="uid://cctsahkm2am3h" path="res://ui/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" uid="uid://cctsahkm2am3h" path="res://scripts/ui/main_menu.gd" id="1_menu"]
 
 [sub_resource type="FontVariation" id="FontVariation_title"]
 
