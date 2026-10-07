@@ -56,3 +56,17 @@ godot --headless --path . --script tests/balance/run_batch.gd -- --runs=100 --se
 | [`invariants/check_magic_numbers.py`](invariants/check_magic_numbers.py) | 数值不落在脚本里 | `scripts/core/`、`systems/`、`npc/` 未落地 → 「暂时没测到」 |
 
 详见 [`invariants/README.md`](invariants/README.md)；一键运行：`bash tools/run_tests.sh`。
+
+`tests/invariants/fixtures/` 是**哨兵夹具**：故意违反铁律的小样本，用来证明扫描器本身有效 ——
+内核目录还没落地时，三条铁律不再是「纯 SKIP」，而是「哨兵 PASS + 真实目录 SKIP」。
+见 [`invariants/fixtures/README.md`](invariants/fixtures/README.md)。
+
+另外三个子目录也已落地骨架（2026-10-07），策略见 [`../docs/qa/测试策略.md`](../docs/qa/测试策略.md)：
+
+| 目录 | 内容 | 现状 |
+|---|---|---|
+| [`integration/`](integration/README.md) | 无头整局 `run_term.gd` + **逐 tick 对拍器** [`test_tick_parity.py`](integration/test_tick_parity.py)（Python ↔ GDScript，误差 ≤ 1%） | 内核未落地 → 明确 SKIP；对拍器自带自检 |
+| [`balance/`](balance/README.md) | 批量标定 `run_batch.gd` | 内核未落地 → 明确 SKIP；离线口径见 `tools/check_metrics.py`（100 局） |
+| [`emergence/`](emergence/README.md) | 主文档第十六章 **13 条现象**验收清单 [`cases.md`](emergence/cases.md) + GUT 骨架 | 逐条 `pending`，内核落地后填断言 |
+
+> 三处共同的纪律：**内核未落地就明确 SKIP，不假绿** —— 宁可显示「暂时没测到」，也不写一个永远通过的假断言。
