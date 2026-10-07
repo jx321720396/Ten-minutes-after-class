@@ -1442,6 +1442,81 @@ func _do_roughhouse(i: int, j: int, bystanders: Array) -> void:
 	_emit("event_happened", {"kind": "roughhouse", "i": i, "j": j})
 
 
+# ------------------------------------------------------------------ 玩家行动（D11 缺口③）
+## 玩家显式行动：来源固定玩家（n-1）、目标由玩家指定，走与 NPC 相同的 do_* 统一影响公式，
+## 不做 NPC 自动决策。返回结果字典供表现层渲染反馈；topic 暂作透传记录。
+func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
+	var me := _n - 1
+	if target < 0 or target >= _n or target == me:
+		return {"ok": false, "error": "invalid_target"}
+	if _sleeping[me] or _global_tick < _busy_until[me]:
+		return {"ok": false, "error": "player_busy"}
+	var a_before := _a[target * _n + me]   # 目标→玩家的好感（行动前的反应基线）
+	var h_before := _h[target * _n + me]
+	var accepted := true
+	match kind:
+		"chat":
+			_do_chat(me, target)
+		"join_chat":
+			var p := _join_probability(me, target)
+			var roll := _rng.random()
+			accepted = roll < p
+			_do_join_chat(me, target, roll)
+		"tease":
+			_do_tease(me, target, _player_audience(target))
+		"rumor":
+			_do_rumor(me, target)
+		"report":
+			_do_report(me, target)
+		"roughhouse":
+			_do_roughhouse(me, target, _player_bystanders(target))
+		"exclude":
+			_do_exclude(me, target, _player_hurters(target))
+		_:
+			return {"ok": false, "error": "unknown_kind"}
+	return {
+		"ok": true,
+		"kind": kind,
+		"target": target,
+		"topic": topic,
+		"accepted": accepted,
+		"affinity_delta": snapped(_a[target * _n + me] - a_before, 0.1),
+		"hostility_delta": snapped(_h[target * _n + me] - h_before, 0.1),
+	}
+
+
+## 玩家调侃的围观者：玩家与目标的共同邻居（不含双方，未睡）。
+func _player_audience(j: int) -> Array:
+	var me := _n - 1
+	var out: Array = []
+	for k in _neighbor_idx[me]:
+		if k != me and k != j and _neighbor_idx[j].has(k) and not _sleeping[k]:
+			out.append(k)
+	return out
+
+
+## 玩家打闹的旁观者：玩家与目标的邻居并集（不含双方，未睡），升序取前 3。
+func _player_bystanders(j: int) -> Array:
+	var me := _n - 1
+	var nb := {}
+	for k in (_neighbor_idx[me] + _neighbor_idx[j]):
+		if k != me and k != j and not _sleeping[k]:
+			nb[k] = true
+	var sorted: Array = nb.keys()
+	sorted.sort()
+	return sorted.slice(0, 3)
+
+
+## 玩家排挤的群众：近期伤害过目标的 NPC（与 NPC 排挤判据一致），取前 4。
+func _player_hurters(j: int) -> Array:
+	var window := float(_thresholds_lookup["exclude_window"])
+	var out: Array = []
+	for k in range(_n):
+		if k != j and _day - _hurt_day[k * _n + j] <= window:
+			out.append(k)
+	return out.slice(0, 4)
+
+
 # ------------------------------------------------------------------ 性格/规则辅助（D8 涓流依赖，D10 行为决策复用）
 func _arg_j(i: int) -> float:
 	return (_dims[3 * _n + i] - float(_kp["mbti_neutral"])) / float(_kp["mbti_scale"])
