@@ -12,7 +12,7 @@ func before_each() -> void:
 
 
 func _core() -> SimCore:
-	return SimCore.new(12345, 8, _tables)
+	return SimCore.from_npc(12345, 8, _tables)
 
 
 func _n(core: SimCore) -> int:
@@ -110,8 +110,8 @@ func test_stress_within_range_after_day() -> void:
 
 
 func test_same_seed_same_result() -> void:
-	var core1 := SimCore.new(12345, 8, _tables)
-	var core2 := SimCore.new(12345, 8, _tables)
+	var core1 := SimCore.from_npc(12345, 8, _tables)
+	var core2 := SimCore.from_npc(12345, 8, _tables)
 	core1.run_day()
 	core2.run_day()
 	assert_eq(core1.report(), core2.report(), "同种子同结果（可复现）")

@@ -9,7 +9,7 @@ func before_each() -> void:
 
 
 func _core() -> SimCore:
-	return SimCore.new(12345, 8, _tables)
+	return SimCore.from_npc(12345, 8, _tables)
 
 
 func test_one_day_ticks() -> void:
@@ -120,3 +120,15 @@ func test_accessors_bounds() -> void:
 	assert_eq(core.affinity(0, 999), 0.0, "越界为 0")
 	assert_eq(core.opacity(-1), 0.0, "透明度负索引为 0")
 	assert_eq(core.stress(core.node_count()), 0.0, "压力越界为 0")
+
+
+func test_constructor_signature_difficulty() -> void:
+	# D11 缺口①：SimCore.new(seed, difficulty) 内部读表 + difficulty→npc_count 映射
+	assert_eq(SimCore.new(12345, 1).node_count(), 9, "difficulty 1 → 8 NPC（内部自取 tables）")
+	assert_eq(SimCore.new(12345, 2).node_count(), 17, "difficulty 2 → 16 NPC（内部自取 tables）")
+	assert_eq(SimCore.from_npc(12345, 8, _tables).node_count(), 9, "from_npc 兼容入口 8 NPC")
+	# difficulty 3（24 NPC）映射正确；满编构造需 25 座，seats.csv 现仅 17 座——待数据扩展后再跑完整构造
+	var probe := SimCore.from_npc(12345, 8, _tables)
+	assert_eq(probe._difficulty_npc_count(1, _tables), 8, "difficulty 1 映射 8")
+	assert_eq(probe._difficulty_npc_count(2, _tables), 16, "difficulty 2 映射 16")
+	assert_eq(probe._difficulty_npc_count(3, _tables), 24, "difficulty 3 映射 24")

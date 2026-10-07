@@ -5,7 +5,7 @@ extends SceneTree
 
 func _init() -> void:
 	var tables := ConfigLoader.new().load_all()
-	var core := SimCore.new(12345, 8, tables)
+	var core := SimCore.from_npc(12345, 8, tables)
 	var t0 := Time.get_ticks_usec()
 	for d in range(30):
 		core.run_day()
