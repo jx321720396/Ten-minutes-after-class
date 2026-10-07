@@ -19,6 +19,8 @@ extends RefCounted
 const DIMS := ["e", "n", "f", "p"]
 const AXES := ["affinity", "hostility", "trust"]
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
+const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
+const _ObserverLayer = preload("res://scripts/systems/observer/observer_layer.gd")
 
 # —— 关系 / 个体状态（float64 平铺，与 Python 逐位一致）——
 var _a := PackedFloat64Array()      # 好感 A  n*n
@@ -846,25 +848,522 @@ func _check_interrupt() -> void:
 			_stats["interrupts"] = int(_stats["interrupts"]) + 1
 
 
-# ------------------------------------------------------------------ 行为决策（D10 补齐）
+# ------------------------------------------------------------------ 信念观测（§11 信念矩阵，D10）
+## i 通过一次观测更新「j 对 i 的 axis」信念：噪声由被观测者透明度决定、学习率由信任决定。
+func _observe(i: int, j: int, axis: String, weight: float = 1.0) -> void:
+	if i == j:
+		return
+	var idx := i * _n + j
+	var true_val := 0.0
+	var cur := 0.0
+	if axis == "affinity":
+		true_val = _a[j * _n + i]
+		cur = _b_a[idx]
+	elif axis == "hostility":
+		true_val = _h[j * _n + i]
+		cur = _b_h[idx]
+	else:
+		true_val = _t[j * _n + i]
+		cur = _b_t[idx]
+	var sigma := _sigma_max(axis) * (1.0 - _o[j] / 100.0)
+	var z := _hash01([i, j, axis]) * 2.0 - 1.0
+	var bias := 0.0
+	if axis == "affinity":
+		# 外观偏差：外向/共情越高越「看起来友善」（与 Python 逐字一致：50/50 基准、各 0.5 权重）
+		bias = float(_bp["w_bias"]) * _friendly_bias(j, float(_kp["mbti_neutral"]), float(_kp["mbti_scale"]), 0.5, 0.5)
+	var obs := _clamp100(true_val + sigma * z + bias)
+	var eta_key := "eta0_a"
+	if axis == "hostility":
+		eta_key = "eta0_h"
+	elif axis == "trust":
+		eta_key = "eta0_t"
+	var eta := float(_bp[eta_key]) * (0.3 + 0.7 * _t[idx] / 100.0) * weight
+	var updated := _clamp100(cur + eta * (obs - cur))
+	if axis == "affinity":
+		_b_a[idx] = updated
+	elif axis == "hostility":
+		_b_h[idx] = updated
+	else:
+		_b_t[idx] = updated
+
+
+# ------------------------------------------------------------------ 决策辅助（D10）
+## logistic：p ∈ (0,1)，无 0/1 硬闸门（§6.4）。
+func _sigmoid(z: float) -> float:
+	if z >= 0.0:
+		return 1.0 / (1.0 + exp(-z))
+	var e := exp(z)
+	return e / (1.0 + e)
+
+
+## softmax 采样：返回选中下标；tau 必须 > 0（§8 不变式 5）。
+func _softmax(scores: Array, tau: float) -> int:
+	assert(tau > 0.0, "softmax: tau 必须 > 0")
+	var m := float(scores[0])
+	for s in scores:
+		m = maxf(m, float(s))
+	var exps: Array = []
+	var total := 0.0
+	for s in scores:
+		var e := exp((float(s) - m) / tau)
+		exps.append(e)
+		total += e
+	var r := _rng.random() * total
+	var acc := 0.0
+	for k in range(exps.size()):
+		acc += float(exps[k])
+		if r <= acc:
+			return k
+	return exps.size() - 1
+
+
+## 意向权重 alpha：MBTI 四维线性组合后归一化（Σ=1，§4.3）。
+func _alpha(i: int) -> Dictionary:
+	var raw := {
+		"affinity": float(_nw["alpha_a_base"]) + float(_nw["alpha_a_f"]) * _dims[2 * _n + i] / 100.0 \
+				+ float(_nw["alpha_a_e"]) * _dims[i] / 100.0,
+		"trust": float(_nw["alpha_t_base"]) + float(_nw["alpha_t_j"]) * (1.0 + _arg_j(i)) / 2.0,
+		"hostility": float(_nw["alpha_h_base"]) + float(_nw["alpha_h_f"]) * (1.0 - _dims[2 * _n + i] / 100.0) \
+				+ float(_nw["alpha_h_j"]) * (1.0 + _arg_j(i)) / 2.0,
+		"stress": float(_nw["alpha_s_base"]) + float(_nw["alpha_s_e"]) * (1.0 - _dims[i] / 100.0),
+	}
+	var total := float(raw["affinity"]) + float(raw["trust"]) + float(raw["hostility"]) + float(raw["stress"])
+	return {
+		"affinity": float(raw["affinity"]) / total,
+		"trust": float(raw["trust"]) / total,
+		"hostility": float(raw["hostility"]) / total,
+		"stress": float(raw["stress"]) / total,
+	}
+
+
+## 意向温度 tau：高 J 更确定（温度更低）；压力 ≥70 更冲动（温度放大）；下限 0.01（§4.4）。
+func _tau(i: int) -> float:
+	var t := float(_nw["tau0"]) * (1.0 + float(_nw["tau_j"]) * (0.5 - _arg_j(i) / 2.0))
+	if _stress[i] >= 70.0:
+		t *= float(_nw["tau_stress_mult"])
+	return maxf(t, 0.01)
+
+
+## 搭话决策侧软门槛：低于门槛只降概率、不排除候选（§6.4）。
+func _join_gate_utility(i: int, j: int) -> float:
+	var ga := float(_thresholds_lookup["join_chat_gate_affinity"])
+	var gs := float(_thresholds_lookup["join_chat_gate_stress"])
+	var scale := float(_thresholds_lookup["join_chat_gate_scale"])
+	var w := float(_thresholds_lookup["join_chat_gate_weight"])
+	var za := (_a[i * _n + j] - ga) / scale
+	var zs := (gs - _stress[i]) / scale
+	return w * (_sigmoid(za) + _sigmoid(zs) - 1.0)
+
+
+## 搭话判定侧 score：信念 B_A + 对方外向度 − 对方压力惩罚（§6.4）。
+func _join_score(i: int, j: int) -> float:
+	var base := _b_a[i * _n + j] + (_dims[j] - 50.0) * 0.3
+	var hot := maxf(0.0, _stress[j] - 50.0) / 50.0
+	var penalty := float(_thresholds_lookup["join_chat_stress_penalty"])
+	return base - penalty * hot
+
+
+## 搭话判定侧概率：p = σ((score − θ)/scale)，永不为 0/1（§6.4）。
+func _join_probability(i: int, j: int) -> float:
+	var theta := float(_thresholds_lookup["join_chat_affinity"])
+	var scale := float(_thresholds_lookup["join_chat_scale"])
+	return _sigmoid((_join_score(i, j) - theta) / scale)
+
+
+## 只读：玩家侧看到的成功率 p（从信念算，不泄露真值；§10.32）。
+func _join_feedback(i: int, j: int) -> Dictionary:
+	return {"p": snapped(_join_probability(i, j), 0.01)}
+
+
+## 一次判定的展示包（只读，不参与结算；实际掷骰在 _do_join_chat 里做，D11 玩家侧用）。
+func _verdict(i: int, j: int, kind: String = "join_chat") -> Dictionary:
+	if kind == "join_chat":
+		var fb: Dictionary = _join_feedback(i, j)
+		var roll := _rng.random()
+		return {
+			"kind": kind,
+			"p": fb["p"],
+			"roll": roll,
+			"ok": roll < float(fb["p"]),
+			"note": "成功率来自「你以为对方怎么看你」，不是事实 —— 把握大也可能被拒。",
+		}
+	return {}
+
+
+# ------------------------------------------------------------------ 行为决策（D10）
+## 每课间段开始掷一次睡觉（§10.8：睡 = 本段不做其他事，段粒度而非 tick）。
 func _roll_sleep() -> void:
-	pass
+	if not _allowed("sleep"):
+		return
+	var p := float(_probs["sleep"])
+	for i in range(_n):
+		if _sleeping[i]:
+			continue
+		if _rng.random() < p * (1.0 + _tag_bias(i, "alone_bias")):
+			_sleeping[i] = true
+			_current_act[i] = "sleep"
+			_busy_until[i] = _FOREVER
+			_stats["sleeps"] = int(_stats["sleeps"]) + 1
 
 
+## 「别人做什么我也跟着做」：join_mode=free 的活动可自由跟随（§10.31），强度由从众度决定。
 func _free_join() -> void:
-	pass
+	for i in range(_n):
+		if _sleeping[i] or _busy_until[i] > _global_tick:
+			continue
+		var acts: Array = []
+		for k in _neighbor_idx[i]:
+			if k == i or _sleeping[k]:
+				continue
+			var a = _current_act[k]
+			if a != null and _behaviors.get(a, {}).get("join_mode", "none") == "free":
+				acts.append(a)
+			elif a == null and _busy_until[k] <= _global_tick:
+				acts.append("study")
+		if acts.is_empty():
+			continue
+		var conf := _conformity(i)
+		if conf <= 0.05:
+			continue
+		if _rng.random() < float(_probs["free_join_rate"]) * conf:
+			var a = _rng.choice(acts)
+			if a == "sleep" and _allowed("sleep"):
+				_sleeping[i] = true
+				_current_act[i] = "sleep"
+				_busy_until[i] = _FOREVER
+			elif a == "study":
+				_current_act[i] = null
+			_stats["free_joins"] = int(_stats.get("free_joins", 0)) + 1
 
 
+## 举报把柄虚拟层（§10.2）：带手机者课间可能被邻居目击「玩手机」，产生把柄。
 func _phone_exposure() -> void:
-	pass
+	var p := float(_probs["phone_expose_p"])
+	if p <= 0.0:
+		return
+	for j in range(_n):
+		if _sleeping[j] or not _character_tags[j].has("带手机"):
+			continue
+		if _rng.random() >= p:
+			continue
+		for i in _neighbor_idx[j]:
+			if i == j or _sleeping[i]:
+				continue
+			_witness_day[i * _n + j] = _day
 
 
+## 举报判定（§10.2）：每段课间对有把柄的候选掷一次骰（好友几乎不举报，但概率永不为 0）。
 func _roll_reports() -> void:
-	pass
+	var th_rep := float(_thresholds_lookup["report_hostility"])
+	var sc_rep := float(_thresholds_lookup["report_scale"])
+	var win := float(_thresholds_lookup["report_witness_window"])
+	var w_a := float(_thresholds_lookup["report_affinity_penalty"])
+	var w_t := float(_thresholds_lookup["report_trust_penalty"])
+	var p_rep := float(_probs["report_p"])
+	for i in range(_n):
+		if _sleeping[i]:
+			continue
+		for j in range(_n):
+			if i == j or _sleeping[j] or _day - _witness_day[i * _n + j] > win:
+				continue
+			var z := (_h[i * _n + j] - th_rep) / sc_rep - w_a * _a[i * _n + j] / 100.0 - w_t * _t[i * _n + j] / 100.0
+			if _rng.random() < p_rep * _sigmoid(z):
+				_do_report(i, j)
+				break
 
 
+## 一 tick 内的行为决策：闲聊 → 调侃 → 打闹 → 排挤 → 流言 → 搭话。
+## 铁律：决策顺序按索引升序（可复现，取代 Python 的 shuffle）；只读信念 B_*，不读真值 A[j][i]。
 func _decide_and_act() -> void:
-	pass
+	var n := _n
+	var busy: Array = []
+	for _k in range(n):
+		busy.append(false)
+	for i in range(n):
+		if _sleeping[i] or busy[i] or _global_tick < _busy_until[i]:
+			continue
+		_in_conversation[i] = false
+		# 环境类：闲聊（标签调制：爱学习更少聊、爱聊天更多聊）
+		var chat_gain := 1.0 + _tag_bias(i, "chat_bias") - _tag_bias(i, "study_bias")
+		chat_gain = maxf(0.1, chat_gain)
+		if _allowed("chat") and _rng.random() < float(_probs["chat"]) * chat_gain:
+			var tgt := _pick_target(i)
+			if tgt >= 0:
+				_do_chat(i, tgt)
+				busy[i] = true
+				busy[tgt] = true
+				continue
+		# 意向类：当众调侃（需物理接近 + ≥3 人围观；目标偏好敌对高 / 好感低者）
+		var cands_t: Array = []
+		for j in range(n):
+			if j != i and not busy[j] and not _sleeping[j] and _are_neighbors(i, j) \
+					and (_a[i * n + j] >= 40.0 or _b_h[i * n + j] >= 25.0 or _a[i * n + j] < 25.0):
+				cands_t.append(j)
+		if _allowed("tease") and cands_t.size() >= 3 \
+				and _rng.random() < float(_probs["tease_p"]) * (1.0 + _tag_bias(i, "tease_bias")):
+			var wts: Array = []
+			for t in cands_t:
+				wts.append(maxf(1.0, pow((100.0 - _a[i * n + t]) + _h[i * n + t], 2.0)))
+			var tgt: int = int(_rng.choices(cands_t, wts, 1)[0])
+			var audience: Array = []
+			for k in _neighbor_idx[i]:
+				if _neighbor_idx[tgt].has(k) and k != i and k != tgt and not busy[k] and not _sleeping[k]:
+					audience.append(k)
+			if audience.size() >= 3:
+				_do_tease(i, tgt, audience)
+				busy[i] = true
+				busy[tgt] = true
+				continue
+		# 意向类：追逐打闹（敌对种子：参与者好感↑ / 旁观者敌对↑）
+		var th_rh := float(_thresholds_lookup["roughhouse_affinity"])
+		var th_rc := int(_thresholds_lookup["roughhouse_count"])
+		if _allowed("roughhouse") and _dims[i] >= th_rh \
+				and _rng.random() < float(_probs["roughhouse_p"]):
+			var others: Array = []
+			for j in range(n):
+				if j != i and not busy[j] and not _sleeping[j]:
+					others.append(j)
+			if not others.is_empty():
+				var w_rh: Array = []
+				for r in others:
+					w_rh.append(maxf(1.0, _dims[r] - 30.0))
+				var tgt: int = int(_rng.choices(others, w_rh, 1)[0])
+				var bys: Array = []
+				for k in range(n):
+					if k != i and k != tgt and not busy[k]:
+						bys.append(k)
+				if bys.size() >= th_rc:
+					# 旁观者聚焦「安静专注型」随机采样；结果弃用，仅对齐参考 RNG 流
+					bys = _rng.sample(bys, mini(bys.size(), 4))
+					# 打闹只吵到邻座（i、j 邻居并集，去重升序取前 3）
+					var nb: Array = []
+					for k in (_neighbor_idx[i] + _neighbor_idx[tgt]):
+						if k != i and k != tgt and not _sleeping[k]:
+							nb.append(k)
+					var nb_set := {}
+					for k in nb:
+						nb_set[k] = true
+					var nb_sorted: Array = nb_set.keys()
+					nb_sorted.sort()
+					_do_roughhouse(i, tgt, nb_sorted.slice(0, 3))
+					busy[i] = true
+					busy[tgt] = true
+					continue
+		# 阈值类：排挤（「大家都讨厌他」→ 集体驱逐；证据在施害者一侧）
+		if _allowed("exclude") and _rng.random() < float(_probs["exclude_p"]):
+			var th_n := int(_thresholds_lookup["exclude_count"])
+			var cd_days := float(_thresholds_lookup["exclude_cooldown"])
+			var window := float(_thresholds_lookup["exclude_window"])
+			var done := false
+			for j in range(n):
+				if j == i or busy[j]:
+					continue
+				if _day - _exclude_last_day[j] < cd_days:
+					continue
+				var hurters: Array = []
+				for k in range(n):
+					if k != j and _day - _hurt_day[k * n + j] <= window:
+						hurters.append(k)
+				if hurters.size() >= th_n:
+					_do_exclude(i, j, hurters.slice(0, 4))
+					_exclude_last_day[j] = _day
+					busy[i] = true
+					done = true
+					break
+			if done:
+				continue
+		# 附加行为：流言（负面染色；目标偏好敌对高者）
+		if _allowed("rumor") and _rng.random() < float(_probs["rumor_p"]):
+			var c2: Array = []
+			for j in range(n):
+				if j != i and not busy[j] and not _sleeping[j]:
+					c2.append(j)
+			if not c2.is_empty():
+				var w2: Array = []
+				for m in c2:
+					w2.append(maxf(1.0, 20.0 + _h[i * n + m] - _a[i * n + m] * 0.5))
+				var tgt: int = int(_rng.choices(c2, w2, 1)[0])
+				_do_rumor(i, tgt)
+				busy[i] = true
+				busy[tgt] = true
+				continue
+		# 意向类：搭话（softmax 采样）
+		var cands: Array = []
+		for j in range(n):
+			if j != i and not _sleeping[j] and not busy[j]:
+				cands.append(j)
+		if not cands.is_empty():
+			var alpha := _alpha(i)
+			var scores: Array = []
+			for c in cands:
+				var gain_a := _b_a[i * n + c] / 100.0 * 3.0
+				var gain_t := _b_t[i * n + c] / 100.0 * 2.0
+				var risk_h := _b_h[i * n + c] / 100.0 * 2.0
+				var u := float(alpha["affinity"]) * gain_a + float(alpha["trust"]) * gain_t - float(alpha["hostility"]) * risk_h
+				u += _crowd_bias(i, "loud")
+				u += _tag_bias(i, "chat_bias") - _tag_bias(i, "alone_bias")
+				u += _join_gate_utility(i, c)
+				scores.append(u)
+			if not scores.is_empty():
+				var k := _softmax(scores, _tau(i))
+				var tgt: int = int(cands[k])
+				_do_join_chat(i, tgt)
+				busy[i] = true
+				busy[tgt] = true
+
+
+## 选交互目标：邻居优先（§10.15 相邻修正）。neighbors_only 时只在邻居里选。
+func _pick_target(i: int, neighbors_only: bool = false) -> int:
+	if neighbors_only:
+		var others: Array = []
+		for j in _neighbor_idx[i]:
+			if not _sleeping[j]:
+				others.append(j)
+		if others.is_empty():
+			return -1
+		return int(_rng.choice(others))
+	var w_nb := float(_probs["neighbor_pick_mult"])
+	var pool: Array = []
+	for j in range(_n):
+		if j == i or _sleeping[j]:
+			continue
+		pool.append([j, w_nb if _neighbor_idx[i].has(j) else 1.0])
+	if pool.is_empty():
+		return -1
+	var tot := 0.0
+	for e in pool:
+		tot += float(e[1])
+	var r := _rng.random() * tot
+	var acc := 0.0
+	for e in pool:
+		acc += float(e[1])
+		if r <= acc:
+			return int(e[0])
+	return int(pool[pool.size() - 1][0])
+
+
+## 按行为耗时把双方置为忙碌（收益越大耗时越长）。
+func _occupy(i: int, j: int, behavior: String, quiet: bool = false) -> void:
+	_current_act[i] = behavior
+	_current_act[j] = null if quiet else behavior
+	var dur := int(_behaviors.get(behavior, {}).get("duration", 0))
+	if dur > 0:
+		_busy_until[i] = _global_tick + dur
+		_busy_until[j] = _global_tick + dur
+		_busy_phase[i] = _phase_index
+		_busy_phase[j] = _phase_index
+
+
+## 闲聊：话题共鸣事件 + 双方观测。
+func _do_chat(i: int, j: int) -> void:
+	_in_conversation[i] = true
+	_in_conversation[j] = true
+	_occupy(i, j, "chat", true)
+	_apply_event(i, j, "topic_affinity")
+	_apply_event(i, j, "topic_trust")
+	_apply_event(i, j, "topic_stress")
+	_apply_event(j, i, "topic_affinity")
+	_apply_event(j, i, "topic_trust")
+	_observe(i, j, "affinity")
+	_observe(j, i, "affinity")
+	_stats["chats"] = int(_stats["chats"]) + 1
+
+
+## 搭话判定侧：p 掷骰，无硬闸门；roll 可由调用方预掷（保证三拍展示一致）。
+func _do_join_chat(i: int, j: int, roll: float = -1.0) -> void:
+	_in_conversation[i] = true
+	_in_conversation[j] = true
+	_occupy(i, j, "join_chat", true)
+	var p := _join_probability(i, j)
+	if roll < 0.0:
+		roll = _rng.random()
+	if roll < p:
+		_do_chat(i, j)
+		_stats["joins"] = int(_stats["joins"]) + 1
+		_stats["join_accepts"] = int(_stats.get("join_accepts", 0)) + 1
+	else:
+		_apply_event(i, j, "reject_affinity")
+		_apply_event(i, j, "reject_hostility")
+		_apply_event(i, j, "reject_stress")
+		_observe(i, j, "affinity")
+		_stats["joins"] = int(_stats["joins"]) + 1
+		_stats["join_rejects"] = int(_stats.get("join_rejects", 0)) + 1
+		_stats["skipped_events"] = int(_stats["skipped_events"]) + 1
+
+
+## 举报（§10.2）：i = 举报者，j = 被举报者；效果落在被举报者身上。
+func _do_report(i: int, j: int) -> void:
+	_apply_event(j, i, "report_stress")
+	_apply_event(j, i, "report_hostility")
+	_mark_hurt(i, j)
+	_h[i * _n + j] = _clamp100(_h[i * _n + j] - 5.0)
+	_stats["reports"] = int(_stats["reports"]) + 1
+
+
+## 当众调侃（§10.12）：方向由绝对阈值判档；围观者按「他对被调侃者的态度」站队。
+func _do_tease(i: int, j: int, audience: Array) -> void:
+	_occupy(i, j, "tease")
+	if _a[i * _n + j] >= float(_thresholds_lookup["tease_laugh_affinity"]) \
+			and _h[i * _n + j] < float(_thresholds_lookup["tease_laugh_hostility"]):
+		_apply_event(i, j, "tease_success_affinity")
+		_apply_event(j, i, "tease_success_affinity")
+		for k in audience:
+			_apply_event(k, j, "tease_success_affinity")
+		_apply_event(j, i, "tease_laugh_stress")
+	elif _h[i * _n + j] >= float(_thresholds_lookup["tease_taunt_hostility"]) \
+			or _a[i * _n + j] < float(_thresholds_lookup["tease_taunt_affinity"]):
+		_apply_event(j, i, "tease_hostility")
+		_apply_event(j, i, "tease_stress")
+		for k in audience:
+			if _a[k * _n + j] >= float(_thresholds_lookup["tease_stand_affinity"]):
+				_apply_event(k, i, "tease_hostility")
+			elif _h[k * _n + j] >= float(_thresholds_lookup["tease_sneer_hostility"]):
+				_apply_event(k, j, "tease_affinity")
+		if audience.size() >= int(_thresholds_lookup["humiliate_bystanders"]):
+			_apply_event(j, i, "humiliate_hostility")
+			_mark_hurt(i, j)
+			_stats["humiliations"] = int(_stats.get("humiliations", 0)) + 1
+		_stats["tease_fail"] = int(_stats["tease_fail"]) + 1
+	_stats["teases"] = int(_stats["teases"]) + 1
+
+
+## 排挤（B 类纯损害）：群体驱逐；被排挤者压力↑且对参与者好感↓（双向疏远）。
+func _do_exclude(i: int, j: int, crowd: Array) -> void:
+	_occupy(i, j, "exclude")
+	_apply_event(j, i, "exclude_stress")
+	_apply_event(j, i, "exclude_affinity")
+	for k in crowd:
+		if k != i:
+			_apply_event(j, k, "exclude_affinity")
+	_apply_event(i, j, "exclude_affinity")
+	for k in crowd:
+		if k != i:
+			_apply_event(k, j, "exclude_affinity")
+	_stats["excludes"] = int(_stats["excludes"]) + 1
+
+
+## 流言（§10.1）：i 传关于 j 的话；旁观者二手观测（带噪声）。
+func _do_rumor(i: int, j: int) -> void:
+	var negative := _h[i * _n + j] > _a[i * _n + j]
+	_apply_event(j, i, "rumor_hostility")
+	if negative:
+		_apply_event(i, j, "rumor_stress")
+		_apply_event(i, j, "tease_hostility")
+	for k in range(_n):
+		if k != i and k != j:
+			_observe(k, j, "hostility")
+	_stats["rumors"] = int(_stats["rumors"]) + 1
+
+
+## 追逐打闹（§10.18）：参与者互相好感↑、旁观者对参与者敌对↑（敌对种子）。
+func _do_roughhouse(i: int, j: int, bystanders: Array) -> void:
+	_occupy(i, j, "roughhouse")
+	_apply_event(i, j, "roughhouse_affinity")
+	_apply_event(j, i, "roughhouse_affinity")
+	for k in bystanders:
+		_apply_event(k, i, "roughhouse_hostility")
+		_apply_event(k, j, "roughhouse_hostility")
+	_stats["roughhouse"] = int(_stats["roughhouse"]) + 1
 
 
 # ------------------------------------------------------------------ 性格/规则辅助（D8 涓流依赖，D10 行为决策复用）
@@ -1021,6 +1520,42 @@ func stress(i: int) -> float:
 	if i < 0 or i >= _n:
 		return 0.0
 	return _stress[i]
+
+
+## 某人此刻在做什么（UI 用；空闲/学习 = 空串）。
+func activity_of(i: int) -> String:
+	if i < 0 or i >= _n or _current_act[i] == null:
+		return ""
+	return _current_act[i]
+
+
+## 观察层（只读）：当前「活动圈」—— 按「此刻在做同一件事」分组（§15.1，≥2 人才成圈）。
+func get_activity_circles() -> Dictionary:
+	var groups := {}
+	for i in range(_n):
+		var a = _current_act[i]
+		if a == null:
+			continue
+		if not groups.has(a):
+			groups[a] = []
+		groups[a].append(i)
+	var out := {}
+	for a in groups:
+		if groups[a].size() >= 2:
+			var v: Array = groups[a]
+			v.sort()
+			out[a] = v
+	return out
+
+
+## 观察层（只读）：viewer 眼中的小团体簇（§11.1，A≥60 强连接连通分量）。
+func get_clusters(viewer: int = -1) -> Array:
+	return _ObserverLayer.new(self).cluster_tags(viewer)
+
+
+## 观察层（只读）：viewer 眼中的「被孤立者」（§10.26.3）。
+func get_isolated(viewer: int = -1) -> Array:
+	return _ObserverLayer.new(self).isolated_tags(viewer)
 
 
 # ------------------------------------------------------------------ 内部工具
