@@ -100,26 +100,49 @@ func test_tau_never_nonpositive() -> void:
 	assert_true(core._tau(0) >= 0.01, "高 P 者 tau 也 ≥ 0.01")
 
 
-func test_join_score_reads_belief_not_truth() -> void:
+func test_join_score_reads_truth_not_belief() -> void:
 	var core := _core()
 	var n := _n(core)
-	# i=0, j=1；设 j 无外向、无压力，使 score 只受 B_A 与常数影响
+	# i=0, j=1；设 j 无外向、无压力，使 score 只受真值 A[j][i] 影响
 	var dims := core._dims
 	dims[1] = 50.0            # E_j=50 → (E−50)×0.3 = 0
 	core._dims = dims
 	var stress := core._stress
 	stress[1] = 0.0
 	core._stress = stress
-	core._b_a[0 * n + 1] = 90.0   # 信念 B_A[0][1]
-	var s1 := core._join_score(0, 1)
-	core._b_a[0 * n + 1] = 20.0   # 改信念 → score 应变
-	var s2 := core._join_score(0, 1)
-	assert_almost_eq(s1 - s2, 70.0, 1e-9, "join_score 读信念 B_A（改信念 → score 变）")
 	var a := core._a
-	a[1 * n + 0] = 90.0           # 改真值 A[j][i]=A[1][0] → score 不应变
+	a[1 * n + 0] = 90.0       # 真值 A[j][i]=A[1][0]
 	core._a = a
+	var s1 := core._join_score(0, 1)
+	a[1 * n + 0] = 20.0       # 改真值 → score 应变（判定读真值 §6.4）
+	core._a = a
+	var s2 := core._join_score(0, 1)
+	assert_almost_eq(s1 - s2, 70.0, 1e-9, "join_score 读真值 A[j][i]（改真值 → score 变）")
+	core._b_a[0 * n + 1] = 90.0   # 改信念 B_A → score 不应变
 	var s3 := core._join_score(0, 1)
-	assert_almost_eq(s3, s2, 1e-9, "改真值 A[j][i] 不影响 score（决策禁读 A[j][i]）")
+	assert_almost_eq(s3, s2, 1e-9, "改信念 B_A 不影响 score（判定不读信念）")
+
+
+func test_join_feedback_reads_belief_not_truth() -> void:
+	var core := _core()
+	var n := _n(core)
+	# i=0, j=1；设 j 无外向、无压力，使显示成功率只受信念 B_A 影响
+	var dims := core._dims
+	dims[1] = 50.0
+	core._dims = dims
+	var stress := core._stress
+	stress[1] = 0.0
+	core._stress = stress
+	core._b_a[0 * n + 1] = 90.0   # 信念高 → 显示成功率应高
+	var p1: float = core._join_feedback(0, 1)["p"]
+	core._b_a[0 * n + 1] = 10.0   # 改信念 → 显示成功率应变
+	var p2: float = core._join_feedback(0, 1)["p"]
+	assert_true(p1 > p2, "join_feedback 读信念 B_A（改信念 → 显示成功率变）")
+	var a := core._a
+	a[1 * n + 0] = 90.0           # 改真值 → 显示成功率不应变（展示不泄露真值 §10.32.3）
+	core._a = a
+	var p3: float = core._join_feedback(0, 1)["p"]
+	assert_almost_eq(p3, p2, 1e-9, "改真值 A[j][i] 不影响显示成功率")
 
 
 func test_softmax_returns_valid_index() -> void:
