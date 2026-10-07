@@ -16,10 +16,14 @@ tease_laugh,affinity,>=,55,玩笑档：好感下限
 tease_laugh,hostility,<,25,玩笑档：敌对上限
 tease_taunt,hostility,>=,40,嘲讽档：敌对下限
 tease_taunt,affinity,<,25,嘲讽档：低好感触发
-# 搭话是否被接纳：判据 = 信念 B_A（i 眼中对方对 i 的好感）+ 对方外向度修正，
-# θ（join_chat_affinity）是 p=0.5 的拐点而非闸门，须**高于** belief.csv 的 prior_a(=40)，
-# 否则先验恰好等于拐点 → 开局 p 约 0.5（关系只涨不跌的老毛病会回来）
-join_chat,affinity,>=,45,搭话被接纳的 sigmoid 拐点（含对方外向度修正后）
+# 搭话是否被接纳：判据 = **被请求者的真值好感 A[j][i]** + 对方外向度修正
+#   （判定读真值、展示读信念 —— §6.4 / §10.32.3。2026-10-07 由「信念 B_A」改为真值口径）
+# θ（join_chat_affinity）是 p=0.5 的拐点而非闸门。
+# ⚠️ 旧注释要求「θ 须高于 belief.csv 的 prior_a(=40)」—— 那是**信念口径**的约束
+#   （当时判定输入是 B_A，其期望恰为先验 40）。判定改读真值后输入是 A[j][i]，
+#   该约束已失效，故删除。
+# 43：60 局实测 爆发 21.9 / 好感均值 54.1 / SD 23.0 / 饱和 0%（2026-10-07 重标定）
+join_chat,affinity,>=,43,搭话被接纳的 sigmoid 拐点（含对方外向度修正后）
 join_chat,scale,>=,10,加入判定 sigmoid 坡度（score−θ 除以它；越大越缓）
 join_chat,stress_penalty,>=,12,对方压力对 score 的压制（压力是程度不是闸门）
 join_chat,gate_affinity,>=,30,决策侧软门槛：我对他好感低于此值仍有小概率发起

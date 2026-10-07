@@ -603,12 +603,19 @@ class Sim:
         return {a: sorted(v) for a, v in groups.items() if len(v) >= 2}
 
     def join_score(self, i, j):
-        """判定侧 score：信念 B_A + 对方外向度 − 对方压力惩罚（§6.4）。
+        """判定侧 score：**被请求者的真值好感 `A[j][i]`** + 对方外向度 − 对方压力惩罚（§6.4）。
+
+        判定读真值 —— 「他会不会接纳我」由**他的真实态度**决定，不由我的猜测决定；
+        我的猜测只进两处：决策侧（要不要去试）与展示层（成功率）。两者之差就是误判，
+        也正是本作「信息不对称」的来源（§9.4、§10.32.3）。
+
+        ⚠️ 这里读 `A[j][i]`（别人对我的态度）**不违反** §18.7 不变式 3 ——
+        该不变式禁止的是**决策路径**读它；本方法属**判定路径**，规格要求它读真值。
 
         压力是程度不是闸门：`hot ∈ [0,1]` 乘上 `join_chat_stress_penalty` 压低 score，
         而不是把 p 归零。
         """
-        base = self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
+        base = self.A[j][i] + (self.dims[j][0] - 50.0) * 0.3
         hot = max(0.0, self.Stress[j] - 50.0) / 50.0
         penalty = self.thresholds_lookup.get("join_chat_stress_penalty", 12.0)
         return base - penalty * hot
@@ -623,9 +630,19 @@ class Sim:
     def join_feedback(self, i, j):
         """只读：返回玩家侧会看到的成功率 `p`（§10.32）。
 
-        `p` 从信念 `B` 算（不泄露真值）；**实际掷骰在 `do_join_chat` 里做**。
+        ⚠️ 这里**必须用信念 `B_A`**（我猜对方对我多有好感），**不得用真值** ——
+        否则等于把对方心里的真实态度直接告诉玩家（§10.32.3「不泄露隐藏信息」）。
+
+        于是**显示值与实际结算值（`join_probability`，读真值）刻意不同**：
+        「我明明有 80% 把握却被拒」正是认知偏差的具象化，不是 bug（§10.32.4）。
         """
-        return {"p": round(self.join_probability(i, j), 2)}
+        th = self.thresholds_lookup
+        hot = max(0.0, self.Stress[j] - 50.0) / 50.0
+        score = (self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
+                 - th.get("join_chat_stress_penalty", 12.0) * hot)
+        theta = th.get("join_chat_affinity", 45.0)
+        scale = th.get("join_chat_scale", 10.0)
+        return {"p": round(sigmoid((score - theta) / scale), 2)}
 
     # ---------- 玩家侧判定展示（NPC 静默，玩家可见过程）----------
     def verdict(self, i, j, kind="join_chat"):
@@ -643,7 +660,7 @@ class Sim:
                 "kind": kind,
                 "p": fb["p"],                    # ① 成功率（信念算得，不泄露真值）
                 "roll": roll,                    # ② 掷骰
-                "ok": roll < fb["p"],            # ③ 结果（与 do_join_chat 同一 p，无硬闸门）
+                "ok": roll < self.join_probability(i, j),   # ③ 结果（与 do_join_chat 同一 p：读真值）
                 "note": "成功率来自「你以为对方怎么看你」，不是事实 —— 把握大也可能被拒。",
             }
         return None
