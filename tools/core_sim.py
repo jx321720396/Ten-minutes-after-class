@@ -161,7 +161,9 @@ class Sim:
                       "interrupts": 0,
                       "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0,
                       "teases": 0, "tease_fail": 0, "rumors": 0, "excludes": 0,
-                      "roughhouse": 0, "sleeps": 0}
+                      "roughhouse": 0, "sleeps": 0,
+                      "comforts": 0, "helps": 0, "help_rejects": 0,
+                      "apologizes": 0, "apologize_rejects": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
         self.settled = set()
         self.phase_index = 0
@@ -334,7 +336,7 @@ class Sim:
         return u / (1.0 + abs(u) / U)
 
     # ------------------------------------------------ 事件写入
-    def apply_event(self, i, j, event_id, scale=1.0):
+    def apply_event(self, i, j, event_id, scale=1.0, no_modulation=False):
         """按统一影响公式写入：E × 性格 × 关系调制 → 软饱和 → round(0.1) → clamp
 
         含事件去重：同一对子同一规则每课间段只结算一次（§2.5.4）
@@ -342,7 +344,13 @@ class Sim:
         `scale`：**外部幅度系数**（默认 1.0）—— 让「同一事件」随情境强弱缩放，
         例如音量越吵、怕吵者的敌对越重。它与 `base` 相乘、仍走同一套公式，
         不是旁路写入（保持 §2.6 的单一写入点）。
+
+        `no_modulation`：跳过**关系调制** `M(i,j)`（与 `tier=major` 同口径，§7.1 边界②）。
+        用于**修复类行为**：道歉的发起门槛保证 `H ≥ 30` → `M` 常为负 → 常规档会把
+        「敌对回落」乘以负的 `M` **翻成敌对上升**、「好感回升」翻成好感下降 ——
+        即「越道歉越糟」。修复行为与 `M` 的冲突是结构性的，故整条行为不走调制。
         """
+
         dkey = (i, j, event_id, self.day, self.phase_index)
         if dkey in self.settled:
             self.stats["dedup_skips"] += 1
@@ -360,7 +368,7 @@ class Sim:
                 # 边界②：重大档不做关系调制（M_eff = 1）
                 #   否则「关系好 → 举报反而是好事」会塌掉欺凌线与信任崩塌线；
                 #   也不是 max(0, M)（那样关系差时伤害归零，等于「被讨厌就不会被伤害」）
-                if row.get("tier", "normal") != "major":
+                if row.get("tier", "normal") != "major" and not no_modulation:
                     e_val *= self.m_relation(i, j)
             p_val = e_val + (0.0 if axis == "stress" else 0.0)  # 事件侧不含传导
             m = self.m_state(i, negative=(base < 0) == (axis in AXES))
@@ -846,6 +854,64 @@ class Sim:
                     busy.add(i)
                     busy.add(j)
                     continue
+            # ---------- 意向类：三条「主动接近他人」的行为（§10.10 / §10.11 / §10.13）----------
+            # 三者都必须排在下面**无门槛的搭话回退块之前**，否则会被它永远抢先。
+            # 门槛一律读「我自己的立场」（A[i][j] / H[i][j] / Stress[j]）与信念 B，
+            # **不读 A[j][i] / H[j][i]**（§18.7 不变式 3：决策路径不得读「别人对我的态度」）。
+            thk = self.thresholds_lookup
+            e_i = self.dims[i][0]
+            # 意向类：安慰（§10.13，A 类）—— 有人正处在高压区，而我和他关系够近
+            if self.allowed("comfort") and self.rng.random() < self.probs.get("comfort_p", 0.0):
+                # 好感门槛：E ≥ 50 用默认值，E < 50 向内向端线性抬高
+                # （§10.13「一般 50 / 内向 70」→ E=50 恰为 50、E=0 恰为 70；连续、不跳变）
+                base_cf = thk.get("comfort_trigger_affinity", 50.0)
+                intro_cf = thk.get("comfort_trigger_introvert_affinity", 70.0)
+                need_cf = base_cf + (intro_cf - base_cf) * max(0.0, (50.0 - e_i) / 50.0)
+                cands_cf = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j]
+                            and self.Stress[j] >= thk.get("comfort_trigger_target_stress", 70.0)
+                            and self.A[i][j] >= need_cf]
+                if cands_cf:
+                    # 谁越崩溃越该被关心（目标是**可见的**情绪状态，不是「他对我的态度」）
+                    w_cf = [max(1.0, self.Stress[j]) for j in cands_cf]
+                    j = self.rng.choices(cands_cf, weights=w_cf, k=1)[0]
+                    self.do_comfort(i, j)
+                    busy.add(i)
+                    busy.add(j)
+                    continue
+            # 意向类：求助（§10.10，C 类）—— 我对目标好感够高才敢开口（内向更高、外向更低）
+            if self.allowed("ask_help") and self.rng.random() < self.probs.get("ask_help_p", 0.0):
+                # 三段锚点：E=50 → 30、E=0 → 50、E=100 → 20（§10.10「≥30；内向 ≥50；外向 ≥20」）
+                base_h = thk.get("ask_help_affinity", 30.0)
+                intro_h = thk.get("ask_help_introvert_affinity", 50.0)
+                extro_h = thk.get("ask_help_extrovert_affinity", 20.0)
+                need_h = (base_h + (intro_h - base_h) * (50.0 - e_i) / 50.0 if e_i < 50.0
+                          else base_h + (extro_h - base_h) * (e_i - 50.0) / 50.0)
+                cands_h = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j]
+                           and self.A[i][j] >= need_h]
+                if cands_h:
+                    # 目标选择读**信念**：我以为他越可能帮我，越先去求他（§18.6 意向评分「对方的反应预期」）
+                    w_h = [max(1.0, self.B["affinity"][i][j] - self.B["hostility"][i][j]) for j in cands_h]
+                    j = self.rng.choices(cands_h, weights=w_h, k=1)[0]
+                    self.do_ask_help(i, j)
+                    busy.add(i)
+                    busy.add(j)
+                    continue
+            # 意向类：道歉 / 和解（§10.11，E 类）—— 僵局够深才有「和解」这件事
+            if self.allowed("apologize") and self.rng.random() < self.probs.get("apologize_p", 0.0):
+                th_ap = thk.get("apologize_trigger_hostility", 30.0)
+                # 决策侧只看**我自己的立场**（我对他敌对到什么程度才谈得上「和解」）——
+                # §10.11 的「双方」由**判定侧**承接：接受概率里含 `H[j][i]`（他的气有多大）。
+                # ⚠️ 不在这里读 `H[j][i]`：决策路径禁读「别人对我的态度」（§18.7 不变式 3）。
+                cands_ap = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j]
+                            and self.H[i][j] >= th_ap]
+                if cands_ap:
+                    # 我越恨、也越以为他恨我 → 越有动力去破这个僵局
+                    w_ap = [max(1.0, self.H[i][j] + self.B["hostility"][i][j]) for j in cands_ap]
+                    j = self.rng.choices(cands_ap, weights=w_ap, k=1)[0]
+                    self.do_apologize(i, j)
+                    busy.add(i)
+                    busy.add(j)
+                    continue
             # 意向类：搭话
             cands = [j for j in range(n) if j != i and not self.sleeping[j] and j not in busy]
             if cands:
@@ -1065,6 +1131,110 @@ class Sim:
             self.apply_event(k, i, "roughhouse_hostility")
             self.apply_event(k, j, "roughhouse_hostility")
         self.stats["roughhouse"] += 1
+
+    # ---------- 意向类：三条「主动接近他人」的行为（§10.10 / §10.11 / §10.13）----------
+    # 三者同守 §6.4 两段式：**决策侧读信念、判定侧读真值**。
+    # 它们的共同点：**发起者要付出压力成本**（主动接近别人是有代价的）——
+    # 于是「谁被照顾、谁被求、谁被原谅」都不白给，代价由发起者承担。
+
+    def do_comfort(self, i, j):
+        """安慰（§10.13，A 类）：**i 主动去关心正处在高压区的 j**。
+
+        触发（决策侧）：目标 `Stress[j] ≥ 70` 且我对他的好感跨过门槛（内向门槛更高）。
+        效果（major 档，效果行见 `w_events.csv` 的 `comfort_target_*`）：
+
+        · 目标压力 ↓、**对安慰者**好感 ↑ / 信任 ↑（`apply_event(j, i, ...)` 的方向语义：
+          被安慰者才是数值变化的一方）
+        · 发起者付出 `comfort_cost_stress`（+2 压力，不论结果）
+
+        它是**深度关系的主要建立方式**：门槛苛刻（须已有好感 + 对方正崩溃），但回报是全表
+        最重的正向档 —— 关系的跃升发生在「救援时刻」，而不是日常寒暄里。
+
+        ⚠️ 本轮未实现：目标 `Stress ≥ 90` 时的共情判定与效果 ×1.5（§10.13 第 4 条）。
+        """
+        self.occupy(i, j, "comfort")
+        self.apply_event(i, j, "comfort_cost_stress")      # 发起者成本（不论结果）
+        self.apply_event(j, i, "comfort_target_stress")    # 目标：压力 ↓
+        self.apply_event(j, i, "comfort_target_affinity")  # 目标 → 安慰者：好感 ↑
+        self.apply_event(j, i, "comfort_target_trust")     # 目标 → 安慰者：信任 ↑
+        self.stats["comforts"] += 1
+
+    def do_ask_help(self, i, j):
+        """求助（§10.10，C 类）：**i 开口求 j 帮忙**。
+
+        判定读**真值**：`p = σ((A[j][i] + 对方外向度加成 − θ) / scale)` ——
+        「他会不会帮我」由**他的真实态度**决定，不由我的猜测决定（§6.4）；
+        我的猜测只进决策侧的目标选择（我以为他越可能帮，越先去求他）。
+
+        效果（§10.10）：
+        · 成功 → 求助者 好感↑ / 压力↓；帮忙者 对求助者 好感↑ / 信任↑
+        · 被拒 → 求助者 压力↑ / 敌对↑ / 信任↓
+        发起成本（+2 压力）**不论成败都付** —— 「开口求人」本身就有代价。
+
+        ⚠️ 本轮未实现：「被亏欠」状态（3 天内成功率 +25%）与「被拒压力 ×1.5 / 好斗敌对 ×2」
+        —— 前者需要 `status_tags` 支持「条件修正」语义（现表是「每天施加固定效果」），
+        后者超出 `M_personality` 的 `[0.1,1.2]` 钳位，需另开通道。
+        """
+        thk = self.thresholds_lookup
+        self.occupy(i, j, "ask_help")
+        self.apply_event(i, j, "ask_help_cost_stress")
+        score = self.A[j][i] + self.dims[j][0] / 100.0 * thk.get("ask_help_extrovert_bonus", 10.0)
+        p = sigmoid((score - thk.get("ask_help_accept_theta", 40.0))
+                    / thk.get("ask_help_accept_scale", 12.0))
+        if self.rng.random() < p:
+            self.apply_event(i, j, "ask_help_ok_asker_affinity")
+            self.apply_event(i, j, "ask_help_ok_asker_stress")
+            self.apply_event(j, i, "ask_help_ok_helper_affinity")
+            self.apply_event(j, i, "ask_help_ok_helper_trust")
+            self.stats["helps"] += 1
+        else:
+            self.apply_event(i, j, "ask_help_no_stress")
+            self.apply_event(i, j, "ask_help_no_hostility")
+            self.apply_event(i, j, "ask_help_no_trust")
+            self.stats["help_rejects"] += 1
+
+    def do_apologize(self, i, j):
+        """道歉 / 和解（§10.11，E 类）：**i 主动向 j 低头**。双方敌对 ≥30 才谈得上和解。
+
+        判定读**真值**：`p = σ((A[j][i] + 对方随和系数(F_j) − H[j][i]×惩罚) / scale)` ——
+        三个输入**全部是「j 对 i 的立场」**：他对我好感越高、性格越随和、对我的气越少，
+        越可能接受。发起方的态度不参与判定（低头的人没资格决定对方原不原谅）。
+
+        效果（§10.11）：
+
+        · 接受 → **表层**敌对回落、双向好感/信任回升、双方减压
+        · 被拒 → 敌对继续累积、发起者压力↑（major）、信任↓
+        发起成本（+3 压力）不论结果都付。
+
+        ⚠️ **只消表层敌对**：`H_deep`（心结）不因道歉而消 —— 与 §10.22「心结永不衰减」自洽
+        （「道歉能消当下的气，但忘不掉的还是忘不掉」）。同一行为的敌对变化也不写 `hurt_day`
+        （那是**施害者**视角的重伤记录，道歉是和解不是伤害）。
+
+        ⚠️ 效果行一律 `no_modulation=True`：见 `apply_event` 的说明 —— 和解与关系调制
+        `M` 的冲突是结构性的（门槛 H ≥ 30 保证 M 常为负，否则会「越道歉越糟」）。
+
+        ⚠️ 本轮未实现：发起时的「透明度临时 +10」（现有实现没有临时透明度机制）。
+        """
+        thk = self.thresholds_lookup
+        self.occupy(i, j, "apologize")
+        self.apply_event(i, j, "apologize_cost_stress")
+        score = (self.A[j][i]
+                 + self.dims[j][2] / 100.0 * thk.get("apologize_calm_bonus", 20.0)
+                 - self.H[j][i] * thk.get("apologize_hostility_penalty", 0.5))
+        p = sigmoid((score - thk.get("apologize_accept_theta", 40.0))
+                    / thk.get("apologize_accept_scale", 12.0))
+        if self.rng.random() < p:
+            for a, b in ((i, j), (j, i)):          # 双向：和解是双方的事
+                self.apply_event(a, b, "apologize_ok_hostility", no_modulation=True)
+                self.apply_event(a, b, "apologize_ok_affinity", no_modulation=True)
+                self.apply_event(a, b, "apologize_ok_trust", no_modulation=True)
+                self.apply_event(a, b, "apologize_ok_stress", no_modulation=True)
+            self.stats["apologizes"] += 1
+        else:
+            self.apply_event(i, j, "apologize_no_hostility", no_modulation=True)
+            self.apply_event(i, j, "apologize_no_stress", no_modulation=True)
+            self.apply_event(i, j, "apologize_no_trust", no_modulation=True)
+            self.stats["apologize_rejects"] += 1
 
     def update_environment(self):
         """环境层：由「当前大家在做什么」推出目标音量，再平滑趋近。
