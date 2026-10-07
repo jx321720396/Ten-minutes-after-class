@@ -1,0 +1,16 @@
+# 移动参数表(空间层 · 行走速度与避障口径)
+# 依据:主文档 §10.4(走动耗时)、策划 2026-10-07 裁决第 6b 项
+#      (移动 tick = ceil(路径长度 / 每 tick 移动距离);速度放配置;放弃固定 15 tick)
+#
+# 单位统一: **米**。世界坐标只写在场景里(seats.csv / stand_points.csv 的约定),
+# 本表只登记速度与几何容差,不重复坐标。
+# 时间口径:1 个课间 tick = 1 真实秒(time_presentation.csv),
+#          因此 meters_per_tick 同时就是"米 / 秒"。
+#
+# 列: param | value | unit | note
+param,value,unit,note
+meters_per_tick,0.13,m/tick,每 tick 移动距离;0.13 ≈ 1.95 米 / 15 tick,与旧“固定 15 tick 走完一段”的观感一致
+player_radius,0.24,m,玩家碰撞半径;避障时把桌椅矩形外扩这个距离(人物中心不得进入)
+walk_epsilon,0.02,m,到位判定容差
+nav_grid_size,0.25,m,寻路网格边长（A* 用）；越小越精细也越慢
+stand_snap_radius,1.0,m,点地面时的站立点吸附半径；此半径内有合法且空闲的站立点就吸附过去

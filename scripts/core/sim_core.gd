@@ -18,6 +18,8 @@ extends RefCounted
 
 const DIMS := ["e", "n", "f", "p"]
 const AXES := ["affinity", "hostility", "trust"]
+## 玩家可通过 player_action 发起的行为（与 data/rules/behaviors.csv 的行名一致）
+const PLAYER_KINDS := ["chat", "join_chat", "tease", "rumor", "report", "roughhouse", "exclude"]
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
 const OBSERVER_LAYER = preload("res://scripts/systems/observer/observer_layer.gd")
@@ -85,6 +87,13 @@ var _in_conversation: Array = []
 var _next_action: Array = []
 var _busy_until: Array = []
 var _busy_phase: Array = []
+## 占用中的行为名（含 quiet 一方：_current_act 会清成 null，「被动参与」也要记得住）
+var _busy_act: Array = []
+## 本 tick **刚完成**的行为（到期收尾时写入），给「行为完成才发信息」做挂点（如玩家闲聊线索）
+var _last_finished: Array = []
+## 空间层：节点在教室里的真实平面位置（米，世界坐标；由表现层 / 内核空间层写入）
+var _pos_x: Array = []
+var _pos_z: Array = []
 var _knot_days: Array = []
 var _vol_log: Array = []
 var _day_events: Dictionary = {}
@@ -113,10 +122,11 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 		if str(row["kind"]) != "settle":
 			_active_phases.append(row)
 
-	# 抽角色（§11.5 正式版：绑定组 + 极性覆盖，不消费随机数）
-	_chars = RosterSelector.new().select(
-		_rows(tables, "characters/seeds"), _bindings, npc_count, float(_kp["mbti_neutral"])
-	)
+	# 抽角色（简化：随机取 npc_count 个；对齐 main 的 core_sim.py，消费随机数）
+	# ⚠️ 必须 .duplicate()：_rows 返回共享缓存引用，shuffle 原地改写会污染跨实例共享的 tables。
+	var pool: Array = _rows(tables, "characters/seeds").duplicate()
+	_rng.shuffle(pool)
+	_chars = pool.slice(0, npc_count)
 
 	_alloc(n)
 
@@ -244,6 +254,11 @@ func _reset_runtime(n: int) -> void:
 		"join_accepts": 0,
 		"join_rejects": 0,
 		"humiliations": 0,
+		"comforts": 0,
+		"helps": 0,
+		"help_rejects": 0,
+		"apologizes": 0,
+		"apologize_rejects": 0,
 	}
 	_next_action = []
 	_busy_until = []
@@ -257,8 +272,15 @@ func _reset_runtime(n: int) -> void:
 	_witness_day = []
 	for _i in range(n):
 		_next_action.append(0)
+		# --- 空间层：节点在教室里的真实平面位置（米，世界坐标；由表现层 / 内核空间层写入）---
+		# 依据：主文档 §10.5 / §15.1；策划 2026-10-07 裁决第 4 项「加临时位置与交互范围」。
+		# ⚠️ 本层**只记录**：内核不自己算移动，也不因位置改变任何矩阵 —— 位置只用于范围判定与展示。
+		_pos_x.append(0.0)
+		_pos_z.append(0.0)
 		_busy_until.append(0)
 		_busy_phase.append(-1)
+		_busy_act.append(null)
+		_last_finished.append(null)
 		_current_act.append(null)
 		_sleeping.append(false)
 		_in_conversation.append(false)
@@ -407,47 +429,104 @@ func _begin_phase() -> void:
 	_phase_setup_done = true
 
 
-## 推进一个 tick（D11 单步粒度）。段未开始则先跑段首结算；段跑完自动跨段/跨天。
+## 推进一个 tick（D11 单步粒度）。段未开始则先跑段首结算。
+## 跨段/跨天的游标推进推迟到「下一 tick 开始前」（见 _transition_if_needed），
+## 使段末/日末采样到的 snapshot 仍属上一段/上一天 —— 与 Python tick() 的观测一致。
 func advance_tick() -> int:
+	_transition_if_needed()
 	if not _phase_setup_done:
-		if _phase_index >= _active_phases.size():
-			_phase_index = 0
 		_begin_phase()
 	_tick()
 	_tick_in_phase += 1
 	var row: Dictionary = _active_phases[_phase_index]
 	if _tick_in_phase >= int(str(row["tick_count"])):
-		_vol_log.append(snapped(_volume, 0.1))
-		_phase_index += 1
-		_phase_setup_done = false
-		if _phase_index >= _active_phases.size():
-			_settle_day()
+		_vol_log.append(_r1(_volume))
 	return _global_tick
+
+
+## 上一段跑完后，把游标推进到下一段；跨天则先 _settle_day 再回到段 0。
+func _transition_if_needed() -> void:
+	if not _phase_setup_done:
+		return
+	var row: Dictionary = _active_phases[_phase_index]
+	if _tick_in_phase < int(str(row["tick_count"])):
+		return
+	_phase_index += 1
+	_phase_setup_done = false
+	if _phase_index >= _active_phases.size():
+		_phase_index = 0
+		_settle_day()
 
 
 ## 推进一个段（从当前位置跑到当前段末尾），返回本段跑的 tick 数。
 func advance_phase() -> int:
+	_transition_if_needed()
 	if _phase_index >= _active_phases.size():
 		return 0
-	var ran := 0
 	if not _phase_setup_done:
 		_begin_phase()
+	var ran := 0
 	var target := int(str(_active_phases[_phase_index]["tick_count"]))
 	while _tick_in_phase < target:
 		advance_tick()
 		ran += 1
+	# 段跑完 → 显式推进到下一段（D11 语义：advance_phase 返回后 phase_index 指向下一段）
+	_transition_if_needed()
 	return ran
 
 
 ## 推进一天（从当前位置跑到当天结束并跨天结算），返回当天跑的 tick 数。
 func advance_day() -> int:
 	var total := 0
+	_transition_if_needed()
 	if _phase_index >= _active_phases.size():
 		_phase_index = 0
 		_phase_setup_done = false
-	while _phase_index < _active_phases.size():
+	var phases_left := _active_phases.size() - _phase_index
+	for _i in range(phases_left):
 		total += advance_phase()
 	return total
+
+
+## 时间快照（只读）：表现层据此显示与判定，不得自行推算相位 / tick。
+## 字段固定（时间组件计划 §4）：day / phase_id / kind / phase_index / tick_in_phase /
+## tick_count / global_tick / player_control。`kind` 只区分课间与上课，
+## 上午 / 下午必须看 `phase_id`。
+func time_snapshot() -> Dictionary:
+	var row: Dictionary = _active_phases[_phase_index]
+	return {
+		"day": _day,
+		"phase_id": str(row["phase_id"]),
+		"kind": str(row["kind"]),
+		"phase_index": _phase_index,
+		"tick_in_phase": _tick_in_phase,
+		"tick_count": int(str(row["tick_count"])),
+		"global_tick": _global_tick,
+		"player_control": int(str(row.get("player_control", "0"))) == 1,
+	}
+
+
+## 显式完成当前阶段的时间边界（时间组件计划 §4）：只在当前段 tick 已耗尽时有效，
+## 完成与 _transition_if_needed() 相同的边界动作（含跨天结算），**不推进任何 tick**。
+## 返回 {changed, ended_day, day_settled, snapshot}；tick 未耗尽时 changed = false，
+## 重复调用不重复结算、不重复发事件。
+func finish_time_boundary() -> Dictionary:
+	var day_before := _day
+	var index_before := _phase_index
+	_transition_if_needed()
+	if _phase_index != index_before or _day != day_before:
+		# 边界完成后新相位还没跑过 tick：显式归零。
+		# 否则快照会出现「phase_id 已是下一段、tick_in_phase 却还是上一段的满值」这种
+		# 自相矛盾的状态，实时驱动会据此误判「剩余 0 秒」并立刻重复触发边界、跳掉一整段。
+		# 段首一次性结算（_begin_phase）仍留给下一次 advance_tick —— 本方法不跑玩法结算。
+		_tick_in_phase = 0
+	var day_settled := _day != day_before
+	return {
+		"changed": _phase_index != index_before or day_settled,
+		"ended_day": day_before if day_settled else 0,
+		"day_settled": day_settled,
+		"snapshot": time_snapshot(),
+	}
 
 
 ## 跑完一天（三段课间 + 两段上课），返回总 tick 数。等价 advance_day()。
@@ -455,8 +534,28 @@ func run_day() -> int:
 	return advance_day()
 
 
+## 行为完成结算：把**已到期**的占用收尾（§10.4 / §12.2 行为耗时契约）。
+## 占用到期即「这件事做完了」：清 _current_act、清 _busy_phase，并把行为名写进
+## _last_finished（仅本 tick 有效）。**「行为完成才发信息」的规则必须挂在这里**
+## （例如玩家的闲聊线索），不能挂在「发起」上 —— 发起不等于做完。
+## ⚠️ 与「被铃声打断」严格互斥：到期的不算被打断；未到期的才可能被 _check_interrupt()
+## 在相位切换时处理。两边都不重复记。
+func _settle_finished_actions() -> void:
+	_last_finished = []
+	for i in range(_n):
+		_last_finished.append(null)
+	for i in range(_n):
+		if _busy_phase[i] < 0 or _busy_until[i] > _global_tick:
+			continue
+		_last_finished[i] = _busy_act[i]
+		_current_act[i] = null
+		_busy_act[i] = null
+		_busy_phase[i] = -1
+
+
 func _tick() -> void:
 	_global_tick += 1
+	_settle_finished_actions()
 	_decide_and_act()
 	_update_environment()
 	if _global_tick % int(_p["settle_interval"]) == 0:
@@ -490,7 +589,7 @@ func _try_burst() -> void:
 			continue
 		_stress[i] = _clamp100(s - 40.0)
 		if not tag.is_empty():
-			_knot_days[i] = maxi(_knot_days[i], roundi(float(tag["days"]) * (1.0 + severity)))
+			_knot_days[i] = maxi(_knot_days[i], _rint(float(tag["days"]) * (1.0 + severity)))
 			_emit("tag_changed", {"id": i, "tag": "heart_knot"})
 		_spread_knot(i, severity)
 		_stats["bursts"] = int(_stats["bursts"]) + 1
@@ -524,8 +623,8 @@ func _spread_knot(i: int, severity: float) -> void:
 	)
 	var pool_size := maxi(1, int(float(others.size()) * ratio))
 	var pool: Array = others.slice(0, pool_size)
-	var kmax_eff := roundi(float(kmax) * (1.0 + severity))
-	var days_eff := roundi(float(tag["days"]) * (1.0 + severity))
+	var kmax_eff := _rint(float(kmax) * (1.0 + severity))
+	var days_eff := _rint(float(tag["days"]) * (1.0 + severity))
 	for j in _rng.sample(pool, mini(kmax_eff, pool.size())):
 		_knot_days[j] = maxi(_knot_days[j], days_eff)
 		_emit("tag_changed", {"id": j, "tag": "heart_knot"})
@@ -580,9 +679,59 @@ func _settle_day() -> void:
 
 
 # -------------------------------------------------- 统一影响公式（UIF，docs/design/统一影响公式.md）
-## 四舍五入到 0.1（Python round(x,1)；结构常量 0.1 已白名单）。
+## 精确复刻 Python 3.13+ round(v, ndigits)：round-half-even 的正确舍入。
+## 单纯 snapped()（half-away）或 roundi() 会在值恰好落在二进制可精确表示的 .x5 中点
+## （如 1.25/1.75）时差 0.1，导致 16 人场景 tick 11 起 A 矩阵分叉。这里用 Dekker TwoProduct
+## 求 v*scale 的精确误差，区分「恰在中点（tie→half-even）」与「浮点略偏（round-to-nearest）」。
 func _r1(v: float) -> float:
-	return snapped(v, 0.1)
+	return _round_scaled(v, 10.0)
+
+
+func _r2(v: float) -> float:
+	return _round_scaled(v, 100.0)
+
+
+## round-half-even 到整数（对齐 Python int(round(v))）；无缩放，故 frac==0.5 即精确中点。
+func _rint(v: float) -> int:
+	var flr: float = floor(v)
+	var frac: float = v - flr
+	if frac > 0.5:
+		return int(flr + 1.0)
+	if frac < 0.5:
+		return int(flr)
+	if fmod(flr, 2.0) == 0.0:
+		return int(flr)
+	return int(flr + 1.0)
+
+
+func _round_scaled(v: float, scale: float) -> float:
+	var y: float = v * scale
+	var flr: float = floor(y)
+	var frac: float = y - flr
+	if frac > 0.5:
+		return (flr + 1.0) / scale
+	if frac < 0.5:
+		return flr / scale
+	var err: float = _mul_err(v, scale, y)
+	if err > 0.0:
+		return (flr + 1.0) / scale
+	if err < 0.0:
+		return flr / scale
+	if fmod(flr, 2.0) == 0.0:
+		return flr / scale
+	return (flr + 1.0) / scale
+
+
+## v*b 的精确浮点误差（v*b == p + err 精确成立）。Dekker 拆半（2^27+1，双精度适用）。
+func _mul_err(v: float, b: float, p: float) -> float:
+	var c := 134217729.0  # 2^27 + 1
+	var tv := c * v
+	var v_hi := tv - (tv - v)
+	var v_lo := v - v_hi
+	var tb := c * b
+	var b_hi := tb - (tb - b)
+	var b_lo := b - b_hi
+	return ((v_hi * b_hi - p) + v_hi * b_lo + v_lo * b_hi) + v_lo * b_lo
 
 
 ## 性格倍率：M_personality = clamp(1 + Σ w_k·d_k, 0.1, 1.2)。
@@ -639,7 +788,9 @@ func _sat(u: float, axis: String) -> float:
 
 
 ## 统一影响公式落表：Δ = M_state · sat(P)；P = base·scale·M_personality(·M_relation)。
-func _apply_event(i: int, j: int, event_id: String, scale: float = 1.0) -> bool:
+func _apply_event(
+	i: int, j: int, event_id: String, scale: float = 1.0, no_modulation: bool = false
+) -> bool:
 	var dkey := "%d|%d|%s|%d|%d" % [i, j, event_id, _day, _phase_index]
 	if _settled.has(dkey):
 		_stats["dedup_skips"] = int(_stats["dedup_skips"]) + 1
@@ -655,7 +806,7 @@ func _apply_event(i: int, j: int, event_id: String, scale: float = 1.0) -> bool:
 		var base := float(str(row["base"]))
 		var e_val := base * scale * _mult_personality(row, i)
 		var is_axis := axis == "affinity" or axis == "hostility" or axis == "trust"
-		if is_axis and str(row.get("tier", "normal")) != "major":
+		if is_axis and str(row.get("tier", "normal")) != "major" and not no_modulation:
 			e_val *= _m_relation(i, j)
 		var p_val := e_val
 		var negative := (base < 0.0) == is_axis
@@ -943,7 +1094,15 @@ func _settle_sleep() -> void:
 func _check_interrupt() -> void:
 	var cost := float(_probs.get("interrupted_stress", 0.0))
 	for i in range(_n):
-		if _busy_phase[i] >= 0 and _busy_phase[i] != _phase_index:
+		if _busy_phase[i] < 0:
+			continue
+		# 只有**尚未完成**的行为才算被打断（内核策划符合性审查 P1-04）：
+		# busy_until <= global_tick 说明它早就做完了，此时只清理占用记录、不施加压力代价。
+		# 修复前只要有 busy_phase 记录且跨了相位就加压力，把「已完成」误判成「被铃声打断」。
+		if _busy_until[i] <= _global_tick:
+			_busy_phase[i] = -1
+			continue
+		if _busy_phase[i] != _phase_index:
 			_busy_until[i] = 0
 			_busy_phase[i] = -1
 			if cost > 0.0:
@@ -1104,7 +1263,7 @@ func _join_feedback(i: int, j: int) -> Dictionary:
 	)
 	var theta := float(_thresholds_lookup["join_chat_affinity"])
 	var scale := float(_thresholds_lookup["join_chat_scale"])
-	return {"p": snapped(_sigmoid((score - theta) / scale), 0.01)}
+	return {"p": _r2(_sigmoid((score - theta) / scale))}
 
 
 ## 一次判定的展示包（只读，不参与结算；实际掷骰在 _do_join_chat 里做，D11 玩家侧用）。
@@ -1215,7 +1374,13 @@ func _decide_and_act() -> void:
 	var busy: Array = []
 	for _k in range(n):
 		busy.append(false)
-	for i in range(n):
+	# 玩家（末位节点，§4.1）由人的主动选择驱动，**不参与 NPC 自主决策**（§12.1）；
+	# 但它仍是被交互对象 —— 下方候选集合与 _pick_target 都不排除末位。
+	var order: Array = []
+	for _k in range(n - 1):
+		order.append(_k)
+	_rng.shuffle(order)
+	for i in order:
 		if _sleeping[i] or busy[i] or _global_tick < _busy_until[i]:
 			continue
 		_in_conversation[i] = false
@@ -1235,7 +1400,7 @@ func _decide_and_act() -> void:
 			if (
 				j != i
 				and not busy[j]
-				and not _sleeping[j]
+				and _can_interact_with(j)
 				and _are_neighbors(i, j)
 				and (_a[i * n + j] >= 40.0 or _b_h[i * n + j] >= 25.0 or _a[i * n + j] < 25.0)
 			):
@@ -1274,7 +1439,7 @@ func _decide_and_act() -> void:
 		):
 			var others: Array = []
 			for j in range(n):
-				if j != i and not busy[j] and not _sleeping[j]:
+				if j != i and not busy[j] and _can_interact_with(j):
 					others.append(j)
 			if not others.is_empty():
 				var w_rh: Array = []
@@ -1329,7 +1494,7 @@ func _decide_and_act() -> void:
 		if _allowed("rumor") and _rng.random() < float(_probs["rumor_p"]):
 			var c2: Array = []
 			for j in range(n):
-				if j != i and not busy[j] and not _sleeping[j]:
+				if j != i and not busy[j] and _can_interact_with(j):
 					c2.append(j)
 			if not c2.is_empty():
 				var w2: Array = []
@@ -1340,10 +1505,78 @@ func _decide_and_act() -> void:
 				busy[i] = true
 				busy[tgt] = true
 				continue
+		# ---------- 意向类：三条「主动接近他人」的行为（§10.10 / §10.11 / §10.13）----------
+		# 三者都必须排在下面无门槛的搭话回退块之前，否则会被它永远抢先。
+		# 门槛一律读「我自己的立场」（A[i][j] / H[i][j] / Stress[j]）与信念 B，
+		# 不读 A[j][i] / H[j][i]（§18.7 不变式 3：决策路径不得读「别人对我的态度」）。
+		var e_i := _dims[i]
+		# 意向类：安慰（§10.13，A 类）—— 有人正处在高压区，而我和他关系够近
+		if _allowed("comfort") and _rng.random() < float(_probs["comfort_p"]):
+			var base_cf := float(_thresholds_lookup["comfort_trigger_affinity"])
+			var intro_cf := float(_thresholds_lookup["comfort_trigger_introvert_affinity"])
+			var need_cf := base_cf + (intro_cf - base_cf) * maxf(0.0, (50.0 - e_i) / 50.0)
+			var cands_cf: Array = []
+			for j in range(n):
+				if (
+					j != i
+					and not busy[j]
+					and _can_interact_with(j)
+					and _stress[j] >= float(_thresholds_lookup["comfort_trigger_target_stress"])
+					and _a[i * n + j] >= need_cf
+				):
+					cands_cf.append(j)
+			if not cands_cf.is_empty():
+				var w_cf: Array = []
+				for c in cands_cf:
+					w_cf.append(maxf(1.0, _stress[c]))
+				var j := int(_rng.choices(cands_cf, w_cf, 1)[0])
+				_do_comfort(i, j)
+				busy[i] = true
+				busy[j] = true
+				continue
+		# 意向类：求助（§10.10，C 类）—— 我对目标好感够高才敢开口
+		if _allowed("ask_help") and _rng.random() < float(_probs["ask_help_p"]):
+			var base_h := float(_thresholds_lookup["ask_help_affinity"])
+			var intro_h := float(_thresholds_lookup["ask_help_introvert_affinity"])
+			var extro_h := float(_thresholds_lookup["ask_help_extrovert_affinity"])
+			var need_h: float
+			if e_i < 50.0:
+				need_h = base_h + (intro_h - base_h) * (50.0 - e_i) / 50.0
+			else:
+				need_h = base_h + (extro_h - base_h) * (e_i - 50.0) / 50.0
+			var cands_h: Array = []
+			for j in range(n):
+				if j != i and not busy[j] and _can_interact_with(j) and _a[i * n + j] >= need_h:
+					cands_h.append(j)
+			if not cands_h.is_empty():
+				var w_h: Array = []
+				for c in cands_h:
+					w_h.append(maxf(1.0, _b_a[i * n + c] - _b_h[i * n + c]))
+				var j := int(_rng.choices(cands_h, w_h, 1)[0])
+				_do_ask_help(i, j)
+				busy[i] = true
+				busy[j] = true
+				continue
+		# 意向类：道歉 / 和解（§10.11，E 类）—— 僵局够深才有「和解」这件事
+		if _allowed("apologize") and _rng.random() < float(_probs["apologize_p"]):
+			var th_ap := float(_thresholds_lookup["apologize_trigger_hostility"])
+			var cands_ap: Array = []
+			for j in range(n):
+				if j != i and not busy[j] and _can_interact_with(j) and _h[i * n + j] >= th_ap:
+					cands_ap.append(j)
+			if not cands_ap.is_empty():
+				var w_ap: Array = []
+				for c in cands_ap:
+					w_ap.append(maxf(1.0, _h[i * n + c] + _b_h[i * n + c]))
+				var j := int(_rng.choices(cands_ap, w_ap, 1)[0])
+				_do_apologize(i, j)
+				busy[i] = true
+				busy[j] = true
+				continue
 		# 意向类：搭话（softmax 采样）
 		var cands: Array = []
 		for j in range(n):
-			if j != i and not _sleeping[j] and not busy[j]:
+			if j != i and not busy[j] and _can_interact_with(j):
 				cands.append(j)
 		if not cands.is_empty():
 			var alpha := _alpha(i)
@@ -1370,11 +1603,51 @@ func _decide_and_act() -> void:
 
 
 ## 选交互目标：邻居优先（§10.15 相邻修正）。neighbors_only 时只在邻居里选。
+## 节点此刻是否正处在占用型行为中（§10.4 行为耗时）—— 表现层权限判定用（如玩家操控）。
+func is_busy(i: int) -> bool:
+	if i < 0 or i >= _n:
+		return false
+	return _global_tick < _busy_until[i]
+
+
+## 写入节点在教室里的真实平面位置（米）。越界静默忽略（表现层防御性调用）。
+func set_position(i: int, x: float, z: float) -> void:
+	if i < 0 or i >= _n:
+		return
+	_pos_x[i] = x
+	_pos_z[i] = z
+
+
+## 节点当前位置 (x, z)，单位米。
+func position_of(i: int) -> Vector2:
+	if i < 0 or i >= _n:
+		return Vector2.ZERO
+	return Vector2(_pos_x[i], _pos_z[i])
+
+
+## 两点的平面距离（米）—— 空间层判定（交互范围 / 活动圈）的统一口径。
+func distance_between(i: int, j: int) -> float:
+	var a := position_of(i)
+	var b := position_of(j)
+	return a.distance_to(b)
+
+
+## 目标此刻能否接受一次新交互（集中只读判定）。
+##
+## §10.8 睡眠排除 + **行为耗时占用**：`_busy_until` 未到的人不能被拉去做新交互
+## （策划 2026-10-07 裁决：禁止同时参与第二个占用型交互；群聊算同一个交互，
+## 靠 `_occupy` 的时长**累积**而不是覆盖）。
+## **忙碌者仍可被旁观、被议论、被环境影响** —— 本判定只用于「挑交互目标」，
+## 不用于围观者 / 旁白 / 环境查询。
+func _can_interact_with(j: int) -> bool:
+	return not _sleeping[j] and _global_tick >= _busy_until[j]
+
+
 func _pick_target(i: int, neighbors_only: bool = false) -> int:
 	if neighbors_only:
 		var others: Array = []
 		for j in _neighbor_idx[i]:
-			if not _sleeping[j]:
+			if _can_interact_with(j):
 				others.append(j)
 		if others.is_empty():
 			return -1
@@ -1382,7 +1655,7 @@ func _pick_target(i: int, neighbors_only: bool = false) -> int:
 	var w_nb := float(_probs["neighbor_pick_mult"])
 	var pool: Array = []
 	for j in range(_n):
-		if j == i or _sleeping[j]:
+		if j == i or not _can_interact_with(j):
 			continue
 		pool.append([j, w_nb if _neighbor_idx[i].has(j) else 1.0])
 	if pool.is_empty():
@@ -1405,10 +1678,15 @@ func _occupy(i: int, j: int, behavior: String, quiet: bool = false) -> void:
 	_current_act[j] = null if quiet else behavior
 	var dur := int(_behaviors.get(behavior, {}).get("duration", 0))
 	if dur > 0:
-		_busy_until[i] = _global_tick + dur
-		_busy_until[j] = _global_tick + dur
+		# 时长**累积**而不是覆盖（策划 2026-10-07：「群聊作为同一个交互管理，
+		# 不能靠覆盖占用实现」）—— 否则加入一场进行中的活动会把已占用的时长改短。
+		var until := _global_tick + dur
+		_busy_until[i] = maxi(_busy_until[i], until)
+		_busy_until[j] = maxi(_busy_until[j], until)
 		_busy_phase[i] = _phase_index
 		_busy_phase[j] = _phase_index
+		_busy_act[i] = behavior
+		_busy_act[j] = behavior
 
 
 ## 闲聊：话题共鸣事件 + 双方观测。
@@ -1534,15 +1812,106 @@ func _do_roughhouse(i: int, j: int, bystanders: Array) -> void:
 	_emit("event_happened", {"kind": "roughhouse", "i": i, "j": j})
 
 
+## 安慰（§10.13，A 类）：i 主动关心高压区的 j。目标压力↓、对安慰者好感↑/信任↑；发起者付成本。
+func _do_comfort(i: int, j: int) -> void:
+	_occupy(i, j, "comfort")
+	_apply_event(i, j, "comfort_cost_stress")
+	_apply_event(j, i, "comfort_target_stress")
+	_apply_event(j, i, "comfort_target_affinity")
+	_apply_event(j, i, "comfort_target_trust")
+	_stats["comforts"] = int(_stats["comforts"]) + 1
+	_emit("event_happened", {"kind": "comfort", "i": i, "j": j})
+
+
+## 求助（§10.10，C 类）：判定读真值 A[j][i] + 对方外向度加成；成功/被拒各有独立效果。
+func _do_ask_help(i: int, j: int) -> void:
+	_occupy(i, j, "ask_help")
+	_apply_event(i, j, "ask_help_cost_stress")
+	var score := (
+		_a[j * _n + i] + _dims[j] / 100.0 * float(_thresholds_lookup["ask_help_extrovert_bonus"])
+	)
+	var p := _sigmoid(
+		(
+			(score - float(_thresholds_lookup["ask_help_accept_theta"]))
+			/ float(_thresholds_lookup["ask_help_accept_scale"])
+		)
+	)
+	var accepted := _rng.random() < p
+	if accepted:
+		_apply_event(i, j, "ask_help_ok_asker_affinity")
+		_apply_event(i, j, "ask_help_ok_asker_stress")
+		_apply_event(j, i, "ask_help_ok_helper_affinity")
+		_apply_event(j, i, "ask_help_ok_helper_trust")
+		_stats["helps"] = int(_stats["helps"]) + 1
+	else:
+		_apply_event(i, j, "ask_help_no_stress")
+		_apply_event(i, j, "ask_help_no_hostility")
+		_apply_event(i, j, "ask_help_no_trust")
+		_stats["help_rejects"] = int(_stats["help_rejects"]) + 1
+	_emit("event_happened", {"kind": "ask_help", "i": i, "j": j, "accepted": accepted})
+
+
+## 道歉 / 和解（§10.11，E 类）：i 主动向 j 低头。判定读真值（A[j][i] + F_j 随和 − H[j][i]×惩罚）；
+## 效果行一律 no_modulation=True（和解与关系调制 M 结构性冲突，否则「越道歉越糟」）。
+func _do_apologize(i: int, j: int) -> void:
+	_occupy(i, j, "apologize")
+	_apply_event(i, j, "apologize_cost_stress")
+	var score := (
+		_a[j * _n + i]
+		+ _dims[2 * _n + j] / 100.0 * float(_thresholds_lookup["apologize_calm_bonus"])
+		- _h[j * _n + i] * float(_thresholds_lookup["apologize_hostility_penalty"])
+	)
+	var p := _sigmoid(
+		(
+			(score - float(_thresholds_lookup["apologize_accept_theta"]))
+			/ float(_thresholds_lookup["apologize_accept_scale"])
+		)
+	)
+	var accepted := _rng.random() < p
+	if accepted:
+		_apply_event(i, j, "apologize_ok_hostility", 1.0, true)
+		_apply_event(i, j, "apologize_ok_affinity", 1.0, true)
+		_apply_event(i, j, "apologize_ok_trust", 1.0, true)
+		_apply_event(i, j, "apologize_ok_stress", 1.0, true)
+		_apply_event(j, i, "apologize_ok_hostility", 1.0, true)
+		_apply_event(j, i, "apologize_ok_affinity", 1.0, true)
+		_apply_event(j, i, "apologize_ok_trust", 1.0, true)
+		_apply_event(j, i, "apologize_ok_stress", 1.0, true)
+		_stats["apologizes"] = int(_stats["apologizes"]) + 1
+	else:
+		_apply_event(i, j, "apologize_no_hostility", 1.0, true)
+		_apply_event(i, j, "apologize_no_stress", 1.0, true)
+		_apply_event(i, j, "apologize_no_trust", 1.0, true)
+		_stats["apologize_rejects"] = int(_stats["apologize_rejects"]) + 1
+	_emit("event_happened", {"kind": "apologize", "i": i, "j": j, "accepted": accepted})
+
+
 # ------------------------------------------------------------------ 玩家行动（D11 缺口③）
 ## 玩家显式行动：来源固定玩家（n-1）、目标由玩家指定，走与 NPC 相同的 do_* 统一影响公式，
 ## 不做 NPC 自动决策。返回结果字典供表现层渲染反馈；topic 暂作透传记录。
+## 玩家行动的可执行性校验：返回空串表示可以做，否则返回错误码。
+## 与 NPC 共用同一套「能不能做」门槛（§3.3 相位权限、§10.8 目标睡眠）——
+## 内核策划符合性审查 P1-02：不能只靠 UI 隐藏按钮，内核入口必须自己拒绝。
+func _player_action_error(kind: String, target: int, me: int) -> String:
+	if target < 0 or target >= _n or target == me:
+		return "invalid_target"
+	if not PLAYER_KINDS.has(kind):
+		return "unknown_kind"
+	if _sleeping[me] or _global_tick < _busy_until[me]:
+		return "player_busy"
+	if not _allowed(kind):
+		return "phase_not_allowed"
+	if not _can_interact_with(target):
+		return "target_unavailable"
+	return ""
+
+
 func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 	var me := _n - 1
-	if target < 0 or target >= _n or target == me:
-		return {"ok": false, "error": "invalid_target"}
-	if _sleeping[me] or _global_tick < _busy_until[me]:
-		return {"ok": false, "error": "player_busy"}
+	# 「能不能做」先过公共门槛，再执行具体行为（玩家可跳过「想不想」，不能跳过「能不能」）
+	var blocked := _player_action_error(kind, target, me)
+	if not blocked.is_empty():
+		return {"ok": false, "error": blocked}
 	var a_before := _a[target * _n + me]  # 目标→玩家的好感（行动前的反应基线）
 	var h_before := _h[target * _n + me]
 	var accepted := true

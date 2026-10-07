@@ -42,6 +42,8 @@ addons/godot-mcp/
 *.tmp
 *.bak
 *.orig
+# 仓库根的本地临时目录：抓取脚本 / API 快照 / 一次性探针（不入库）
+/tmp/
 
 # ---- Python 缓存（tools/ 离线脚本用）----
 __pycache__/

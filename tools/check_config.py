@@ -166,6 +166,31 @@ _missing = sorted(k for k in _want if k not in _tkeys)
 check("代码引用的阈值键全部存在于 behavior_thresholds.csv", not _missing,
       ("缺失: %s" % _missing) if _missing else "全部存在（%d 个键）" % len(_want))
 
+print("=== 8. 时间组件配置（time_presentation / time_runtime / phases 一致性）===")
+_pres_rows = load("rules/time_presentation.csv")
+_runtime = {r["key"]: r["value"] for r in load("rules/time_runtime.csv")}
+_phases_rows = load("rules/phases.csv")
+_pres_by_phase = {r["phase_id"]: r for r in _pres_rows}
+check("term_days 为正整数",
+      _runtime.get("term_days", "").isdigit() and int(_runtime.get("term_days", "0")) > 0,
+      _runtime.get("term_days"))
+check("max_ticks_per_frame 为正整数",
+      _runtime.get("max_ticks_per_frame", "").isdigit() and int(_runtime.get("max_ticks_per_frame", "0")) > 0,
+      _runtime.get("max_ticks_per_frame"))
+check("time_presentation 与 phases 相位一一对应",
+      set(_pres_by_phase) == {r["phase_id"] for r in _phases_rows},
+      "pres=%s phases=%s" % (sorted(_pres_by_phase), sorted(r["phase_id"] for r in _phases_rows)))
+for _r in _phases_rows:
+    _row = _pres_by_phase.get(_r["phase_id"])
+    if _row is None:
+        continue
+    _seconds = float(_row["real_duration_seconds"])
+    if _r["kind"] == "settle":
+        check("%s: 结算相位实时时长为 0" % _r["phase_id"], _seconds == 0.0, _seconds)
+    else:
+        check("%s: 活动相位实时时长为正" % _r["phase_id"], _seconds > 0.0, _seconds)
+        check("%s: 活动相位 tick_count 为正" % _r["phase_id"], int(_r["tick_count"]) > 0, _r["tick_count"])
+
 print("\n=== 结论 ===")
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))
 if FAILED:

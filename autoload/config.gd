@@ -14,6 +14,17 @@ func get_table(name: String) -> Dictionary:
 	return _tables.get(name, {})
 
 
+## 新游戏默认难度：取 data/rules/difficulty.csv 中标了 default=1 的档（数值不落脚本）。
+## 供 main_menu（「新游戏」）与 classroom_actors（单场景调试的演示局）共用。
+func default_difficulty() -> int:
+	var rows: Array = get_table("rules/difficulty").get("rows", [])
+	for row in rows:
+		if str(row.get("default", "0")) == "1":
+			return int(str(row["difficulty"]))
+	push_warning("difficulty.csv 里没有 default=1 的档，回退难度 1")
+	return 1
+
+
 ## 全部配置表 {表名: 表}。
 func tables() -> Dictionary:
 	if _tables.is_empty():
