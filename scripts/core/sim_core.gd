@@ -43,6 +43,8 @@ var _tick_in_phase := 0
 var _phase_index := 0
 var _global_tick := 0
 var _volume := 0.0
+var _active_phases: Array = []   # 非 settle 段（课间/上课）顺序，供单步推进（D11）
+var _phase_setup_done := false   # 当前段是否已跑段首一次性结算（D11）
 
 # —— 配置 ——
 var _p: Dictionary = {}             # transmission 参数（含 settle_interval）
@@ -95,6 +97,12 @@ func _init(seed: int, npc_count: int, tables: Dictionary) -> void:
 	var n := _n
 
 	_load_config(tables)
+
+	# 单步推进游标：非 settle 段（课间/上课）顺序（D11）
+	_active_phases = []
+	for row in _phase_order:
+		if str(row["kind"]) != "settle":
+			_active_phases.append(row)
 
 	# 抽角色（§11.5 正式版：绑定组 + 极性覆盖，不消费随机数）
 	_chars = RosterSelector.new().select(
@@ -343,32 +351,67 @@ func _are_neighbors(i: int, j: int) -> bool:
 
 
 # ------------------------------------------------------------------ 时间系统
-## 跑完一天（三段课间 + 两段上课），返回总 tick 数。
-func run_day() -> int:
-	var total := 0
-	var pidx := 0
-	for row in _phase_order:
-		if str(row["kind"]) == "settle":
-			continue
-		_phase_index = pidx
-		_phase = str(row["kind"])
-		_tick_in_phase = 0
-		_settle_sleep()
-		_roll_sleep()
-		_free_join()
-		if _phase == "break":
-			_phone_exposure()
-			_roll_reports()
-		_check_interrupt()
-		var ticks := int(str(row["tick_count"]))
-		for _t in range(ticks):
-			_tick()
-			_tick_in_phase += 1
-			total += 1
+## 段首一次性结算：睡觉收尾 / 入睡 / 自由跟随 /（课间）举报 / 打断（§10.8 等）。
+func _begin_phase() -> void:
+	var row: Dictionary = _active_phases[_phase_index]
+	_phase = str(row["kind"])
+	_tick_in_phase = 0
+	_settle_sleep()
+	_roll_sleep()
+	_free_join()
+	if _phase == "break":
+		_phone_exposure()
+		_roll_reports()
+	_check_interrupt()
+	_phase_setup_done = true
+
+
+## 推进一个 tick（D11 单步粒度）。段未开始则先跑段首结算；段跑完自动跨段/跨天。
+func advance_tick() -> int:
+	if not _phase_setup_done:
+		if _phase_index >= _active_phases.size():
+			_phase_index = 0
+		_begin_phase()
+	_tick()
+	_tick_in_phase += 1
+	var row: Dictionary = _active_phases[_phase_index]
+	if _tick_in_phase >= int(str(row["tick_count"])):
 		_vol_log.append(snapped(_volume, 0.1))
-		pidx += 1
-	_settle_day()
+		_phase_index += 1
+		_phase_setup_done = false
+		if _phase_index >= _active_phases.size():
+			_settle_day()
+	return _global_tick
+
+
+## 推进一个段（从当前位置跑到当前段末尾），返回本段跑的 tick 数。
+func advance_phase() -> int:
+	if _phase_index >= _active_phases.size():
+		return 0
+	var ran := 0
+	if not _phase_setup_done:
+		_begin_phase()
+	var target := int(str(_active_phases[_phase_index]["tick_count"]))
+	while _tick_in_phase < target:
+		advance_tick()
+		ran += 1
+	return ran
+
+
+## 推进一天（从当前位置跑到当天结束并跨天结算），返回当天跑的 tick 数。
+func advance_day() -> int:
+	var total := 0
+	if _phase_index >= _active_phases.size():
+		_phase_index = 0
+		_phase_setup_done = false
+	while _phase_index < _active_phases.size():
+		total += advance_phase()
 	return total
+
+
+## 跑完一天（三段课间 + 两段上课），返回总 tick 数。等价 advance_day()。
+func run_day() -> int:
+	return advance_day()
 
 
 func _tick() -> void:
