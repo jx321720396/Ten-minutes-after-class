@@ -35,8 +35,10 @@ func _pump_until_phase_changes(clock: SimulationClock, core: SimCore) -> void:
 func test_hud_shows_day_and_phase_display_name() -> void:
 	var parts := _make_stack()
 	var hud: TimeHUD = parts[2]
-	assert_eq(hud.title_line(), "第 1 / 30 天 · 上午课间", "第 1 行 = 天数 + time_presentation 的 display_name")
-	assert_eq(hud.detail_line(), "课间剩余 01:40", "第 2 行 = 课间真实倒计时（100 秒 = 01:40）")
+	assert_eq(
+		hud.title_line(), "第 1 / 30 天 · 上午课间", "第 1 行 = 天数 + time_presentation 的 display_name"
+	)
+	assert_eq(hud.detail_line(), "课间剩余 100 秒", "第 2 行 = 课间真实倒计时（直接给秒数）")
 	assert_almost_eq(hud.progress_percent(), 0.0, 0.0001)
 	assert_false(hud.controls_locked(), "课间允许玩家操作")
 
@@ -46,8 +48,8 @@ func test_countdown_rounds_up() -> void:
 	var clock: SimulationClock = parts[1]
 	var hud: TimeHUD = parts[2]
 	clock.pump(1.1)
-	# 剩余 98.9 秒：向上取整 = 99 秒（01:39），若向下取整会显示 01:38
-	assert_eq(hud.detail_line(), "课间剩余 01:39", "倒计时向上取整")
+	# 剩余 98.9 秒：向上取整 = 99 秒，若向下取整会显示 98
+	assert_eq(hud.detail_line(), "课间剩余 99 秒", "倒计时向上取整")
 	assert_true(hud.progress_percent() > 0.0 and hud.progress_percent() < 100.0, "进度条随之推进")
 
 
@@ -62,7 +64,7 @@ func test_class_phase_locks_controls_and_relabels() -> void:
 
 	assert_eq(str(core.time_snapshot()["phase_id"]), "morning_class", "课间跑满后进入上午上课")
 	assert_eq(hud.title_line(), "第 1 / 30 天 · 上午课堂", "阶段名随相位更新")
-	assert_eq(hud.detail_line(), "发酵中 · 本阶段约剩余 00:15", "上课显示发酵中 + 整段 15 秒剩余")
+	assert_eq(hud.detail_line(), "发酵中 · 本阶段约剩余 15 秒", "上课显示发酵中 + 整段 15 秒剩余")
 	assert_true(hud.controls_locked(), "上课禁止玩家主动操作")
 	assert_eq(hud.toast_count(), toast_before + 1, "阶段提示在边界只弹一次")
 
