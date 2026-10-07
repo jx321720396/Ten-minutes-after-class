@@ -20,7 +20,7 @@ const DIMS := ["e", "n", "f", "p"]
 const AXES := ["affinity", "hostility", "trust"]
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
-const _ObserverLayer = preload("res://scripts/systems/observer/observer_layer.gd")
+const OBSERVER_LAYER = preload("res://scripts/systems/observer/observer_layer.gd")
 
 # —— 关系 / 个体状态（float64 平铺，与 Python 逐位一致）——
 var _a := PackedFloat64Array()  # 好感 A  n*n
@@ -47,8 +47,9 @@ var _active_phases: Array = []  # 非 settle 段（课间/上课）顺序，供�
 var _phase_setup_done := false  # 当前段是否已跑段首一次性结算（D11）
 
 ## 事件出口（D11 缺口④）：表现层把此回调绑到 EventBus 四信号，内核零 autoload 依赖。
-## 收到 {"type": String, "payload": Dictionary}；type ∈ event_happened / day_settled / tag_changed / stress_burst。
-var event_sink: Callable = Callable()
+## 收到 {"type": String, "payload": Dictionary}；
+## type ∈ event_happened / day_settled / tag_changed / stress_burst。
+var event_sink: Callable = Callable()  # gdlint:ignore = class-definitions-order
 
 # —— 配置 ——
 var _p: Dictionary = {}  # transmission 参数（含 settle_interval）
@@ -463,7 +464,7 @@ func _tick() -> void:
 		_stress_drip()
 
 
-# ------------------------------------------------------------------ 事件出口（D11 缺口④：内核 → 表现层，零 autoload 依赖）
+# -------------------------------------------------- 事件出口（D11 缺口④：内核 → 表现层，零 autoload 依赖）
 ## 向注入的事件出口派发一条事件（type + payload）。event_sink 为空时无副作用（headless/测试）。
 func _emit(type: String, payload: Dictionary) -> void:
 	if event_sink.is_valid():
@@ -578,7 +579,7 @@ func _settle_day() -> void:
 	_emit("day_settled", {"day": _day - 1, "stats": _stats.duplicate(true)})
 
 
-# ------------------------------------------------------------------ 统一影响公式（UIF，docs/design/统一影响公式.md）
+# -------------------------------------------------- 统一影响公式（UIF，docs/design/统一影响公式.md）
 ## 四舍五入到 0.1（Python round(x,1)；结构常量 0.1 已白名单）。
 func _r1(v: float) -> float:
 	return snapped(v, 0.1)
@@ -633,8 +634,8 @@ func _sat(u: float, axis: String) -> float:
 		key = "u_t"
 	elif axis == "stress":
 		key = "u_s"
-	var U := float(_p.get(key, 25.0))
-	return u / (1.0 + absf(u) / U)
+	var u_cap := float(_p.get(key, 25.0))
+	return u / (1.0 + absf(u) / u_cap)
 
 
 ## 统一影响公式落表：Δ = M_state · sat(P)；P = base·scale·M_personality(·M_relation)。
@@ -1831,12 +1832,12 @@ func get_activity_circles() -> Dictionary:
 
 ## 观察层（只读）：viewer 眼中的小团体簇（§11.1，A≥60 强连接连通分量）。
 func get_clusters(viewer: int = -1) -> Array:
-	return _ObserverLayer.new(self).cluster_tags(viewer)
+	return OBSERVER_LAYER.new(self).cluster_tags(viewer)
 
 
 ## 观察层（只读）：viewer 眼中的「被孤立者」（§10.26.3）。
 func get_isolated(viewer: int = -1) -> Array:
-	return _ObserverLayer.new(self).isolated_tags(viewer)
+	return OBSERVER_LAYER.new(self).isolated_tags(viewer)
 
 
 # ------------------------------------------------------------------ 内部工具
