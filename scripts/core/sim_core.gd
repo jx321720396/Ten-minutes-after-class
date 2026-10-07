@@ -87,6 +87,10 @@ var _in_conversation: Array = []
 var _next_action: Array = []
 var _busy_until: Array = []
 var _busy_phase: Array = []
+## 占用中的行为名（含 quiet 一方：_current_act 会清成 null，「被动参与」也要记得住）
+var _busy_act: Array = []
+## 本 tick **刚完成**的行为（到期收尾时写入），给「行为完成才发信息」做挂点（如玩家闲聊线索）
+var _last_finished: Array = []
 var _knot_days: Array = []
 var _vol_log: Array = []
 var _day_events: Dictionary = {}
@@ -267,6 +271,8 @@ func _reset_runtime(n: int) -> void:
 		_next_action.append(0)
 		_busy_until.append(0)
 		_busy_phase.append(-1)
+		_busy_act.append(null)
+		_last_finished.append(null)
 		_current_act.append(null)
 		_sleeping.append(false)
 		_in_conversation.append(false)
@@ -520,8 +526,28 @@ func run_day() -> int:
 	return advance_day()
 
 
+## 行为完成结算：把**已到期**的占用收尾（§10.4 / §12.2 行为耗时契约）。
+## 占用到期即「这件事做完了」：清 _current_act、清 _busy_phase，并把行为名写进
+## _last_finished（仅本 tick 有效）。**「行为完成才发信息」的规则必须挂在这里**
+## （例如玩家的闲聊线索），不能挂在「发起」上 —— 发起不等于做完。
+## ⚠️ 与「被铃声打断」严格互斥：到期的不算被打断；未到期的才可能被 _check_interrupt()
+## 在相位切换时处理。两边都不重复记。
+func _settle_finished_actions() -> void:
+	_last_finished = []
+	for i in range(_n):
+		_last_finished.append(null)
+	for i in range(_n):
+		if _busy_phase[i] < 0 or _busy_until[i] > _global_tick:
+			continue
+		_last_finished[i] = _busy_act[i]
+		_current_act[i] = null
+		_busy_act[i] = null
+		_busy_phase[i] = -1
+
+
 func _tick() -> void:
 	_global_tick += 1
+	_settle_finished_actions()
 	_decide_and_act()
 	_update_environment()
 	if _global_tick % int(_p["settle_interval"]) == 0:
@@ -1622,6 +1648,8 @@ func _occupy(i: int, j: int, behavior: String, quiet: bool = false) -> void:
 		_busy_until[j] = maxi(_busy_until[j], until)
 		_busy_phase[i] = _phase_index
 		_busy_phase[j] = _phase_index
+		_busy_act[i] = behavior
+		_busy_act[j] = behavior
 
 
 ## 闲聊：话题共鸣事件 + 双方观测。

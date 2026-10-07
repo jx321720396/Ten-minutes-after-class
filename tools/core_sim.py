@@ -171,6 +171,10 @@ class Sim:
         self.next_action = [0] * n
         self.busy_until = [0] * n        # 忙碌到何时（按行为 duration，替代统一冷却）
         self.busy_phase = [-1] * n       # 行为开始时的相位序号（用于判定「被下课铃打断」）
+        # 占用中的行为名（含 quiet 一方：current_act 会被清成 None，「被动参与」也要记得住）
+        self.busy_act = [None] * n
+        # 本 tick **刚完成**的行为（到期收尾时写入），给「行为完成才发信息」做挂点（如玩家闲聊线索）
+        self.last_finished = [None] * n
         # --- 环境层（班级级标量，不是第六轴，而是与个体/关系并列的第三层）---
         self.env = {r["param"]: float(r["value"]) for r in load_table("rules/environment.csv")}
         self.volume = self.env.get("init_volume", 20.0)
@@ -988,6 +992,8 @@ class Sim:
             self.busy_until[j] = max(self.busy_until[j], until)
             self.busy_phase[i] = self.phase_index
             self.busy_phase[j] = self.phase_index
+            self.busy_act[i] = behavior
+            self.busy_act[j] = behavior
 
     def do_chat(self, i, j):
         """闲聊：话题共鸣事件 + 双方观测"""
@@ -1569,8 +1575,28 @@ class Sim:
                     self.Stress[i] = clamp100(self.Stress[i] + cost)
                 self.stats["interrupts"] = self.stats.get("interrupts", 0) + 1
 
+    def settle_finished_actions(self):
+        """行为完成结算：把**已到期**的占用收尾（§10.4 / §12.2 行为耗时契约）。
+
+        占用到期即「这件事做完了」：清 current_act、清 busy_phase，并把行为名写进
+        last_finished（仅本 tick 有效）。**「行为完成才发信息」的规则必须挂在这里**
+        （例如玩家的闲聊线索），不能挂在「发起」上 —— 发起不等于做完。
+
+        ⚠️ 与「被铃声打断」严格互斥：到期的不算被打断；未到期的才可能被 check_interrupt()
+        在相位切换时打断。两边都不重复记。
+        """
+        self.last_finished = [None] * self.N
+        for i in range(self.N):
+            if self.busy_phase[i] < 0 or self.busy_until[i] > self.global_tick:
+                continue
+            self.last_finished[i] = self.busy_act[i]
+            self.current_act[i] = None
+            self.busy_act[i] = None
+            self.busy_phase[i] = -1
+
     def tick(self):
         self.global_tick += 1
+        self.settle_finished_actions()
         self.decide_and_act()
         self.update_environment()
         if self.global_tick % int(self.p["settle_interval"]) == 0:   # 每天 2 次（上午/下午）
