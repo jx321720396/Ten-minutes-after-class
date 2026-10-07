@@ -32,7 +32,7 @@ func _init() -> void:
 		print("  %s  高:%s  低:%s" % [d.to_upper(), _check(has_high), _check(has_low)])
 
 	print("")
-	var core := SimCore.new(12345, 8, tables)
+	var core := SimCore.from_npc(12345, 8, tables)
 	var total := core.run_day()
 	print("单日总 tick：%d（课间 100×3 + 上课 90×2 = 480）" % total)
 	print("涓流结算点（settle_interval=%d）应触发 2 次（tick 240 / 480）" % int(kp_interval(tables)))

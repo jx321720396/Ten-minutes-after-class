@@ -16,8 +16,10 @@ func start_game(new_seed: int, new_difficulty: int) -> void:
 	difficulty = new_difficulty
 	day = 0
 	phase = ""
-	sim_core = null
-	# TODO(D8): sim_core = SimCore.new(seed, difficulty)
+	# §4.1 契约：SimCore.new(seed, difficulty)，内核内部读表 + difficulty→npc_count（D11 缺口①）。
+	sim_core = SimCore.new(seed, difficulty)
+	if sim_core != null:
+		wire_events(sim_core)
 
 
 func end_game() -> void:

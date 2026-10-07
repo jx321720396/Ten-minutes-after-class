@@ -38,7 +38,7 @@ func test_game_state_start_and_end() -> void:
 
 func test_game_state_wire_events_routes_to_event_bus() -> void:
 	# D11 缺口④：GameState 把内核事件出口路由到 EventBus（内核不反向依赖 autoload）
-	var core := SimCore.new(12345, 8, ConfigLoader.new().load_all())
+	var core := SimCore.from_npc(12345, 8, ConfigLoader.new().load_all())
 	var received: Array = []
 	var cb := func(p: Dictionary) -> void: received.append(p)
 	EventBus.event_happened.connect(cb)

@@ -94,9 +94,13 @@ var _exclude_last_day: Array = []     # 排挤冷却：同一目标最近被驱�
 var _witness_day: Array = []          # 举报把柄：i 最近目击 j 违规的日（§10.2）
 
 
-func _init(seed: int, npc_count: int, tables: Dictionary) -> void:
+func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
+	# §4.1 契约：SimCore.new(seed, difficulty)。tables 为空时内核内部自取（ConfigLoader 非 autoload，不违反反向依赖铁律）。
+	if tables.is_empty():
+		tables = ConfigLoader.new().load_all()
 	_seed = seed
 	_rng = MtRandom.new(seed)
+	var npc_count := _difficulty_npc_count(difficulty, tables)
 	_n = npc_count + 1
 	var n := _n
 
@@ -151,6 +155,25 @@ func _init(seed: int, npc_count: int, tables: Dictionary) -> void:
 	_neighbors = _build_neighbors()
 	_assign_seats()
 	_build_neighbor_idx()
+
+
+## difficulty（1/2/3）→ npc_count（8/16/24），映射表 data/rules/difficulty.csv（铁律 3：数值不落脚本）。
+func _difficulty_npc_count(difficulty: int, tables: Dictionary) -> int:
+	for row in _rows(tables, "rules/difficulty"):
+		if int(str(row["difficulty"])) == difficulty:
+			return int(str(row["npc_count"]))
+	push_warning("SimCore: rules/difficulty 未命中 difficulty=%d，回退默认 8 NPC" % difficulty)
+	return 8
+
+
+## 测试/对拍专用入口：直接指定 npc_count，绕过 difficulty 映射。
+## 经 data/rules/difficulty 反查 difficulty 后走同一构造，避免数值落脚本。
+static func from_npc(seed: int, npc_count: int, tables: Dictionary) -> SimCore:
+	for row in tables.get("rules/difficulty", {}).get("rows", []):
+		if int(str(row["npc_count"])) == npc_count:
+			return SimCore.new(seed, int(str(row["difficulty"])), tables)
+	push_warning("SimCore.from_npc: npc_count=%d 不在 difficulty 映射，回退难度 1" % npc_count)
+	return SimCore.new(seed, 1, tables)
 
 
 func _load_config(tables: Dictionary) -> void:
