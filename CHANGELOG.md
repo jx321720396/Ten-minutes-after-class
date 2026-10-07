@@ -11,6 +11,13 @@
 
 - **教室呈现路线定为 2D 先行（用户决策）**：课间空间用 `scenes/Classroom2D.tscn`（`tools/bake_classroom_2d.gd` 烘焙的静态场景）+ `scenes/characters/*.tscn`（16 个角色场景）跑通代码与玩法；`assets/models/classroom/`（Sketchfab 3D 教室，CC BY 4.0）暂作备用素材，**画风优化排在 D14 内容冻结之后**；团队分工任务单同步标注。
 ### 新增
+- **离线测试基建：六道门进 CI、铁律哨兵夹具、三个测试目录、逐 tick 对拍器（2026-10-07）**：
+  · **六道门 + 铁律测试接入 CI**：`.github/workflows/ci.yml` 新增 `offline-gates` job（`bash tools/run_tests.sh --no-godot`），每次 push/PR 自动跑；`gdscript` job 去掉 `continue-on-error` 与告警兜底，`gdformat --check` / `gdlint` 失败即阻断并打印格式差异。
+  · **铁律哨兵夹具**：新增 `tests/invariants/fixtures/`（故意违反铁律、但语法合法的小样本）；三个铁律脚本增加「哨兵自检」——先断言能抓到夹具里的违规，再扫真实目录，扫描器失效会被立刻发现。
+  · **补齐测试目录**：新增 `tests/integration/`（无头整局 `run_term.gd`）、`tests/balance/`（批量标定 `run_batch.gd`）、`tests/emergence/`（主文档第十六章 13 条现象：`cases.md` 验收契约 + `test_emergence.gd` GUT 骨架）。
+  · **逐 tick 对拍器**：新增 `tests/integration/test_tick_parity.py`（Python ↔ GDScript 逐 tick 比对 `A/H/T/O/stress` 均值，相对误差 ≤ 1%）与 GDScript 侧导出入口 `export_ticks_gd.gd`，自带「偏 5% 必须判红」的哨兵。
+  · `tools/run_tests.sh` 新增逐 tick 对拍段，Godot 段增加 emergence 的 GUT 运行。
+  · **未改动任何游戏脚本与数据**；测试种子数（8 → 100）**不在本次改动内** —— 主线同批已自行完成，并附带多进程并行加速。
 - **「NPC 主动接近他人」三条行为落地：安慰 / 求助 / 道歉和解（2026-10-07）**：
   · **动机**：玩法上「NPC 会不会来找你」是 §12.5 承诺的核心体验，但三条最直接的通道一直**只有数据、没有实现** —— `behaviors.csv` 早已为 `comfort` / `ask_help` / `apologize` 留好位置（`kind=intent`、耗时 50/20/50、`join_mode`、`allowed()` 的上课段禁用集也已包含它们），`w_events.csv` 有 `comfort_target_*`，`behavior_thresholds.csv` 有 `comfort_trigger_target_stress` / `apologize_trigger_hostility`；而 `core_sim.py` 里**没有** `do_comfort` / `do_ask_help` / `do_apologize`（§18.9 此前误记为「已实装」）。
   · **实现**：`tools/core_sim.py` 新增三个方法 + `decide_and_act` 中三个意向类入口（**必须排在末尾无门槛的搭话回退块之前**，否则永远被抢先）。三者同守 §6.4 两段式：**门槛读我自己的立场、判定读真值**；决策侧一律不读 `A[j][i] / H[j][i]`（§18.7 不变式 3）。
