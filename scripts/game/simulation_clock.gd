@@ -183,12 +183,12 @@ func pump(delta_seconds: float) -> void:
 
 
 ## 暂停：按拥有者集合管理，可重入；同名重复添加不累计，最后一个释放才恢复。
-func hold(owner: StringName) -> void:
-	_paused_by[owner] = true
+func hold(who: StringName) -> void:
+	_paused_by[who] = true
 
 
-func release(owner: StringName) -> void:
-	_paused_by.erase(owner)
+func release(who: StringName) -> void:
+	_paused_by.erase(who)
 
 
 func is_paused() -> bool:
@@ -224,8 +224,10 @@ func snapshot() -> Dictionary:
 		}
 	out["mode"] = _mode
 	out["paused"] = is_paused()
-	out["remaining_seconds"] = _remaining_seconds(out)
-	out["progress"] = _progress(out)
+	# 日末简报 / 学期结束期间**不计时**：剩余与进度一律归零，别显示下一天的倒计时
+	var running := _mode == MODE_RUNNING
+	out["remaining_seconds"] = _remaining_seconds(out) if running else 0.0
+	out["progress"] = _progress(out) if running else 0.0
 	out["ended_day"] = _ended_day
 	out["term_days"] = _term_days
 	out["display_name"] = _display_name_of(str(out.get("phase_id", "")))
