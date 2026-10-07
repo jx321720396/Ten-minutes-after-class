@@ -21,6 +21,33 @@ func test_one_day_ticks() -> void:
 	assert_eq(core.node_count(), 9, "8 NPC + 1 老师节点")
 
 
+func test_advance_tick_phase_day() -> void:
+	# D11 单步推进：tick / phase / day 三种粒度
+	var core := _core()
+	core.advance_tick()
+	assert_eq(core.global_tick(), 1, "advance_tick 推进 1 tick")
+	assert_eq(core.phase_index(), 0, "仍在第一段")
+
+	var core2 := _core()
+	core2.advance_phase()
+	assert_eq(core2.global_tick(), 100, "advance_phase 跑完第一段（课间 100 tick）")
+	assert_eq(core2.phase_index(), 1, "进入第二段")
+
+	var core3 := _core()
+	var total := core3.advance_day()
+	assert_eq(total, 480, "advance_day 单日 480 tick")
+	assert_eq(core3.day(), 2, "结算后推进到第 2 天")
+
+
+func test_advance_day_twice() -> void:
+	# D11 跨天边界：连续两天推进游标正确复位
+	var core := _core()
+	core.advance_day()
+	core.advance_day()
+	assert_eq(core.global_tick(), 960, "两天累计 960 tick")
+	assert_eq(core.day(), 3, "推进到第 3 天")
+
+
 func test_deterministic_report() -> void:
 	var a := _core()
 	a.run_day()
