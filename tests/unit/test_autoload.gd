@@ -34,3 +34,16 @@ func test_game_state_start_and_end() -> void:
 	assert_eq(GameState.day, 0, "day 归零")
 	GameState.end_game()
 	assert_false(GameState.is_running(), "end 后未运行")
+
+
+func test_game_state_wire_events_routes_to_event_bus() -> void:
+	# D11 缺口④：GameState 把内核事件出口路由到 EventBus（内核不反向依赖 autoload）
+	var core := SimCore.new(12345, 8, ConfigLoader.new().load_all())
+	var received: Array = []
+	var cb := func(p: Dictionary) -> void: received.append(p)
+	EventBus.event_happened.connect(cb)
+	GameState.wire_events(core)
+	core._do_chat(0, 1)
+	EventBus.event_happened.disconnect(cb)
+	assert_eq(received.size(), 1, "内核 chat 事件应经 GameState 路由到 EventBus")
+	assert_eq(received[0].get("kind"), "chat", "载荷 kind=chat")
