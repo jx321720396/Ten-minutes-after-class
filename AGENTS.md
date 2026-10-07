@@ -46,6 +46,11 @@ gdformat --check scripts/ && gdlint scripts/
 
 # 离线六道门（Python，与引擎无关）
 python tools/check_config.py && python tools/test_core.py && python tools/verify_formula.py
+
+# 一键跑测试（六道门 + 铁律 tests/invariants/ + Godot 侧 GUT；Godot 路径配置见 tools/README.md）
+bash tools/run_tests.sh
+bash tools/run_tests.sh --godot "<Godot 可执行文件完整路径>"   # 本机 Godot 不在 PATH 时
+bash tools/run_tests.sh --no-godot                            # 只跑离线部分
 ```
 
 GDScript 约定：矩阵访问一律走 `Affinity(i,j)` 等访问器；风格与命名见 `CONTRIBUTING.md`。

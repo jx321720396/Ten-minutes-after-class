@@ -46,3 +46,13 @@ godot --headless --path . --script tests/balance/run_batch.gd -- --runs=100 --se
 ## 现状
 
 已接入 GUT 9.7.1（`addons/gut/`），`tests/unit/` 有冒烟用例 `test_smoke.gd`；其余子目录随规则实现建立——**每条规则合入时必须带对应单测**（见 `../CONTRIBUTING.md` 第 8 节 PR 流程）。
+
+`tests/invariants/` 已落地**铁律测试脚手架**（Python 离线检查，2026-10-06）：
+
+| 脚本 | 铁律 | 现状 |
+|---|---|---|
+| [`invariants/check_no_character_id.py`](invariants/check_no_character_id.py) | 无角色名 / 角色 ID 判断 | `scripts/systems/`、`scripts/npc/` 未落地 → 「暂时没测到」 |
+| [`invariants/check_observer_readonly.py`](invariants/check_observer_readonly.py) | 观察层只读 | 运行时腿借 `tools/core_sim.py` 已跑出真实计数（读 2466 / 写 0） |
+| [`invariants/check_magic_numbers.py`](invariants/check_magic_numbers.py) | 数值不落在脚本里 | `scripts/core/`、`systems/`、`npc/` 未落地 → 「暂时没测到」 |
+
+详见 [`invariants/README.md`](invariants/README.md)；一键运行：`bash tools/run_tests.sh`。

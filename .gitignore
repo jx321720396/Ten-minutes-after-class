@@ -48,6 +48,10 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# ---- 本机 Godot 路径与离线导出产物（机器相关，不共享）----
+.godot_path
+/tools/out/
+
 # ---- 临时脚本与片段（.tmp-* / .frag-* 前缀）----
 .tmp-*
 .frag-*
