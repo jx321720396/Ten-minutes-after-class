@@ -24,5 +24,22 @@ func end_game() -> void:
 	sim_core = null
 
 
+## 把内核事件出口绑到 EventBus 四信号（D11 缺口④）。
+## 内核零 autoload 依赖：这里由表现层（GameState）完成「内核事件 → 全局信号」的路由。
+func wire_events(core: Variant) -> void:
+	if core == null:
+		return
+	core.event_sink = func(e: Dictionary) -> void:
+		match e["type"]:
+			"event_happened":
+				EventBus.event_happened.emit(e["payload"])
+			"day_settled":
+				EventBus.day_settled.emit(e["payload"])
+			"tag_changed":
+				EventBus.tag_changed.emit(e["payload"]["id"], e["payload"]["tag"])
+			"stress_burst":
+				EventBus.stress_burst.emit(e["payload"]["i"])
+
+
 func is_running() -> bool:
 	return sim_core != null

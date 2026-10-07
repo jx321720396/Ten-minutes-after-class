@@ -46,6 +46,10 @@ var _volume := 0.0
 var _active_phases: Array = []   # 非 settle 段（课间/上课）顺序，供单步推进（D11）
 var _phase_setup_done := false   # 当前段是否已跑段首一次性结算（D11）
 
+## 事件出口（D11 缺口④）：表现层把此回调绑到 EventBus 四信号，内核零 autoload 依赖。
+## 收到 {"type": String, "payload": Dictionary}；type ∈ event_happened / day_settled / tag_changed / stress_burst。
+var event_sink: Callable = Callable()
+
 # —— 配置 ——
 var _p: Dictionary = {}             # transmission 参数（含 settle_interval）
 var _bp: Dictionary = {}            # belief 参数（先验 / 学习率 / 偏差）
@@ -423,6 +427,13 @@ func _tick() -> void:
 		_stress_drip()
 
 
+# ------------------------------------------------------------------ 事件出口（D11 缺口④：内核 → 表现层，零 autoload 依赖）
+## 向注入的事件出口派发一条事件（type + payload）。event_sink 为空时无副作用（headless/测试）。
+func _emit(type: String, payload: Dictionary) -> void:
+	if event_sink.is_valid():
+		event_sink.call({"type": type, "payload": payload})
+
+
 # ------------------------------------------------------------------ 跨天结算（D9：§3.5 / §10.22 / §10.29）
 ## 概率爆发（不是「到点必爆」，§3.5 / §8.3）。压力跨过入口阈值 burst_stress 后**每天判定一次**：
 ##   p = burst_p_max × severity，severity = (stress − θ) / (100 − θ)。
@@ -443,8 +454,11 @@ func _try_burst() -> void:
 		_stress[i] = _clamp100(s - 40.0)
 		if not tag.is_empty():
 			_knot_days[i] = maxi(_knot_days[i], roundi(float(tag["days"]) * (1.0 + severity)))
+			_emit("tag_changed", {"id": i, "tag": "heart_knot"})
 		_spread_knot(i, severity)
 		_stats["bursts"] = int(_stats["bursts"]) + 1
+		_emit("stress_burst", {"i": i})
+		_emit("event_happened", {"kind": "burst", "i": i, "severity": severity})
 
 
 ## 爆发传染：把「心结」扩散给与 i 关系最鲜明的少数人（|A − H| 越大越容易被波及）。
@@ -476,6 +490,7 @@ func _spread_knot(i: int, severity: float) -> void:
 	var days_eff := roundi(float(tag["days"]) * (1.0 + severity))
 	for j in _rng.sample(pool, mini(kmax_eff, pool.size())):
 		_knot_days[j] = maxi(_knot_days[j], days_eff)
+		_emit("tag_changed", {"id": j, "tag": "heart_knot"})
 
 
 ## 跨天结算（§3.5）：压力爆发概率判定 → 信念遗忘回归 → 心结每日加压 → 各轴衰减。
@@ -523,6 +538,7 @@ func _settle_day() -> void:
 		_stress[i] *= retain_s
 	_day_events.clear()
 	_day += 1
+	_emit("day_settled", {"day": _day - 1, "stats": _stats.duplicate(true)})
 
 
 # ------------------------------------------------------------------ 统一影响公式（UIF，docs/design/统一影响公式.md）
@@ -1320,6 +1336,7 @@ func _do_chat(i: int, j: int) -> void:
 	_observe(i, j, "affinity")
 	_observe(j, i, "affinity")
 	_stats["chats"] = int(_stats["chats"]) + 1
+	_emit("event_happened", {"kind": "chat", "i": i, "j": j})
 
 
 ## 搭话判定侧：p 掷骰，无硬闸门；roll 可由调用方预掷（保证三拍展示一致）。
@@ -1342,6 +1359,7 @@ func _do_join_chat(i: int, j: int, roll: float = -1.0) -> void:
 		_stats["joins"] = int(_stats["joins"]) + 1
 		_stats["join_rejects"] = int(_stats.get("join_rejects", 0)) + 1
 		_stats["skipped_events"] = int(_stats["skipped_events"]) + 1
+	_emit("event_happened", {"kind": "join_chat", "i": i, "j": j, "accepted": roll < p})
 
 
 ## 举报（§10.2）：i = 举报者，j = 被举报者；效果落在被举报者身上。
@@ -1351,6 +1369,7 @@ func _do_report(i: int, j: int) -> void:
 	_mark_hurt(i, j)
 	_h[i * _n + j] = _clamp100(_h[i * _n + j] - 5.0)
 	_stats["reports"] = int(_stats["reports"]) + 1
+	_emit("event_happened", {"kind": "report", "i": i, "j": j})
 
 
 ## 当众调侃（§10.12）：方向由绝对阈值判档；围观者按「他对被调侃者的态度」站队。
@@ -1378,6 +1397,7 @@ func _do_tease(i: int, j: int, audience: Array) -> void:
 			_stats["humiliations"] = int(_stats.get("humiliations", 0)) + 1
 		_stats["tease_fail"] = int(_stats["tease_fail"]) + 1
 	_stats["teases"] = int(_stats["teases"]) + 1
+	_emit("event_happened", {"kind": "tease", "i": i, "j": j})
 
 
 ## 排挤（B 类纯损害）：群体驱逐；被排挤者压力↑且对参与者好感↓（双向疏远）。
@@ -1393,6 +1413,7 @@ func _do_exclude(i: int, j: int, crowd: Array) -> void:
 		if k != i:
 			_apply_event(k, j, "exclude_affinity")
 	_stats["excludes"] = int(_stats["excludes"]) + 1
+	_emit("event_happened", {"kind": "exclude", "i": i, "j": j})
 
 
 ## 流言（§10.1）：i 传关于 j 的话；旁观者二手观测（带噪声）。
@@ -1406,6 +1427,7 @@ func _do_rumor(i: int, j: int) -> void:
 		if k != i and k != j:
 			_observe(k, j, "hostility")
 	_stats["rumors"] = int(_stats["rumors"]) + 1
+	_emit("event_happened", {"kind": "rumor", "i": i, "j": j})
 
 
 ## 追逐打闹（§10.18）：参与者互相好感↑、旁观者对参与者敌对↑（敌对种子）。
@@ -1417,6 +1439,7 @@ func _do_roughhouse(i: int, j: int, bystanders: Array) -> void:
 		_apply_event(k, i, "roughhouse_hostility")
 		_apply_event(k, j, "roughhouse_hostility")
 	_stats["roughhouse"] = int(_stats["roughhouse"]) + 1
+	_emit("event_happened", {"kind": "roughhouse", "i": i, "j": j})
 
 
 # ------------------------------------------------------------------ 性格/规则辅助（D8 涓流依赖，D10 行为决策复用）

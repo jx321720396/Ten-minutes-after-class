@@ -48,6 +48,22 @@ func test_advance_day_twice() -> void:
 	assert_eq(core.day(), 3, "推进到第 3 天")
 
 
+func test_event_sink_day_settled_and_behavior() -> void:
+	# D11 缺口④：event_sink 回调注入，内核零 autoload 依赖
+	var core := _core()
+	var events: Array = []
+	core.event_sink = func(e: Dictionary) -> void: events.append(e)
+	core._do_chat(0, 1)   # 第一条事件：手动触发的闲聊
+	core.run_day()
+	assert_true(events.size() > 0, "应派发事件")
+	assert_eq(events[0]["type"], "event_happened", "首条为 event_happened")
+	assert_eq(events[0]["payload"]["kind"], "chat", "chat 事件")
+	assert_eq(events[0]["payload"]["i"], 0, "chat 事件 i=0")
+	assert_eq(events[0]["payload"]["j"], 1, "chat 事件 j=1")
+	assert_eq(events[-1]["type"], "day_settled", "末条为 day_settled")
+	assert_eq(events[-1]["payload"]["day"], 1, "day_settled 结算第 1 天")
+
+
 func test_deterministic_report() -> void:
 	var a := _core()
 	a.run_day()
