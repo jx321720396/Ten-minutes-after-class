@@ -1,0 +1,14 @@
+# 绑定组（结构化替代 seeds.csv note 里的自由文本绑定）
+# 依据：主文档 §11.5 抽取规则；tools/core_sim.py `_init_relations` 的硬编码绑定
+# 用途：
+#   ① RosterSelector 强制纳入绑定组成员（from 或 to 中出现的非 * 别名）
+#   ② SimCore `_init_relations` 在随机初始化之后，按本表覆盖对应关系值
+# 列：group_id 组名 | kind 类型(couple/uniform) | from 施方 | to 受方(*=全班) |
+#     affinity 覆盖好感 | trust 覆盖信任 | note
+# 规则：按文件行序应用，后行覆盖前行（当前数据无重叠）；空值列表示「不覆盖」。
+# ⚠️ 信任 80：seeds.csv 林晚自由文本写「对 01 信任 90」，但参考实现 `_init_relations`
+#    用 T=80 双向覆盖，故本表取 80（对拍以代码为准，90 待与策划确认后统一）。
+group_id,kind,from,to,affinity,trust,note
+couple_1,couple,陈阳,林晚,85,80,情侣绑定：陈阳→林晚
+couple_1,couple,林晚,陈阳,85,80,情侣绑定：林晚→陈阳（对称）
+uniform_1,uniform,佳豪,*,50,,佳豪对全班初始好感 50
