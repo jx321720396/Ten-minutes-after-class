@@ -131,7 +131,7 @@ attacker, victim = 0, 2
 sim_hum.A[attacker][victim], sim_hum.H[attacker][victim] = 10.0, 50.0   # 落嘲讽档
 sim_hum.hurt_day[attacker][victim] = sim_hum.hurt_day[victim][attacker] = NEG_HURT
 sim_hum.settled.clear()
-sim_hum.do_tease(attacker, victim, [3, 4, 5])                           # 围观 3 人 → 升级为羞辱
+sim_hum.do_tease(attacker, victim, [3, 4, 5, 6])                        # 围观 4 人（= 共同邻居几何上界）→ 升级为羞辱
 check("羞辱：hurt_day 记施害者视角（发起者 → 被调侃者），且不污染反向条目",
       sim_hum.hurt_day[attacker][victim] == sim_hum.day
       and sim_hum.hurt_day[victim][attacker] == NEG_HURT)
