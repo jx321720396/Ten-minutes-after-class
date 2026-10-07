@@ -40,6 +40,7 @@
   · **`tools/run_tests.sh`**：一键跑「六道门 + 铁律测试 + Godot 侧 GUT 单测」；Godot 路径查找顺序为 `--godot` > `$GODOT_BIN` > 仓库根 `.godot_path` > `PATH`，找不到只跳过 Godot 段；强制 `PYTHONIOENCODING=utf-8`（本机 GBK 控制台下六道门会因 `✓` 抛 `UnicodeEncodeError`）。
   · **`tools/export_ticks.py`**：hook 内核 `tick` 导出同种子逐 tick 关键状态（关系三轴 / 透明度 / 压力统计 + 矩阵哈希），作为 GDScript 移植的**对拍基建**（冲刺计划 D6–D9）；产物默认落 `tools/out/`（已 gitignore）。
   · 配套：`.gitignore` 新增 `.godot_path`、`/tools/out/`；`tools/README.md`、`tests/README.md`、`docs/qa/测试策略.md` 同步更新。
+- **3D 教室场景（画风探索 / 备用素材）**：`scenes/game/classroom3D.tscn` 按像素卡通风参考图手搭完整教室（无脚本，全部节点可在检查器调整）——米黄墙 + 绿墙裙、右侧大窗与系带窗帘、左侧走廊高窗 + 门 + 绿色公告栏、后墙「文明班级」黑板报 + 课表栏 + 储物柜、前墙黑板、讲台；17 套桌椅按 `data/rules/seats.csv` 命名为 `Seats/P0`–`P16`（4×4 网格 + 讲桌旁 P0），坐标为**米制**（根节点无缩放，1 单位 = 1 m；教室 10.4 m × 12.4 m、层高 3.46 m）。部件拆为 `scenes/components/` 下的 `desk_chair`、`podium`、`window_tall`、`window_high`、`curtain`、`ceiling_light`、`back_wall`、`front_wall`、`floor`；共享材质在 `resources/materials/`，像素贴图在 `assets/textures/classroom/`；`scenes/game/classroom3D_pixel.tscn` 以 1/3 分辨率渲染再放大。**注：不改变「2D 先行」的呈现路线，本场景作画风探索与备用素材。**
 - **安卓导出配置完成（2026-10-06）**：新增 `export_presets.cfg`——Windows Desktop + Android 双导出预设（包名 `com.xiake.tenminutes`；Android 使用内置模板，非 Gradle 自定义构建）；`project.godot` 开启 `textures/vram_compression/import_etc2_astc`（移动端 ETC2/ASTC 纹理导入格式）；教室 3D 素材 `.import` 同步为 Godot 4.7.2 导入状态。
 - **接入 GUT 测试框架（9.7.1，Godot 4.7.x 对应版）**：`addons/gut/` 入库并在 `project.godot` 启用编辑器插件；`tests/unit/test_smoke.gd` 冒烟用例跑通（`godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/unit -gexit`）；版本记录于 `tests/README.md` 与 `docs/qa/测试策略.md`。
 ### 变更
@@ -56,6 +57,7 @@
   · **平衡（重标定）**：`w_events.csv` 的 `reject_stress` 3→2（取值轨迹 3/2.5/2/1.5 → 爆发 95.5/64.9/35.8/6.8）；`behavior_thresholds.csv` 的 `join_chat_affinity` 45→43（轨迹 45/43/41/39 → 爆发 35.8/13.6/5.7/2.0，θ=44 在 60 局下涨到 32.0 超出上界，故选 43）。旧注释「θ 须高于 `belief.csv` 的 `prior_a`(=40)」是**信念口径**的约束，判定改真值后失效，已删。
   · **第四道门加固**：`tools/check_metrics.py` 默认种子集 **8 → 40**（爆发次数是长尾指标 —— 同一份代码只换种子集：8 局 11.6 / 20 局 13.6 / 40 局 17.8 / 60 局 21.9），并修掉默认集里的重复种子。
   · **验收**：40 局实测 爆发 17.9 ✓ / 好感均值 55.4 ✓ / SD 22.6 ✓ / 饱和 0.0% ✓；六道门全绿。旧「8 局口径」的实测数字（§10.23.3、§10.28.3 等）是在判定读信念下测的，**已在文档中标记失效**（§18.9）。
+- **3D 教室光照复核**（配合上条；2D 先行决策不变）：环境光 `ambient_light_energy` 0.72 → **0.2**（米制修复后六盏灯首次真正照到地面，叠加环境光导致过曝）；`Lamp1–6` 光强 0.75 → 0.6；`FillBack`/`FillFront` 0.3 → 0.15 并**显式关闭 `shadow_enabled`**（此前默认开启 → 后墙/侧墙出现投影）。相机保持透视（`fov 42`，未改用正交投影）。
 - **核实 2026 聚光灯官方规则并预填比赛提交清单（策划，2026-10-06）**：确认投稿截止 **2026-10-21 12:00**（需通过审核，可换稿至 10-21 23:59）、**官方建议 10-18 前提交**（与冲刺计划一致）；双端奖要求**同一页面同时上传 Android + PC**；全程参与奖要求**开发周期内 ≥5 篇开发者日志**（不可同日连发、每篇含截图/短视频、带指定标签）+ **试玩人数 ≥ 50**；无引擎限制。仍待核实：Android 最低版本与 TapTap 客户端要求、素材原创性条款、AI 素材条款、知识产权与独家性条款、包体大小限制。
 - **引擎版本升级 Godot 4.6.3 → 4.7.2（用户决策）**：项目改用 Godot 4.7.2 开发；`project.godot` 的 `config/features` 由 `"4.6"` 升至 `"4.7"`，`.godot` 缓存与 `.import` 随 4.7.2 导入重建。文档中的引擎版本声明同步更新：AGENTS.md、README、主文档 §18 引擎定稿、路线图、里程碑、冲刺计划、PR 模板。
 - **目标引擎定稿：Godot 4.6（GDScript）（用户决策）**：参赛作品使用 Godot 制作，规格与数值资产（主文档、`data/` 参数表、Python 内核与六道门）全部延续；移植目标为 GDScript，逐项对拍 24 项单测。相关文档已统一为 Godot 表述：AGENTS.md、主文档 §18（架构/数据模型/规则接口）、README、路线图注记、冲刺计划（见冲刺计划 §5 清单）。
@@ -553,6 +555,9 @@
   · **平衡复验（参数未动）**：`check_config` 176 ✓ / `test_core` **30** ✓（新增 §3.5「举报的作用对象」、§3.6「当众羞辱的 hurt_day」两组方向回归断言 —— 门只对拍数值，方向写反不会被拦住）/ `verify_formula` **11** ✓（新增 `report_hostility`、`report_stress` 两条对拍，并让 `independent_event` 支持 `tier=major` 与压力轴；此前汇总行硬编码打印「4 项」，现按实际计数）/ `check_metrics` 分布判据 ✓（爆发均值 26.9、好感均值 59.1、SD 21.2、饱和 0.0%）/ `diversity_report` 20 局 ✓：**举报上场率 15% → 25%（3 → 6 次）**，排挤 90% → 80%（111 → 74 次，阈值 ≥70%），羞辱 100%、深层锁死 0/20。
   · 同步更新主文档 §10.25.2（`hurt_day` 的维护位置与方向说明）。
   · **同时收口一处既有文档漂移**：主文档写 `interrupted_stress = 1.20`，而 `data/rules/behavior_probs.csv` 为 **1.25**（本文件「举报载体层」条亦记录 1.35 → 1.25）——第六道门 `check_docs` 因此长期报红。已按配置更正文档，六道门全部转绿。
+
+### 移除
+- **3D 教室场景内的日光与可见灯具模型**：删 `Sun`（`DirectionalLight3D`，原仅 0.25）、`Room/CeilingFixtures/Light1–6`（`ceiling_light.tscn` 实例）与 `Projector` 投影仪（含 `Rod`/`Body`/`Lens` 及专用 `sub_resource`）——改为**纯室内人工光**（`Lamp1–6` 六盏 `OmniLight3D` + `FillBack`/`FillFront`，全部 `shadow_enabled = false`），消除吊挂模型对俯视取景的遮挡并降低移动端实时光源开销。
 
 ### 文档
 - **玩家行为分类落库 + 归口表现层（2026-10-07）**：主文档 §12.2 的玩家行为表由「按行为枚举」改为**面向玩家的三组分类**（开口说话 / 动手做事 / 不接触，各带菜单项 ↔ 标识符映射），并明确它是 **UI 行动菜单的分组依据**，与 §10.16 的实现分类（A–E）是**同一批动作的两种切法、不得混用**。同时收口三处漂移：
