@@ -18,7 +18,7 @@ behavior,name,kind,duration,payoff,noise,join_mode,note
 # join_mode: accept = 需对方判定（接受/拒绝）｜ free = 自由跟随（无需接受）｜ none = 不可加入
 study,学习,default,0,1,1,free,默认行为；占用剩余时间（不占用忙碌期，空闲即在学）
 eavesdrop,窃听,passive,0,1,0,free,并行行为：不占时间槽，但仅在「未进行任何主行为」时生效（正在专注的人听不到）
-rumor,流言,env,10,2,1,none,一句话的传播（低声，不计入环境音量）
+rumor,流言,env,10,2,1,none,一句话的传播（低声，计入环境音量）
 join_chat,搭话,intent,10,2,2,accept,加入他人正在进行的闲聊
 pass_note,传纸条,env,10,2,1,accept,闲聊的不可窃听 / 不可被搭话版本（无声）
 move,走动,env,15,1,1,free,下课瞬间的位置更新（耗时低、收益低，但会发出响动）
