@@ -21,6 +21,13 @@
   · **实测**：临时探针（用完已删）两种链路都过 —— 直接注入内核时 17 人全部落位、座位与 `data/rules/seats.csv` 一一对应；经主菜单「新游戏」时 `current_scene = Classroom3D`、`Actors` 子节点 17 个；另渲染一张 1920×1080 截图目视确认（人物坐在课桌后、朝向镜头、中文名字牌正常显示、「我」用发光色块标记）。
   · **素材注记**：`活泼女.png` 画布 254×428（其余 15 张均 160×438），按高度等比缩放后明显偏宽，待美术（D）复核是否裁切重导。
   · **已知缺口（本次范围外）**：难度 3（24 NPC / 25 节点）在 `SimCore._assign_seats()` 越界崩溃 —— `seats.csv` 只有 17 个座位（P0–P16），`sim_core.gd:361` 的 `ids[i]` 取空；GUT 另有 3 项既存失败（`behaviors` 期望 17 行而实际 18 行、`test_sim_core_d10` 两例），与本次改动无关。
+- **离线测试基建：六道门进 CI、铁律哨兵夹具、三个测试目录、逐 tick 对拍器（2026-10-07）**：
+  · **六道门 + 铁律测试接入 CI**：`.github/workflows/ci.yml` 新增 `offline-gates` job（`bash tools/run_tests.sh --no-godot`），每次 push/PR 自动跑；`gdscript` job 去掉 `continue-on-error` 与告警兜底，`gdformat --check` / `gdlint` 失败即阻断并打印格式差异。
+  · **铁律哨兵夹具**：新增 `tests/invariants/fixtures/`（故意违反铁律、但语法合法的小样本）；三个铁律脚本增加「哨兵自检」——先断言能抓到夹具里的违规，再扫真实目录，扫描器失效会被立刻发现。
+  · **补齐测试目录**：新增 `tests/integration/`（无头整局 `run_term.gd`）、`tests/balance/`（批量标定 `run_batch.gd`）、`tests/emergence/`（主文档第十六章 13 条现象：`cases.md` 验收契约 + `test_emergence.gd` GUT 骨架）。
+  · **逐 tick 对拍器**：新增 `tests/integration/test_tick_parity.py`（Python ↔ GDScript 逐 tick 比对 `A/H/T/O/stress` 均值，相对误差 ≤ 1%）与 GDScript 侧导出入口 `export_ticks_gd.gd`，自带「偏 5% 必须判红」的哨兵。
+  · `tools/run_tests.sh` 新增逐 tick 对拍段，Godot 段增加 emergence 的 GUT 运行。
+  · **未改动任何游戏脚本与数据**；测试种子数（8 → 100）**不在本次改动内** —— 主线同批已自行完成，并附带多进程并行加速。
 - **转笔判定布局v02（2026-10-07）**：导出当前 `classroom3D.tscn` 摄像机真实截图，并生成小尺寸纸片人＋底部判定卡片概念稿，位于 `docs/art/ui_mockups/pen_check_v02/`；记录生成图的背景重绘与尺寸偏差，未修改游戏代码或场景。
 - **转笔判定UI设计稿（2026-10-07）**：`docs/art/ui_mockups/pen_check_design_v01.md` 及两张配套PNG，展示3D教室＋纸片人背景下的底部判定卡片、接纳／拒绝反馈，并提供透明笔素材；仅设计交付，未修改代码或场景。
 - **UI 首轮视觉提案（2026-10-07）**：新增 `docs/art/ui_mockups/ui_core_direction_v01.png` 与 `docs/art/UI绘制审阅说明.md`，展示课间、加入活动判定和每日简报的风格方向，记录相位、版本范围及交付规格冲突；属于待审概念稿，尚非可导入切图包。

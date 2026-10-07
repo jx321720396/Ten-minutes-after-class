@@ -15,6 +15,7 @@ var settings_panel: Control
 var about_panel: Control
 var confirm_dialog: Control
 
+
 func _ready():
 	new_game_btn.pressed.connect(_on_new_game)
 	continue_btn.pressed.connect(_on_continue)
@@ -41,14 +42,17 @@ func _ready():
 	confirm_dialog.cancelled.connect(_on_cancel_confirm)
 	add_child(confirm_dialog)
 
+
 func _has_save() -> bool:
 	return Save.has_save()
+
 
 func _on_new_game():
 	if _has_save():
 		confirm_dialog.visible = true
 	else:
 		_start_new_game()
+
 
 func _start_new_game() -> void:
 	# §4.1 契约：先建本局唯一的内核实例，再切课间空间——教室只读 GameState.sim_core
@@ -70,34 +74,43 @@ func _default_difficulty() -> int:
 	push_warning("difficulty.csv 里没有 default=1 的档，回退难度 1")
 	return 1
 
+
 func _on_continue():
 	if _has_save():
 		# TODO: 实现游戏场景加载
 		pass
 
+
 func _on_settings():
 	settings_panel.visible = true
+
 
 func _on_about():
 	about_panel.visible = true
 
+
 func _on_quit():
 	get_tree().quit()
+
 
 func _on_close_settings():
 	settings_panel.visible = false
 
+
 func _on_close_about():
 	about_panel.visible = false
+
 
 func _on_confirm_clear():
 	confirm_dialog.visible = false
 	Save.delete()
 	_start_new_game()
 
+
 func _on_confirm_keep():
 	confirm_dialog.visible = false
 	_start_new_game()
+
 
 func _on_cancel_confirm():
 	confirm_dialog.visible = false
