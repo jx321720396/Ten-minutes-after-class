@@ -472,6 +472,47 @@ func advance_day() -> int:
 	return total
 
 
+## 时间快照（只读）：表现层据此显示与判定，不得自行推算相位 / tick。
+## 字段固定（时间组件计划 §4）：day / phase_id / kind / phase_index / tick_in_phase /
+## tick_count / global_tick / player_control。`kind` 只区分课间与上课，
+## 上午 / 下午必须看 `phase_id`。
+func time_snapshot() -> Dictionary:
+	var row: Dictionary = _active_phases[_phase_index]
+	return {
+		"day": _day,
+		"phase_id": str(row["phase_id"]),
+		"kind": str(row["kind"]),
+		"phase_index": _phase_index,
+		"tick_in_phase": _tick_in_phase,
+		"tick_count": int(str(row["tick_count"])),
+		"global_tick": _global_tick,
+		"player_control": int(str(row.get("player_control", "0"))) == 1,
+	}
+
+
+## 显式完成当前阶段的时间边界（时间组件计划 §4）：只在当前段 tick 已耗尽时有效，
+## 完成与 _transition_if_needed() 相同的边界动作（含跨天结算），**不推进任何 tick**。
+## 返回 {changed, ended_day, day_settled, snapshot}；tick 未耗尽时 changed = false，
+## 重复调用不重复结算、不重复发事件。
+func finish_time_boundary() -> Dictionary:
+	var day_before := _day
+	var index_before := _phase_index
+	_transition_if_needed()
+	if _phase_index != index_before or _day != day_before:
+		# 边界完成后新相位还没跑过 tick：显式归零。
+		# 否则快照会出现「phase_id 已是下一段、tick_in_phase 却还是上一段的满值」这种
+		# 自相矛盾的状态，实时驱动会据此误判「剩余 0 秒」并立刻重复触发边界、跳掉一整段。
+		# 段首一次性结算（_begin_phase）仍留给下一次 advance_tick —— 本方法不跑玩法结算。
+		_tick_in_phase = 0
+	var day_settled := _day != day_before
+	return {
+		"changed": _phase_index != index_before or day_settled,
+		"ended_day": day_before if day_settled else 0,
+		"day_settled": day_settled,
+		"snapshot": time_snapshot(),
+	}
+
+
 ## 跑完一天（三段课间 + 两段上课），返回总 tick 数。等价 advance_day()。
 func run_day() -> int:
 	return advance_day()
