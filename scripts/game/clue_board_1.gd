@@ -24,6 +24,7 @@ var palette_colors := [
 	Color(0.4, 1, 0.4, 1),
 ]
 
+
 func _ready():
 	drawing_surface.draw.connect(_on_draw)
 	tool_toggle.pressed.connect(_on_tool_toggle)
@@ -31,6 +32,7 @@ func _ready():
 		var swatch := palette.get_child(i) as ColorRect
 		if swatch:
 			swatch.gui_input.connect(_on_swatch_input.bind(palette_colors[i]))
+
 
 func _on_tool_toggle():
 	is_eraser_mode = not is_eraser_mode
@@ -41,10 +43,12 @@ func _on_tool_toggle():
 		tool_toggle.text = "粉笔"
 		eraser.visible = false
 
+
 func _on_swatch_input(event: InputEvent, color: Color):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		current_color = color
 		chalk.modulate = color
+
 
 func _get_marker_at(pos: Vector2) -> ColorRect:
 	for child in markers_root.get_children():
@@ -53,12 +57,14 @@ func _get_marker_at(pos: Vector2) -> ColorRect:
 			return marker
 	return null
 
+
 func _is_on_ui(pos: Vector2) -> bool:
 	if palette.get_global_rect().has_point(pos):
 		return true
 	if tool_toggle.get_global_rect().has_point(pos):
 		return true
 	return false
+
 
 func _input(event):
 	if event is InputEventMouseButton:
@@ -100,6 +106,7 @@ func _input(event):
 				chalk.position = event.position - Vector2(60, 15)
 			drawing_surface.queue_redraw()
 
+
 func _erase_at(pos: Vector2):
 	var i := lines.size() - 1
 	while i >= 0:
@@ -115,6 +122,7 @@ func _erase_at(pos: Vector2):
 			line.points = keep
 		i -= 1
 	drawing_surface.queue_redraw()
+
 
 func _on_draw():
 	for line in lines:
