@@ -169,6 +169,12 @@ class Sim:
         self.phase_index = 0
         self.global_tick = 0
         self.next_action = [0] * n
+        # --- 空间层：节点在教室里的真实平面位置（米，世界坐标；由表现层 / 内核空间层写入）---
+        # 依据：主文档 §10.5 / §15.1；策划 2026-10-07 裁决第 4 项「加临时位置与交互范围」。
+        # ⚠️ 本层**只记录**：内核不自己算移动，也不因位置改变任何矩阵 —— 位置只用于
+        #    范围判定与展示。真实空间版启用后，交互范围判定会读这里（见 can_interact_with）。
+        self.pos_x = [0.0] * n
+        self.pos_z = [0.0] * n
         self.busy_until = [0] * n        # 忙碌到何时（按行为 duration，替代统一冷却）
         self.busy_phase = [-1] * n       # 行为开始时的相位序号（用于判定「被下课铃打断」）
         # 占用中的行为名（含 quiet 一方：current_act 会被清成 None，「被动参与」也要记得住）
@@ -938,6 +944,26 @@ class Sim:
                     self.do_join_chat(i, j)
                     busy.add(i)
                     busy.add(j)
+
+    def is_busy(self, i):
+        """节点此刻是否正处在占用型行为中（§10.4 行为耗时）—— 表现层权限判定用（如玩家操控）。"""
+        if i < 0 or i >= self.N:
+            return False
+        return self.global_tick < self.busy_until[i]
+
+    def set_position(self, i, x, z):
+        """写入节点在教室里的真实平面位置（米）。越界静默忽略（表现层防御性调用）。"""
+        if 0 <= i < self.N:
+            self.pos_x[i] = float(x)
+            self.pos_z[i] = float(z)
+
+    def position_of(self, i):
+        """节点当前位置 (x, z)，单位米。"""
+        return (self.pos_x[i], self.pos_z[i])
+
+    def distance_between(self, i, j):
+        """两点的平面距离（米）—— 空间层判定（交互范围 / 活动圈）的统一口径。"""
+        return math.hypot(self.pos_x[i] - self.pos_x[j], self.pos_z[i] - self.pos_z[j])
 
     def can_interact_with(self, j):
         """目标此刻能否接受一次新交互（只读判定）：

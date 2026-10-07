@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/game/classroom_actors.gd" id="actors_script"]
 [ext_resource type="Script" path="res://scripts/game/classroom_roam.gd" id="roam_script"]
 [ext_resource type="Script" path="res://scripts/game/simulation_clock.gd" id="clock_script"]
+[ext_resource type="Script" path="res://scripts/game/player_controller.gd" id="player_script"]
 [ext_resource type="PackedScene" path="res://scenes/ui/time_hud.tscn" id="time_hud_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="pause_menu"]
 
@@ -738,5 +739,8 @@ script = ExtResource("roam_script")
 
 [node name="Clock" type="Node" parent="."]
 script = ExtResource("clock_script")
+
+[node name="Player" type="Node3D" parent="."]
+script = ExtResource("player_script")
 
 [node name="TimeHUD" parent="." instance=ExtResource("time_hud_scene")]
