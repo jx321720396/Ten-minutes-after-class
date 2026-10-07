@@ -60,6 +60,20 @@ const NAME_FONTS: Array[String] = [
 ## 立绘缺失时的占位色
 @export var missing_marker_color: Color = Color(0.75, 0.45, 0.85)
 
+@export_group("行走组件")
+## 给每个人物挂上行走组件（scenes/components/actor_walker.tscn），
+## 由教室里的驱动器（classroom_roam.gd / 或将来的内核 position）调用
+@export var attach_walker: bool = true
+## 行走组件场景；留空则不挂
+@export var walker_scene: PackedScene = preload("res://scenes/components/actor_walker.tscn")
+
+@export_group("单场景调试")
+## 直接运行本场景（不经主菜单）时自动建一个演示局 —— 便于在编辑器 / MCP 里
+## 直接跑 classroom3D.tscn 就能看到人物。正常流程由 main_menu 调 GameState.start_game。
+@export var auto_start_demo: bool = true
+## 演示局种子（0 = 按系统时间随机）
+@export var demo_seed: int = 20261007
+
 var _appearances: Dictionary = {}
 ## 名字牌字体只加载一次（SystemFont 会去查系统字体，逐人新建会拖慢进教室）
 var _name_font_cache: Font = null
@@ -68,9 +82,33 @@ var _name_font_cache: Font = null
 func _ready() -> void:
 	var core: Variant = current_core()
 	if core == null:
-		push_error("ClassroomActors：没有本局内核实例（GameState.sim_core 为空）——" + "请从主菜单「新游戏」进入教室。")
+		core = _start_demo_game()
+	if core == null:
+		push_error("ClassroomActors：没有本局内核实例（GameState.sim_core 为空）——请从主菜单「新游戏」进入教室。")
 		return
 	build(core)
+
+
+## 单场景调试：直接运行本场景（不经主菜单）时自动建一个演示局，并写入 GameState，
+## 让同级的表现层组件（classroom_roam）读到同一个内核实例。正常流程不会走到这里。
+func _start_demo_game() -> Variant:
+	if not auto_start_demo:
+		return null
+	var state: Variant = get_node_or_null("/root/GameState")
+	if state == null:
+		return null
+	var game_seed := demo_seed
+	if game_seed == 0:
+		game_seed = int(Time.get_unix_time_from_system())
+	var difficulty := Config.default_difficulty()
+	state.start_game(game_seed, difficulty)
+	push_warning(
+		(
+			"ClassroomActors：单场景运行 —— 已自动建演示局（种子 %d，难度 %d）；" % [game_seed, difficulty]
+			+ "正常流程请从主菜单「新游戏」进入。"
+		)
+	)
+	return state.sim_core
 
 
 ## 本局内核实例；缺失返回 null。
@@ -106,10 +144,20 @@ func build(core: Variant) -> int:
 		var actor := _build_actor(core, i)
 		add_child(actor)
 		actor.global_position = seat.global_position + Vector3(0.0, foot_offset, chair_offset_z)
+		_attach_walker(actor)
 		placed += 1
 	if placed != count:
 		push_warning("ClassroomActors：内核 %d 个节点，实际落位 %d 个" % [count, placed])
 	return placed
+
+
+## 给人物挂上行走组件（组件只负责「怎么走」，不判断该不该走）。
+func _attach_walker(actor: Node3D) -> void:
+	if not attach_walker or walker_scene == null:
+		return
+	var walker := walker_scene.instantiate()
+	walker.name = "Walker"
+	actor.add_child(walker)
 
 
 ## 清掉上一次生成的人物（重复 build / 热重载时不会叠人）。
