@@ -14,25 +14,33 @@
 即：**允许每局不同，但不允许平均不对、也不允许全员畸形。**
 
 运行：
-  python tools/check_metrics.py                     # 默认 40 个种子（长尾指标需要大样本）
-  python tools/check_metrics.py --seeds 60 --days 30
+  python tools/check_metrics.py                     # 默认 100 个种子（长尾指标需要大样本）
+  python tools/check_metrics.py --seeds 200 --days 30
+  python tools/check_metrics.py --jobs 1            # 强制串行（调试用）
+
+并行：局与局互相独立（各自 Sim(seed) + random.Random(seed)），默认按核数并行，
+      结果与串行**逐位一致**（executor.map 保序）。100 局：串行约 191s → 并行约 17s。
 """
 
 import argparse
+import itertools
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core_sim import Sim  # noqa: E402
 
-# 默认种子集 **40**（2026-10-07 由 8 提到 40）。
+# 默认种子集 **100**（2026-10-07：8 → 40 → 100）。
 # 起因：爆发次数是**长尾**指标 —— 少数几局就能主导均值，8 局会系统性误判。
 # 实测同一份代码只换种子集：8 局 → 11.6 / 20 局 → 13.6 / 40 局 → 17.8 / 60 局 → 21.9。
-# 门必须跑在大样本上，否则「达标」只是拟合了那几个种子（§3.4.1 第六条）。
+# 40 → 100 的起因与第五道门同源（见 tools/diversity_report.py 抬头）：样本量不足时，
+# 「达标」只是拟合了那几个种子（§3.4.1 第六条）；判分布的门就该跑在大样本上。
 SEEDS = [12345, 42, 2024, 999, 31415, 2718, 1618] + list(range(1, 34))   # 7 + 33 = 40，无重复
+# 默认 100 局时，超出的 60 个种子由下面的 run 逻辑用 1000+ 续接（见 main）
 
 
-def run_one(seed, days, npc, verbose=False):
+
+def run_one(seed, days, npc):
     s = Sim(seed=seed, npc_count=npc)
     for _ in range(days):
         s.run_day()
@@ -53,11 +61,27 @@ def run_one(seed, days, npc, verbose=False):
         "deep_max": max(s.H_deep[i][j] for i in range(n) for j in range(n) if i != j),
         "h_max": max(s.H[i][j] for i in range(n) for j in range(n) if i != j),
     }
-    if verbose:
-        print("  seed=%-6d 爆发%3d 举报%2d 排挤%2d 羞辱%3d | mean%5.1f sd%4.1f sat%4.1f 压力%5.1f | 敌对max%6.1f 深层max%6.1f"
-              % (seed, r["bursts"], r["reports"], r["excludes"], r["humiliations"],
-                 r["mean"], r["sd"], r["sat"], r["stress_mean"], r["h_max"], r["deep_max"]))
     return r
+
+
+def fmt_row(r):
+    """单局明细行。串行/并行共用 —— 并行时由主进程按序打印，避免多进程 stdout 交错。"""
+    return ("  seed=%-6d 爆发%3d 举报%2d 排挤%2d 羞辱%3d | mean%5.1f sd%4.1f sat%4.1f 压力%5.1f | 敌对max%6.1f 深层max%6.1f"
+            % (r["seed"], r["bursts"], r["reports"], r["excludes"], r["humiliations"],
+               r["mean"], r["sd"], r["sat"], r["stress_mean"], r["h_max"], r["deep_max"]))
+
+
+def run_seeds(seeds, days, npc, jobs):
+    """跑一批种子。
+
+    可并行：每局 = 独立的 `Sim(seed)` + 独立的 `random.Random(seed)`，局与局之间没有
+    任何共享状态，所以并行结果与串行**逐位一致**（`executor.map` 保序返回）。
+    """
+    if jobs <= 1 or len(seeds) <= 1:
+        return [run_one(sd, days, npc) for sd in seeds]
+    from concurrent.futures import ProcessPoolExecutor
+    with ProcessPoolExecutor(max_workers=jobs) as ex:
+        return list(ex.map(run_one, seeds, itertools.repeat(days), itertools.repeat(npc)))
 
 
 def avg(vals):
@@ -68,14 +92,23 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=30)
     ap.add_argument("--npc", type=int, default=16)
-    ap.add_argument("--seeds", type=int, default=len(SEEDS))
+    ap.add_argument("--seeds", type=int, default=100)
+    ap.add_argument("--jobs", type=int, default=0,
+                    help="并行进程数（0=按 CPU 核数自动，1=强制串行）")
     a = ap.parse_args()
 
     # 超出默认集时用 1000+ 的种子续接，避免与默认集重复
     seeds = (SEEDS[: a.seeds] if a.seeds <= len(SEEDS)
              else SEEDS + list(range(1000, 1000 + a.seeds - len(SEEDS))))
-    print("=== 玩法指标门（分布判据 ：%d 局 × %d 天）===" % (len(seeds), a.days))
-    rows = [run_one(sd, a.days, a.npc, verbose=True) for sd in seeds]
+    # 自动并行度：核数、局数、上限三者取小。
+    # 加 16 的上限是因为 `cpu_count()` 只报逻辑核，**报不准「本进程实际能用的核」**——
+    # 容器/cgroup 配额下实测报 32 而实际约 6 核，多开的进程只是在白付启动与调度开销
+    # （实测 100 局：jobs=6 → 17.4s，jobs=32 → 21.0s）。知道自家机器余量时用 --jobs 覆盖。
+    jobs = a.jobs if a.jobs > 0 else min(os.cpu_count() or 1, 16, len(seeds))
+    print("=== 玩法指标门（分布判据 ：%d 局 × %d 天，并行 %d 进程）===" % (len(seeds), a.days, jobs))
+    rows = run_seeds(seeds, a.days, a.npc, jobs)
+    for r in rows:
+        print(fmt_row(r))
 
     ok_all = True
 

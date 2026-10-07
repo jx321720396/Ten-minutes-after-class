@@ -15,8 +15,20 @@
          那是「局与局的差异被时间单调抹掉」的先兆。
 
 运行：
-  python tools/diversity_report.py                 # 默认 20 局
-  python tools/diversity_report.py --seeds 40 --days 30
+  python tools/diversity_report.py                 # 默认 100 局
+  python tools/diversity_report.py --seeds 200 --days 30
+  python tools/diversity_report.py --jobs 1        # 强制串行（调试用）
+
+并行：局与局互相独立（各自 Sim(seed) + random.Random(seed)），默认按核数并行，
+      结果与串行**逐位一致**（executor.map 保序）。100 局：串行约 190s → 并行约 17s。
+
+⚠️ 样本量为什么是 100（2026-10-07 由 20 提高）：
+  本门的判据是**出场率**（`hit / 局数`），而 20 局的二项标准误约 **10 个百分点** ——
+  门槛 70% 的机制，真实率 72% 时，20 局样本有相当概率测出 65%（不合格）。
+  实测同一份代码、同一种子起点、只改样本量：排挤出现率 20 局 65% / 80 局 72% / 100 局 72%。
+  ∴ 20 局的「达标」与「不达标」都不可信 —— 门必须跑在大样本上（§3.4.1 六）。
+  100 局的标准误降到约 4.5 个百分点 —— 但排挤真实率约 72%，距 70% 下限只剩约 2pp，
+  仍属**边缘达标**（成因见主文档 §10.23：排挤的证据完全由当众羞辱喂给 `hurt_day`）。
 """
 
 import argparse
@@ -33,8 +45,14 @@ from core_sim import Sim  # noqa: E402
 #   · 举报：深层敌对只由「当众羞辱」写入，而羞辱又要求「被围满且围观者众」，
 #     因此它是**罕见但不应绝迹**的机制 —— 下限 10%（旧值 15% 是错误前提下的产物）；
 #   · 排挤：要求「近期 ≥2 人做过重大损害」，实测 75%，下限取 70%；
-#   · 羞辱/爆发：应几乎必现，下限 90% / 100% 不变。
-MIN_ACTIVE = {"举报": 0.10, "排挤": 0.70, "当众羞辱": 0.90, "爆发": 1.00}
+#   · 羞辱：应几乎必现，下限 90%；
+#   · **爆发：100% → 90%（2026-10-07 用户裁决）**。100% 是「**普适性要求**」，
+#     而本门管的是「**机制在不在场**」（§3.4.1 七）—— 「96% 的局里爆发过」显然属于在场。
+#     更根本的是：没有任何机制有「必现」的保证，写 100% 等于宣告本门在小样本下必然绿灯、
+#     在大样本下必然红灯 —— 那是**样本量的函数，不是机制的信号**。
+#     实测（同批 100 个种子）：θ=3 时 94%、θ=4 时 96%；20 局时之所以是 20/20，
+#     只是抽样还没抽到尾部。门槛必须与样本量匹配（§3.4.1 六）。
+MIN_ACTIVE = {"举报": 0.10, "排挤": 0.70, "当众羞辱": 0.90, "爆发": 0.90}
 MAX_CORR = 0.90        # 两两相关度超过它的对数比例上限（涌现死亡信号）
 MAX_LOCKED = 0.50      # 「深层顶到上限」的局占比上限（吸收态先兆）
 
@@ -47,33 +65,56 @@ def corr(a, b):
     return num / (da * db) if da * db else 0.0
 
 
+def run_one(seed, days, npc):
+    """跑一局并抽出本门需要的指纹字段"""
+    s = Sim(seed=seed, npc_count=npc)
+    for _ in range(days):
+        s.run_day()
+    n = s.N
+    aff = [s.A[i][j] for i in range(n) for j in range(n) if i != j]
+    return {
+        "seed": seed,
+        "reports": s.stats.get("reports", 0),
+        "excludes": s.stats.get("excludes", 0),
+        "humiliations": s.stats.get("humiliations", 0),
+        "bursts": s.stats["bursts"],
+        "deep_max": max(s.H_deep[i][j] for i in range(n) for j in range(n) if i != j),
+        "sat": 100.0 * sum(1 for x in aff if x >= 95) / len(aff),
+        "A": aff,
+    }
+
+
+def run_seeds(seeds, days, npc, jobs):
+    """跑一批种子。
+
+    可并行：每局 = 独立的 `Sim(seed)` + 独立的 `random.Random(seed)`，局与局之间没有
+    任何共享状态，所以并行结果与串行**逐位一致**（`executor.map` 保序返回）。
+    """
+    if jobs <= 1 or len(seeds) <= 1:
+        return [run_one(sd, days, npc) for sd in seeds]
+    from concurrent.futures import ProcessPoolExecutor
+    with ProcessPoolExecutor(max_workers=jobs) as ex:
+        return list(ex.map(run_one, seeds, itertools.repeat(days), itertools.repeat(npc)))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=30)
     ap.add_argument("--npc", type=int, default=16)
-    ap.add_argument("--seeds", type=int, default=20)
+    ap.add_argument("--seeds", type=int, default=100)
+    ap.add_argument("--jobs", type=int, default=0,
+                    help="并行进程数（0=按 CPU 核数自动，1=强制串行）")
     a = ap.parse_args()
 
     seeds = list(range(1000, 1000 + a.seeds))
-    print("=== 第五道门：多样性与存在性（%d 局 × %d 天）===" % (len(seeds), a.days))
+    # 自动并行度：核数、局数、上限三者取小。
+    # 加 16 的上限是因为 `cpu_count()` 只报逻辑核，**报不准「本进程实际能用的核」**——
+    # 容器/cgroup 配额下实测报 32 而实际约 6 核，多开的进程只是在白付启动与调度开销
+    # （实测 100 局：jobs=6 → 17.4s，jobs=32 → 21.0s）。知道自家机器余量时用 --jobs 覆盖。
+    jobs = a.jobs if a.jobs > 0 else min(os.cpu_count() or 1, 16, len(seeds))
+    print("=== 第五道门：多样性与存在性（%d 局 × %d 天，并行 %d 进程）===" % (len(seeds), a.days, jobs))
 
-    rows = []
-    for sd in seeds:
-        s = Sim(seed=sd, npc_count=a.npc)
-        for _ in range(a.days):
-            s.run_day()
-        n = s.N
-        aff = [s.A[i][j] for i in range(n) for j in range(n) if i != j]
-        rows.append({
-            "seed": sd,
-            "reports": s.stats.get("reports", 0),
-            "excludes": s.stats.get("excludes", 0),
-            "humiliations": s.stats.get("humiliations", 0),
-            "bursts": s.stats["bursts"],
-            "deep_max": max(s.H_deep[i][j] for i in range(n) for j in range(n) if i != j),
-            "sat": 100.0 * sum(1 for x in aff if x >= 95) / len(aff),
-            "A": aff,
-        })
+    rows = run_seeds(seeds, a.days, a.npc, jobs)
 
     ok_all = True
 

@@ -36,7 +36,7 @@ join_chat,gate_weight,>=,4,决策侧软门槛在 U_b 中的权重
 conformity,see,>=,25,【已废弃】旧语义：读真值敌对（信息层穿透，违反 §7.4）
 conformity,see_window,<=,14,从众：最近多少天内有**公开**敌对行为才算「我亲眼见过他在欺负 j」
 conformity,min,>=,2,从众：邻居里至少这么多人恨 j，从众者才跟着恨
-humiliate,bystanders,>=,3,当众羞辱：围观者达到此数则嘲讽升级为「羞辱」（计深层敌对）
+humiliate,bystanders,>=,4,当众羞辱：围观者达到此数则嘲讽升级为「羞辱」（计深层敌对）。围观者=调侃双方的共同邻居，**几何上界只有 4 人**（§10.23）——取上界 = 「两人座位紧挨、被同一批人夹住」才算被围满；3 人只是普通摩擦。⚠️ 取 3 会与 do_tease 的调用门槛（≥3）撞车而**恒真**，使「私下嘲讽」档不存在
 tease_stand,affinity,>=,55,围观者喜欢被调侃者 → 站被调侃者（看戏/不满发起者）
 tease_sneer,hostility,>=,40,围观者讨厌被调侃者 → 附和发起者（嫌弃）
 # 【排挤】（B 类：判定来源为「群体状态」而非任何一对个人关系）
@@ -47,3 +47,26 @@ roughhouse,count,>=,2,旁观者人数门槛
 exclude,window,<=,30,排挤：在最近多少天内有敌对行为才算「当前还在欺负他」
 exclude,cooldown,>=,7,排挤：同一目标多少天内不再被重复驱逐（孤立是状态，不是反复的动作）
 exclude,count,>=,2,排挤：近期对他做过重大敌对行为的人数门槛（≥3 人才构成「集体」）
+# ---- 安慰（§10.13，A 类）----
+#   触发门槛 = 「目标压力 ≥ `comfort_trigger_target_stress`(70，见上)」×「发起者对目标好感 ≥ 门槛」。
+#   好感门槛按外向度分两段：**E ≥ 50 用默认值**，E < 50 时向内向端线性抬高
+#   （§10.13「一般 50 / 内向 70」→ E=50 恰为 50、E=0 恰为 70；连续、不跳变，UIF §2.6 边界③）。
+comfort_trigger,affinity,>=,50,安慰：好感门槛默认值（E ≥ 50）
+comfort_trigger,introvert_affinity,>=,70,安慰：好感门槛的内向端（E=0）
+# ---- 求助（§10.10，C 类：决策读信念、判定读真值）----
+#   好感门槛三段锚点：E=50 → 30、E=0 → 50、E=100 → 20（§10.10「≥30；内向 ≥50；外向 ≥20」）。
+#   以 30 为默认值向两侧线性展开。
+ask_help,affinity,>=,30,求助：好感门槛默认值（E = 50）
+ask_help,introvert_affinity,>=,50,求助：好感门槛的内向端（E=0）
+ask_help,extrovert_affinity,>=,20,求助：好感门槛的外向端（E=100）
+ask_help,accept_theta,>=,40,求助判定：被接纳的 sigmoid 拐点（score = A[j][i] + 对方外向度加成）
+ask_help,accept_scale,>=,12,求助判定 sigmoid 坡度（越大越缓）
+ask_help,extrovert_bonus,>=,10,求助判定：被求助者外向度加成上限（E_j/100 × 此值）
+# ---- 道歉 / 和解（§10.11，E 类）----
+#   `apologize_trigger_hostility = 30` 见上。⚠️ §10.11 的「双方敌对 ≥30」在**决策侧**拆成
+#   「我的真值敌对 H[i][j] ≥ 30」+「我以为他也敌对 B_H[i][j] ≥ 30」—— 决策侧不得读 H[j][i]
+#   （§18.7 不变式 3）；真值 H[j][i] 只在**判定侧**（接受概率）出现。
+apologize,accept_theta,>=,40,道歉判定：被接受的 sigmoid 拐点
+apologize,accept_scale,>=,12,道歉判定 sigmoid 坡度
+apologize,calm_bonus,>=,20,道歉判定：对方随和系数（F_j/100 × 此值，§10.11「对方随和系数」）
+apologize,hostility_penalty,>=,0.5,道歉判定：对方敌对对接受概率的压制（§10.11「− 敌对值 ×0.5」）

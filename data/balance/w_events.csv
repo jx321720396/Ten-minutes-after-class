@@ -12,9 +12,9 @@ reject_hostility,hostility,3,0,0,0.2,0.3,normal,C,被拒绝搭话
 reject_affinity,affinity,-3,0,0,0.2,0,normal,C,被拒绝搭话
 report_stress,stress,5,0,0,0.3,-0.4,major,B,被举报（须敌对累积到阈值）
 report_hostility,hostility,5,0,0,0.2,-0.3,major,B,被举报
-comfort_target_stress,stress,-3,0.2,0,0.4,0,normal,A,安慰他人
-comfort_target_affinity,affinity,3,0,0,0.3,0,normal,A,安慰他人
-comfort_target_trust,trust,3,0,0,0.5,0,normal,A,安慰他人
+comfort_target_stress,stress,-5,0.2,0,0.4,0,major,A,安慰他人：目标压力↓（§10.13 重大档）
+comfort_target_affinity,affinity,4,0,0,0.3,0,major,A,安慰他人：目标对安慰者好感↑（§10.13 重大档）
+comfort_target_trust,trust,5,0,0,0.5,0,major,A,安慰他人：目标对安慰者信任↑（§10.13 重大档）
 roughhouse_affinity,affinity,2,0.3,0,0.2,0,normal,A,追逐打闹：参与者互相好感↑
 conformity_hostility,hostility,3,0,0,0.4,0,normal,B,从众：看到多人敌视某人，自己也跟着敌视（scale = 从众度 × 恨他的人数量）
 noise_hostility,hostility,3,0,0,0.3,0,normal,B,音量氛围：怕吵者敌视最吵的邻居（**单向**——吵闹者不会反过来恨安静的人）
@@ -32,3 +32,25 @@ rumor_stress,stress,3,0,0,0.4,0.2,normal,B,被流言击中（压力来源）
 topic_trust,trust,3,0,0.3,0.2,0,normal,A,话题共鸣
 topic_affinity,affinity,3,0.2,0.2,0,0,normal,A,话题共鸣
 topic_stress,stress,-2,0.3,0,0.2,0,normal,A,话题共鸣
+# ---- 安慰（§10.13，A 类）发起成本（效果行见上方 comfort_target_*）----
+comfort_cost_stress,stress,2,0.2,0,0.3,0,normal,A,安慰发起成本：凑过去关心别人也要花心力（不论结果）
+# ---- 求助（§10.10，C 类：决策读信念、判定读真值）----
+ask_help_cost_stress,stress,2,0.2,0,0.3,0,normal,C,求助发起成本：开口求人本身有压力（不论成败）
+ask_help_ok_asker_affinity,affinity,3,0,0,0.2,0,normal,C,求助成功：求助者对帮忙者好感↑
+ask_help_ok_asker_stress,stress,-2,0.2,0,0.3,0,normal,C,求助成功：求助者压力↓
+ask_help_ok_helper_affinity,affinity,2,0,0,0.3,0,normal,C,求助成功：帮忙者对求助者好感↑
+ask_help_ok_helper_trust,trust,3,0,0,0.2,0,normal,C,求助成功：帮忙者对求助者信任↑
+ask_help_no_stress,stress,3,0.2,0,0.3,0,normal,C,求助被拒：求助者压力↑
+ask_help_no_hostility,hostility,3,0,0,0.2,0.3,normal,C,求助被拒：求助者转而生恨
+ask_help_no_trust,trust,-3,0,0,0.2,0,normal,C,求助被拒：信任受损
+# ---- 道歉 / 和解（§10.11，E 类：混合判定）----
+#   注：本行为的四类效果行由 `do_apologize` 以 `no_modulation=True` 写入
+#   （和解是修复类行为，其门槛保证 H ≥ 30 → M 常为负，关系调制会把「修复」翻成「恶化」）。
+apologize_cost_stress,stress,3,0,0,0.3,0,normal,E,道歉发起成本：主动低头本身有压力
+apologize_ok_hostility,hostility,-3,0,0,0.3,0.2,normal,E,道歉被接受：**只消表层**敌对（心结 H_deep 不因道歉而消，§10.22）
+apologize_ok_affinity,affinity,3,0,0,0.3,0,normal,E,道歉被接受：好感回升（双向）
+apologize_ok_trust,trust,2,0,0,0.2,0,normal,E,道歉被接受：信任回升（双向）
+apologize_ok_stress,stress,-3,0,0,0.3,0,normal,E,道歉被接受：双方都松口气
+apologize_no_hostility,hostility,2,0,0,0.3,0.2,normal,E,道歉被拒：敌对继续累积（表层的，不写深层）
+apologize_no_stress,stress,4,0,0,0.4,0.2,major,E,道歉被拒：主动低头被驳回（重大档）
+apologize_no_trust,trust,-3,0,0,0.2,0,normal,E,道歉被拒：信任受损
