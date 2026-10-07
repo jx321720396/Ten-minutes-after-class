@@ -1703,6 +1703,36 @@ func activity_of(i: int) -> String:
 	return _current_act[i]
 
 
+# ------------------------------------------------- 表现层只读：角色身份 + 座位
+## i 的别名（名字牌用）；玩家自身没有别名 → 空串。
+func alias(i: int) -> String:
+	if i < 0 or i >= _chars.size():
+		return ""
+	return str(_chars[i].get("alias", ""))
+
+
+## i 在种子表里的编号（"01"…"24"）；玩家自身 → 空串。
+## 表现层用它查 data/characters/appearance.csv（外观绑定在 data/，不在脚本里判断角色名）。
+func character_id(i: int) -> String:
+	if i < 0 or i >= _chars.size():
+		return ""
+	return str(_chars[i].get("id", ""))
+
+
+## i 坐的座位号（seats.csv 的 seat_id，如 "P7"）；越界 → 空串。
+## ⚠️ 座位由 _assign_seats() 消费内核 RNG 随机分配，表现层必须读这里、不得自行随机，
+##    否则画面上「谁挨着谁」会与内核判定用的邻接关系不一致（§15.1 空间聚散）。
+func seat_of(i: int) -> String:
+	if i < 0 or i >= _seat_of.size():
+		return ""
+	return str(_seat_of[i])
+
+
+## i 是不是玩家自身（玩家恒为最后一个节点，§4.1）。
+func is_player(i: int) -> bool:
+	return i == _n - 1
+
+
 ## 观察层（只读）：当前「活动圈」—— 按「此刻在做同一件事」分组（§15.1，≥2 人才成圈）。
 func get_activity_circles() -> Dictionary:
 	var groups := {}

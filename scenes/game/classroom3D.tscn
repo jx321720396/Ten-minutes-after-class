@@ -1,5 +1,9 @@
 [gd_scene format=3 uid="uid://cvvi06b7bmdyn"]
 
+[ext_resource type="Script" path="res://scripts/game/classroom.gd" id="navigation_script"]
+[ext_resource type="Script" path="res://scripts/game/classroom_actors.gd" id="actors_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="pause_menu"]
+
 [ext_resource type="PackedScene" path="res://scenes/components/desk_chair.tscn" id="1_desk"]
 [ext_resource type="PackedScene" uid="uid://veknwyi71j7a" path="res://scenes/components/podium.tscn" id="2_podium"]
 [ext_resource type="PackedScene" path="res://scenes/components/window_tall.tscn" id="3_win_tall"]
@@ -220,6 +224,12 @@ material = ExtResource("m_metal")
 size = Vector3(0.03, 0.03, 12)
 
 [node name="Classroom3D" type="Node3D" unique_id=1586539727]
+script = ExtResource("navigation_script")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="PauseMenu" parent="UI" instance=ExtResource("pause_menu")]
+visible = false
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=281153324]
 environment = SubResource("Env_room")
@@ -675,3 +685,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.918118, 0, -2.2218692)
 
 [node name="P16" parent="Seats" unique_id=1445026452 instance=ExtResource("1_desk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7680268, 0, -2.2711349)
+
+[node name="Actors" type="Node3D" parent="."]
+script = ExtResource("actors_script")
