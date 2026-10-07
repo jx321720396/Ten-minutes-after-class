@@ -32,6 +32,10 @@ window/stretch/mode="viewport"
 
 project/assembly_name="下课十分钟"
 
+[editor_plugins]
+
+enabled=PackedStringArray("gut")
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
@@ -42,7 +46,3 @@ textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="mobile"
 textures/vram_compression/import_etc2_astc=true
-
-[editor_plugins]
-
-enabled=PackedStringArray("gut")
