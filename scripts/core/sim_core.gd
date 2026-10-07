@@ -466,8 +466,10 @@ func _apply_event(i: int, j: int, event_id: String, scale: float = 1.0) -> bool:
 		else:
 			delta = _r1(_m_state(i, negative) * _sat(p_val, axis))
 		if axis == "hostility" and str(row.get("tier", "normal")) == "major":
-			if delta > 0.0:
-				_hurt_day[i * _n + j] = _day
+			# ⚠️ `_hurt_day` 不在此维护（2026-10-07 同步 main `1458563` 修复）：本方法的
+			#    (i, j) 是「被作用方 → 作用方」，而读者（排挤 §10.25、从众 §10.24）要的是
+			#    「施害者 → 受害者」，两者恰好相反，曾把受害者误记为施害者。
+			#    改由调用点用 `_mark_hurt(施害者, 受害者)` 显式记录（D10 接线 do_report/do_tease）。
 			var cap := float(_env.get("deep_cap", 70.0))
 			_h_deep[i * _n + j] = minf(cap, _h_deep[i * _n + j] + absf(delta))
 			_stats["deep_writes"] = int(_stats.get("deep_writes", 0)) + 1
@@ -493,6 +495,13 @@ func _apply_event(i: int, j: int, event_id: String, scale: float = 1.0) -> bool:
 		applied = true
 		_stats["events"] = int(_stats["events"]) + 1
 	return applied
+
+
+## 记录「施害者 → 受害者」的最近一次**重大**敌对行为（§10.25 排挤判据、§10.24 从众判据）。
+## ⚠️ 只在 tier = major 的事件调用点使用（do_report/do_tease，D10 接线）——日常摩擦
+##    （noise_hostility 等）每天让几乎所有人互相「损害」，若一并记录，「被 3 人损害」会成常态、排挤天天发生。
+func _mark_hurt(perpetrator: int, victim: int) -> void:
+	_hurt_day[perpetrator * _n + victim] = _day
 
 
 # ------------------------------------------------------------------ 传导（§11 信念矩阵 / 统一影响公式 §3）
