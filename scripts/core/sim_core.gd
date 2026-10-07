@@ -113,10 +113,11 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 		if str(row["kind"]) != "settle":
 			_active_phases.append(row)
 
-	# 抽角色（§11.5 正式版：绑定组 + 极性覆盖，不消费随机数）
-	_chars = RosterSelector.new().select(
-		_rows(tables, "characters/seeds"), _bindings, npc_count, float(_kp["mbti_neutral"])
-	)
+	# 抽角色（简化：随机取 npc_count 个；对齐 main 的 core_sim.py，消费随机数）
+	# ⚠️ 必须 .duplicate()：_rows 返回共享缓存引用，shuffle 原地改写会污染跨实例共享的 tables。
+	var pool: Array = _rows(tables, "characters/seeds").duplicate()
+	_rng.shuffle(pool)
+	_chars = pool.slice(0, npc_count)
 
 	_alloc(n)
 
@@ -244,6 +245,11 @@ func _reset_runtime(n: int) -> void:
 		"join_accepts": 0,
 		"join_rejects": 0,
 		"humiliations": 0,
+		"comforts": 0,
+		"helps": 0,
+		"help_rejects": 0,
+		"apologizes": 0,
+		"apologize_rejects": 0,
 	}
 	_next_action = []
 	_busy_until = []
@@ -407,45 +413,61 @@ func _begin_phase() -> void:
 	_phase_setup_done = true
 
 
-## 推进一个 tick（D11 单步粒度）。段未开始则先跑段首结算；段跑完自动跨段/跨天。
+## 推进一个 tick（D11 单步粒度）。段未开始则先跑段首结算。
+## 跨段/跨天的游标推进推迟到「下一 tick 开始前」（见 _transition_if_needed），
+## 使段末/日末采样到的 snapshot 仍属上一段/上一天 —— 与 Python tick() 的观测一致。
 func advance_tick() -> int:
+	_transition_if_needed()
 	if not _phase_setup_done:
-		if _phase_index >= _active_phases.size():
-			_phase_index = 0
 		_begin_phase()
 	_tick()
 	_tick_in_phase += 1
 	var row: Dictionary = _active_phases[_phase_index]
 	if _tick_in_phase >= int(str(row["tick_count"])):
-		_vol_log.append(snapped(_volume, 0.1))
-		_phase_index += 1
-		_phase_setup_done = false
-		if _phase_index >= _active_phases.size():
-			_settle_day()
+		_vol_log.append(_r1(_volume))
 	return _global_tick
+
+
+## 上一段跑完后，把游标推进到下一段；跨天则先 _settle_day 再回到段 0。
+func _transition_if_needed() -> void:
+	if not _phase_setup_done:
+		return
+	var row: Dictionary = _active_phases[_phase_index]
+	if _tick_in_phase < int(str(row["tick_count"])):
+		return
+	_phase_index += 1
+	_phase_setup_done = false
+	if _phase_index >= _active_phases.size():
+		_phase_index = 0
+		_settle_day()
 
 
 ## 推进一个段（从当前位置跑到当前段末尾），返回本段跑的 tick 数。
 func advance_phase() -> int:
+	_transition_if_needed()
 	if _phase_index >= _active_phases.size():
 		return 0
-	var ran := 0
 	if not _phase_setup_done:
 		_begin_phase()
+	var ran := 0
 	var target := int(str(_active_phases[_phase_index]["tick_count"]))
 	while _tick_in_phase < target:
 		advance_tick()
 		ran += 1
+	# 段跑完 → 显式推进到下一段（D11 语义：advance_phase 返回后 phase_index 指向下一段）
+	_transition_if_needed()
 	return ran
 
 
 ## 推进一天（从当前位置跑到当天结束并跨天结算），返回当天跑的 tick 数。
 func advance_day() -> int:
 	var total := 0
+	_transition_if_needed()
 	if _phase_index >= _active_phases.size():
 		_phase_index = 0
 		_phase_setup_done = false
-	while _phase_index < _active_phases.size():
+	var phases_left := _active_phases.size() - _phase_index
+	for _i in range(phases_left):
 		total += advance_phase()
 	return total
 
@@ -490,7 +512,7 @@ func _try_burst() -> void:
 			continue
 		_stress[i] = _clamp100(s - 40.0)
 		if not tag.is_empty():
-			_knot_days[i] = maxi(_knot_days[i], roundi(float(tag["days"]) * (1.0 + severity)))
+			_knot_days[i] = maxi(_knot_days[i], _rint(float(tag["days"]) * (1.0 + severity)))
 			_emit("tag_changed", {"id": i, "tag": "heart_knot"})
 		_spread_knot(i, severity)
 		_stats["bursts"] = int(_stats["bursts"]) + 1
@@ -524,8 +546,8 @@ func _spread_knot(i: int, severity: float) -> void:
 	)
 	var pool_size := maxi(1, int(float(others.size()) * ratio))
 	var pool: Array = others.slice(0, pool_size)
-	var kmax_eff := roundi(float(kmax) * (1.0 + severity))
-	var days_eff := roundi(float(tag["days"]) * (1.0 + severity))
+	var kmax_eff := _rint(float(kmax) * (1.0 + severity))
+	var days_eff := _rint(float(tag["days"]) * (1.0 + severity))
 	for j in _rng.sample(pool, mini(kmax_eff, pool.size())):
 		_knot_days[j] = maxi(_knot_days[j], days_eff)
 		_emit("tag_changed", {"id": j, "tag": "heart_knot"})
@@ -580,9 +602,59 @@ func _settle_day() -> void:
 
 
 # -------------------------------------------------- 统一影响公式（UIF，docs/design/统一影响公式.md）
-## 四舍五入到 0.1（Python round(x,1)；结构常量 0.1 已白名单）。
+## 精确复刻 Python 3.13+ round(v, ndigits)：round-half-even 的正确舍入。
+## 单纯 snapped()（half-away）或 roundi() 会在值恰好落在二进制可精确表示的 .x5 中点
+## （如 1.25/1.75）时差 0.1，导致 16 人场景 tick 11 起 A 矩阵分叉。这里用 Dekker TwoProduct
+## 求 v*scale 的精确误差，区分「恰在中点（tie→half-even）」与「浮点略偏（round-to-nearest）」。
 func _r1(v: float) -> float:
-	return snapped(v, 0.1)
+	return _round_scaled(v, 10.0)
+
+
+func _r2(v: float) -> float:
+	return _round_scaled(v, 100.0)
+
+
+## round-half-even 到整数（对齐 Python int(round(v))）；无缩放，故 frac==0.5 即精确中点。
+func _rint(v: float) -> int:
+	var flr: float = floor(v)
+	var frac: float = v - flr
+	if frac > 0.5:
+		return int(flr + 1.0)
+	if frac < 0.5:
+		return int(flr)
+	if fmod(flr, 2.0) == 0.0:
+		return int(flr)
+	return int(flr + 1.0)
+
+
+func _round_scaled(v: float, scale: float) -> float:
+	var y: float = v * scale
+	var flr: float = floor(y)
+	var frac: float = y - flr
+	if frac > 0.5:
+		return (flr + 1.0) / scale
+	if frac < 0.5:
+		return flr / scale
+	var err: float = _mul_err(v, scale, y)
+	if err > 0.0:
+		return (flr + 1.0) / scale
+	if err < 0.0:
+		return flr / scale
+	if fmod(flr, 2.0) == 0.0:
+		return flr / scale
+	return (flr + 1.0) / scale
+
+
+## v*b 的精确浮点误差（v*b == p + err 精确成立）。Dekker 拆半（2^27+1，双精度适用）。
+func _mul_err(v: float, b: float, p: float) -> float:
+	var c := 134217729.0  # 2^27 + 1
+	var tv := c * v
+	var v_hi := tv - (tv - v)
+	var v_lo := v - v_hi
+	var tb := c * b
+	var b_hi := tb - (tb - b)
+	var b_lo := b - b_hi
+	return ((v_hi * b_hi - p) + v_hi * b_lo + v_lo * b_hi) + v_lo * b_lo
 
 
 ## 性格倍率：M_personality = clamp(1 + Σ w_k·d_k, 0.1, 1.2)。
@@ -639,7 +711,9 @@ func _sat(u: float, axis: String) -> float:
 
 
 ## 统一影响公式落表：Δ = M_state · sat(P)；P = base·scale·M_personality(·M_relation)。
-func _apply_event(i: int, j: int, event_id: String, scale: float = 1.0) -> bool:
+func _apply_event(
+	i: int, j: int, event_id: String, scale: float = 1.0, no_modulation: bool = false
+) -> bool:
 	var dkey := "%d|%d|%s|%d|%d" % [i, j, event_id, _day, _phase_index]
 	if _settled.has(dkey):
 		_stats["dedup_skips"] = int(_stats["dedup_skips"]) + 1
@@ -655,7 +729,7 @@ func _apply_event(i: int, j: int, event_id: String, scale: float = 1.0) -> bool:
 		var base := float(str(row["base"]))
 		var e_val := base * scale * _mult_personality(row, i)
 		var is_axis := axis == "affinity" or axis == "hostility" or axis == "trust"
-		if is_axis and str(row.get("tier", "normal")) != "major":
+		if is_axis and str(row.get("tier", "normal")) != "major" and not no_modulation:
 			e_val *= _m_relation(i, j)
 		var p_val := e_val
 		var negative := (base < 0.0) == is_axis
@@ -1104,7 +1178,7 @@ func _join_feedback(i: int, j: int) -> Dictionary:
 	)
 	var theta := float(_thresholds_lookup["join_chat_affinity"])
 	var scale := float(_thresholds_lookup["join_chat_scale"])
-	return {"p": snapped(_sigmoid((score - theta) / scale), 0.01)}
+	return {"p": _r2(_sigmoid((score - theta) / scale))}
 
 
 ## 一次判定的展示包（只读，不参与结算；实际掷骰在 _do_join_chat 里做，D11 玩家侧用）。
@@ -1215,7 +1289,11 @@ func _decide_and_act() -> void:
 	var busy: Array = []
 	for _k in range(n):
 		busy.append(false)
-	for i in range(n):
+	var order: Array = []
+	for _k in range(n):
+		order.append(_k)
+	_rng.shuffle(order)
+	for i in order:
 		if _sleeping[i] or busy[i] or _global_tick < _busy_until[i]:
 			continue
 		_in_conversation[i] = false
@@ -1339,6 +1417,74 @@ func _decide_and_act() -> void:
 				_do_rumor(i, tgt)
 				busy[i] = true
 				busy[tgt] = true
+				continue
+		# ---------- 意向类：三条「主动接近他人」的行为（§10.10 / §10.11 / §10.13）----------
+		# 三者都必须排在下面无门槛的搭话回退块之前，否则会被它永远抢先。
+		# 门槛一律读「我自己的立场」（A[i][j] / H[i][j] / Stress[j]）与信念 B，
+		# 不读 A[j][i] / H[j][i]（§18.7 不变式 3：决策路径不得读「别人对我的态度」）。
+		var e_i := _dims[i]
+		# 意向类：安慰（§10.13，A 类）—— 有人正处在高压区，而我和他关系够近
+		if _allowed("comfort") and _rng.random() < float(_probs["comfort_p"]):
+			var base_cf := float(_thresholds_lookup["comfort_trigger_affinity"])
+			var intro_cf := float(_thresholds_lookup["comfort_trigger_introvert_affinity"])
+			var need_cf := base_cf + (intro_cf - base_cf) * maxf(0.0, (50.0 - e_i) / 50.0)
+			var cands_cf: Array = []
+			for j in range(n):
+				if (
+					j != i
+					and not busy[j]
+					and not _sleeping[j]
+					and _stress[j] >= float(_thresholds_lookup["comfort_trigger_target_stress"])
+					and _a[i * n + j] >= need_cf
+				):
+					cands_cf.append(j)
+			if not cands_cf.is_empty():
+				var w_cf: Array = []
+				for c in cands_cf:
+					w_cf.append(maxf(1.0, _stress[c]))
+				var j := int(_rng.choices(cands_cf, w_cf, 1)[0])
+				_do_comfort(i, j)
+				busy[i] = true
+				busy[j] = true
+				continue
+		# 意向类：求助（§10.10，C 类）—— 我对目标好感够高才敢开口
+		if _allowed("ask_help") and _rng.random() < float(_probs["ask_help_p"]):
+			var base_h := float(_thresholds_lookup["ask_help_affinity"])
+			var intro_h := float(_thresholds_lookup["ask_help_introvert_affinity"])
+			var extro_h := float(_thresholds_lookup["ask_help_extrovert_affinity"])
+			var need_h: float
+			if e_i < 50.0:
+				need_h = base_h + (intro_h - base_h) * (50.0 - e_i) / 50.0
+			else:
+				need_h = base_h + (extro_h - base_h) * (e_i - 50.0) / 50.0
+			var cands_h: Array = []
+			for j in range(n):
+				if j != i and not busy[j] and not _sleeping[j] and _a[i * n + j] >= need_h:
+					cands_h.append(j)
+			if not cands_h.is_empty():
+				var w_h: Array = []
+				for c in cands_h:
+					w_h.append(maxf(1.0, _b_a[i * n + c] - _b_h[i * n + c]))
+				var j := int(_rng.choices(cands_h, w_h, 1)[0])
+				_do_ask_help(i, j)
+				busy[i] = true
+				busy[j] = true
+				continue
+		# 意向类：道歉 / 和解（§10.11，E 类）—— 僵局够深才有「和解」这件事
+		if _allowed("apologize") and _rng.random() < float(_probs["apologize_p"]):
+			var th_ap := float(_thresholds_lookup["apologize_trigger_hostility"])
+			var cands_ap: Array = []
+			for j in range(n):
+				if j != i and not busy[j] and not _sleeping[j] and _h[i * n + j] >= th_ap:
+					cands_ap.append(j)
+			if not cands_ap.is_empty():
+				var w_ap: Array = []
+				for c in cands_ap:
+					w_ap.append(maxf(1.0, _h[i * n + c] + _b_h[i * n + c]))
+				var j := int(_rng.choices(cands_ap, w_ap, 1)[0])
+				_do_apologize(i, j)
+				busy[i] = true
+				busy[j] = true
 				continue
 		# 意向类：搭话（softmax 采样）
 		var cands: Array = []
@@ -1532,6 +1678,80 @@ func _do_roughhouse(i: int, j: int, bystanders: Array) -> void:
 		_apply_event(k, j, "roughhouse_hostility")
 	_stats["roughhouse"] = int(_stats["roughhouse"]) + 1
 	_emit("event_happened", {"kind": "roughhouse", "i": i, "j": j})
+
+
+## 安慰（§10.13，A 类）：i 主动关心高压区的 j。目标压力↓、对安慰者好感↑/信任↑；发起者付成本。
+func _do_comfort(i: int, j: int) -> void:
+	_occupy(i, j, "comfort")
+	_apply_event(i, j, "comfort_cost_stress")
+	_apply_event(j, i, "comfort_target_stress")
+	_apply_event(j, i, "comfort_target_affinity")
+	_apply_event(j, i, "comfort_target_trust")
+	_stats["comforts"] = int(_stats["comforts"]) + 1
+	_emit("event_happened", {"kind": "comfort", "i": i, "j": j})
+
+
+## 求助（§10.10，C 类）：判定读真值 A[j][i] + 对方外向度加成；成功/被拒各有独立效果。
+func _do_ask_help(i: int, j: int) -> void:
+	_occupy(i, j, "ask_help")
+	_apply_event(i, j, "ask_help_cost_stress")
+	var score := (
+		_a[j * _n + i] + _dims[j] / 100.0 * float(_thresholds_lookup["ask_help_extrovert_bonus"])
+	)
+	var p := _sigmoid(
+		(
+			(score - float(_thresholds_lookup["ask_help_accept_theta"]))
+			/ float(_thresholds_lookup["ask_help_accept_scale"])
+		)
+	)
+	var accepted := _rng.random() < p
+	if accepted:
+		_apply_event(i, j, "ask_help_ok_asker_affinity")
+		_apply_event(i, j, "ask_help_ok_asker_stress")
+		_apply_event(j, i, "ask_help_ok_helper_affinity")
+		_apply_event(j, i, "ask_help_ok_helper_trust")
+		_stats["helps"] = int(_stats["helps"]) + 1
+	else:
+		_apply_event(i, j, "ask_help_no_stress")
+		_apply_event(i, j, "ask_help_no_hostility")
+		_apply_event(i, j, "ask_help_no_trust")
+		_stats["help_rejects"] = int(_stats["help_rejects"]) + 1
+	_emit("event_happened", {"kind": "ask_help", "i": i, "j": j, "accepted": accepted})
+
+
+## 道歉 / 和解（§10.11，E 类）：i 主动向 j 低头。判定读真值（A[j][i] + F_j 随和 − H[j][i]×惩罚）；
+## 效果行一律 no_modulation=True（和解与关系调制 M 结构性冲突，否则「越道歉越糟」）。
+func _do_apologize(i: int, j: int) -> void:
+	_occupy(i, j, "apologize")
+	_apply_event(i, j, "apologize_cost_stress")
+	var score := (
+		_a[j * _n + i]
+		+ _dims[2 * _n + j] / 100.0 * float(_thresholds_lookup["apologize_calm_bonus"])
+		- _h[j * _n + i] * float(_thresholds_lookup["apologize_hostility_penalty"])
+	)
+	var p := _sigmoid(
+		(
+			(score - float(_thresholds_lookup["apologize_accept_theta"]))
+			/ float(_thresholds_lookup["apologize_accept_scale"])
+		)
+	)
+	var accepted := _rng.random() < p
+	if accepted:
+		_apply_event(i, j, "apologize_ok_hostility", 1.0, true)
+		_apply_event(i, j, "apologize_ok_affinity", 1.0, true)
+		_apply_event(i, j, "apologize_ok_trust", 1.0, true)
+		_apply_event(i, j, "apologize_ok_stress", 1.0, true)
+		_apply_event(j, i, "apologize_ok_hostility", 1.0, true)
+		_apply_event(j, i, "apologize_ok_affinity", 1.0, true)
+		_apply_event(j, i, "apologize_ok_trust", 1.0, true)
+		_apply_event(j, i, "apologize_ok_stress", 1.0, true)
+		_stats["apologizes"] = int(_stats["apologizes"]) + 1
+	else:
+		_apply_event(i, j, "apologize_no_hostility", 1.0, true)
+		_apply_event(i, j, "apologize_no_stress", 1.0, true)
+		_apply_event(i, j, "apologize_no_trust", 1.0, true)
+		_stats["apologize_rejects"] = int(_stats["apologize_rejects"]) + 1
+	_emit("event_happened", {"kind": "apologize", "i": i, "j": j, "accepted": accepted})
 
 
 # ------------------------------------------------------------------ 玩家行动（D11 缺口③）
