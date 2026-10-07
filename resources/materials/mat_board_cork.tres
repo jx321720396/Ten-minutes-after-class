@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://ch4e581dp5tgx"]
+
+[ext_resource type="Texture2D" uid="uid://d2lnu6c5p4gl0" path="res://assets/textures/classroom/scene_classroom_board_cork.png" id="1_tex"]
+
+[resource]
+albedo_color = Color(0.44445667, 0.44445667, 0.44445664, 1)
+albedo_texture = ExtResource("1_tex")
+roughness = 0.95
+uv1_scale = Vector3(2, 2, 2)
+uv1_triplanar = true
+texture_filter = 2
