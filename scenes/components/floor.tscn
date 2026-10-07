@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://cj5dc7m5sqc7n"]
+
+[ext_resource type="Material" path="res://resources/materials/mat_floor_tile.tres" id="1_veubx"]
+
+[sub_resource type="PlaneMesh" id="Plane_floor"]
+material = ExtResource("1_veubx")
+size = Vector2(10, 12)
+
+[node name="Floor" type="MeshInstance3D" unique_id=912042654]
+mesh = SubResource("Plane_floor")
