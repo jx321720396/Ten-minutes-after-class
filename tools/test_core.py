@@ -5,6 +5,9 @@
 
 覆盖：
   · 手算例：性格倍率 / 关系调制 / 软饱和 / round(0.1)
+  · 事件写入链路、负反馈、事件去重
+  · **重大敌对的「作用对象」**（举报 / 当众羞辱的方向与 hurt_day）—— 门只对拍数值，
+    方向写反不会被拦住，故单列断言（见 §3.5 / §3.6）
   · 不变式：决策禁读 A[j][i]、同种子同结果、数值范围、tau > 0
   · 一次小规模运行的分布输出（供人眼检查）
 """
@@ -88,6 +91,50 @@ print("\n=== 3. 事件去重（同一对子同一规则每课间段只结算一�
 before2 = sim2.A[0][1]
 ok = sim2.apply_event(0, 1, "topic_affinity")    # 第二次，同一天同一相位 → 应被跳过
 check("重复事件返回 False 且不改数值", ok is False and sim2.A[0][1] == before2)
+
+print("\n=== 3.5 举报的作用对象（方向回归，§10.2 / §10.22 / §10.25）===")
+# 断言的是「效果落在谁身上」，不是「数值算得对不对」。
+# 起因（2026-10-07）：report_stress / report_hostility 曾写成 apply_event(i, j)，
+# 于是被举报者压力恒为 0、深层敌对记到了举报者一侧 —— 而四道门全部照常通过。
+NEG_HURT = -10 ** 9
+sim_rep = Sim(seed=5, npc_count=4)
+reporter, target = 0, 2                                  # i = 举报者，j = 被举报者
+sim_rep.dims[target] = [50.0, 50.0, 50.0, 50.0]           # 四维中性 → M_personality = 1.0
+sim_rep.Stress[reporter] = sim_rep.Stress[target] = 0.0   # 避开 M_state 区间系数
+sim_rep.A[reporter][target], sim_rep.H[reporter][target] = 0.0, 90.0
+sim_rep.hurt_day[reporter][target] = sim_rep.hurt_day[target][reporter] = NEG_HURT
+sim_rep.settled.clear()
+s_rep_before, s_tgt_before = sim_rep.Stress[reporter], sim_rep.Stress[target]
+h_ij_before, h_ji_before = sim_rep.H[reporter][target], sim_rep.H[target][reporter]
+sim_rep.do_report(reporter, target)
+
+check("举报：被举报者压力上升（major +5 档 → 实得 4.3）",
+      abs((sim_rep.Stress[target] - s_tgt_before) - 4.3) < 0.06,
+      sim_rep.Stress[target] - s_tgt_before)
+check("举报：举报者不承担这份压力（§18.9 的口径）",
+      sim_rep.Stress[reporter] == s_rep_before,
+      sim_rep.Stress[reporter] - s_rep_before)
+check("举报：敌对与深层都记在「被举报者 → 举报者」",
+      abs((sim_rep.H[target][reporter] - h_ji_before) - 4.2) < 0.06
+      and abs(sim_rep.H_deep[target][reporter] - 4.2) < 0.06
+      and sim_rep.H_deep[reporter][target] == 0.0)
+check("举报：举报者对被举报者的敌对回落 −5（§10.2 第 3 条）",
+      abs(sim_rep.H[reporter][target] - (h_ij_before - 5.0)) < 1e-9,
+      sim_rep.H[reporter][target] - h_ij_before)
+check("举报：hurt_day 记施害者视角（举报者 → 被举报者），且不污染反向条目",
+      sim_rep.hurt_day[reporter][target] == sim_rep.day
+      and sim_rep.hurt_day[target][reporter] == NEG_HURT)
+
+print("\n=== 3.6 当众羞辱的 hurt_day（同一根因的另一条链）===")
+sim_hum = Sim(seed=5, npc_count=6)
+attacker, victim = 0, 2
+sim_hum.A[attacker][victim], sim_hum.H[attacker][victim] = 10.0, 50.0   # 落嘲讽档
+sim_hum.hurt_day[attacker][victim] = sim_hum.hurt_day[victim][attacker] = NEG_HURT
+sim_hum.settled.clear()
+sim_hum.do_tease(attacker, victim, [3, 4, 5])                           # 围观 3 人 → 升级为羞辱
+check("羞辱：hurt_day 记施害者视角（发起者 → 被调侃者），且不污染反向条目",
+      sim_hum.hurt_day[attacker][victim] == sim_hum.day
+      and sim_hum.hurt_day[victim][attacker] == NEG_HURT)
 
 print("\n=== 4. 不变式 ===")
 sim3 = Sim(seed=99, npc_count=6)
