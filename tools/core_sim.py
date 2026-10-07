@@ -365,12 +365,10 @@ class Sim:
             p_val = e_val + (0.0 if axis == "stress" else 0.0)  # 事件侧不含传导
             m = self.m_state(i, negative=(base < 0) == (axis in AXES))
             delta = r1(m * self.sat(p_val, axis)) if axis != "stress" else r1(self.sat(p_val, axis))
-            if axis == "hostility" and row.get("tier") == "major" and delta > 0:
-                # 记下「i 对 j 做过**严重**敌对行为」（只记 major 档）。
-                # ⚠️ 不能记日常摩擦：noise_hostility 每天让几乎所有人互相「损害」，
-                #    那样「被 3 人损害」是常态，排挤会变成天天发生（实测 268 次/30 天）。
-                #    「被欺负」指的就是**严重**的事 —— 当众羞辱、举报、秘密泄露。
-                self.hurt_day[i][j] = self.day
+            # ⚠️ `hurt_day` **不在此处维护**（2026-10-07 修）：本方法的 (i, j) 是
+            #    「被作用方 → 作用方」，而读者（§10.25 排挤、§10.24 从众）要的是
+            #    「施害者 → 受害者」—— 两者在一次调用里恰好相反，曾使**受害者被误记为施害者**。
+            #    改由**调用点**用 `mark_hurt(施害者, 受害者)` 显式记录。
             if axis == "hostility" and row.get("tier") == "major":
                 # 重大负性事件 → 同时写入**永不衰减**的深层（§10.22）。
                 # ⚠️ 不经 room_for：负反馈是给「表层摩擦」用的，若也套在深层上，
@@ -391,6 +389,15 @@ class Sim:
             applied = True
             self.stats["events"] += 1
         return applied
+
+    def mark_hurt(self, perpetrator, victim):
+        """记录「施害者 → 受害者」的最近一次**重大**敌对行为（§10.25 排挤判据、§10.24 从众判据）。
+
+        ⚠️ 只在 `tier = major` 的事件调用点使用 —— 日常摩擦（`noise_hostility` 等）每天让
+        几乎所有人互相「损害」，若一并记录，「被 3 人损害」会成为常态、排挤天天发生
+        （实测 268 次 / 30 天）。「被欺负」指的是**严重**的事：当众羞辱、举报、秘密泄露。
+        """
+        self.hurt_day[perpetrator][victim] = self.day
 
     # ------------------------------------------------ 传导（涓流）
     def transmission(self):
@@ -917,9 +924,17 @@ class Sim:
             self.stats["skipped_events"] += 1
 
     def do_report(self, i, j):
-        self.apply_event(i, j, "report_hostility")
-        self.apply_event(i, j, "report_stress")
-        self.H[i][j] = clamp100(self.H[i][j] - 5.0)  # 举报后敌对回落
+        """举报（§10.2）：**i = 举报者，j = 被举报者**。
+
+        ⚠️ **效果落在被举报者身上**（2026-10-07 修）：两处 `apply_event` 曾写作 `(i, j)`，
+        于是被举报者压力恒为 0、深层敌对记到了举报者一侧 —— 与 §10.2「举报会大幅提升
+        **被举报者**的压力值」、§6.3 major 档（压力 +5 / 敌对 +5）相反。
+        方向与 `do_tease` 的羞辱链路同构（受害者 → 施害者）。
+        """
+        self.apply_event(j, i, "report_stress")       # 被举报者压力↑（§6.3 major）
+        self.apply_event(j, i, "report_hostility")    # 被举报者 → 举报者 敌对↑（major → 深层，§10.22）
+        self.mark_hurt(i, j)                          # 施害者视角：i 举报了 j（§10.25）
+        self.H[i][j] = clamp100(self.H[i][j] - 5.0)   # 举报后 A 对 B 的敌对回落（§10.2）
         self.stats["reports"] += 1
 
     def do_tease(self, i, j, audience):
@@ -956,7 +971,7 @@ class Sim:
             # 判定只看「有多少人在看」—— 这是纯粹的处境条件，与是谁无关（无特例）。
             if len(audience) >= th.get("humiliate_bystanders", 3.0):
                 self.apply_event(j, i, "humiliate_hostility")
-                self.hurt_day[i][j] = self.day   # 施害者视角：i 当众羞辱了 j（§10.25）
+                self.mark_hurt(i, j)             # 施害者视角：i 当众羞辱了 j（§10.25）
                 self.stats["humiliations"] = self.stats.get("humiliations", 0) + 1
             self.stats["tease_fail"] += 1
         self.stats["teases"] += 1

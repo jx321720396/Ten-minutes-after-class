@@ -4,7 +4,8 @@
 而不是"看起来差不多"。按 UIF §8 的建议 dump `(i, k, X, E, C, P, Δ)` 的思路，
 用**独立重算**与实现结果逐项比对。
 
-覆盖：事件链（E 与写入）、传导链（C 与写入）、跨天衰减链、以及报告 ④ 的轨迹诊断。
+覆盖：事件链（E 与写入，含 `tier=major` 与压力轴）、传导链（C 与写入）、跨天衰减链、
+以及报告 ④ 的轨迹诊断。
 
 运行：python tools/verify_formula.py
 """
@@ -16,13 +17,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core_sim import Sim, clamp, r1  # noqa: E402
 
 FAIL = []
+PASSED = []
 
 
 def check(name, actual, expect, tol=0.06):
     ok = abs(actual - expect) <= tol
     print("  %s %-44s 实现=%7.3f 独立=%7.3f" % ("✓" if ok else "✗", name, actual, expect))
-    if not ok:
-        FAIL.append(name)
+    (PASSED if ok else FAIL).append(name)
     return ok
 
 
@@ -33,10 +34,12 @@ sim.dims[0] = [100.0, 40.0, 80.0, 60.0]          # E=100 S=40 F=80 J=60
 sim.Stress[0] = 0.0                               # 避开 M_state 歧义（压力区间系数）
 
 
-def independent_event(base, w, dims, A, H, U, axis="affinity", target_val=None, fb=0.0):
+def independent_event(base, w, dims, A, H, U, axis="affinity", target_val=None, fb=0.0,
+                      tier="normal"):
     d = [(dims[k] - 50.0) / 50.0 for k in range(4)]
     mp = clamp(1.0 + sum(w[k] * d[k] for k in range(4)), 0.1, 1.2)
-    m = clamp((A - H) / 50.0, -1.0, 1.0)
+    # 关系调制 M(i,s)：**重大档不做**（边界②，§10.16）；**压力轴也不走**（§6.1 只管 A/H/T）
+    m = 1.0 if (tier == "major" or axis == "stress") else clamp((A - H) / 50.0, -1.0, 1.0)
     e = base * mp * m
     delta = r1(e / (1.0 + abs(e) / U))
     # 负反馈：正向轴在写入点乘 (1 − fb·X/100)；负面轴不适用
@@ -47,18 +50,23 @@ def independent_event(base, w, dims, A, H, U, axis="affinity", target_val=None, 
 
 for eid, A, H, U in [("topic_affinity", 60.0, 0.0, 25.0),
                      ("topic_trust", 60.0, 0.0, 20.0),
-                     ("tease_hostility", 30.0, 45.0, 25.0)]:
+                     ("tease_hostility", 30.0, 45.0, 25.0),
+                     ("report_hostility", 20.0, 70.0, 25.0),   # 重大档：不做关系调制
+                     ("report_stress", 20.0, 70.0, 30.0)]:     # 压力轴（u_s = 30）
     row = next(r for r in sim.event_rows if r["event_id"] == eid)
     axis = row["axis"]
+    tier = row.get("tier", "normal")
+    is_stress = axis == "stress"
     sim.A[0][1], sim.H[0][1] = A, H
+    sim.Stress[0] = 0.0                                      # 避开 M_state 区间系数
     sim.settled.clear()
-    tgt = {"affinity": sim.A, "hostility": sim.H, "trust": sim.T}[axis]
-    before = tgt[0][1]
+    tgt = sim.Stress if is_stress else {"affinity": sim.A, "hostility": sim.H, "trust": sim.T}[axis]
+    before = tgt[0] if is_stress else tgt[0][1]
     sim.apply_event(0, 1, eid)
-    actual = round(tgt[0][1] - before, 3)
+    actual = round((tgt[0] if is_stress else tgt[0][1]) - before, 3)
     w = [float(row["w_e"]), float(row["w_s"]), float(row["w_f"]), float(row["w_j"])]
     expect, mp, m = independent_event(float(row["base"]), w, sim.dims[0], A, H, U,
-                                      axis=axis, target_val=before, fb=sim.feedback)
+                                      axis=axis, target_val=before, fb=sim.feedback, tier=tier)
     check("%s (base=%s, M_p=%.2f, M=%.2f)" % (eid, row["base"], mp, m), actual, expect)
 
 # ============================================================ 2. 传导链
@@ -137,5 +145,5 @@ total = sim4.N * (sim4.N - 1)
 print("  好感越过传导阈值 %.0f 的对子：%d / %d（%.0f%%）" % (th_a, over, total, 100.0 * over / total))
 
 print("\n=== 结论 ===")
-print("  通过 %d 项，失败 %d 项 %s" % (0 if FAIL else 4, len(FAIL), FAIL if FAIL else ""))
+print("  通过 %d 项，失败 %d 项 %s" % (len(PASSED), len(FAIL), FAIL if FAIL else ""))
 sys.exit(1 if FAIL else 0)
