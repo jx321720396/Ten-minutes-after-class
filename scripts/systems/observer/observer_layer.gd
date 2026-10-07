@@ -92,9 +92,16 @@ func cluster_tags(viewer: int) -> Array:
 		for j in range(i + 1, n):
 			var a1 = seen[i][j]
 			var a2 = seen[j][i]
-			if a1 != null and a2 != null and float(a1) >= TH_A and float(a2) >= TH_A \
-					and pct.has(i) and pct.has(j) \
-					and float(a1) >= float(pct[i]) and float(a2) >= float(pct[j]):
+			if (
+				a1 != null
+				and a2 != null
+				and float(a1) >= TH_A
+				and float(a2) >= TH_A
+				and pct.has(i)
+				and pct.has(j)
+				and float(a1) >= float(pct[i])
+				and float(a2) >= float(pct[j])
+			):
 				adj[i][j] = true
 				adj[j][i] = true
 	# 连通分量
@@ -117,10 +124,12 @@ func cluster_tags(viewer: int) -> Array:
 		if comp.size() >= 3:
 			comp.sort()
 			clusters.append(comp)
-	clusters.sort_custom(func(a, b):
-		if a.size() != b.size():
-			return a.size() > b.size()
-		return int(a[0]) < int(b[0]))
+	clusters.sort_custom(
+		func(a, b):
+			if a.size() != b.size():
+				return a.size() > b.size()
+			return int(a[0]) < int(b[0])
+	)
 	return clusters
 
 
