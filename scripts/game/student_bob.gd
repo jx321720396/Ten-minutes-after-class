@@ -28,8 +28,11 @@ func _ready() -> void:
 	if period_seconds <= 0.01:
 		period_seconds = 1.0
 	var animated := _find_animated_sprite(self)
-	if animated != null and animated.sprite_frames != null \
-			and animated.sprite_frames.has_animation(idle_animation):
+	if (
+		animated != null
+		and animated.sprite_frames != null
+		and animated.sprite_frames.has_animation(idle_animation)
+	):
 		animated.play(idle_animation)
 
 

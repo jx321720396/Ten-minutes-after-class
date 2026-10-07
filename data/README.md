@@ -10,7 +10,9 @@
 ```
 data/
 ├─ characters/
-│   └─ seeds.csv          24 角色种子表（身份/标签 + E/N/F/P 四维）✓
+│   ├─ seeds.csv          24 角色种子表（身份/标签 + E/N/F/P 四维）✓
+│   ├─ bindings.csv       绑定组（情侣 / 全班统一初始关系）✓
+│   └─ appearance.csv     外观呈现表（角色编号 → 立绘；表现层用，不参与行为判定）✓
 ├─ rules/
 │   ├─ transmission.csv       传导与软饱和参数（theta_* / beta_* / u_* / settle_interval / epsilon）✓
 │   ├─ belief.csv             信念矩阵更新参数（eta0_* / sigma_max_* / prior_* / lambda_b）✓
@@ -19,6 +21,8 @@ data/
 │   ├─ decay.csv              跨天衰减（有/无互动两档 + 压力保留 + 有互动门槛）✓
 │   ├─ status_tags.csv        状态标签（心结 / 秘密同盟；参数外置，避免硬编码）✓
 │   ├─ phases.csv             相位时长 + 规则启用子集 + 玩家操作权限 ✓
+│   ├─ seats.csv              座位表（seat_id / row / col / kind；决定相邻关系）✓
+│   ├─ difficulty.csv         难度档 → NPC 数量（+ `default` 列 = 新游戏默认档）✓
 │   ├─ social_events.csv      社会事件状态机（多阶段跨相位）✓
 │   └─ social_event_triggers.csv 社会事件触发条件（纯数值，禁日期记号）✓
 └─ balance/
@@ -40,6 +44,8 @@ data/
 | 文件 | 关键字段 |
 |---|---|
 | `characters/seeds.csv` | `id`、`alias`、`archetype`、`mbti`、`e`、`n`、`f`、`p`、`opacity_init`、`identity_seed`、`tags_init`、`initial_relations` |
+| `characters/appearance.csv` | `id`、`alias`、`gender`、`sprite`（表现层立绘绑定，**不参与行为判定**） |
+| `rules/difficulty.csv` | `difficulty`、`npc_count`、`default`（新游戏默认档） |
 | `rules/transmission.csv` | `theta_a`、`theta_h`、`sigma`、`beta_affinity`、`beta_hostility`、`epsilon` |
 | `rules/decay.csv` | `axis`、`no_interaction`、`interacted`、`note` |
 | `rules/phases.csv` | `phase_id`、`tick_count`、`active_rules`、`player_controllable` |

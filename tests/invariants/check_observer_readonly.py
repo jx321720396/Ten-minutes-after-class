@@ -196,6 +196,17 @@ def main(argv=None):
     root = args.root or ROOT
     report = Report("铁律 2 · 观察层只读（簇标签 / 孤立标签不回写）", "docs/qa/测试策略.md §2.2")
 
+    # --- 哨兵自检：先在 fixtures/ 里证明静态扫描真能抓到写矩阵，再扫真实目录 ---
+    report.section("哨兵自检（fixtures/ 里故意写回矩阵，必须被抓到）")
+    fx_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+    fx_files, fx_fails, _ = scan_observer_sources(fx_root)
+    if not fx_files:
+        report.add(SKIP, "哨兵自检", "fixtures/ 缺失或为空 —— 无法自检")
+    elif fx_fails:
+        report.add(PASS, "哨兵能抓到故意违规", "fixtures/ 命中 %d 条 —— 静态扫描有效" % len(fx_fails))
+    else:
+        report.add(FAIL, "哨兵失效", "fixtures/ 里的矩阵写回一条都没抓到 —— 静态扫描有问题")
+
     # --- A 静态腿 ---
     report.section("A. 静态：scripts/systems/observer/ 是否写入矩阵")
     files, fails, missing = scan_observer_sources(root)

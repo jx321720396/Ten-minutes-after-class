@@ -1,6 +1,7 @@
 # 难度档位 → NPC 数量（铁律 3：数值集中 data/，不落脚本）
 # 契约 §4.1 SimCore.new(seed, difficulty)：difficulty ∈ {1,2,3}
-difficulty,npc_count
-1,8
-2,16
-3,24
+# default：新游戏的默认档（表现层读它，避免把「默认选哪档」写死在脚本里）
+difficulty,npc_count,default
+1,8,0
+2,16,1
+3,24,0

@@ -59,6 +59,10 @@ WHITELIST = frozenset([
     # 抽样上限 4、举报敌对回落 5.0、簇强连接阈值 60.0、孤立差 15.0、打闹外向偏移 30.0、
     # 睡觉整段占用的 busy_until 哨兵 1000000000。
     "3.0", "0.3", "0.7", "0.01", "4", "5.0", "60.0", "15.0", "30.0", "1000000000",
+    # scripts/core/sim_core.gd：difficulty 未命中时的**兜底 NPC 数**（2026-10-07 由 CI 首次暴露）。
+    # ⚠️ 这是「待迁 data/」的临时白名单 —— 兜底值本就该来自 data/rules/difficulty.csv，
+    #    标定时与上面同类常量一并迁走。
+    "8",
 ])
 
 NUMBER = re.compile(r"(?<![A-Za-z0-9_.])(-?\d+(?:\.\d+)?)(?![A-Za-z0-9_])")
@@ -102,6 +106,19 @@ def main(argv=None):
     files, missing = iter_sources(dirs, root=root)
     for name in missing:
         report.add(SKIP, name, "目录不存在 —— 暂时没测到")
+
+    # --- 哨兵自检：先在 fixtures/ 里证明扫描器真能抓到违规，再扫真实目录 ---
+    report.section("哨兵自检（fixtures/ 里故意写的违规，必须被抓到）")
+    fx_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+    fx_files, _ = iter_sources(dirs, root=fx_root)
+    if not fx_files:
+        report.add(SKIP, "哨兵自检", "fixtures/ 缺失或为空 —— 无法自检")
+    else:
+        fx_hits = scan_source(fx_files, fx_root)
+        if fx_hits:
+            report.add(PASS, "哨兵能抓到故意违规", "fixtures/ 命中 %d 条 —— 扫描器有效" % len(fx_hits))
+        else:
+            report.add(FAIL, "哨兵失效", "fixtures/ 里的故意违规一条都没抓到 —— 扫描逻辑有问题")
 
     if not files:
         report.add(SKIP, "全部目标", "没有任何 .gd 源文件 —— 暂时没测到（骨架期正常）")

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dweg24oiy4i7y"]
 
-[ext_resource type="Script" uid="uid://roh6c6ohr7hi" path="res://ui/about_menu.gd" id="1_about"]
-[ext_resource type="StyleBox" uid="uid://b8x2ehcxgjtpy" path="res://ui/new_style_box_flat.tres" id="2_3ljgl"]
+[ext_resource type="Script" uid="uid://roh6c6ohr7hi" path="res://scripts/ui/about_menu.gd" id="1_about"]
+[ext_resource type="StyleBox" uid="uid://b8x2ehcxgjtpy" path="res://resources/new_style_box_flat.tres" id="2_3ljgl"]
 
 [node name="AboutMenu" type="Control" unique_id=1387159928]
 layout_mode = 3
