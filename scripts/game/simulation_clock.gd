@@ -23,6 +23,8 @@ signal term_finished(ended_day: int)
 const MODE_RUNNING := "running"
 const MODE_REPORT := "report"
 const MODE_FINISHED := "finished"
+## 时间状态存档版本（字段见 save_state）
+const SAVE_VERSION := 1
 
 const PRESENTATION_TABLE := "rules/time_presentation"
 const RUNTIME_TABLE := "rules/time_runtime"
@@ -232,6 +234,54 @@ func snapshot() -> Dictionary:
 	out["term_days"] = _term_days
 	out["display_name"] = _display_name_of(str(out.get("phase_id", "")))
 	return out
+
+
+## 存档字段（计划 §6）：mode / ended_day / 相位游标 / 配置指纹。
+## ⚠️ 时间游标单独保存**不能**恢复同种子局 —— 完整恢复需要内核的完整序列化（属存档任务）。
+## 本组件只保证「日末简报边界」可安全恢复：恢复后先显示同一日简报，点继续才开下一天。
+func save_state() -> Dictionary:
+	var cursor: Dictionary = _core.time_snapshot() if _core != null else {}
+	return {
+		"version": SAVE_VERSION,
+		"config_fingerprint": _config_fingerprint(),
+		"mode": _mode,
+		"ended_day": _ended_day,
+		"accumulator": 0.0 if _mode != MODE_RUNNING else _accumulator,
+		"cursor": cursor,
+	}
+
+
+## 恢复时间状态：只接受「版本与配置指纹一致 + mode=report」的日末边界快照；
+## 其余情况返回 false —— 那需要完整内核序列化，本任务把它明确交接给存档任务。
+func restore_state(data: Dictionary) -> bool:
+	if int(data.get("version", 0)) != SAVE_VERSION:
+		push_warning("SimulationClock：存档版本不一致，拒绝恢复时间状态。")
+		return false
+	if str(data.get("config_fingerprint", "")) != _config_fingerprint():
+		push_warning("SimulationClock：配置指纹不一致，拒绝恢复时间状态。")
+		return false
+	if str(data.get("mode", MODE_RUNNING)) != MODE_REPORT:
+		push_warning("SimulationClock：只有日末简报边界可单独恢复（mode 需为 report）。")
+		return false
+	_mode = MODE_REPORT
+	_ended_day = int(data.get("ended_day", 0))
+	_accumulator = 0.0
+	time_updated.emit(snapshot())
+	return true
+
+
+## 配置指纹：相位呈现表 + 运行时参数的内容摘要（phases 由内核读，不重复纳入）。
+func _config_fingerprint() -> String:
+	var presentation_rows: Array = _tables.get(PRESENTATION_TABLE, {}).get("rows", [])
+	var runtime_rows: Array = _tables.get(RUNTIME_TABLE, {}).get("rows", [])
+	var parts := PackedStringArray()
+	for row in presentation_rows:
+		parts.append(
+			"p:%s:%s" % [str(row.get("phase_id", "")), str(row.get("real_duration_seconds", ""))]
+		)
+	for row in runtime_rows:
+		parts.append("r:%s:%s" % [str(row.get("key", "")), str(row.get("value", ""))])
+	return "\n".join(parts).sha256_text()
 
 
 ## 阶段显示名（HUD 用）：取 time_presentation 的 display_name，缺省回退 phase_id。

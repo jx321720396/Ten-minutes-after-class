@@ -40,6 +40,7 @@ var _title: Label = null
 var _detail: Label = null
 var _bar: ProgressBar = null
 var _toast: Label = null
+var _action: Button = null
 var _toast_left := 0.0
 var _toast_count := 0
 var _last: Dictionary = {}
@@ -157,11 +158,15 @@ func _refresh(snapshot_data: Dictionary) -> void:
 	if mode == SimulationClock.MODE_FINISHED:
 		_detail.text = "学期结束 · 共 %d 天" % int(snapshot_data.get("ended_day", 0))
 		_detail.modulate = COLOR_LOCKED
+		_show_action("查看学期报告")
 		return
 	if mode == SimulationClock.MODE_REPORT:
-		_detail.text = "第 %d 天结束" % int(snapshot_data.get("ended_day", 0))
+		var ended_day := int(snapshot_data.get("ended_day", 0))
+		_detail.text = "第 %d 天结束" % ended_day
 		_detail.modulate = COLOR_ACCENT
+		_show_action("进入第 %d 天" % (ended_day + 1))
 		return
+	_action.visible = false
 
 	var remaining := _mmss(float(snapshot_data.get("remaining_seconds", 0.0)))
 	if str(snapshot_data.get("kind", "")) == "class":
@@ -170,6 +175,14 @@ func _refresh(snapshot_data: Dictionary) -> void:
 		return
 	_detail.text = "课间剩余 %s" % remaining
 	_detail.modulate = COLOR_SUB
+
+
+## 日末 / 学期结束的操作按钮文案（计划 §3）。
+func _show_action(text: String) -> void:
+	if _action == null:
+		return
+	_action.visible = true
+	_action.text = text
 
 
 ## 倒计时格式：向上取整、边界 00:00、不出现负数（计划 §3）。
@@ -231,6 +244,16 @@ func _build_ui() -> void:
 	_toast.position = CARD_MARGIN + Vector2(0.0, 108.0)
 	_toast.modulate.a = 0.0
 	add_child(_toast)
+
+	# 日末 / 学期结束才出现：简报组件的入口（本组件只负责显示与转发）
+	_action = Button.new()
+	_action.name = "NextDayButton"
+	_action.add_theme_font_override("font", _ui_font())
+	_action.add_theme_font_size_override("font_size", DETAIL_FONT_SIZE)
+	_action.visible = false
+	_action.position = CARD_MARGIN + Vector2(0.0, 116.0)
+	_action.pressed.connect(func() -> void: continue_requested.emit())
+	add_child(_action)
 
 
 func _make_label(font_size: int, color: Color) -> Label:
