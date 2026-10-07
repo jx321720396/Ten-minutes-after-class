@@ -80,6 +80,76 @@ def load_table(rel):
     return list(csv.DictReader(rows))
 
 
+def select_roster(seeds, bindings, target, neutral):
+    """主文档 §11.5「正式版」抽取：绑定组成员强制纳入 + MBTI 四维极性贪心补齐。
+
+    与 `scripts/core/roster_selector.gd` 逐字一致：**不消费随机数**，同一种子名单固定、
+    跨种子也不变。替换原「随机抽 npc_count 个」的简化实现。
+    """
+    by_alias = {row["alias"]: row for row in seeds}
+    # ① 绑定组成员（from 与 to 中出现的非 * 别名，按绑定表行序去重）
+    forced_aliases = []
+    for b in bindings:
+        f = b.get("from") or ""
+        t = b.get("to") or ""
+        if f and f != "*" and f not in forced_aliases:
+            forced_aliases.append(f)
+        if t and t != "*" and t not in forced_aliases:
+            forced_aliases.append(t)
+    selected = []
+    chosen = set()
+    for a in forced_aliases:
+        row = by_alias.get(a)
+        if row is not None:
+            selected.append(row)
+            chosen.add(a)
+    # ② 极性覆盖 + 贪心补齐：每步挑「覆盖最多尚未覆盖极性槽」的人，同分取种子行序第一
+    covered = set()
+    for row in selected:
+        _mark_roster(covered, row, neutral)
+    while len(selected) < target:
+        best = None
+        best_new = -1
+        for row in seeds:
+            alias = row["alias"]
+            if alias in chosen:
+                continue
+            new_slots = _new_slots_roster(covered, row, neutral)
+            if new_slots > best_new:
+                best_new = new_slots
+                best = row
+        if best is None:
+            break
+        selected.append(best)
+        chosen.add(best["alias"])
+        _mark_roster(covered, best, neutral)
+    return selected
+
+
+def _slot_keys_roster(row, neutral):
+    """一行角色的四维极性槽：d_high / d_low（恰为中性给空串，不占槽）。"""
+    keys = []
+    for d in DIMS:
+        v = float(row.get(d, "") or 0)
+        if v > neutral:
+            keys.append("%s_high" % d)
+        elif v < neutral:
+            keys.append("%s_low" % d)
+        else:
+            keys.append("")
+    return keys
+
+
+def _mark_roster(covered, row, neutral):
+    for k in _slot_keys_roster(row, neutral):
+        if k:
+            covered.add(k)
+
+
+def _new_slots_roster(covered, row, neutral):
+    return sum(1 for k in _slot_keys_roster(row, neutral) if k and k not in covered)
+
+
 # ---------------------------------------------------------------- 内核
 class Sim:
     def __init__(self, seed=12345, npc_count=16, verbose=False):
@@ -112,10 +182,11 @@ class Sim:
         self.nw = load_params("balance/npc_weight" + "s.csv")
         seeds = load_table("characters/seeds.csv")
 
-        # --- 抽角色（简化：随机取 npc_count 个；§11.5 的绑定组/原型去重留待正式版）---
-        pool = seeds[:]
-        self.rng.shuffle(pool)
-        self.chars = pool[:npc_count]
+        # --- 抽角色（§11.5 正式版：绑定组成员强制纳入 + 四维极性贪心补齐）---
+        # 与 scripts/core/roster_selector.gd 逐字一致，不消费随机数（名单跨种子固定）。
+        bindings = load_table("characters/bindings.csv")
+        neutral = load_params("rules/kernel_params.csv")["mbti_neutral"]
+        self.chars = select_roster(seeds, bindings, npc_count, neutral)
         self.N = npc_count + 1  # 索引 N-1 为玩家
 
         # --- 状态矩阵 ---
