@@ -131,10 +131,74 @@ attacker, victim = 0, 2
 sim_hum.A[attacker][victim], sim_hum.H[attacker][victim] = 10.0, 50.0   # 落嘲讽档
 sim_hum.hurt_day[attacker][victim] = sim_hum.hurt_day[victim][attacker] = NEG_HURT
 sim_hum.settled.clear()
-sim_hum.do_tease(attacker, victim, [3, 4, 5])                           # 围观 3 人 → 升级为羞辱
+sim_hum.do_tease(attacker, victim, [3, 4, 5, 6])                        # 围观 4 人（= 共同邻居几何上界）→ 升级为羞辱
 check("羞辱：hurt_day 记施害者视角（发起者 → 被调侃者），且不污染反向条目",
       sim_hum.hurt_day[attacker][victim] == sim_hum.day
       and sim_hum.hurt_day[victim][attacker] == NEG_HURT)
+
+print("\n=== 3.7 主动接近类行为的方向（安慰 / 求助 / 道歉，2026-10-07 新增）===")
+# 只断言「效果落在谁身上、方向对不对」，不比对数值 ——
+# 方向写反（安慰扣了自己好感 / 道歉反而加深心结）**不会让任何一道门变红**，
+# 所以与 §3.5 / §3.6 同类，必须单列断言。
+
+sim_cf = Sim(seed=13, npc_count=6)
+helper, sad = 0, 2
+sim_cf.dims[helper] = sim_cf.dims[sad] = [50.0, 50.0, 50.0, 50.0]   # 中性 → M_personality = 1.0
+sim_cf.Stress[helper], sim_cf.Stress[sad] = 0.0, 75.0               # 发起者不高压、目标在高压区
+sim_cf.A[helper][sad] = 60.0
+sim_cf.settled.clear()
+s_hlp, s_sad = sim_cf.Stress[helper], sim_cf.Stress[sad]
+a_sad2hlp, t_sad2hlp, a_hlp2sad = sim_cf.A[sad][helper], sim_cf.T[sad][helper], sim_cf.A[helper][sad]
+sim_cf.do_comfort(helper, sad)
+check("安慰：目标压力下降", sim_cf.Stress[sad] < s_sad, "%s → %s" % (s_sad, sim_cf.Stress[sad]))
+check("安慰：目标对安慰者 好感↑ / 信任↑",
+      sim_cf.A[sad][helper] > a_sad2hlp and sim_cf.T[sad][helper] > t_sad2hlp)
+check("安慰：发起者付出压力成本（不论结果）", sim_cf.Stress[helper] > s_hlp)
+check("安慰：发起者自身对目标的好感不变（不是双向增益）", sim_cf.A[helper][sad] == a_hlp2sad)
+
+sim_hp = Sim(seed=17, npc_count=6)
+asker, hlp2 = 1, 3
+sim_hp.dims[asker] = sim_hp.dims[hlp2] = [50.0, 50.0, 50.0, 50.0]
+sim_hp.Stress[asker] = 0.0
+sim_hp.A[asker][hlp2], sim_hp.H[asker][hlp2] = 40.0, 0.0
+sim_hp.A[hlp2][asker], sim_hp.H[hlp2][asker] = 30.0, 0.0   # 判定读真值 → M > 0，正向效果不被反转
+sim_hp.settled.clear()
+_orig_random = sim_hp.rng.random
+sim_hp.rng.random = lambda: 0.999                          # 强制走「被拒」分支
+st_a, h_a, t_a = sim_hp.Stress[asker], sim_hp.H[asker][hlp2], sim_hp.T[asker][hlp2]
+sim_hp.do_ask_help(asker, hlp2)
+check("求助被拒：求助者 压力↑ / 敌对↑ / 信任↓",
+      sim_hp.Stress[asker] > st_a and sim_hp.H[asker][hlp2] > h_a and sim_hp.T[asker][hlp2] < t_a)
+sim_hp.settled.clear()
+sim_hp.rng.random = lambda: 0.0                            # 强制走「成功」分支
+a_h2a, t_h2a = sim_hp.A[hlp2][asker], sim_hp.T[hlp2][asker]
+sim_hp.do_ask_help(asker, hlp2)
+check("求助成功：帮忙者对求助者 好感↑ / 信任↑",
+      sim_hp.A[hlp2][asker] > a_h2a and sim_hp.T[hlp2][asker] > t_h2a)
+sim_hp.rng.random = _orig_random
+
+# 道歉：构造「敌对压过好感」的处境（M < 0）—— 这既是道歉成立的前提，
+# 也正是关系调制会把「修复」翻成「恶化」的地方（故 do_apologize 走 no_modulation）。
+sim_ap = Sim(seed=19, npc_count=6)
+a1, a2 = 0, 4
+sim_ap.dims[a1] = sim_ap.dims[a2] = [50.0, 50.0, 50.0, 50.0]
+sim_ap.Stress[a1] = sim_ap.Stress[a2] = 0.0
+sim_ap.A[a1][a2] = sim_ap.A[a2][a1] = 20.0
+sim_ap.H[a1][a2] = sim_ap.H[a2][a1] = 40.0
+sim_ap.H_deep[a1][a2] = sim_ap.H_deep[a2][a1] = 25.0
+sim_ap.settled.clear()
+deep_before = sim_ap.H_deep[a1][a2]
+_orig_random = sim_ap.rng.random
+sim_ap.rng.random = lambda: 0.0                            # 强制「接受」
+sim_ap.do_apologize(a1, a2)
+check("道歉被接受：双向敌对下降（M < 0 时也不被翻成上升）",
+      sim_ap.H[a1][a2] < 40.0 and sim_ap.H[a2][a1] < 40.0,
+      "%s / %s" % (sim_ap.H[a1][a2], sim_ap.H[a2][a1]))
+check("道歉被接受：只消表层敌对，心结 H_deep 纹丝不动（§10.22）",
+      sim_ap.H_deep[a1][a2] == deep_before and sim_ap.H_deep[a2][a1] == deep_before,
+      "%s / %s" % (sim_ap.H_deep[a1][a2], sim_ap.H_deep[a2][a1]))
+check("道歉被接受：双向好感回升", sim_ap.A[a1][a2] > 20.0 and sim_ap.A[a2][a1] > 20.0)
+sim_ap.rng.random = _orig_random
 
 print("\n=== 4. 不变式 ===")
 sim3 = Sim(seed=99, npc_count=6)
