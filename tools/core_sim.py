@@ -745,7 +745,9 @@ class Sim:
     def decide_and_act(self):
         """一 tick 内的行为决策（简化：只挑一个行为执行）"""
         n = self.N
-        order = list(range(n))
+        # 玩家（末位节点，§4.1）由人的主动选择驱动，**不参与 NPC 自主决策**（§12.1）。
+        # 但它仍是被交互对象：下方候选集合与 pick_target 都不排除末位。
+        order = list(range(n - 1))
         self.rng.shuffle(order)
         busy = set()
 
@@ -772,7 +774,7 @@ class Sim:
 #   ⚠️ 挑衅式读的是**信念** B_H[i][j] 而非真值 H[j][i] —— 决策只读信念（§18.7 不变式 3）。
             #   修复前只有「A ≥ 20」这一条，与 §10.16 的嘲讽档判据互斥，使嘲讽档永远发不出来。
             cands_t = [j for j in range(n)
-                       if j != i and j not in busy and not self.sleeping[j]
+                       if j != i and j not in busy and self.can_interact_with(j)
                        and self.are_neighbors(i, j)      # 调侃需物理接近（§10.12 围观前提）
                        and (self.A[i][j] >= 40.0 or self.B["hostility"][i][j] >= 25.0 or self.A[i][j] < 25.0)]
             if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * (1.0 + self.tag_bias(i, "tease_bias")):
@@ -800,7 +802,7 @@ class Sim:
             th_rh = self.thresholds_lookup.get("roughhouse_affinity", 45.0)
             th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
             if self.allowed("roughhouse") and self.dims[i][0] >= th_rh and self.rng.random() < self.probs.get("roughhouse_p", 0.05):
-                others = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j]]
+                others = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)]
                 if others:
                     # 追跑对象按外向度加权：越外向越可能一起闹（→ 同样的少数人反复搭配）
                     w_rh = [max(1.0, self.dims[j][0] - 30.0) for j in others]
@@ -846,7 +848,7 @@ class Sim:
                     continue
             # 附加行为：流言（负面染色，压力来源）；目标同样偏好敌对高者
             if self.allowed("rumor") and self.rng.random() < self.probs.get("rumor_p", 0.03):
-                c2 = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j]]
+                c2 = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)]
                 if c2:
                     w2 = [max(1.0, 20.0 + self.H[i][j] - self.A[i][j] * 0.5) for j in c2]
                     j = self.rng.choices(c2, weights=w2, k=1)[0]
@@ -867,7 +869,7 @@ class Sim:
                 base_cf = thk.get("comfort_trigger_affinity", 50.0)
                 intro_cf = thk.get("comfort_trigger_introvert_affinity", 70.0)
                 need_cf = base_cf + (intro_cf - base_cf) * max(0.0, (50.0 - e_i) / 50.0)
-                cands_cf = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j]
+                cands_cf = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)
                             and self.Stress[j] >= thk.get("comfort_trigger_target_stress", 70.0)
                             and self.A[i][j] >= need_cf]
                 if cands_cf:
@@ -886,7 +888,7 @@ class Sim:
                 extro_h = thk.get("ask_help_extrovert_affinity", 20.0)
                 need_h = (base_h + (intro_h - base_h) * (50.0 - e_i) / 50.0 if e_i < 50.0
                           else base_h + (extro_h - base_h) * (e_i - 50.0) / 50.0)
-                cands_h = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j]
+                cands_h = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)
                            and self.A[i][j] >= need_h]
                 if cands_h:
                     # 目标选择读**信念**：我以为他越可能帮我，越先去求他（§18.6 意向评分「对方的反应预期」）
@@ -902,7 +904,7 @@ class Sim:
                 # 决策侧只看**我自己的立场**（我对他敌对到什么程度才谈得上「和解」）——
                 # §10.11 的「双方」由**判定侧**承接：接受概率里含 `H[j][i]`（他的气有多大）。
                 # ⚠️ 不在这里读 `H[j][i]`：决策路径禁读「别人对我的态度」（§18.7 不变式 3）。
-                cands_ap = [j for j in range(n) if j != i and j not in busy and not self.sleeping[j]
+                cands_ap = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)
                             and self.H[i][j] >= th_ap]
                 if cands_ap:
                     # 我越恨、也越以为他恨我 → 越有动力去破这个僵局
@@ -913,7 +915,7 @@ class Sim:
                     busy.add(j)
                     continue
             # 意向类：搭话
-            cands = [j for j in range(n) if j != i and not self.sleeping[j] and j not in busy]
+            cands = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)]
             if cands:
                 alpha = self.alpha(i)
                 scores = []
@@ -933,6 +935,15 @@ class Sim:
                     busy.add(i)
                     busy.add(j)
 
+    def can_interact_with(self, j):
+        """目标此刻能否接受一次新交互（只读判定）：
+        未睡觉（§10.8）且**没有尚未结束**的占用（行为耗时契约）。
+
+        跨 tick 的占用看 `busy_until` —— 只看本 tick 的局部 `busy` 集合，
+        会让「还在做上一个行为」的人被反复拉进新交互（内核策划符合性审查 P1-03）。
+        """
+        return not self.sleeping[j]
+
     def pick_target(self, i, neighbors_only=False):
         """选交互目标。**邻居优先**（§10.15 相邻修正）——
 
@@ -941,14 +952,14 @@ class Sim:
         """
         n = self.N
         if neighbors_only:
-            others = [j for j in self.neighbor_idx[i] if not self.sleeping[j]]
+            others = [j for j in self.neighbor_idx[i] if self.can_interact_with(j)]
             return self.rng.choice(others) if others else None
         # **邻居优先**：邻居被选中的权重更高（§10.15 相邻修正）。
         # 非邻居仍可能（课间有人走动），但概率显著低 —— 这就是「边数摊薄」的解药。
         w_nb = self.probs.get("neighbor_pick_mult", 3.0)
         pool = []
         for j in range(n):
-            if j == i or self.sleeping[j]:
+            if j == i or not self.can_interact_with(j):
                 continue
             pool.append((j, w_nb if j in self.neighbor_idx[i] else 1.0))
         if not pool:
@@ -1536,10 +1547,19 @@ class Sim:
         耗时机制的直接推论 —— 课间只有 100 tick，一个 60 tick 的秘密交换很容易跨越过相位边界。
         被打断者获得压力代价（`interrupted_stress`），因为「话说到一半被打断」本身就是压力源。
         这也让「长行为」有了真实的代价：不是不能做，而是**要挑时机做**。
+
+        ⚠️ 只有**尚未完成**的行为才算被打断（内核策划符合性审查 P1-04）：
+        `busy_until <= global_tick` 说明它早就做完了，此时只清理占用记录、不施加压力代价。
+        修复前只要有 busy_phase 记录且跨了相位就加压力，把「已完成」误判成「被铃声打断」。
         """
         cost = self.probs.get("interrupted_stress", 0.0)
         for i in range(self.N):
-            if self.busy_phase[i] >= 0 and self.busy_phase[i] != self.phase_index:
+            if self.busy_phase[i] < 0:
+                continue
+            if self.busy_until[i] <= self.global_tick:
+                self.busy_phase[i] = -1
+                continue
+            if self.busy_phase[i] != self.phase_index:
                 self.busy_until[i] = 0
                 self.busy_phase[i] = -1
                 if cost > 0:
