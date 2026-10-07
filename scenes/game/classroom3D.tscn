@@ -2,6 +2,10 @@
 
 [ext_resource type="Script" path="res://scripts/game/classroom.gd" id="navigation_script"]
 [ext_resource type="Script" path="res://scripts/game/classroom_actors.gd" id="actors_script"]
+[ext_resource type="Script" path="res://scripts/game/classroom_roam.gd" id="roam_script"]
+[ext_resource type="Script" path="res://scripts/game/simulation_clock.gd" id="clock_script"]
+[ext_resource type="Script" path="res://scripts/game/player_controller.gd" id="player_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/time_hud.tscn" id="time_hud_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="pause_menu"]
 
 [ext_resource type="PackedScene" path="res://scenes/components/desk_chair.tscn" id="1_desk"]
@@ -688,3 +692,55 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7680268, 0, -2.2711349)
 
 [node name="Actors" type="Node3D" parent="."]
 script = ExtResource("actors_script")
+
+[node name="StandPoints" type="Node3D" parent="."]
+
+[node name="AISLE_R1_C1" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9112, 0, 1.7609)
+
+[node name="AISLE_R1_C2" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0313, 0, 1.7609)
+
+[node name="AISLE_R1_C3" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8431, 0, 1.7609)
+
+[node name="AISLE_R2_C1" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9112, 0, -1.4391)
+
+[node name="AISLE_R2_C2" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0313, 0, -1.4391)
+
+[node name="AISLE_R2_C3" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8431, 0, -1.4391)
+
+[node name="BACK_LEFT" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.6, 0, -4.3)
+
+[node name="BACK_MID" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 0, -4.3)
+
+[node name="BACK_RIGHT" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6, 0, -4.3)
+
+[node name="SIDE_LEFT" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, 0, 0.2)
+
+[node name="SIDE_RIGHT" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 0, 0.2)
+
+[node name="PODIUM_LEFT" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9, 0, 5.4)
+
+[node name="PODIUM_RIGHT" type="Marker3D" parent="StandPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9, 0, 5.4)
+
+[node name="Roam" type="Node3D" parent="."]
+script = ExtResource("roam_script")
+
+[node name="Clock" type="Node" parent="."]
+script = ExtResource("clock_script")
+
+[node name="Player" type="Node3D" parent="."]
+script = ExtResource("player_script")
+
+[node name="TimeHUD" parent="." instance=ExtResource("time_hud_scene")]

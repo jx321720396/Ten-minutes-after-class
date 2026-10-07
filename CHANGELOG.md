@@ -9,10 +9,62 @@
 
 ## [未发布]
 
+- **玩家点击与情绪反馈计划（2026-10-07，素材/文档）**：生成透明落点标记 `assets/textures/ui/movement/click_destination_v01.png`；新增 `docs/superpowers/plans/2026-10-07-player-click-emotion-feedback.md`，规划实际寻路终点反馈、WASD取消、放松/生气/哭泣/开心男女两组气泡、可见事件摘要与暂停协调。八张既有气泡待确认实际素材路径，本次未实施组件。
+
+- **人物底部活动圈计划（2026-10-07，文档）**：新增 `docs/superpowers/plans/2026-10-07-activity-foot-rings.md`，明确统一个人圈、交互成功后的异色融合、真实会话分组、活动结束拆分及 3D 程序渲染方案；现有按行为名称汇总的接口不能直接作为融合成员来源。本次仅生成计划。
+
+- **内核策划符合性审查（2026-10-07，文档）**：新增 `docs/qa/2026-10-07-内核策划符合性审查.md`，记录玩家自动发起行为、行动入口权限/占用缺检、伪中断、空间与透明度未落实等复现证据，以及六道门、Godot 单测和对拍护栏的实际状态；本次未修改内核实现。
+
+- **时间组件计划案（2026-10-07，文档）**：新增 `docs/superpowers/plans/2026-10-07-time-component.md`，覆盖唯一内核时间源、五阶段实时换算、3D 教室时间 HUD、明确相位边界、嵌套暂停、日末简报、30 天结束与存档交接，并分解为五项实施任务。转笔演出暂停及按路径距离计算移动耗时保留为未裁决提案；本次未实现组件。
+
 - **场景按钮连接（2026-10-07）**：新游戏直接进入用户指定的 `scenes/game/classroom3D.tscn` 3D 教室；Esc 打开暂停菜单，可继续、打开设置和返回主菜单。修复菜单场景搬迁后的资源引用，保留已有存档确认弹窗。当前仅接通场景导航，继续游戏的存档恢复仍待实现。
 
 - **教室呈现路线定为 2D 先行（用户决策）**：课间空间用 `scenes/Classroom2D.tscn`（`tools/bake_classroom_2d.gd` 烘焙的静态场景）+ `scenes/characters/*.tscn`（16 个角色场景）跑通代码与玩法；`assets/models/classroom/`（Sketchfab 3D 教室，CC BY 4.0）暂作备用素材，**画风优化排在 D14 内容冻结之后**；团队分工任务单同步标注。
 ### 新增
+- **玩家操控组件（阶段 3：真实空间交互的第一步，2026-10-07）**：新增 `scripts/game/player_controller.gd`（`class_name PlayerController`），把玩家从「演示级点击移动」升级为正式操控 —— **双输入 + 桌椅阻挡 + 内核位置同步**三件一起做，避免只加 WASD 却仍穿桌、远程聊天。
+  · **WASD 手动行走**：按镜头地面方向连续移动（斜向归一化、松键即停），输入动作由代码注册（不手改 `project.godot`）；**位置允许连续变化**，不再每步吸附到站立点；
+  · **鼠标左键点地面自动寻路**：网格 A*（`AStarGrid2D`）绕开桌椅走合法路线，再次点击更换目的地；按下 WASD 立刻取消自动行走、松键不恢复旧路线；点地面时在吸附半径内优先落到「合法且空闲」的站立点；
+  · **桌椅阻挡**：障碍矩形**从场景派生**（只取 `Seats/*/Desk` 子树 —— `Chair` 在 z=-0.45 正是座位站位，不能当障碍），按 `movement.csv` 的 `player_radius` 外扩；WASD 逐帧滑动（先整体、再单轴），不穿家具；
+  · **内核位置同步**：内核新增 `set_position` / `position_of` / `distance_between` / `is_busy`（GDScript 与 Python 同步，**只读记录、不动矩阵**）；玩家位置由 PlayerController、NPC 位置由 `classroom_roam.gd` 每帧写回内核，为后续「互动按距离判范围」铺路（本轮未启用范围判定）；
+  · **统一速度**：手动与自动共用 `data/rules/movement.csv` 的 `meters_per_tick`（0.13 m/tick，≈ 旧「固定 15 tick 走完一段」的观感），耗时随实际行走距离变化；`actor_walker.gd` 新增 `walk_to_at_speed()` / `move_by()` / `stop_manual()`；
+  · **控制权限**：上课 / 简报 / 暂停 / 转笔演出 / 占用型行为进行中均停用（`can_control()`），占用状态来自内核 `is_busy`；点击 UI 不触发移动（只收 `_unhandled_input`）；
+  · **测试**：新增 `tests/unit/test_player_controller.gd`（7 例：阻挡 / 滑动 / 格网换算 / 位置往返 / 越界忽略 / 占用查询）。GUT `tests/unit` **126/126 全绿**、集成 `test_time_scene` 5/5。
+- **时间 HUD 倒计时改为直接显示秒数（2026-10-07，用户决策）**：课间 / 上课的剩余时间不再折算成 `mm:ss`，直接给秒数 —— 满段课间显示 `课间剩余 100 秒`、上课显示 `发酵中 · 本阶段约剩余 15 秒`。倒计时仍**向上取整、边界显示 0、不出现负数**（`_mmss()` → `_seconds_text()`）；`tests/integration/test_time_scene.gd` 三处断言同步。上一版 `mm:ss` 的表述保留在下方历史条目里，不追改。
+- **内核规则收口（阶段 2：行为完成与中断）（2026-10-07）**：把「行为完成」变成内核里**可观测的事件点**，为后续「完成才发信息」的规则（阶段 5 的玩家闲聊线索）留挂点。
+  · **新增 `_settle_finished_actions()` / `settle_finished_actions()`**（在每个 tick 最前面调用）：占用到期即「这件事做完了」—— 清 `current_act`、清 `busy_phase`，并把行为名写进 `last_finished`（仅本 tick 有效）。
+  · **新增字段 `_busy_act` / `busy_act`**：记录占用中的行为名。被动参与方（`quiet` 一方）的 `current_act` 会被清成空以保持「同一场对话只算一个声源」，但「他到底在做什么」必须记得住，否则完成时无从判定做完了什么。
+  · **与中断严格互斥**：到期的不算被打断；未到期的才可能被 `check_interrupt()` 在相位切换时清理并计压力 —— 两边都不重复记。
+  · **测试**：新增 `tests/unit/test_action_completion.gd`（3 例：到期即完成且可观测 / 被打断不算完成 / 被动方也记录行为名）。GUT `tests/unit` **119/119 全绿**。
+  · 顺带修正一处数据误记：`chat` 的耗时是 **30 tick**（不是 15）—— 一段课间 100 tick，三次闲聊即可占满整段，这是下一步标定「占用 / 耗时」的关键输入。
+- **内核规则收口（阶段 1：权限与占用）（2026-10-07）**：按策划裁决执行「先收口规则、再统一标定」的第一步。
+  · **禁止并发占用**：`can_interact_with()` / `_can_interact_with()` 正式启用「未结束的占用不能接受新交互」（GDScript 与 Python 同步）。忙碌者**仍可被旁观、被议论、被环境影响** —— 该判定只用于「挑交互目标」，不用于围观者 / 旁白 / 环境查询。
+  · **占用时长累积而非覆盖**：`occupy()` / `_occupy()` 改为取 `max(现值, 当前 + 耗时)`，使「加入一场进行中的活动」不会把别人的占用改短（群聊按同一个交互管理）。
+  · **前置统计**（按策划要求「先量再判断调耗时 / 机会 / 概率」，3–5 局 × 30 天 × 16 NPC）：
+    - 空闲占比 **2.6% → 5.9%**；平均可达目标数 **16.00 → 0.95**；每日活动量 **1548 → 1039**；
+    - 忙碌构成（收口前）：闲聊链 **81%**（主动 37.5% + 被动参与 43.9%）、join_chat 7.0%、comfort 5.0%、ask_help 2.8%、roughhouse 2.5%、tease 1.2%。
+    - **结论：互动密度问题不在「概率」** —— 每个人的可交互对象已不足 1 个，提高概率只会增加失败尝试；要动的是占用 / 耗时。按裁决**暂不调数值**。
+  · **已知中间状态（如实保留）**：`check_metrics` 好感均值 19.9（目标 45–65）、压力爆发 61.1（目标 15–30）不达标；这是「规则已正确、数值待重标定」的中间态，标定按计划在阶段 6 统一进行，不逐项回补。
+  · **GUT**：`tests/unit` 116 例（`test_player_cannot_act_during_class` 的流程假设已修正 —— `finish_time_boundary()` 只推相位游标，铃声中断清理发生在上课段第一个 tick）。
+- **时间组件落地：唯一内核时间源 + 实时驱动 + 时间 HUD（2026-10-07）**（计划见 `docs/superpowers/plans/2026-10-07-time-component.md`；Task 1–4 已实现，本条即 Task 5 的文档收口）：
+  · **内核边界接口**（Task 1）：`SimCore.time_snapshot()`（8 字段只读快照：day / phase_id / kind / phase_index / tick_in_phase / tick_count / global_tick / player_control）与 `finish_time_boundary()`（显式完成段边界，复用 `_transition_if_needed` 与跨天 `_settle_day`，**不跑 `_tick()`**；tick 未耗尽时 changed=false，重复调用不重复结算、不重复发事件）。边界后把 `tick_in_phase` 归零 —— 否则快照会出现「phase_id 已是下一段、tick 还是上一段满值」的自相矛盾状态，实时驱动会误判「剩余 0 秒」并跳掉一整段。
+  · **配置**（Task 2）：新增 `data/rules/time_presentation.csv`（阶段显示名 + 实时标称时长 + 游戏内时长：课间 100 秒 / 上课 15 秒、settle 为 0）与 `data/rules/time_runtime.csv`（`term_days=30`、`max_ticks_per_frame=8`）；**相位顺序 / tick 数 / 权限仍只从 `phases.csv` 读**，新表不重复定义。
+  · **时钟**（Task 2）：新增 `scripts/game/simulation_clock.gd` —— 累计真实秒数满一个 tick 间隔才推进；每帧最多补预算个 tick，**积压保留、禁止跳 tick**；跨过相位边界即停止本帧批处理并清空累计（低帧率不会一帧跨掉整个课间）；`hold` / `release` 按拥有者集合嵌套暂停（同名不累计、最后一个释放才恢复）；`bind_core` 启动校验（两表相位一一对应、活动相位时长为正且 tick 为正、settle 时长为零、term_days 与预算为正整数）不合格即拒绝绑定、不静默用默认值。
+  · **场景与 HUD**（Task 3）：新增 `scenes/ui/time_hud.tscn` + `scripts/ui/time_hud.gd`（左上角卡片：`第 N / 30 天 · 阶段名`、`课间剩余 mm:ss`、上课「发酵中 · 本阶段约剩余」、日末「第 N 天结束」；倒计时向上取整、边界 00:00、不出现负数；阶段提示在边界只弹一次）。`classroom3D.tscn` 新增 `Clock` / `TimeHUD` 节点，接线集中在 `scripts/game/classroom.gd`（**全场只绑定一次**）；`autoload/game_state.gd` 新增 `sync_time()`，day / phase 只作镜像、从快照统一更新。
+  · **走动改由真实相位驱动**：`classroom_roam.gd` 删除 `break_seconds` / `class_seconds` 自造节拍与 `_enter_break` / `_enter_class`，课间 / 上课边界一律来自时钟 `phase_changed`；移动耗时 = `move.duration` × `time_presentation` 的每 tick 真实秒数（15 tick × 1 秒 = 15 秒），全部数值来自 data；上课与日末**直接拒绝**玩家走动命令（不只是隐藏按钮）。
+  · **日末与学期结束**（Task 4）：时钟 `save_state()` / `restore_state()` 只保证「日末简报边界」可恢复（版本 + 配置指纹 + `mode=report` 三个条件），恢复后停在日报、不重做日末结算、不自动开下一天；HUD 日末按钮「进入第 N 天」，第 30 天改「查看学期报告」并进入 `finished`（14,400 tick 后任何 pump / 继续请求都不再推进）。
+  · **实测**：GUT 单元 **108 通过 / 3 失败**（失败项为既有的 `behaviors` 行数与 `test_sim_core_d10`，与本次无关）+ 集成 `tests/integration/test_time_scene.gd` 5/5；godot MCP 的 `run_project` 跑 `classroom3D.tscn` 无绑定错误、课间连续 5 批离座、进上课输出「全体归位」；课间 / 上课 / 暂停三态截图目视通过；六道门与一键离线全量通过。
+  · **未裁决 / 未完成（明确交接）**：转笔演出期间全班暂停、按路径距离计算移动耗时**仍是提案，未实施**；完整内核序列化未实现，所以「继续游戏」的真实恢复**仍不可用**（时间侧字段与拒绝规则已就绪，交由存档任务）。
+- **人物行走：ActorWalker 组件 + 课间走动演示（2026-10-07）**：
+  · **组件**：新增 `scenes/components/actor_walker.tscn` + `scripts/game/actor_walker.gd` —— 挂在人物节点下的行走组件，只负责「怎么走」（水平插值 / 缓入缓出 / 朝向翻转 / 走路起伏 / 到位信号），**不做玩法判断**；对外 `walk_to(target, seconds)` / `stop()` / `teleport_to()` / `is_moving()` / `walk_finished`。
+  · **驱动器**：新增 `scripts/game/classroom_roam.gd`（挂 `scenes/game/classroom3D.tscn` 的 `Roam` 节点）—— 演示节拍器敲「课间 / 上课」：课间按 §10.4 的权重式（`1 + Σ_j A[i][j]/100 − Σ_j H[i][j]/200`，目标点附近有活动圈 ×1.5，下限 0.1）加权抽站立点；上课段全体归位并静止。
+  · **站立点**：新增 `data/rules/stand_points.csv`（13 个公共点：走道 6 / 后墙 3 / 两侧 2 / 讲台前 2）+ 场景 `StandPoints/<point_id>` 标记节点（**世界坐标只写在场景**，与 `seats.csv` ↔ `Seats/P*` 同构）；座位本身也是站立点（走到某人座位旁），合计 30 个点。
+  · **占用与归位**：每个站立点同时只容纳一人（含玩家），先到者锁定（NPC移动决策 §2.2）；课间段末 / 上课前全体走回自己座位（§10.4 第 6 条），归位时长压到上课段的 80% 以内，保证演示参数配得再短也「铃响前坐好」。
+  · **玩家**：点地面任意位置走过去（上课段忽略点击；点到家具里自动吸附到最近站立点）—— 无概率判定，只受移动耗时约束（§10.4 第 5 条）。
+  · **数值口径**：移动耗时**真读 data** —— `behaviors.csv` 的 `move.duration`（15 tick）按 `phases.csv` 的课间 tick 数（100）换算成秒（换算基准为驱动器的 `break_seconds`，默认 30 s → 4.5 s）。`leave_probability`（默认 0.35）是**演示参数，非玩法数值**，内核离座概率仍以 `behavior_probs.csv` 的 `move`（0.05）为准。
+  · **实测**：无头探针 —— 17 人全部离座、占用无冲突（同一人占多点 0 次）、上课段离座 0 人；另渲染「课间散布 / 上课归位」两张 1920×1080 截图目视确认。GUT 新增 6 个组件用例（插值到位 / 零时长 / 高度保持 / 中断 / 朝向翻转 / 瞬移）全绿。
+  · **单场景调试**：`classroom_actors.gd` 新增 `auto_start_demo`（默认开）—— 直接在编辑器 / MCP 里运行 `scenes/game/classroom3D.tscn` 时自动按 `data/rules/difficulty.csv` 的默认档建一个演示局并写入 `GameState`（此前不经主菜单运行只会报「没有本局内核实例」，教室里一个人都没有）；`classroom_roam.gd` 新增 `log_roam`（默认开），每批离座与段末归位各打一行汇总。默认难度抽到 `Config.default_difficulty()`，`main_menu` 与演示局共用一份实现。
+  · **MCP 复验（2026-10-07）**：用 godot MCP 的 `run_project` + `get_debug_output` 直接跑 `classroom3D.tscn` —— 自动建演示局（种子 20261007 / 难度 2）、无运行期错误；输出依次为 `课间第 1–5 批：6 / 9 / 9 / 2 / 9 人离座` → `段末归位：17 人回座位`，与无头探针结论一致。
+  · **范围与待对齐**：内核侧走动（`position` / `do_move`）仍待 B 落地，本组件与驱动器是**表现层演示**；接上内核后由真实相位与 `position_of(i)` 驱动、演示节拍器可删。另：本版玩家「点地面任意位置」与 §10.4 第 5 条「走到任意空闲站立点」措辞略有差异，落地内核时按主文档对齐。
 - **玩家专属闲聊情报（文档设计，2026-10-07）**：玩家主动与某人闲聊时，对方会透露一名随机其他同学与自己的关系；该情报仅由玩家获得，不改变关系矩阵，NPC 闲聊不具备此预设机制。
 - **闲聊情报数量挂钩透明度（文档设计，2026-10-07）**：闲聊对象透明度 O < 50 时透露 1 条关系信息，O ≥ 50 时透露 2 条；沿用透明度可见性边界，NPC 闲聊仍不触发。
 - **课间空间人物落位：16 人局（16 NPC + 玩家 = 17 节点）真的「看得见人」了（2026-10-07）**：

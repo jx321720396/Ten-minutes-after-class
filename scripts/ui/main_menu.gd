@@ -64,15 +64,10 @@ func _start_new_game() -> void:
 		push_error("无法进入教室：%s" % error_string(error))
 
 
-## 默认难度：取 data/rules/difficulty.csv 中标了 default=1 的档（数值不落脚本）。
+## 默认难度：见 autoload/config.gd 的 default_difficulty()（读 data/rules/difficulty.csv）。
 # 难度选择 UI 待做；当前先固定默认档（16 NPC + 玩家 = 17 节点）。
 func _default_difficulty() -> int:
-	var rows: Array = ConfigLoader.new().get_table("rules/difficulty").get("rows", [])
-	for row in rows:
-		if str(row.get("default", "0")) == "1":
-			return int(str(row["difficulty"]))
-	push_warning("difficulty.csv 里没有 default=1 的档，回退难度 1")
-	return 1
+	return Config.default_difficulty()
 
 
 func _on_continue():

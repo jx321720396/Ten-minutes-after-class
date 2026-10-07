@@ -1,0 +1,25 @@
+# 站立点表（空间层 · 课间走动目标）
+# 依据：主文档 §10.4（NPC 在教室内空闲站立点里加权抽一个）、§10.20.1（座位是真的）、
+#      docs/design/NPC移动决策.md §2.2（站立点与占用）/§5.4（选择站立点）
+#
+# 用法：**世界坐标只写在场景里** —— scenes/game/classroom3D.tscn 的 StandPoints/<point_id> 节点；
+#      本表只登记逻辑属性。这与 seats.csv ↔ Seats/P* 的关系一致：一份真值，不在两处重复坐标。
+#
+# 座位本身也是站立点（走到某人座位旁），由 Seats/P0–P16 自动派生，不在此表重复。
+# 每个站立点同时只容纳一个移动目标（含玩家），占用判定由表现层驱动器维护。
+#
+# 列：point_id（须与场景节点同名）| kind（区域）| note（说明）
+point_id,kind,note
+AISLE_R1_C1,aisle,第一二排之间 · 第 1 列走道
+AISLE_R1_C2,aisle,第一二排之间 · 第 2 列走道
+AISLE_R1_C3,aisle,第一二排之间 · 第 3 列走道
+AISLE_R2_C1,aisle,第三四排之间 · 第 1 列走道
+AISLE_R2_C2,aisle,第三四排之间 · 第 2 列走道
+AISLE_R2_C3,aisle,第三四排之间 · 第 3 列走道
+BACK_LEFT,back,后墙前 · 左
+BACK_MID,back,后墙前 · 中（板报 / 储物柜一侧）
+BACK_RIGHT,back,后墙前 · 右
+SIDE_LEFT,side,左侧墙 · 窗边
+SIDE_RIGHT,side,右侧墙边
+PODIUM_LEFT,podium,讲台前 · 左
+PODIUM_RIGHT,podium,讲台前 · 右

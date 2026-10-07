@@ -12,6 +12,14 @@ func _core() -> SimCore:
 	return SimCore.from_npc(12345, 8, _tables)
 
 
+## 随机名单下按别名反查角色下标（绑定组不再固定 0/1/2）。
+func _alias_idx(core: SimCore, alias: String) -> int:
+	for i in range(core._chars.size()):
+		if str(core._chars[i]["alias"]) == alias:
+			return i
+	return -1
+
+
 func test_one_day_ticks() -> void:
 	var core := _core()
 	var total := core.run_day()
@@ -97,20 +105,24 @@ func test_deterministic_report() -> void:
 
 
 func test_couple_binding() -> void:
-	var core := _core()
-	# 绑定组 couple 首位陈阳=0、林晚=1（RosterSelector 固定顺序）
-	assert_almost_eq(core.affinity(0, 1), 85.0, 0.001, "陈阳→林晚 好感 85")
-	assert_almost_eq(core.affinity(1, 0), 85.0, 0.001, "林晚→陈阳 好感 85")
-	assert_almost_eq(core.trust(0, 1), 80.0, 0.001, "陈阳→林晚 信任 80")
-	assert_almost_eq(core.trust(1, 0), 80.0, 0.001, "林晚→陈阳 信任 80")
+	# 随机名单下绑定组不一定入选，改用 seed 68（陈阳/林晚/佳豪均入选）验证绑定逻辑。
+	var core := SimCore.from_npc(68, 8, _tables)
+	var a := _alias_idx(core, "陈阳")
+	var b := _alias_idx(core, "林晚")
+	assert_true(a >= 0 and b >= 0, "seed 68 名单包含陈阳与林晚")
+	assert_almost_eq(core.affinity(a, b), 85.0, 0.001, "陈阳→林晚 好感 85")
+	assert_almost_eq(core.affinity(b, a), 85.0, 0.001, "林晚→陈阳 好感 85")
+	assert_almost_eq(core.trust(a, b), 80.0, 0.001, "陈阳→林晚 信任 80")
+	assert_almost_eq(core.trust(b, a), 80.0, 0.001, "林晚→陈阳 信任 80")
 
 
 func test_uniform_binding() -> void:
-	var core := _core()
-	# uniform 佳豪=2：对除自己外所有人好感固定 50
+	var core := SimCore.from_npc(68, 8, _tables)
+	var g := _alias_idx(core, "佳豪")
+	assert_true(g >= 0, "seed 68 名单包含佳豪")
 	for j in range(core.node_count()):
-		if j != 2:
-			assert_almost_eq(core.affinity(2, j), 50.0, 0.001, "佳豪→%d 好感 50" % j)
+		if j != g:
+			assert_almost_eq(core.affinity(g, j), 50.0, 0.001, "佳豪→%d 好感 50" % j)
 
 
 func test_accessors_bounds() -> void:

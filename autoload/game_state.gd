@@ -45,3 +45,10 @@ func wire_events(core: Variant) -> void:
 
 func is_running() -> bool:
 	return sim_core != null
+
+
+## 时间镜像：day / phase 由表现层时钟从内核快照统一同步（**不独立自增**，避免与内核真值漂移）。
+## 参数是 SimulationClock.snapshot() 的返回值。
+func sync_time(snapshot: Dictionary) -> void:
+	day = int(snapshot.get("day", day))
+	phase = str(snapshot.get("kind", phase))

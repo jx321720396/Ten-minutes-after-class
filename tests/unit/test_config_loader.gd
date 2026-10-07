@@ -5,9 +5,13 @@ extends GutTest
 func test_load_all_reads_all_tables() -> void:
 	var loader := ConfigLoader.new()
 	var tables := loader.load_all()
-	# data/ 现状：rules 15 + balance 2 + characters 3 = 20 张
-	assert_eq(tables.size(), 20, "应读到 20 张表")
+	# data/ 现状：rules 19 + balance 2 + characters 3 = 24 张
+	assert_eq(tables.size(), 24, "应读到 24 张表")
 	assert_true(tables.has("rules/behaviors"), "rules/behaviors 应在")
+	assert_true(tables.has("rules/stand_points"), "rules/stand_points 应在")
+	assert_true(tables.has("rules/time_presentation"), "rules/time_presentation 应在")
+	assert_true(tables.has("rules/time_runtime"), "rules/time_runtime 应在")
+	assert_true(tables.has("rules/movement"), "rules/movement 应在")
 	assert_true(tables.has("balance/npc_weights"), "balance/npc_weights 应在")
 	assert_true(tables.has("characters/seeds"), "characters/seeds 应在")
 	assert_true(tables.has("characters/bindings"), "characters/bindings 应在")
@@ -21,7 +25,7 @@ func test_skips_comments_and_header() -> void:
 	var headers: Array = t["headers"]
 	assert_eq(headers[0], "behavior", "首列应为 behavior")
 	var rows: Array = t["rows"]
-	assert_eq(rows.size(), 17, "behaviors 应有 17 个行为（不含注释与表头）")
+	assert_eq(rows.size(), 18, "behaviors 应有 18 个行为（不含注释与表头）")
 
 
 func test_rows_keyed_by_header() -> void:
