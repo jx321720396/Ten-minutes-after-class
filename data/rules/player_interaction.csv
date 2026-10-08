@@ -1,0 +1,19 @@
+# 玩家交互几何与线索参数（内核只读）
+# 依据：主文档 §10.5（闲聊范围与玩家专属透露）、§10.7（加入闲聊）、§10.31（活动可加入）；
+#      docs/superpowers/plans/2026-10-07-chat-playable-loop.md §3.1、§5.2、§8.4。
+#
+# 说明：本表只承载**首次交互的几何与呈现口径**，不改动任何既有平衡数值
+#      （好感 / 压力 / 概率 / 耗时仍在 w_events.csv、behaviors.csv、behavior_probs.csv）。
+#
+# 启动校验：chat_range_m / range_step_m 为正；clue_* 为正整数且 low ≤ high；
+#          clue_opacity_split ∈ (0,100]；拾取层位掩码为正整数且两层不同。
+param,value,unit,note
+chat_range_m,1.2,m,闲聊双方的交互范围（真实地面位置距离上限，§10.5）
+seated_tolerance_m,0.1,m,判定仍在本座位入口的平面距离容差
+seated_chat_range_m,1.8,m,同列前后紧邻且都在本座位时允许转身聊天的距离上限
+range_step_m,0.1,m,连线阻挡判定采样步长（短连接段不得穿过桌椅）
+clue_opacity_split,50,,透明度分界：闲聊对象 O < 该值透露 1 条，O ≥ 该值透露 2 条（§10.5）
+clue_count_low,1,条,低透明度时透露的线索条数
+clue_count_high,2,条,高透明度时透露的线索条数
+actor_pick_layer,2,,人物拾取体所在 3D 物理层（位掩码；地面点击不进这一层）
+world_pick_blocker_layer,1,,世界静态遮挡体所在 3D 物理层（桌椅 / 墙；挡住人物则不可选中）

@@ -23,6 +23,24 @@ const PLAYER_KINDS := ["chat", "join_chat", "tease", "rumor", "report", "roughho
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
 const OBSERVER_LAYER = preload("res://scripts/systems/observer/observer_layer.gd")
+const BEHAVIOR_CONTEXT = preload("res://scripts/systems/behaviors/behavior_context.gd")
+const BEHAVIOR_REGISTRY = preload("res://scripts/systems/behaviors/behavior_registry.gd")
+const ACTIVITY_SESSIONS = preload("res://scripts/core/activity_sessions.gd")
+const INTERACTION_SPACE = preload("res://scripts/core/interaction_space.gd")
+const PLAYER_CHAT_INTEL = preload("res://scripts/core/player_chat_intel.gd")
+const PLAYER_INTERACTIONS = preload("res://scripts/core/player_interactions.gd")
+const PLAYER_INTERACTION_TABLE := "rules/player_interaction"
+
+var _behavior_context: RefCounted
+var _behavior_registry: RefCounted
+## 真实共同活动（谁和谁此刻真在一起）、交互几何、玩家交互服务与线索日志
+var _sessions: ActivitySessions
+var _space: InteractionSpace
+## 场景注入的本座位入口世界坐标；与座位表的行列分开，不引用节点。
+var _seat_world_positions: Dictionary = {}
+var _scene_space_required := false
+var _intel: PlayerChatIntel
+var _player_interactions: PlayerInteractions
 
 # —— 关系 / 个体状态（float64 平铺，与 Python 逐位一致）——
 var _a := PackedFloat64Array()  # 好感 A  n*n
@@ -164,6 +182,17 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 	_neighbors = _build_neighbors()
 	_assign_seats()
 	_build_neighbor_idx()
+	_behavior_context = BEHAVIOR_CONTEXT.new(self)
+	_behavior_registry = BEHAVIOR_REGISTRY.new(_behavior_context)
+
+	# 真实共同活动 + 交互几何 + 玩家交互服务 + 线索日志（构造不消费随机数）
+	_sessions = ACTIVITY_SESSIONS.new()
+	_space = INTERACTION_SPACE.new()
+	_intel = PLAYER_CHAT_INTEL.new(_seed)
+	_player_interactions = PLAYER_INTERACTIONS.new(self, _space, _sessions, _intel)
+	var pi_params := _params(tables, PLAYER_INTERACTION_TABLE)
+	_player_interactions.configure(pi_params)
+	_intel.configure(pi_params)
 
 
 ## difficulty（1/2/3）→ npc_count（8/16/24），映射表 data/rules/difficulty.csv（铁律 3：数值不落脚本）。
@@ -415,17 +444,19 @@ func _are_neighbors(i: int, j: int) -> bool:
 
 # ------------------------------------------------------------------ 时间系统
 ## 段首一次性结算：睡觉收尾 / 入睡 / 自由跟随 /（课间）举报 / 打断（§10.8 等）。
+## 边界顺序（计划 §5.3）：**先把「已到期」的结为完成，再把「尚未到期」的跨段活动与占用
+## 结为中断，最后才进入新段设置** —— 完成时刻恰好等于铃声时不许误算成中断、不许漏线索。
 func _begin_phase() -> void:
 	var row: Dictionary = _active_phases[_phase_index]
 	_phase = str(row["kind"])
 	_tick_in_phase = 0
+	_check_interrupt()
 	_settle_sleep()
 	_roll_sleep()
 	_free_join()
 	if _phase == "break":
 		_phone_exposure()
 		_roll_reports()
-	_check_interrupt()
 	_phase_setup_done = true
 
 
@@ -518,8 +549,10 @@ func finish_time_boundary() -> Dictionary:
 		# 边界完成后新相位还没跑过 tick：显式归零。
 		# 否则快照会出现「phase_id 已是下一段、tick_in_phase 却还是上一段的满值」这种
 		# 自相矛盾的状态，实时驱动会据此误判「剩余 0 秒」并立刻重复触发边界、跳掉一整段。
-		# 段首一次性结算（_begin_phase）仍留给下一次 advance_tick —— 本方法不跑玩法结算。
+		# 段首设置仍留给下一次 advance_tick；真实场景必须先结束旧活动再发布归位信号。
 		_tick_in_phase = 0
+		if _scene_space_required:
+			_check_interrupt()
 	var day_settled := _day != day_before
 	return {
 		"changed": _phase_index != index_before or day_settled,
@@ -540,10 +573,18 @@ func run_day() -> int:
 ## （例如玩家的闲聊线索），不能挂在「发起」上 —— 发起不等于做完。
 ## ⚠️ 与「被铃声打断」严格互斥：到期的不算被打断；未到期的才可能被 _check_interrupt()
 ## 在相位切换时处理。两边都不重复记。
+##
+## 顺序（计划 §5.3）：① 认定到期 → ② 读取这一刻情报并写入本局日志 → ③ 清理活动／占用
+## → ④ 发布线索与完成通知（下一步才继续本 tick 的 NPC 决策）。
 func _settle_finished_actions() -> void:
 	_last_finished = []
 	for i in range(_n):
 		_last_finished.append(null)
+	# ① 认定到期：真实共同活动（同一结束点只结一次 —— 无双发线索、无双结算）
+	var due_sessions: Array = _sessions.expire(_global_tick)
+	# ② 读取这一刻情报 + 写入本局日志（只有玩家参与的自然完成才登记线索）
+	var notifications: Array = _player_interactions.on_sessions_completed(due_sessions)
+	# ③ 清理占用/当前动作
 	for i in range(_n):
 		if _busy_phase[i] < 0 or _busy_until[i] > _global_tick:
 			continue
@@ -551,6 +592,16 @@ func _settle_finished_actions() -> void:
 		_current_act[i] = null
 		_busy_act[i] = null
 		_busy_phase[i] = -1
+	# 拒绝加入的占用不建立会话，靠占用到期收尾（同样只收一次）
+	notifications.append_array(_player_interactions.on_occupancy_completed(_global_tick))
+	# 玩家不再处于任何会话、也不再被占用时，清掉「正在对话」标记
+	# （NPC 的标记由 _decide_and_act 每回合自清；玩家没有决策回合，必须在这里清）
+	var me := _n - 1
+	if _in_conversation[me] and _sessions.session_of(me) < 0 and _global_tick >= _busy_until[me]:
+		_in_conversation[me] = false
+	# ④ 发布通知：完成在前，线索在后
+	for payload in notifications:
+		_emit("event_happened", payload)
 
 
 func _tick() -> void:
@@ -847,6 +898,11 @@ func _apply_event(
 	return applied
 
 
+## 举报旧回落的精确兼容点：仅封装原写入，后续规则迁移单独处理。
+func _reduce_reporter_hostility(actor: int, target: int) -> void:
+	_h[actor * _n + target] = _clamp100(_h[actor * _n + target] - 5.0)
+
+
 ## 记录「施害者 → 受害者」的最近一次**重大**敌对行为（§10.25 排挤判据、§10.24 从众判据）。
 ## ⚠️ 只在 tier = major 的事件调用点使用（do_report/do_tease，D10 接线）——日常摩擦
 ##    （noise_hostility 等）每天让几乎所有人互相「损害」，若一并记录，「被 3 人损害」会成常态、排挤天天发生。
@@ -1091,14 +1147,19 @@ func _settle_sleep() -> void:
 			_current_act[i] = null
 
 
+## 铃声打断（段边界）：先结**到期**、再断**未到期**，最后才让新段开始设置。
+## 只挂 `_check_interrupt()` 而把到期记录清掉、不给 UI 完成信息是错的（计划 §5.3）。
+## ⚠️ 判据是**跨段**（`_busy_phase != 当前段`）而不是「有没有记录」：开局第一个 tick 也会
+##    走到这里，此时刚成立的会话与占用都属于当前段，不能被打断。
 func _check_interrupt() -> void:
+	# ① 到期即完成（完成时刻恰好等于铃声 → 不误算中断、不漏线索）
+	_settle_finished_actions()
+	# ② 未到期的跨段占用 → 中断（施加打断代价，与完成严格互斥）
 	var cost := float(_probs.get("interrupted_stress", 0.0))
+	var interrupted: Array = []
 	for i in range(_n):
 		if _busy_phase[i] < 0:
 			continue
-		# 只有**尚未完成**的行为才算被打断（内核策划符合性审查 P1-04）：
-		# busy_until <= global_tick 说明它早就做完了，此时只清理占用记录、不施加压力代价。
-		# 修复前只要有 busy_phase 记录且跨了相位就加压力，把「已完成」误判成「被铃声打断」。
 		if _busy_until[i] <= _global_tick:
 			_busy_phase[i] = -1
 			continue
@@ -1108,6 +1169,19 @@ func _check_interrupt() -> void:
 			if cost > 0.0:
 				_stress[i] = _clamp100(_stress[i] + cost)
 			_stats["interrupts"] = int(_stats["interrupts"]) + 1
+			interrupted.append(i)
+	# ③ 有成员被打断的共同活动整场中断（不留半场会话、不残留融合圈）
+	var unfinished: Array = []
+	if not interrupted.is_empty():
+		for snap in _sessions.active_snapshots():
+			for m in snap["members"]:
+				if interrupted.has(int(m)):
+					unfinished.append(snap)
+					_sessions.end(int(snap["session_id"]))
+					break
+	# ④ 发布中断通知（未揭晓的结果不再发完成类信息）
+	for payload in _player_interactions.on_interrupted(unfinished, interrupted):
+		_emit("event_happened", payload)
 
 
 # ------------------------------------------------------------------ 信念观测（§11 信念矩阵，D10）
@@ -1288,7 +1362,7 @@ func _roll_sleep() -> void:
 		return
 	var p := float(_probs["sleep"])
 	for i in range(_n):
-		if _sleeping[i]:
+		if _sleeping[i] or is_moving(i):
 			continue
 		if _rng.random() < p * (1.0 + _tag_bias(i, "alone_bias")):
 			_sleeping[i] = true
@@ -1300,7 +1374,7 @@ func _roll_sleep() -> void:
 ## 「别人做什么我也跟着做」：join_mode=free 的活动可自由跟随（§10.31），强度由从众度决定。
 func _free_join() -> void:
 	for i in range(_n):
-		if _sleeping[i] or _busy_until[i] > _global_tick:
+		if _sleeping[i] or _busy_until[i] > _global_tick or is_moving(i):
 			continue
 		var acts: Array = []
 		for k in _neighbor_idx[i]:
@@ -1381,7 +1455,7 @@ func _decide_and_act() -> void:
 		order.append(_k)
 	_rng.shuffle(order)
 	for i in order:
-		if _sleeping[i] or busy[i] or _global_tick < _busy_until[i]:
+		if _sleeping[i] or busy[i] or _global_tick < _busy_until[i] or is_moving(i):
 			continue
 		_in_conversation[i] = false
 		# 环境类：闲聊（标签调制：爱学习更少聊、爱聊天更多聊）
@@ -1576,7 +1650,7 @@ func _decide_and_act() -> void:
 		# 意向类：搭话（softmax 采样）
 		var cands: Array = []
 		for j in range(n):
-			if j != i and not busy[j] and _can_interact_with(j):
+			if j != i and not busy[j] and _can_interact_with(j) and chat_pair_in_range(i, j):
 				cands.append(j)
 		if not cands.is_empty():
 			var alpha := _alpha(i)
@@ -1640,14 +1714,14 @@ func distance_between(i: int, j: int) -> float:
 ## **忙碌者仍可被旁观、被议论、被环境影响** —— 本判定只用于「挑交互目标」，
 ## 不用于围观者 / 旁白 / 环境查询。
 func _can_interact_with(j: int) -> bool:
-	return not _sleeping[j] and _global_tick >= _busy_until[j]
+	return not _sleeping[j] and _global_tick >= _busy_until[j] and not is_moving(j)
 
 
 func _pick_target(i: int, neighbors_only: bool = false) -> int:
 	if neighbors_only:
 		var others: Array = []
 		for j in _neighbor_idx[i]:
-			if _can_interact_with(j):
+			if _can_interact_with(j) and chat_pair_in_range(i, j):
 				others.append(j)
 		if others.is_empty():
 			return -1
@@ -1655,7 +1729,7 @@ func _pick_target(i: int, neighbors_only: bool = false) -> int:
 	var w_nb := float(_probs["neighbor_pick_mult"])
 	var pool: Array = []
 	for j in range(_n):
-		if j == i or not _can_interact_with(j):
+		if j == i or not _can_interact_with(j) or not chat_pair_in_range(i, j):
 			continue
 		pool.append([j, w_nb if _neighbor_idx[i].has(j) else 1.0])
 	if pool.is_empty():
@@ -1689,201 +1763,74 @@ func _occupy(i: int, j: int, behavior: String, quiet: bool = false) -> void:
 		_busy_act[j] = behavior
 
 
+## 按成员列表占用（群聊编排用）：全体占用与共同结束点**对齐**，只取更晚的结束点。
+## 声源只有一个（音量按「场」计）：`sound_source` 之外的人一律不计声源，
+## 加入者不会因为「多一个人说话」把音量叠上去。
+func _occupy_members(members: Array, behavior: String, until: int, sound_source: int) -> void:
+	for m in members:
+		var idx := int(m)
+		if idx < 0 or idx >= _n:
+			continue
+		_current_act[idx] = behavior if idx == sound_source else null
+		_busy_until[idx] = maxi(_busy_until[idx], until)
+		_busy_phase[idx] = _phase_index
+		_busy_act[idx] = behavior
+
+
+## 真实共同活动的结束点（不存在返回 -1）。
+func session_end_tick(session_id: int) -> int:
+	return int(_sessions.end_tick_of(session_id))
+
+
 ## 闲聊：话题共鸣事件 + 双方观测。
 func _do_chat(i: int, j: int) -> void:
-	_in_conversation[i] = true
-	_in_conversation[j] = true
-	_occupy(i, j, "chat", true)
-	_apply_event(i, j, "topic_affinity")
-	_apply_event(i, j, "topic_trust")
-	_apply_event(i, j, "topic_stress")
-	_apply_event(j, i, "topic_affinity")
-	_apply_event(j, i, "topic_trust")
-	_observe(i, j, "affinity")
-	_observe(j, i, "affinity")
-	_stats["chats"] = int(_stats["chats"]) + 1
-	_emit("event_happened", {"kind": "chat", "i": i, "j": j})
+	_behavior_registry.execute(&"chat", i, j)
 
 
 ## 搭话判定侧：p 掷骰，无硬闸门；roll 可由调用方预掷（保证三拍展示一致）。
 func _do_join_chat(i: int, j: int, roll: float = -1.0) -> void:
-	_in_conversation[i] = true
-	_in_conversation[j] = true
-	_occupy(i, j, "join_chat", true)
-	var p := _join_probability(i, j)
-	if roll < 0.0:
-		roll = _rng.random()
-	if roll < p:
-		_do_chat(i, j)
-		_stats["joins"] = int(_stats["joins"]) + 1
-		_stats["join_accepts"] = int(_stats.get("join_accepts", 0)) + 1
-	else:
-		_apply_event(i, j, "reject_affinity")
-		_apply_event(i, j, "reject_hostility")
-		_apply_event(i, j, "reject_stress")
-		_observe(i, j, "affinity")
-		_stats["joins"] = int(_stats["joins"]) + 1
-		_stats["join_rejects"] = int(_stats.get("join_rejects", 0)) + 1
-		_stats["skipped_events"] = int(_stats["skipped_events"]) + 1
-	_emit("event_happened", {"kind": "join_chat", "i": i, "j": j, "accepted": roll < p})
+	_behavior_registry.execute(&"join_chat", i, j, {"roll": roll})
 
 
 ## 举报（§10.2）：i = 举报者，j = 被举报者；效果落在被举报者身上。
 func _do_report(i: int, j: int) -> void:
-	_apply_event(j, i, "report_stress")
-	_apply_event(j, i, "report_hostility")
-	_mark_hurt(i, j)
-	_h[i * _n + j] = _clamp100(_h[i * _n + j] - 5.0)
-	_stats["reports"] = int(_stats["reports"]) + 1
-	_emit("event_happened", {"kind": "report", "i": i, "j": j})
+	_behavior_registry.execute(&"report", i, j)
 
 
 ## 当众调侃（§10.12）：方向由绝对阈值判档；围观者按「他对被调侃者的态度」站队。
 func _do_tease(i: int, j: int, audience: Array) -> void:
-	_occupy(i, j, "tease")
-	if (
-		_a[i * _n + j] >= float(_thresholds_lookup["tease_laugh_affinity"])
-		and _h[i * _n + j] < float(_thresholds_lookup["tease_laugh_hostility"])
-	):
-		_apply_event(i, j, "tease_success_affinity")
-		_apply_event(j, i, "tease_success_affinity")
-		for k in audience:
-			_apply_event(k, j, "tease_success_affinity")
-		_apply_event(j, i, "tease_laugh_stress")
-	elif (
-		_h[i * _n + j] >= float(_thresholds_lookup["tease_taunt_hostility"])
-		or _a[i * _n + j] < float(_thresholds_lookup["tease_taunt_affinity"])
-	):
-		_apply_event(j, i, "tease_hostility")
-		_apply_event(j, i, "tease_stress")
-		for k in audience:
-			if _a[k * _n + j] >= float(_thresholds_lookup["tease_stand_affinity"]):
-				_apply_event(k, i, "tease_hostility")
-			elif _h[k * _n + j] >= float(_thresholds_lookup["tease_sneer_hostility"]):
-				_apply_event(k, j, "tease_affinity")
-		if audience.size() >= int(_thresholds_lookup["humiliate_bystanders"]):
-			_apply_event(j, i, "humiliate_hostility")
-			_mark_hurt(i, j)
-			_stats["humiliations"] = int(_stats.get("humiliations", 0)) + 1
-		_stats["tease_fail"] = int(_stats["tease_fail"]) + 1
-	_stats["teases"] = int(_stats["teases"]) + 1
-	_emit("event_happened", {"kind": "tease", "i": i, "j": j})
+	_behavior_registry.execute(&"tease", i, j, {"audience": audience})
 
 
 ## 排挤（B 类纯损害）：群体驱逐；被排挤者压力↑且对参与者好感↓（双向疏远）。
 func _do_exclude(i: int, j: int, crowd: Array) -> void:
-	_occupy(i, j, "exclude")
-	_apply_event(j, i, "exclude_stress")
-	_apply_event(j, i, "exclude_affinity")
-	for k in crowd:
-		if k != i:
-			_apply_event(j, k, "exclude_affinity")
-	_apply_event(i, j, "exclude_affinity")
-	for k in crowd:
-		if k != i:
-			_apply_event(k, j, "exclude_affinity")
-	_stats["excludes"] = int(_stats["excludes"]) + 1
-	_emit("event_happened", {"kind": "exclude", "i": i, "j": j})
+	_behavior_registry.execute(&"exclude", i, j, {"crowd": crowd})
 
 
 ## 流言（§10.1）：i 传关于 j 的话；旁观者二手观测（带噪声）。
 func _do_rumor(i: int, j: int) -> void:
-	var negative := _h[i * _n + j] > _a[i * _n + j]
-	_apply_event(j, i, "rumor_hostility")
-	if negative:
-		_apply_event(i, j, "rumor_stress")
-		_apply_event(i, j, "tease_hostility")
-	for k in range(_n):
-		if k != i and k != j:
-			_observe(k, j, "hostility")
-	_stats["rumors"] = int(_stats["rumors"]) + 1
-	_emit("event_happened", {"kind": "rumor", "i": i, "j": j})
+	_behavior_registry.execute(&"rumor", i, j)
 
 
 ## 追逐打闹（§10.18）：参与者互相好感↑、旁观者对参与者敌对↑（敌对种子）。
 func _do_roughhouse(i: int, j: int, bystanders: Array) -> void:
-	_occupy(i, j, "roughhouse")
-	_apply_event(i, j, "roughhouse_affinity")
-	_apply_event(j, i, "roughhouse_affinity")
-	for k in bystanders:
-		_apply_event(k, i, "roughhouse_hostility")
-		_apply_event(k, j, "roughhouse_hostility")
-	_stats["roughhouse"] = int(_stats["roughhouse"]) + 1
-	_emit("event_happened", {"kind": "roughhouse", "i": i, "j": j})
+	_behavior_registry.execute(&"roughhouse", i, j, {"bystanders": bystanders})
 
 
 ## 安慰（§10.13，A 类）：i 主动关心高压区的 j。目标压力↓、对安慰者好感↑/信任↑；发起者付成本。
 func _do_comfort(i: int, j: int) -> void:
-	_occupy(i, j, "comfort")
-	_apply_event(i, j, "comfort_cost_stress")
-	_apply_event(j, i, "comfort_target_stress")
-	_apply_event(j, i, "comfort_target_affinity")
-	_apply_event(j, i, "comfort_target_trust")
-	_stats["comforts"] = int(_stats["comforts"]) + 1
-	_emit("event_happened", {"kind": "comfort", "i": i, "j": j})
+	_behavior_registry.execute(&"comfort", i, j)
 
 
 ## 求助（§10.10，C 类）：判定读真值 A[j][i] + 对方外向度加成；成功/被拒各有独立效果。
 func _do_ask_help(i: int, j: int) -> void:
-	_occupy(i, j, "ask_help")
-	_apply_event(i, j, "ask_help_cost_stress")
-	var score := (
-		_a[j * _n + i] + _dims[j] / 100.0 * float(_thresholds_lookup["ask_help_extrovert_bonus"])
-	)
-	var p := _sigmoid(
-		(
-			(score - float(_thresholds_lookup["ask_help_accept_theta"]))
-			/ float(_thresholds_lookup["ask_help_accept_scale"])
-		)
-	)
-	var accepted := _rng.random() < p
-	if accepted:
-		_apply_event(i, j, "ask_help_ok_asker_affinity")
-		_apply_event(i, j, "ask_help_ok_asker_stress")
-		_apply_event(j, i, "ask_help_ok_helper_affinity")
-		_apply_event(j, i, "ask_help_ok_helper_trust")
-		_stats["helps"] = int(_stats["helps"]) + 1
-	else:
-		_apply_event(i, j, "ask_help_no_stress")
-		_apply_event(i, j, "ask_help_no_hostility")
-		_apply_event(i, j, "ask_help_no_trust")
-		_stats["help_rejects"] = int(_stats["help_rejects"]) + 1
-	_emit("event_happened", {"kind": "ask_help", "i": i, "j": j, "accepted": accepted})
+	_behavior_registry.execute(&"ask_help", i, j)
 
 
 ## 道歉 / 和解（§10.11，E 类）：i 主动向 j 低头。判定读真值（A[j][i] + F_j 随和 − H[j][i]×惩罚）；
 ## 效果行一律 no_modulation=True（和解与关系调制 M 结构性冲突，否则「越道歉越糟」）。
 func _do_apologize(i: int, j: int) -> void:
-	_occupy(i, j, "apologize")
-	_apply_event(i, j, "apologize_cost_stress")
-	var score := (
-		_a[j * _n + i]
-		+ _dims[2 * _n + j] / 100.0 * float(_thresholds_lookup["apologize_calm_bonus"])
-		- _h[j * _n + i] * float(_thresholds_lookup["apologize_hostility_penalty"])
-	)
-	var p := _sigmoid(
-		(
-			(score - float(_thresholds_lookup["apologize_accept_theta"]))
-			/ float(_thresholds_lookup["apologize_accept_scale"])
-		)
-	)
-	var accepted := _rng.random() < p
-	if accepted:
-		_apply_event(i, j, "apologize_ok_hostility", 1.0, true)
-		_apply_event(i, j, "apologize_ok_affinity", 1.0, true)
-		_apply_event(i, j, "apologize_ok_trust", 1.0, true)
-		_apply_event(i, j, "apologize_ok_stress", 1.0, true)
-		_apply_event(j, i, "apologize_ok_hostility", 1.0, true)
-		_apply_event(j, i, "apologize_ok_affinity", 1.0, true)
-		_apply_event(j, i, "apologize_ok_trust", 1.0, true)
-		_apply_event(j, i, "apologize_ok_stress", 1.0, true)
-		_stats["apologizes"] = int(_stats["apologizes"]) + 1
-	else:
-		_apply_event(i, j, "apologize_no_hostility", 1.0, true)
-		_apply_event(i, j, "apologize_no_stress", 1.0, true)
-		_apply_event(i, j, "apologize_no_trust", 1.0, true)
-		_stats["apologize_rejects"] = int(_stats["apologize_rejects"]) + 1
-	_emit("event_happened", {"kind": "apologize", "i": i, "j": j, "accepted": accepted})
+	_behavior_registry.execute(&"apologize", i, j)
 
 
 # ------------------------------------------------------------------ 玩家行动（D11 缺口③）
@@ -1897,7 +1844,7 @@ func _player_action_error(kind: String, target: int, me: int) -> String:
 		return "invalid_target"
 	if not PLAYER_KINDS.has(kind):
 		return "unknown_kind"
-	if _sleeping[me] or _global_tick < _busy_until[me]:
+	if _sleeping[me] or _global_tick < _busy_until[me] or is_moving(me):
 		return "player_busy"
 	if not _allowed(kind):
 		return "phase_not_allowed"
@@ -1908,21 +1855,17 @@ func _player_action_error(kind: String, target: int, me: int) -> String:
 
 func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 	var me := _n - 1
+	# 闲聊（发起／加入）统一走交互服务：真实范围校验、幂等提交、真实会话登记。
+	# 旧 join_chat 只作为「chat + mode=join」的兼容别名，不能绕过距离与会话校验。
+	if kind == "chat" or kind == "join_chat":
+		return _player_chat_entry(kind, target, topic)
 	# 「能不能做」先过公共门槛，再执行具体行为（玩家可跳过「想不想」，不能跳过「能不能」）
 	var blocked := _player_action_error(kind, target, me)
 	if not blocked.is_empty():
 		return {"ok": false, "error": blocked}
 	var a_before := _a[target * _n + me]  # 目标→玩家的好感（行动前的反应基线）
 	var h_before := _h[target * _n + me]
-	var accepted := true
 	match kind:
-		"chat":
-			_do_chat(me, target)
-		"join_chat":
-			var p := _join_probability(me, target)
-			var roll := _rng.random()
-			accepted = roll < p
-			_do_join_chat(me, target, roll)
 		"tease":
 			_do_tease(me, target, _player_audience(target))
 		"rumor":
@@ -1940,10 +1883,149 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 		"kind": kind,
 		"target": target,
 		"topic": topic,
-		"accepted": accepted,
+		"accepted": true,
 		"affinity_delta": snapped(_a[target * _n + me] - a_before, 0.1),
 		"hostility_delta": snapped(_h[target * _n + me] - h_before, 0.1),
 	}
+
+
+## 旧聊天入口的兼容转发：预览决定参与方式（start / join），提交使用内核分配的请求编号。
+## start 模式下 join_chat 兼容别名**明确拒绝**（宁可不做，也不把 join 静默变成 start）。
+func _player_chat_entry(kind: String, target: int, topic: String) -> Dictionary:
+	var pv: Dictionary = _player_interactions.preview("chat", target)
+	if not bool(pv.get("ok", false)):
+		return {"ok": false, "error": str(pv.get("error", "invalid"))}
+	if kind == "join_chat" and str(pv["mode"]) != "join":
+		return {"ok": false, "error": "target_unavailable"}
+	if not bool(pv["eligible"]):
+		return {"ok": false, "error": str(pv["reason"])}
+	if not bool(pv["in_range"]):
+		return {"ok": false, "error": "out_of_range"}
+	var request_id: int = _player_interactions.next_request_id()
+	var packet: Dictionary = commit_player_interaction(
+		request_id, "chat", target, str(pv["mode"]), int(pv["session_id"])
+	)
+	if not bool(packet.get("ok", false)):
+		return packet
+	packet["topic"] = topic
+	return packet
+
+
+# ------------------------------------------------- 玩家交互服务（闲聊：发起／加入）
+## 只读预览（零 RNG、零状态变化）：mode=start/join、合法性与范围；仅 join 含信念估计。
+func preview_player_interaction(kind: String, target: int) -> Dictionary:
+	return _player_interactions.preview(kind, target)
+
+
+## 原子提交：失败不掷骰、不改矩阵、不新增占用与会话；成功发布一次开始通知。
+func commit_player_interaction(
+	request_id: int, kind: String, target: int, mode: String, session_id: int = -1
+) -> Dictionary:
+	var known: bool = bool(_player_interactions.get_request(request_id).get("ok", false))
+	var packet: Dictionary = _player_interactions.commit(
+		request_id, kind, target, mode, session_id
+	)
+	if not bool(packet.get("ok", false)):
+		return packet
+	if not known:
+		_emit("event_happened", _started_payload(request_id, target, packet))
+	return packet
+
+
+func _started_payload(request_id: int, target: int, packet: Dictionary) -> Dictionary:
+	return {
+		"kind": "player_interaction_started",
+		"request_id": request_id,
+		"mode": str(packet["mode"]),
+		"target": target,
+		"session_id": int(packet["linked_session"]),
+		"origin_session": int(packet["session_id"]),
+		"accepted": bool(packet["accepted"]),
+		"end_tick": int(packet["end_tick"]),
+	}
+
+
+## 请求状态查询：active / completed / interrupted + outcome（深拷贝）。
+func get_player_interaction(request_id: int) -> Dictionary:
+	return _player_interactions.get_request(request_id)
+
+
+## 请求编号由本局内核分配（只生成编号，不掷骰）。
+func next_player_request_id() -> int:
+	return _player_interactions.next_request_id()
+
+
+## 真正共同活动的只读快照（供底部圈与「能不能加入」查询，深拷贝）。
+func get_active_sessions() -> Array:
+	return _sessions.active_snapshots()
+
+
+## 玩家本局已获得的线索（历史日志；记录于当时，不跟着矩阵实时刷新）。
+func get_player_intel() -> Array:
+	return _player_interactions.intel_history()
+
+
+## 交互几何注入：**纯数据**（障碍矩形 + 房间边界），场景从寻路几何导出后一次注入。
+## 未注入时一切交互判定返回明确错误，不静默放行。
+func set_interaction_geometry(obstacles: Array, bounds: Rect2) -> void:
+	_scene_space_required = true
+	_space.set_geometry(obstacles, bounds)
+
+
+func interaction_space_ready() -> bool:
+	return _space.is_ready()
+
+
+## 真实教室的聊天空间门槛；无场景几何的离线标定保持原抽象模型。
+func chat_pair_in_range(i: int, j: int) -> bool:
+	if not _space.is_ready():
+		return not _scene_space_required
+	if _at_own_seat(i) and _at_own_seat(j):
+		var a: Array = _seat_pos[seat_of(i)]
+		var b: Array = _seat_pos[seat_of(j)]
+		return (
+			int(a[1]) == int(b[1])
+			and absi(int(a[0]) - int(b[0])) == 1
+			and distance_between(i, j) <= _player_interactions.seated_chat_range()
+		)
+	return (
+		_space.position_valid(position_of(j))
+		and _space.valid_position_for(
+			position_of(i),
+			[position_of(j)],
+			_player_interactions.chat_range(),
+			_player_interactions.range_step()
+		)
+	)
+
+
+func set_seat_position(i: int, position: Vector2) -> void:
+	if i >= 0 and i < _n:
+		_seat_world_positions[i] = position
+
+
+func _at_own_seat(i: int) -> bool:
+	return (
+		_seat_world_positions.has(i)
+		and (
+			position_of(i).distance_to(_seat_world_positions[i])
+			<= _player_interactions.seated_tolerance()
+		)
+	)
+
+
+## 独立移动状态：玩家走动中不被 NPC 拉进新占用交互；**不是**聊天占用。
+func set_moving(i: int, moving: bool) -> void:
+	_player_interactions.set_moving(i, moving)
+
+
+func is_moving(i: int) -> bool:
+	return _player_interactions.is_moving(i)
+
+
+## 某人此刻所在共同活动（不在任何会话返回 -1）。
+func session_of(i: int) -> int:
+	return int(_sessions.session_of(i))
 
 
 ## 玩家调侃的围观者：玩家与目标的共同邻居（不含双方，未睡）。
