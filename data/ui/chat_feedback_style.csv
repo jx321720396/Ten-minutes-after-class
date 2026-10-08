@@ -17,7 +17,7 @@ bubble_dot_seconds,0.45,s,聊天气泡每个点的淡入淡出周期
 progress_bar_height_px,10,px,底部聊天进度条高度
 ring_radius_m,0.3,m,人物个人圈半径（个人圈与融合区一致）
 ring_fill_alpha,0.75,,圈填充透明度：半透明实色，不是色块
-ring_blend_radius_m,0.18,m,平滑并集宽度：越大两人相接处越圆润
+ring_blend_radius_m,0.12,m,平滑并集宽度：越大两人相接处越圆润
 toast_seconds,4.0,s,线索与完成提示的停留时长
 emotion_positive_affinity_delta,1.0,分,判定「正面」的玩家自身好感增量门槛
 emotion_negative_hostility_delta,1.0,分,判定「负面」的玩家自身敌对增量门槛

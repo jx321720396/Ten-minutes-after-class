@@ -30,7 +30,7 @@ const RING_HEIGHT := 0.016
 ## 填充透明度：实色但透出地面 —— 美术要求「完全的颜色，但不是色块」
 const FILL_ALPHA := 0.75
 ## 平滑并集宽度（米）：越大，两人相接处越圆润
-const BLEND_RADIUS := 0.18
+const BLEND_RADIUS := 0.12
 ## 最大成员数 / 边数（与着色器数组一致）
 const MAX_MEMBERS := 8
 const MAX_LINKS := 8
