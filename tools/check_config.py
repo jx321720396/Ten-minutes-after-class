@@ -256,8 +256,8 @@ _style_required = [
     "bubble_follow_height_m",
     "progress_bar_height_px",
     "ring_radius_m",
-    "ring_line_width_m",
-    "ring_merge_gap_m",
+    "ring_fill_alpha",
+    "ring_blend_radius_m",
     "toast_seconds",
     "emotion_positive_affinity_delta",
     "emotion_negative_hostility_delta",
@@ -276,9 +276,14 @@ if all(k in _style for k in _style_required):
               ("pen_windup_seconds", "pen_spin_seconds", "pen_settle_seconds",
                "pen_result_seconds", "menu_width_px", "menu_margin_px", "bubble_dot_seconds",
                "bubble_follow_height_m", "progress_bar_height_px", "toast_seconds")))
-    check("圈半径为正、线宽为负以外的非负数",
-          float(_style["ring_radius_m"]) > 0 and float(_style["ring_line_width_m"]) >= 0,
-          "%s / %s" % (_style["ring_radius_m"], _style["ring_line_width_m"]))
+    check("圈半径为正、填充透明度在 [0,1]、融合宽度非负",
+          float(_style["ring_radius_m"]) > 0 and 0.0 <= float(_style["ring_fill_alpha"]) <= 1.0,
+          "%s / %s / %s"
+          % (
+              _style["ring_radius_m"],
+              _style["ring_fill_alpha"],
+              _style["ring_blend_radius_m"],
+          ))
 
 _scripts = []
 for _root_dir, _dirs, _files in os.walk(os.path.join(ROOT, "scripts")):

@@ -678,8 +678,12 @@ func _nearest_free_stand(point: Vector3) -> Variant:
 # ------------------------------------------------------------------ 场景 → 几何（障碍 / 导航格）
 
 
-## 桌椅矩形从场景派生。**只取 `Desk` 子树**：`Chair`（z=-0.45）只是显示位置，
-## 可走站位是 `StandSpot`（z=-0.80），椅子不能当障碍，否则人物站不进自己的座位。
+## 障碍矩形从场景派生。
+##
+## **桌椅**只取 `Desk` 子树：`Chair`（z=-0.45）只是显示位置，可走站位是 `StandSpot`
+## （z=-0.80），椅子不能当障碍，否则人物站不进自己的座位。
+## **讲台**（`Room` 之外的 `Podium`）整棵子树取一个包围盒 —— 它原本不在障碍表里，
+## 玩家会直接走进讲桌（2026-10-08）。
 ## 同时留下**未外扩**的原始矩形，供内核做交互几何（范围与连线阻挡）判定。
 func _collect_obstacles() -> void:
 	_obstacles.clear()
@@ -693,9 +697,46 @@ func _collect_obstacles() -> void:
 					var rect := _xz_rect_of(mesh)
 					_raw_obstacles.append(rect)
 					_obstacles.append(rect.grow(_radius))
+	_append_static_obstacles()
 	var floor_node := get_node_or_null(floor_path) as MeshInstance3D
 	if floor_node != null:
 		_bounds = _xz_rect_of(floor_node)
+
+
+## 固定障碍：**讲台 + 四面墙**。
+##
+## 以前障碍表里只有座位下的 `Desk`（注释写着"只取 Desk 子树"），于是玩家能穿讲台、
+## 也能走进墙里 —— `bounds` 直接取地板矩形 `../Room/Floor`，而左/右/后墙都缩在这个
+## 矩形**里面**（实测左墙内沿 x≈-4.29、右墙 x≈4.19、后墙 z≈-5.49，而 bounds 到 ±5.00 / -6.00），
+## 所以走到边界时人已经陷进墙里（2026-10-08）。
+##
+## 坐标一律从场景节点取包围盒，不另填一套家具坐标。
+## ⚠️ `room_path` 指向 `../Room`，而 `Podium` 挂在**场景根**下，所以先上溯到本场景顶层再找。
+func _append_static_obstacles() -> void:
+	var top: Node = self
+	while top.get_parent() != null and top.get_parent() != get_tree().root:
+		top = top.get_parent()
+	for node in _static_obstacle_sources(top):
+		var box := _world_box_of(node)
+		if box.size.length() <= 0.0:
+			continue
+		var rect := Rect2(Vector2(box.position.x, box.position.z), Vector2(box.size.x, box.size.z))
+		_raw_obstacles.append(rect)
+		_obstacles.append(rect.grow(_radius))
+
+
+## 固定障碍来源：讲台（`Podium`）与 `Room` 下的每面墙（`*Wall`）。
+func _static_obstacle_sources(top: Node) -> Array[Node]:
+	var out: Array[Node] = []
+	var podium := top.find_child("Podium", true, false)
+	if podium != null:
+		out.append(podium)
+	var room := top.find_child("Room", true, false)
+	if room != null:
+		for child in room.get_children():
+			if str((child as Node).name).ends_with("Wall"):
+				out.append(child)
+	return out
 
 
 ## 拾取层与遮挡层：数值来自 data/rules/player_interaction.csv（位掩码），导出属性优先。
@@ -730,10 +771,18 @@ func _build_occluders() -> void:
 			var desk := seat.get_node_or_null("Desk")
 			if desk != null:
 				sources.append(desk)
+	# 墙：`Room` 的直接子节点（BackWall / FrontWall / LeftWall / RightWall）
 	for child in parent.get_children():
-		var name := str((child as Node).name)
-		if name.ends_with("Wall") or name == "Podium":
+		if str((child as Node).name).ends_with("Wall"):
 			sources.append(child)
+	# 讲台：它挂在**场景根**下、不在 `Room` 里，所以 `parent.get_children()` 永远找不到
+	# （2026-10-08 修）。先上溯到本场景顶层节点再 `find_child`，与 `_append_static_obstacles` 一致。
+	var top: Node = parent
+	while top.get_parent() != null and top.get_parent() != get_tree().root:
+		top = top.get_parent()
+	var podium := top.find_child("Podium", true, false)
+	if podium != null:
+		sources.append(podium)
 	var count := 0
 	for source in sources:
 		var box := _world_box_of(source)

@@ -13,21 +13,31 @@ extends Node3D
 ##   ③ **未揭晓的加入结果不得泄露**：控制器把「已提交但还没揭晓」的成员登记为
 ##      hidden，这个人在揭晓前照旧只有个人圈。
 ##
-## 渲染：每个活动一块横置 PlaneMesh，片元用 SDF 求「成员圆 ∪ 连接胶囊」的并集 ——
+## 渲染：每个活动一块横置 PlaneMesh，片元用 SDF 求「成员圆 ∪ 连接胶囊」的**平滑**并集 ——
 ## 融合区域因此没有内部双边框（见 assets/shaders/activity_ring.gdshader）。
+##
+## 2026-10-08 改版（按美术反馈）：
+##   · **融合是「切换」不是「叠加」**：一旦某人被画进融合区域，他的个人圈立刻取消
+##     （以前个人圈无条件常显、融合区又故意压在更低的层，于是融合后脚下还留着旧圈）；
+##   · 圈只有**半透明实色填充**，不再有粗描边（透明度统一由 FILL_ALPHA 控制）；
+##   · 个人圈与融合区**半径一致**（都用 `_ring_radius`），切换时不会一大一小。
 
 const SHADER_PATH := "res://assets/shaders/activity_ring.gdshader"
 const STYLE_TABLE := "ui/chat_feedback_style"
-## 个人圈的高度（米）：略高于地面，避免与融合区域互相 z-fighting
-const PERSONAL_HEIGHT := 0.016
-## 融合区域的高度（米）：比个人圈低一点点，个人圈描边仍可见
-const MERGED_HEIGHT := 0.010
+## 圈层高度（米）：个人圈与融合区**不会同时出现**，共用一个高度即可
+## （既避开 z-fighting，也不会再出现"两层圈"）。
+const RING_HEIGHT := 0.016
+## 填充透明度：实色但透出地面 —— 美术要求「完全的颜色，但不是色块」
+const FILL_ALPHA := 0.75
+## 平滑并集宽度（米）：越大，两人相接处越圆润
+const BLEND_RADIUS := 0.12
 ## 最大成员数 / 边数（与着色器数组一致）
 const MAX_MEMBERS := 8
 const MAX_LINKS := 8
 
-const COLOR_PERSONAL := Color(0.36, 0.41, 0.46, 0.75)
-const COLOR_ACTIVE := Color(0.20, 0.62, 0.42, 0.85)
+## 颜色不带 alpha：透明度统一由 FILL_ALPHA 决定（个人圈灰蓝 / 活动圈绿）
+const COLOR_PERSONAL := Color(0.38, 0.52, 0.68)
+const COLOR_ACTIVE := Color(0.22, 0.70, 0.46)
 
 var _core: Variant = null
 ## 索引 → 个人圈节点（池化复用，不每帧新建）
@@ -38,8 +48,8 @@ var _merged: Dictionary = {}
 var _hidden: Dictionary = {}
 var _enabled := true
 var _ring_radius := 0.3
-var _line_width := 0.035
-var _merge_gap := 0.16
+var _blend_radius := BLEND_RADIUS
+var _fill_alpha := FILL_ALPHA
 var _shader: Shader = null
 var _refresh_timer := 0.0
 
@@ -134,13 +144,32 @@ func _session_of(index: int) -> int:
 func refresh() -> void:
 	if not _enabled or _core == null:
 		return
+	var merged_indices := _merged_member_indices()
 	var count := int(_core.node_count())
 	for index in range(count):
 		var ring := _personal_ring(index)
+		# 融合是**切换**：已被画进融合区域的人，个人圈直接取消（不再叠一层）。
+		if merged_indices.has(index):
+			ring.visible = false
+			continue
+		var pos: Vector2 = _core.position_of(index)
 		ring.visible = true
-		ring.global_position = Vector3(_core.position_of(index).x, PERSONAL_HEIGHT, _core.position_of(index).y)
-		_set_material(ring, [index], [], _ring_radius, 0.0, COLOR_PERSONAL)
+		ring.global_position = Vector3(pos.x, RING_HEIGHT, pos.y)
+		_set_material(ring, [index], [], _ring_radius, COLOR_PERSONAL)
 	_sync_merged()
+
+
+## 此刻会被画进融合区域的成员索引（真实会话 + 已揭晓 + 至少两人）。
+## 与 `_sync_merged` 用同一套判据，保证「个人圈取消」与「融合区出现」严格同步。
+func _merged_member_indices() -> Dictionary:
+	var out := {}
+	for session in _core.get_active_sessions():
+		var members := _visible_members(session)
+		if members.size() < 2:
+			continue
+		for index in members:
+			out[int(index)] = true
+	return out
 
 
 func _sync_merged() -> void:
@@ -155,10 +184,11 @@ func _sync_merged() -> void:
 		var node := _merged_region(session_id)
 		node.visible = true
 		var center := _center_of(members)
-		node.global_position = Vector3(center.x, MERGED_HEIGHT, center.y)
+		node.global_position = Vector3(center.x, RING_HEIGHT, center.y)
 		var quad := node.mesh as PlaneMesh
 		quad.size = _quad_size_of(members)
-		_set_material(node, members, session["links"], _ring_radius + _merge_gap, 0.26, COLOR_ACTIVE)
+		# 半径与个人圈**一致**：切换时不会突然大一圈（相连交给 link 胶囊）。
+		_set_material(node, members, session["links"], _ring_radius, COLOR_ACTIVE)
 	for session_id in _merged.keys():
 		if not alive.has(session_id):
 			(_merged[session_id] as MeshInstance3D).visible = false
@@ -186,7 +216,7 @@ func _center_of(members: Array) -> Vector2:
 
 ## quad 必须覆盖所有成员圆与连线（否则会被裁掉）。
 func _quad_size_of(members: Array) -> Vector2:
-	var radius := _ring_radius + _merge_gap + _line_width
+	var radius := _ring_radius + _blend_radius + 0.02
 	var center := _center_of(members)
 	var half := Vector2(radius, radius)
 	for index in members:
@@ -233,8 +263,9 @@ func _new_material() -> ShaderMaterial:
 
 
 ## 把几何喂给着色器：成员圆 + 连接胶囊，全部换算成相对 quad 中心的局部坐标。
+## 填充透明度与平滑融合宽度统一走本组件参数，保证个人圈与融合区观感一致。
 func _set_material(
-	node: MeshInstance3D, members: Array, links: Array, radius: float, fill: float, color: Color
+	node: MeshInstance3D, members: Array, links: Array, radius: float, color: Color
 ) -> void:
 	var material := node.material_override as ShaderMaterial
 	if material == null:
@@ -266,8 +297,8 @@ func _set_material(
 		link_b[link_count] = _core.position_of(second) - offset
 		link_count += 1
 	material.set_shader_parameter("ring_color", color)
-	material.set_shader_parameter("fill_alpha", fill)
-	material.set_shader_parameter("line_width", _line_width)
+	material.set_shader_parameter("fill_alpha", _fill_alpha)
+	material.set_shader_parameter("blend_radius", _blend_radius)
 	material.set_shader_parameter("radius", radius)
 	material.set_shader_parameter("quad_size", (node.mesh as PlaneMesh).size)
 	material.set_shader_parameter("members", points)
@@ -292,7 +323,7 @@ func _load_style() -> void:
 		match str(row.get("param", "")):
 			"ring_radius_m":
 				_ring_radius = value
-			"ring_line_width_m":
-				_line_width = value
-			"ring_merge_gap_m":
-				_merge_gap = value
+			"ring_fill_alpha":
+				_fill_alpha = value
+			"ring_blend_radius_m":
+				_blend_radius = value
