@@ -771,10 +771,18 @@ func _build_occluders() -> void:
 			var desk := seat.get_node_or_null("Desk")
 			if desk != null:
 				sources.append(desk)
+	# 墙：`Room` 的直接子节点（BackWall / FrontWall / LeftWall / RightWall）
 	for child in parent.get_children():
-		var name := str((child as Node).name)
-		if name.ends_with("Wall") or name == "Podium":
+		if str((child as Node).name).ends_with("Wall"):
 			sources.append(child)
+	# 讲台：它挂在**场景根**下、不在 `Room` 里，所以 `parent.get_children()` 永远找不到
+	# （2026-10-08 修）。先上溯到本场景顶层节点再 `find_child`，与 `_append_static_obstacles` 一致。
+	var top: Node = parent
+	while top.get_parent() != null and top.get_parent() != get_tree().root:
+		top = top.get_parent()
+	var podium := top.find_child("Podium", true, false)
+	if podium != null:
+		sources.append(podium)
 	var count := 0
 	for source in sources:
 		var box := _world_box_of(source)
