@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://lq7nghi63vmu"]
 
 [ext_resource type="Material" path="res://resources/materials/mat_wood.tres" id="1_wood"]
 [ext_resource type="Material" path="res://resources/materials/mat_metal_frame.tres" id="2_metal"]
@@ -35,65 +35,80 @@ size = Vector3(0.03, 0.43, 0.03)
 material = ExtResource("2_metal")
 size = Vector3(0.03, 0.9, 0.03)
 
-[node name="DeskChair" type="Node3D"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_i2nif"]
+size = Vector3(0.66, 0.8, 0.46)
 
-[node name="Desk" type="Node3D" parent="."]
+[node name="DeskChair" type="Node3D" unique_id=1980582006]
 
-[node name="Top" type="MeshInstance3D" parent="Desk"]
+[node name="Desk" type="Node3D" parent="." unique_id=468936788]
+
+[node name="Top" type="MeshInstance3D" parent="Desk" unique_id=1869287937]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.74, 0)
 mesh = SubResource("Box_top")
 
-[node name="Shelf" type="MeshInstance3D" parent="Desk"]
+[node name="Shelf" type="MeshInstance3D" parent="Desk" unique_id=53551213]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
 mesh = SubResource("Box_shelf")
 
-[node name="LegFL" type="MeshInstance3D" parent="Desk"]
+[node name="LegFL" type="MeshInstance3D" parent="Desk" unique_id=75560872]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.29, 0.36, 0.19)
 mesh = SubResource("Box_desk_leg")
 
-[node name="LegFR" type="MeshInstance3D" parent="Desk"]
+[node name="LegFR" type="MeshInstance3D" parent="Desk" unique_id=355403767]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.29, 0.36, 0.19)
 mesh = SubResource("Box_desk_leg")
 
-[node name="LegBL" type="MeshInstance3D" parent="Desk"]
+[node name="LegBL" type="MeshInstance3D" parent="Desk" unique_id=586687125]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.29, 0.36, -0.19)
 mesh = SubResource("Box_desk_leg")
 
-[node name="LegBR" type="MeshInstance3D" parent="Desk"]
+[node name="LegBR" type="MeshInstance3D" parent="Desk" unique_id=2016468577]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.29, 0.36, -0.19)
 mesh = SubResource("Box_desk_leg")
 
-[node name="FootL" type="MeshInstance3D" parent="Desk"]
+[node name="FootL" type="MeshInstance3D" parent="Desk" unique_id=2038464468]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.29, 0.05, 0)
 mesh = SubResource("Box_desk_foot")
 
-[node name="FootR" type="MeshInstance3D" parent="Desk"]
+[node name="FootR" type="MeshInstance3D" parent="Desk" unique_id=710035697]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.29, 0.05, 0)
 mesh = SubResource("Box_desk_foot")
 
-[node name="Chair" type="Node3D" parent="."]
+[node name="Chair" type="Node3D" parent="." unique_id=1312052590]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.45)
 
-[node name="Seat" type="MeshInstance3D" parent="Chair"]
+[node name="Seat" type="MeshInstance3D" parent="Chair" unique_id=1801829693]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.445, 0)
 mesh = SubResource("Box_seat")
 
-[node name="Back" type="MeshInstance3D" parent="Chair"]
+[node name="Back" type="MeshInstance3D" parent="Chair" unique_id=544617510]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.78, -0.175)
 mesh = SubResource("Box_back")
 
-[node name="LegFL" type="MeshInstance3D" parent="Chair"]
+[node name="LegFL" type="MeshInstance3D" parent="Chair" unique_id=701668277]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.215, 0.16)
 mesh = SubResource("Box_chair_front_leg")
 
-[node name="LegFR" type="MeshInstance3D" parent="Chair"]
+[node name="LegFR" type="MeshInstance3D" parent="Chair" unique_id=470962870]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0.215, 0.16)
 mesh = SubResource("Box_chair_front_leg")
 
-[node name="LegBL" type="MeshInstance3D" parent="Chair"]
+[node name="LegBL" type="MeshInstance3D" parent="Chair" unique_id=240581969]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.45, -0.17)
 mesh = SubResource("Box_chair_rear_leg")
 
-[node name="LegBR" type="MeshInstance3D" parent="Chair"]
+[node name="LegBR" type="MeshInstance3D" parent="Chair" unique_id=405534197]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0.45, -0.17)
 mesh = SubResource("Box_chair_rear_leg")
+
+[node name="StandSpot" type="Marker3D" parent="." unique_id=1920422646]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.8)
+
+[node name="SitPoint" type="Marker3D" parent="." unique_id=1920422647]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.45)
+
+[node name="NavBlocker" type="StaticBody3D" parent="." unique_id=1402201304 groups=["nav_geometry"]]
+
+[node name="Blocker" type="CollisionShape3D" parent="NavBlocker" unique_id=1970619714]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("BoxShape3D_i2nif")

@@ -13,16 +13,26 @@ extends Node3D
 ##   · **玩家**：点击地面任意位置走过去（快照 `player_control` 为假时直接拒绝点击）。
 ##
 ## 数值口径：
-##   · 移动耗时 = `data/rules/behaviors.csv` 的 `move.duration`（15 tick）×
-##     `data/rules/time_presentation.csv` 给出的每 tick 真实秒数（课间 100 tick / 100 秒 → 15 秒）；
+##   · **课间离座**：速度统一取 `data/rules/movement.csv` 的 `meters_per_tick`（米 / 秒），
+##     耗时随**导航路径长度**变化（§10.4 第 4 条，放弃固定 15 tick）；
+##   · **上课归位**：用时限走（`move.duration` tick × 每 tick 真实秒数），
+##     保证 §10.4 第 6 条「相位切换后回座位」在段内完成；
+##   · 路线一律来自**导航网格**（`scenes/game/classroom3D.tscn` 的 NavigationRegion3D）：
+##     取不到路线就留在原地并计数，**不用直线兜底**（直线会穿桌椅）；
 ##   · `leave_probability` 是**演示参数，不是玩法数值** —— 内核的离座概率来自
 ##     `data/rules/behavior_probs.csv` 的 `move`（当前 0.05）。
 
 const BEHAVIORS_TABLE := "rules/behaviors"
 const PHASES_TABLE := "rules/phases"
 const PRESENTATION_TABLE := "rules/time_presentation"
+const MOVEMENT_TABLE := "rules/movement"
 const MOVE_BEHAVIOR := "move"
+const SPEED_PARAM := "meters_per_tick"
 const KIND_BREAK := "break"
+## 座位可走站位名（desk_chair.tscn 的 Marker3D）：落位、站位、玩家路径共用这一个来源
+const STAND_SPOT_NAME := "StandSpot"
+## 旧落位偏移（米）：StandSpot 缺失时的兜底，保证老场景仍能跑
+const LEGACY_CHAIR_OFFSET_Z := -0.45
 ## §10.4：想加入的活动圈所在位置额外 ×1.5
 const CIRCLE_BONUS := 1.5
 ## §10.4：权重下限 0.1（再不喜欢也偶尔走动，不锁死）
@@ -66,7 +76,12 @@ var _occupant: Dictionary = {}
 var _point_of_actor: Dictionary = {}
 var _actor_count := 0
 var _player_index := -1
-var _move_seconds := 1.0
+## 归位时限上限（秒）：由 move.duration（tick）× 每 tick 真实秒数推导
+var _home_limit := 1.0
+## 课间走动速度（米 / 秒）—— data/rules/movement.csv 的 meters_per_tick
+var _speed := 0.8
+## 取不到导航路线而放弃走动的次数：持续增长说明烘焙产物或几何出了问题（诊断用）
+var _missed_walks := 0
 var _snapshot: Dictionary = {}
 var _decide_timer := 0.0
 
@@ -81,7 +96,8 @@ func _ready() -> void:
 		return
 	_actor_count = int(_core.node_count())
 	_player_index = _actor_count - 1
-	_move_seconds = _load_move_seconds()
+	_home_limit = _load_home_limit()
+	_speed = _load_speed()
 	_collect_points()
 	_collect_actors()
 	if show_stand_markers:
@@ -124,23 +140,22 @@ func _on_phase_changed(snapshot_data: Dictionary) -> void:
 	_decide_timer = decide_interval
 	if is_break_phase():
 		return
+	var seconds := _home_seconds()
 	for i in range(_actor_count):
-		var walker: ActorWalker = _walkers[i]
-		if walker == null:
-			continue
 		var seat_id := str(_core.seat_of(i))
-		walker.walk_to(_point_positions.get(seat_id, _point_positions.values()[0]), _home_seconds())
+		var target: Vector3 = _point_positions.get(seat_id, _point_positions.values()[0])
+		_send_to_point(i, target, seconds)
 	if log_roam:
 		print("[roam] 进入上课：全体归位（本段共 %d 批离座）" % _batch_count)
 	_batch_count = 0
 
 
-## 归位时长：不超过上课段剩余时间的 80%，保证铃响后尽快坐好。
+## 归位时限：不超过上课段剩余时间的 80%，保证铃响后尽快坐好。
 func _home_seconds() -> float:
 	var remaining := float(_snapshot.get("remaining_seconds", 0.0))
 	if remaining <= 0.0:
-		return _move_seconds
-	return minf(_move_seconds, maxf(remaining * 0.8, 0.5))
+		return _home_limit
+	return minf(_home_limit, maxf(remaining * 0.8, 0.5))
 
 
 ## ⚠️ 玩家输入**已移交** PlayerController（scripts/game/player_controller.gd）：
@@ -158,6 +173,8 @@ func _sync_positions_to_core() -> void:
 			continue
 		var pos := actor.global_position
 		_core.set_position(i, pos.x, pos.z)
+		if i != _player_index:
+			_core.set_moving(i, _walkers[i] != null and _walkers[i].is_moving())
 
 
 ## 当前是否处于课间段（读时钟快照；尚未绑定时按课间处理）。
@@ -182,9 +199,19 @@ func occupant_of(point_id: String) -> int:
 	return int(_occupant.get(point_id, -1))
 
 
-## 移动耗时（秒，由 data 的 move.duration 换算）。
-func move_seconds() -> float:
-	return _move_seconds
+## 归位时限上限（秒，由 move.duration × 每 tick 秒数换算）。
+func home_limit_seconds() -> float:
+	return _home_limit
+
+
+## 课间走动速度（米 / 秒，来自 data/rules/movement.csv）。
+func move_speed() -> float:
+	return _speed
+
+
+## 因取不到导航路线而放弃走动的次数（诊断用；持续增长说明烘焙产物或几何失效）。
+func missed_walks() -> int:
+	return _missed_walks
 
 
 # ------------------------------------------------------------------ 装配
@@ -210,8 +237,15 @@ func _collect_points() -> void:
 			var seat := seat_root.get_node_or_null(seat_id) as Node3D
 			if seat == null:
 				continue
-			# 座位点的站位取椅子处（与人物落位的偏移一致）
-			_point_positions[seat_id] = seat.global_position + Vector3(0.0, 0.0, -0.45)
+			# 座位站位取 desk_chair.tscn 的 StandSpot（可走点）—— 与人物落位、玩家落位同一来源；
+			# 缺失时回退旧偏移（椅子处），保证老场景 / 老测试仍能跑
+			var spot := seat.get_node_or_null(STAND_SPOT_NAME) as Node3D
+			if spot != null:
+				_point_positions[seat_id] = spot.global_position
+			else:
+				_point_positions[seat_id] = (
+					seat.global_position + Vector3(0.0, 0.0, LEGACY_CHAIR_OFFSET_Z)
+				)
 			_owner_of_point[seat_id] = i
 
 
@@ -222,11 +256,28 @@ func _collect_actors() -> void:
 		return
 	for i in range(_actor_count):
 		var actor := actors_root.get_child(i) as Node3D
+		var home: Vector3 = _point_positions[str(_core.seat_of(i))]
+		_core.set_seat_position(i, Vector2(home.x, home.z))
 		_actors.append(actor)
 		if actor == null:
 			_walkers.append(null)
 			continue
-		_walkers.append(actor.get_node_or_null("Walker") as ActorWalker)
+		var walker := actor.get_node_or_null("Walker") as ActorWalker
+		_walkers.append(walker)
+		if walker != null and i != _player_index:
+			walker.walk_started.connect(_on_walk_started.bind(i))
+			walker.walk_finished.connect(_on_walk_finished.bind(i))
+	_sync_positions_to_core()
+
+
+func _on_walk_started(_target: Vector3, i: int) -> void:
+	_core.set_moving(i, true)
+
+
+func _on_walk_finished(i: int) -> void:
+	var pos: Vector3 = _actors[i].global_position
+	_core.set_position(i, pos.x, pos.z)
+	_core.set_moving(i, false)
 
 
 func _occupy_seats() -> void:
@@ -254,10 +305,9 @@ func _build_markers() -> void:
 		add_child(marker)
 
 
-## 移动秒数：真读 data（move.duration / 课间 tick 数 × break_seconds）。
-## 移动秒数 = move.duration（tick）× 每个 tick 的真实秒数（来自 time_presentation）。
+## 归位时限：真读 data（move.duration × 每 tick 真实秒数）。
 ## 课间：15 tick × (100 秒 / 100 tick) = 15 秒 —— 数值全部来自 data，本组件不留常数。
-func _load_move_seconds() -> float:
+func _load_home_limit() -> float:
 	var loader := ConfigLoader.new()
 	var duration_ticks := 0.0
 	var rows: Array = loader.get_table(BEHAVIORS_TABLE).get("rows", [])
@@ -273,9 +323,21 @@ func _load_move_seconds() -> float:
 			seconds_per_tick = _break_seconds_per_tick(row, presentation_rows)
 			break
 	if duration_ticks <= 0.0 or seconds_per_tick <= 0.0:
-		push_warning("ClassroomRoam：读不到 move.duration / 课间 tick 间隔，移动时长回退 1 秒。")
+		push_warning("ClassroomRoam：读不到 move.duration / 课间 tick 间隔，归位时限回退 1 秒。")
 		return 1.0
 	return duration_ticks * seconds_per_tick
+
+
+## 课间走动速度（米 / 秒）：真读 data（movement.csv 的 meters_per_tick）。
+## 1 个课间 tick = 1 真实秒，所以 meters_per_tick 同时就是「米 / 秒」（§10.4 第 4 条）。
+func _load_speed() -> float:
+	for row in ConfigLoader.new().get_table(MOVEMENT_TABLE).get("rows", []):
+		if str(row.get("param", "")) == SPEED_PARAM:
+			var value := float(str(row.get("value", "0")))
+			if value > 0.0:
+				return value
+	push_warning("ClassroomRoam：读不到 movement.meters_per_tick —— 走动速度回退 0.8 米 / 秒。")
+	return 0.8
 
 
 func _break_seconds_per_tick(phase_row: Dictionary, presentation_rows: Array) -> float:
@@ -298,6 +360,8 @@ func _decide_batch() -> void:
 	var moved := 0
 	for i in range(_actor_count):
 		if i == _player_index:
+			continue
+		if _core.is_busy(i) or _core.session_of(i) >= 0 or _core._sleeping[i]:
 			continue
 		var walker: ActorWalker = _walkers[i]
 		if walker == null or walker.is_moving():
@@ -369,21 +433,42 @@ func _people_near(i: int, point_id: String) -> int:
 
 
 func _go_to_point(i: int, point_id: String) -> void:
+	if _core.is_busy(i) or _core.session_of(i) >= 0 or _core._sleeping[i]:
+		return
 	_release_point(i)
 	_occupy(point_id, i)
 	_move_actor_to(i, _point_positions[point_id], false)
 
 
 func _move_actor_to(i: int, pos: Vector3, keep_occupancy: bool) -> void:
-	var walker: ActorWalker = _walkers[i]
-	if walker == null:
+	if _walkers[i] == null:
 		return
 	if keep_occupancy:
 		_release_point(i)
 		var nearest := _nearest_point(pos)
 		if not nearest.is_empty():
 			_occupy(nearest, i)
-	walker.walk_to(pos, _move_seconds)
+	_send_to_point(i, pos, -1.0)
+
+
+## 让人物走到目标点（**导航折线**）。seconds > 0 = 按该时限走（归位）；否则按统一速度走（课间离座）。
+## 取不到路线 = 留在原地 + 记一次失败 —— 不直线兜底（直线会穿桌椅，§10.4）。
+func _send_to_point(i: int, target: Vector3, seconds: float) -> bool:
+	var walker: ActorWalker = _walkers[i]
+	if walker == null:
+		return false
+	var ok := false
+	if seconds > 0.0:
+		ok = walker.walk_to_navigated_in(target, seconds)
+	else:
+		ok = walker.walk_to_navigated(target, _speed)
+	if not ok:
+		_missed_walks += 1
+		if log_roam:
+			push_warning(
+				"[roam] 节点 %d 取不到导航路线 → 留在原地 (%.2f, %.2f)" % [i, target.x, target.z]
+			)
+	return ok
 
 
 # ------------------------------------------------------------------ 占用

@@ -2,14 +2,25 @@ extends Node3D
 ## 教室场景导航 + 时间接线；模拟逻辑由内核独立负责。
 ##
 ## 只有**一处**绑定内核（避免重复连接）：Actors 在自己的 _ready 里准备内核（必要时
-## 自动建演示局）→ 本节点等一帧 → Clock.bind_core(内核) → HUD / Roam 绑定时钟 →
+## 自动建演示局）→ 本节点等一帧 → 注入交互几何 → Clock.bind_core(内核) → HUD / Roam /
+## 玩家 / 交互控制器 / 圈 / 气泡 / 情绪这一批表现组件依次绑定 →
 ## 时钟每次推进把 day / phase 同步到 GameState 镜像。
+##
+## 统一绑定顺序（计划 §9）：**人物与几何准备 → 位置写回 → Clock 绑定 → Player/Roam 绑定
+## → 交互控制器、HUD、圈、气泡绑定**。顺序错了就会出现「内核还没几何，界面已经能点人」。
 
 @onready var pause_menu: Control = $UI/PauseMenu
 @onready var clock: SimulationClock = $Clock
 @onready var time_hud: TimeHUD = $TimeHUD
 @onready var roam: Node = $Roam
 @onready var player: PlayerController = $Player
+@onready var actors: Node3D = $Actors
+@onready var rings: ActivityRingPresenter = $Rings
+@onready var chat_bubble: ChatActivityBubble = $ChatBubble
+@onready var emotion: PlayerEmotionFeedback = $Emotion
+@onready var chat_hud: ChatFeedbackHUD = $ChatHUD
+@onready var interaction_menu: PlayerInteractionMenu = $InteractionMenu
+@onready var interaction: PlayerInteractionController = $Interaction
 
 
 func _ready() -> void:
@@ -19,14 +30,63 @@ func _ready() -> void:
 	if core == null:
 		push_warning("Classroom：没有本局内核实例 —— 时间与走动都不启动（请从主菜单「新游戏」进教室）。")
 		return
+	if not _inject_interaction_geometry(core):
+		push_warning(
+			"Classroom：交互几何未就绪（房间范围 / 桌椅矩形读不到）—— 玩家交互会明确失败，不会放行。"
+		)
 	if not clock.bind_core(core):
 		push_error("Classroom：时钟绑定失败（时间配置有问题），时间系统未启动。")
 		return
 	time_hud.bind_clock(clock)
-	roam.bind_clock(clock)
+	# ⚠️ 绑定 Roam 之前先等导航就绪：bind_clock 会立刻触发一次相位回调（上课归位），
+	#    地图没同步时那批走动会被全部判成「取不到路线」。
+	if await _wait_navigation():
+		roam.bind_clock(clock)
 	player.bind_clock(clock)
+	_bind_feedback(core)
 	clock.time_updated.connect(_sync_state_mirror)
 	time_hud.continue_requested.connect(_on_continue_requested)
+
+
+## 等导航网格可用（教室内所有走动的唯一路线来源）。
+## 未就绪时**明确报错并停用走动**（人物仍站着、时间仍走），不静默降级成直线穿桌。
+func _wait_navigation() -> bool:
+	var probe := global_position
+	var first := actors.get_child(0) as Node3D
+	if first != null:
+		probe = first.global_position
+	if await NavReady.wait(self, probe):
+		return true
+	push_error(
+		"Classroom：导航网格未同步 —— NavigationRegion3D 是否已烘焙？"
+		+ "（godot --headless --path . --script tools/bake_classroom_nav.gd）"
+	)
+	return false
+
+
+## 把玩家控制器派生出的**纯几何**注入内核：内核据此判定范围与「连不连得过去」。
+## 一次注入，游戏运行期不再变；未就绪时明确返回 false（不假装成功）。
+func _inject_interaction_geometry(core: Variant) -> bool:
+	var geometry: Dictionary = player.interaction_geometry()
+	var bounds: Rect2 = geometry.get("bounds", Rect2())
+	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
+		return false
+	core.set_interaction_geometry(geometry.get("obstacles", []), bounds)
+	return bool(core.interaction_space_ready())
+
+## 表现组件只读绑定：核心 / 人物 / 时钟，各自的可见性由内核真实会话决定。
+func _bind_feedback(core: Variant) -> void:
+	rings.bind_core(core)
+	chat_bubble.bind_core(core)
+	chat_bubble.bind_actors(actors)
+	chat_bubble.bind_clock(clock)
+	emotion.bind_core(core)
+	emotion.bind_actors(actors)
+	emotion.bind_clock(clock)
+	chat_hud.bind_core(core)
+	chat_hud.bind_clock(clock)
+	interaction.bind_feedback(interaction_menu, chat_hud, rings, chat_bubble, emotion)
+	interaction.bind_sources(core, player, actors, clock)
 
 
 ## 日末简报的「进入第 N 天」：只有在 report 状态才成功；学期结束或依赖缺失时明确报开发状态，

@@ -2,11 +2,13 @@ class_name PlayerController
 extends Node3D
 ## 玩家操控组件（表现层）：**鼠标点击寻路** 与 **WASD 手动行走** 共用一套移动执行与权限检查。
 ##
-## 依据：主文档 §10.5（玩家位置与交互范围）、§10.4（走动耗时）；策划 2026-10-07 裁决第 4/5 项。
+## 依据：主文档 §10.5（玩家位置与交互范围）、§10.4（走动耗时）；策划 2026-10-07 裁决第 4/5 项；
+##      docs/superpowers/plans/2026-10-07-chat-playable-loop.md §3.2。
 ##
 ## 控制规则：
 ##   · **WASD**：按镜头对应的地面方向移动（W 向画面上方、S 向下、A/D 左右），斜向归一化，松键即停；
 ##   · **鼠标左键点地面**：沿**可通行路线**（网格 A*）走过去，再次点击更换目的地；
+##   · **鼠标左键点人物**：只发 `actor_picked`，**不走路**（选中交给交互控制器）；
 ##   · **按下 WASD 立刻取消鼠标自动行走**，切手动；松键后不恢复旧路线；
 ##   · 点击 UI 不会触发移动 —— 本组件只收 `_unhandled_input`（被 Control 消费的输入收不到）；
 ##   · 上课 / 简报 / 暂停 / 转笔演出期间停止控制；**占用型行为（聊天等）进行中也不能用移动覆盖**。
@@ -18,10 +20,23 @@ extends Node3D
 ## 手动与自动共用同一速度，耗时一律随**实际行走距离**变化，不再有「固定 15 秒到达」。
 ##
 ## 碰撞：桌椅矩形**从场景派生**，只取 `Seats/*/Desk` 子树 —— `Chair` 位于 z = -0.45，
-## 正是 `classroom_roam._collect_points()` 算出的座位站位，把它当障碍会让人物站不进自己的座位。
+## 那只是**显示**位置；可走站位是 `desk_chair.tscn` 的 `StandSpot`（z = -0.80，导航面中心），
+## 把椅子也算作障碍会让人物站不进自己的座位。
 ## 世界坐标只写在场景里（与 seats.csv / stand_points.csv 同一约定），本组件不另建坐标表。
+##
+## 接近请求（计划 §3.2）：`plan_approach()` 只**算路**、零移动副作用；`follow_path()` 才真的走；
+## 到达 / 取消 / 失败一律带 `request_id` —— 旧请求的回调不得影响新路径。
+
+signal actor_picked(actor_index: int)
+signal ground_clicked(point: Vector3)
+signal request_arrived(request_id: int)
+signal request_cancelled(request_id: int, reason: StringName)
+signal request_failed(request_id: int, reason: StringName)
 
 const MOVEMENT_TABLE := "rules/movement"
+const PICK_TABLE := "rules/player_interaction"
+## 拾取射线长度（米）：教室尺度远小于它
+const PICK_DISTANCE := 100.0
 
 @export_group("开关")
 @export var enabled: bool = true
@@ -48,6 +63,16 @@ const MOVEMENT_TABLE := "rules/movement"
 @export var action_left: StringName = &"move_left"
 @export var action_right: StringName = &"move_right"
 
+@export_group("拾取与遮挡")
+## 人物拾取体所在 3D 物理层（位掩码）；0 = 读配置表 `actor_pick_layer`
+@export var actor_pick_layer: int = 0
+## 世界静态遮挡体所在 3D 物理层（位掩码）；0 = 读配置表 `world_pick_blocker_layer`
+@export var world_blocker_layer: int = 0
+## 是否从桌面 / 墙的实际 Mesh 生成静态遮挡体（关掉即不挡视线）
+@export var build_blockers: bool = true
+## 生成静态遮挡体的房间节点（其 *Wall 子树与座位桌一起参与）
+@export var room_path: NodePath = ^"../Room"
+
 @export_group("调试")
 @export var log_player: bool = false
 
@@ -58,13 +83,14 @@ var _walker: ActorWalker = null
 var _player_index := -1
 var _snapshot: Dictionary = {}
 ## 距离口径（全部来自 data/rules/movement.csv）
-var _speed := 0.13
+var _speed := 0.8
 var _radius := 0.24
 var _grid := 0.25
 var _eps := 0.02
 var _snap := 1.0
-## 障碍矩形（XZ 平面，已按人物半径外扩）与可通行范围
+## 障碍矩形（XZ 平面，已按人物半径外扩）、**未外扩的原始矩形**（喂给内核做交互几何）与可通行范围
 var _obstacles: Array[Rect2] = []
+var _raw_obstacles: Array[Rect2] = []
 var _bounds := Rect2()
 var _nav := AStarGrid2D.new()
 ## 自动行走路径（世界坐标折线，y 恒为 0）与当前段
@@ -73,6 +99,13 @@ var _path_index := 0
 var _destination := Vector3.ZERO
 var _has_destination := false
 var _manual := false
+## 当前接近请求编号（-1 = 普通地面点击，没有请求）
+var _active_request := -1
+## 拾取 / 遮挡层（来自 data/rules/player_interaction.csv）
+var _pick_layer := 2
+var _blocker_layer := 1
+## 移动状态是否已写回内核（避免每帧重复调用）
+var _moving_written := false
 
 
 func _ready() -> void:
@@ -87,7 +120,10 @@ func _ready() -> void:
 	_load_config()
 	_locate_player()
 	_collect_obstacles()
+	_load_pick_config()
+	_build_occluders()
 	_build_nav()
+	_verify_player_spot()
 	_sync_position_to_core()
 
 
@@ -159,6 +195,205 @@ func is_walkable(p: Vector3) -> bool:
 	return _is_walkable_2d(Vector2(p.x, p.z))
 
 
+## 交互几何（**未按人物半径外扩**的原始矩形 + 房间边界）—— 场景据此一次注入内核。
+## 内核只用它做范围与线段阻挡判定，不引用任何场景节点。
+func interaction_geometry() -> Dictionary:
+	return {"obstacles": _raw_obstacles.duplicate(), "bounds": _bounds}
+
+
+func effective_pick_layer() -> int:
+	return _pick_layer
+
+
+func effective_blocker_layer() -> int:
+	return _blocker_layer
+
+
+## 玩家是否正在走向某个已确认的接近请求（-1 = 普通地面点击的自动行走）。
+func active_request() -> int:
+	return _active_request
+
+
+func is_approaching() -> bool:
+	return _active_request >= 0 and _has_destination
+
+
+# ------------------------------------------------------------------ 人物拾取（射线）
+
+## 屏幕点 → 人物索引；最近命中是墙壁 / 桌椅则返回 -1（**隔着家具选不中**）。
+## 由交互控制器在「地面移动」之前调用，人物输入因此不会被先走一步。
+func pick_actor(screen_pos: Vector2) -> int:
+	if _pick_layer <= 0 or not is_inside_tree():
+		return -1
+	var camera := get_viewport().get_camera_3d()
+	if camera == null:
+		return -1
+	var origin := camera.project_ray_origin(screen_pos)
+	var direction := camera.project_ray_normal(screen_pos)
+	var params := PhysicsRayQueryParameters3D.create(
+		origin, origin + direction * PICK_DISTANCE, _pick_layer | _blocker_layer
+	)
+	params.collide_with_areas = true
+	params.collide_with_bodies = true
+	var hit := get_world_3d().direct_space_state.intersect_ray(params)
+	if hit.is_empty():
+		return -1
+	var collider: Variant = hit.get("collider")
+	if collider == null or not (collider is Node) or not (collider as Node).has_meta("actor_index"):
+		return -1
+	return int((collider as Node).get_meta("actor_index"))
+
+
+# ------------------------------------------------------------------ 接近算路（零移动副作用）
+
+## 在目标周围枚举合法站位，挑**路径最短**的一个；只算不走，改变不了任何移动状态。
+## 返回 {ok, error, path, destination, length_m}；同长度按格点坐标固定排序（不用随机数）。
+func plan_approach(targets: Array, range_m: float) -> Dictionary:
+	if _player_actor == null:
+		return {"ok": false, "error": "no_player"}
+	if _bounds.size.x <= 0.0 or _bounds.size.y <= 0.0:
+		return {"ok": false, "error": "no_geometry"}
+	var points: Array[Vector2] = []
+	for t in targets:
+		var point := t as Vector3
+		points.append(Vector2(point.x, point.z))
+	if points.is_empty():
+		return {"ok": false, "error": "no_target"}
+	var from := _cell_id(_player_actor.global_position)
+	if not _nav.region.has_point(from) or _nav.is_point_solid(from):
+		from = _nearest_open_cell(from)
+		if from.x < 0:
+			return {"ok": false, "error": "no_path"}
+	var best: Dictionary = {}
+	for cell in _candidate_cells(points, range_m):
+		var cells: PackedVector2Array = _nav.get_point_path(from, cell)
+		if cells.is_empty():
+			continue
+		var length := _polyline_length(cells)
+		if not best.is_empty():
+			var current := float(best["length_m"])
+			if length > current + 0.0001:
+				continue
+			if absf(length - current) <= 0.0001 and not _cell_before(cell, best["cell"]):
+				continue
+		best = {"cell": cell, "length_m": length, "cells": cells}
+	if best.is_empty():
+		return {"ok": false, "error": "no_path"}
+	var path := PackedVector3Array()
+	for cell in best["cells"]:
+		path.append(Vector3(cell.x, 0.0, cell.y))
+	return {
+		"ok": true,
+		"error": "",
+		"path": path,
+		"destination": path[path.size() - 1],
+		"length_m": float(best["length_m"]),
+	}
+
+
+## 开始一条**已确认**的路径（request_id 由内核分配，随到达 / 取消 / 失败回传）。
+## 路径为空或不合法时明确失败，不静默走一条坏路。
+func follow_path(request_id: int, path: PackedVector3Array) -> bool:
+	if _player_actor == null or path.is_empty():
+		emit_signal("request_failed", request_id, &"empty_path")
+		return false
+	if not _path_is_walkable(path):
+		emit_signal("request_failed", request_id, &"blocked_path")
+		return false
+	_clear_path()
+	_path = path
+	_path_index = 0
+	_destination = path[path.size() - 1]
+	_has_destination = true
+	_active_request = request_id
+	_sync_moving_state()
+	if log_player:
+		print("[player] 接近请求 %d：%d 段 → (%.2f, %.2f)" % [
+			request_id, path.size(), _destination.x, _destination.z
+		])
+	return true
+
+
+## 只取消**这一个**请求的移动：编号对不上就不动，绝不打断后来新建的路径。
+func cancel_request_movement(request_id: int, reason: StringName) -> void:
+	if _active_request != request_id:
+		return
+	_clear_path()
+	_active_request = -1
+	emit_signal("request_cancelled", request_id, reason)
+
+
+## 每个路径点都必须是可行走格（防止拿一条穿墙的假路径去走）。
+## 起点是**玩家脚下的格心**，可能因人物半径外扩而落在障碍矩形内 —— 只从第二点开始校验。
+func _path_is_walkable(path: PackedVector3Array) -> bool:
+	for index in range(1, path.size()):
+		if not is_walkable(path[index]):
+			return false
+	return true
+
+
+## 以目标为圆心、range_m 为半径的可站立格点（同时要求连线不穿家具）。
+func _candidate_cells(points: Array[Vector2], range_m: float) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if range_m <= 0.0:
+		return out
+	var min_x := INF
+	var min_z := INF
+	var max_x := -INF
+	var max_z := -INF
+	for point in points:
+		min_x = minf(min_x, point.x - range_m)
+		max_x = maxf(max_x, point.x + range_m)
+		min_z = minf(min_z, point.y - range_m)
+		max_z = maxf(max_z, point.y + range_m)
+	var lo := _cell_id(Vector3(min_x, 0.0, min_z))
+	var hi := _cell_id(Vector3(max_x, 0.0, max_z))
+	for y in range(lo.y, hi.y + 1):
+		for x in range(lo.x, hi.x + 1):
+			var cell := Vector2i(x, y)
+			if not _nav.region.has_point(cell) or _nav.is_point_solid(cell):
+				continue
+			if _cell_within_range(_cell_center(cell), points, range_m):
+				out.append(cell)
+	return out
+
+
+func _cell_within_range(center: Vector3, points: Array[Vector2], range_m: float) -> bool:
+	var here := Vector2(center.x, center.z)
+	for point in points:
+		if here.distance_to(point) > range_m:
+			return false
+		if _segment_blocked(here, point):
+			return false
+	return true
+
+
+## 原始矩形（未外扩）上的线段阻挡判定 —— 与内核 InteractionSpace 同一口径。
+func _segment_blocked(a: Vector2, b: Vector2) -> bool:
+	var length := a.distance_to(b)
+	var steps := maxi(1, int(ceil(length / maxf(_grid * 0.5, 0.01))))
+	for k in range(steps + 1):
+		var point := a.lerp(b, float(k) / float(steps))
+		for rect in _raw_obstacles:
+			if rect.has_point(point):
+				return true
+	return false
+
+
+func _polyline_length(cells: PackedVector2Array) -> float:
+	var total := 0.0
+	for index in range(1, cells.size()):
+		total += cells[index - 1].distance_to(cells[index])
+	return total
+
+
+## 同长度时的固定排序：格点坐标字典序（与决策顺序无关的可复现选择）。
+func _cell_before(a: Vector2i, b: Vector2i) -> bool:
+	if a.y != b.y:
+		return a.y < b.y
+	return a.x < b.x
+
+
 # ------------------------------------------------------------------ 每帧推进
 
 
@@ -166,12 +401,17 @@ func _process(delta: float) -> void:
 	if _player_actor == null:
 		return
 	if not can_control():
-		_cancel_movement()
+		if _is_frozen_by_hold():
+			# 世界被 hold（转笔演出 / 真正暂停）：**冻结接近路径与请求**，只把位置同步回内核
+			_sync_position_to_core()
+			return
+		_cancel_movement(&"lost_control")
 		return
 	var dir := _input_direction() if wasd_enabled else Vector3.ZERO
 	if dir != Vector3.ZERO:
 		_manual = true
 		# 按下 WASD 立刻取消自动行走；松键也不恢复旧路线
+		_cancel_active_request(&"wasd")
 		_clear_path()
 		_step(dir * _speed * delta, delta)
 	else:
@@ -181,15 +421,36 @@ func _process(delta: float) -> void:
 				_walker.stop_manual()
 		_advance_path(delta)
 	_sync_position_to_core()
+	_sync_moving_state()
 
 
-## 失去控制权（上课 / 简报 / 暂停 / 被占用）：停下脚步，留在原地。
-func _cancel_movement() -> void:
+## 世界是否被 hold（转笔演出 / 暂停菜单）—— 冻结而不是取消。
+func _is_frozen_by_hold() -> bool:
+	return _clock != null and is_instance_valid(_clock) and _clock.is_paused()
+
+
+## 失去控制权（上课 / 简报 / 被占用）：停下脚步，留在原地；未提交的接近请求随之取消。
+func _cancel_movement(reason: StringName = &"lost_control") -> void:
+	if not _has_destination and not _manual and _active_request < 0:
+		return
+	_cancel_active_request(reason)
 	_clear_path()
 	_manual = false
-	if _walker != null and _walker.is_moving():
-		_walker.stop()
+	if _walker != null:
+		# ⚠️ 只收尾**玩家自己**的步态：**不调** `_walker.stop()` —— 它会打断系统发起的走动
+		# （上课归位由 classroom_roam 直接调 walker.walk_to_navigated_in，玩家无权取消它）。
+		_walker.stop_manual()
 	_sync_position_to_core()
+	_sync_moving_state()
+
+
+## 取消当前接近请求（没有请求时什么都不做）。
+func _cancel_active_request(reason: StringName) -> void:
+	if _active_request < 0:
+		return
+	var request_id := _active_request
+	_active_request = -1
+	emit_signal("request_cancelled", request_id, reason)
 
 
 ## WASD → 世界方向：按摄像机的地面朝向换算（W = 画面上方），斜向归一化。
@@ -217,16 +478,42 @@ func _input_direction() -> Vector3:
 	return (forward * -raw.z + right * raw.x).normalized()
 
 
-## 走一小步：带桌椅滑动（先整体、再退而求其次只走单轴），不会穿进家具。
+## 走一小步：**沿整段采样**推进（步长取 nav_grid_size 的一半），任一点不可走就停在那里；
+## 整段被挡才退而求其次只走单轴（贴桌滑行）。只检查终点会漏掉「途中穿过桌角」。
 func _step(delta: Vector3, delta_time: float) -> void:
 	if _walker == null or delta.length() <= 0.0:
 		return
 	var origin := _player_actor.global_position
-	var target := _slide(origin, delta)
+	var target := _slide_sampled(origin, delta)
 	var applied := Vector3(target.x - origin.x, 0.0, target.z - origin.z)
 	if applied.length() <= 0.0:
 		return
 	_walker.move_by(applied, delta_time)
+
+
+## 沿 delta 分步采样推进：每一步都必须可走，返回真正能到达的位置。
+## 采样步长取寻路网格的一半（几何是格尺度的，这样不会跳过家具角）；整体只有一步时退回 `_slide`。
+func _slide_sampled(origin: Vector3, delta: Vector3) -> Vector3:
+	var step := maxf(_grid * 0.5, 0.05)
+	var total := Vector2(delta.x, delta.z).length()
+	if total <= step:
+		return _slide(origin, delta)
+	var steps := maxi(1, int(ceil(total / step)))
+	var pos := origin
+	for k in range(1, steps + 1):
+		var candidate := origin + delta * (float(k) / float(steps))
+		if is_walkable(candidate):
+			pos = candidate
+			continue
+		var only_x := Vector3(candidate.x, 0.0, pos.z)
+		var only_z := Vector3(pos.x, 0.0, candidate.z)
+		if absf(delta.x) > 0.0 and is_walkable(only_x):
+			pos = only_x
+		elif absf(delta.z) > 0.0 and is_walkable(only_z):
+			pos = only_z
+		else:
+			break
+	return pos
 
 
 ## 沿 delta 尝试移动：整体不行就只走单轴（贴着桌椅滑过去，不卡死）。
@@ -258,15 +545,31 @@ func _advance_path(delta: float) -> void:
 
 
 func _finish_path() -> void:
+	var request_id := _active_request
+	_active_request = -1
 	if log_player:
 		print("[player] 到达目的地 (%.2f, %.2f)" % [_destination.x, _destination.z])
 	_clear_path()
+	# 正式到达必须带请求编号：旧请求的到达不得提交新交互
+	if request_id >= 0:
+		emit_signal("request_arrived", request_id)
 
 
 func _clear_path() -> void:
 	_path = PackedVector3Array()
 	_path_index = 0
 	_has_destination = false
+	_sync_moving_state()
+
+
+## 把「玩家在走动」这一独立状态写回内核（让 NPC 不把移动中的人拉进新交互）。
+func _sync_moving_state() -> void:
+	var moving := is_auto_walking() or is_manual_walking()
+	if _moving_written == moving:
+		return
+	_moving_written = moving
+	if _core != null and _player_index >= 0:
+		_core.set_moving(_player_index, moving)
 
 
 # ------------------------------------------------------------------ 玩家输入（点地面）
@@ -285,11 +588,26 @@ func _unhandled_input(event: InputEvent) -> void:
 	var button := event as InputEventMouseButton
 	if button == null or not button.pressed or button.button_index != click_button:
 		return
-	var point: Variant = _ground_point(button.position)
+	if str(handle_click(button.position)) != "ignored":
+		get_viewport().set_input_as_handled()
+
+
+## 统一点击入口（可测）：人物优先，命中人物只发选中信号、**不向地面走一步**；
+## 最近命中是世界遮挡体（墙 / 桌椅）时，人物不可选 —— 隔着家具点不到人。
+## 返回 "actor" / "ground" / "ignored"。
+func handle_click(screen_pos: Vector2) -> StringName:
+	if not click_to_move or _player_actor == null or not can_control():
+		return &"ignored"
+	var actor_index := pick_actor(screen_pos)
+	if actor_index >= 0:
+		emit_signal("actor_picked", actor_index)
+		return &"actor"
+	var point: Variant = _ground_point(screen_pos)
 	if point == null:
-		return
-	# 只处理**地面**点击：点击人物（选中 / 交互）留待后续，届时这里要加人物命中判定
+		return &"ignored"
+	emit_signal("ground_clicked", point)
 	_start_auto_walk(point)
+	return &"ground"
 
 
 ## 点地面 → 吸附落点 → 网格 A* → 开始自动行走（再次点击即更换目的地）。
@@ -305,6 +623,8 @@ func _start_auto_walk(point: Vector3) -> void:
 		to = _nearest_open_cell(to)
 		if to.x < 0:
 			return
+	# 新的地面点击作废未提交的接近请求（已走过的时间不返还）
+	_cancel_active_request(&"new_ground_click")
 	_clear_path()
 	var cells: PackedVector2Array = _nav.get_point_path(from, to)
 	if cells.is_empty():
@@ -315,6 +635,7 @@ func _start_auto_walk(point: Vector3) -> void:
 	_path_index = 0
 	_destination = goal
 	_has_destination = true
+	_sync_moving_state()
 	if log_player:
 		print("[player] 自动寻路 %d 段 → (%.2f, %.2f)" % [_path.size(), goal.x, goal.z])
 
@@ -357,19 +678,103 @@ func _nearest_free_stand(point: Vector3) -> Variant:
 # ------------------------------------------------------------------ 场景 → 几何（障碍 / 导航格）
 
 
-## 桌椅矩形从场景派生。**只取 `Desk` 子树**：`Chair` 在 z=-0.45，是座位站位，不能当障碍。
+## 桌椅矩形从场景派生。**只取 `Desk` 子树**：`Chair`（z=-0.45）只是显示位置，
+## 可走站位是 `StandSpot`（z=-0.80），椅子不能当障碍，否则人物站不进自己的座位。
+## 同时留下**未外扩**的原始矩形，供内核做交互几何（范围与连线阻挡）判定。
 func _collect_obstacles() -> void:
 	_obstacles.clear()
+	_raw_obstacles.clear()
 	var seats := get_node_or_null(seats_path)
 	if seats != null:
 		for seat in seats.get_children():
 			var desk := seat.get_node_or_null("Desk")
 			if desk != null:
 				for mesh in _meshes_under(desk):
-					_obstacles.append(_xz_rect_of(mesh).grow(_radius))
+					var rect := _xz_rect_of(mesh)
+					_raw_obstacles.append(rect)
+					_obstacles.append(rect.grow(_radius))
 	var floor_node := get_node_or_null(floor_path) as MeshInstance3D
 	if floor_node != null:
 		_bounds = _xz_rect_of(floor_node)
+
+
+## 拾取层与遮挡层：数值来自 data/rules/player_interaction.csv（位掩码），导出属性优先。
+func _load_pick_config() -> void:
+	var rows: Array = ConfigLoader.new().get_table(PICK_TABLE).get("rows", [])
+	for row in rows:
+		var value := int(str(row.get("value", "0")))
+		match str(row.get("param", "")):
+			"actor_pick_layer":
+				_pick_layer = value
+			"world_pick_blocker_layer":
+				_blocker_layer = value
+	if actor_pick_layer > 0:
+		_pick_layer = actor_pick_layer
+	if world_blocker_layer > 0:
+		_blocker_layer = world_blocker_layer
+
+
+## 世界静态遮挡体：从桌面与墙的**实际 Mesh** 派生（不手填另一套家具坐标），
+## 放在 world_pick_blocker_layer 上 —— 「隔着家具点不到人」由真实射线命中决定。
+## 每处只生成**一个**包围盒（整张桌子 / 整面墙），数量与场景规模同阶。
+func _build_occluders() -> void:
+	if not build_blockers or _blocker_layer <= 0:
+		return
+	var parent := get_node_or_null(room_path)
+	if parent == null:
+		return
+	var sources: Array[Node] = []
+	var seats := get_node_or_null(seats_path)
+	if seats != null:
+		for seat in seats.get_children():
+			var desk := seat.get_node_or_null("Desk")
+			if desk != null:
+				sources.append(desk)
+	for child in parent.get_children():
+		var name := str((child as Node).name)
+		if name.ends_with("Wall") or name == "Podium":
+			sources.append(child)
+	var count := 0
+	for source in sources:
+		var box := _world_box_of(source)
+		if box.size.length() <= 0.0:
+			continue
+		_add_occluder(parent, box)
+		count += 1
+	if log_player:
+		print("[player] 生成 %d 个世界遮挡体（层 %d）" % [count, _blocker_layer])
+
+
+## 子树里所有 Mesh 的世界包围盒并集（取 AABB 八角逐个投影，旋转后也不失真）。
+func _world_box_of(node: Node) -> AABB:
+	var min_point := Vector3(INF, INF, INF)
+	var max_point := Vector3(-INF, -INF, -INF)
+	var found := false
+	for mesh in _meshes_under(node):
+		var box := mesh.get_aabb()
+		var xform := mesh.global_transform
+		for k in range(8):
+			var world := xform * box.get_endpoint(k)
+			min_point = min_point.min(world)
+			max_point = max_point.max(world)
+			found = true
+	if not found:
+		return AABB()
+	return AABB(min_point, max_point - min_point)
+
+
+func _add_occluder(parent: Node, box: AABB) -> void:
+	var body := StaticBody3D.new()
+	body.name = "PickOccluder"
+	body.collision_layer = _blocker_layer
+	body.collision_mask = 0
+	var shape := CollisionShape3D.new()
+	var shape_box := BoxShape3D.new()
+	shape_box.size = box.size
+	shape.shape = shape_box
+	body.add_child(shape)
+	parent.add_child(body)
+	body.global_position = box.get_center()
 
 
 func _meshes_under(node: Node) -> Array[MeshInstance3D]:
@@ -417,6 +822,31 @@ func _build_nav() -> void:
 			var center := _cell_center(Vector2i(x, y))
 			if not _is_walkable_2d(Vector2(center.x, center.z)):
 				_nav.set_point_solid(Vector2i(x, y), true)
+
+
+## 出生点兜底：站位若落在家具里 / 房间外（几何被改坏、座位 StandSpot 忘了摆），
+## 吸附到最近的合法格并把位置写回内核 —— 否则玩家一进教室就永远动不了（2026-10-07 复现）。
+## ⚠️ 这一步只动"初始化落位"，不影响任何运行中的移动；找不到安全落点时明确停用操控。
+func _verify_player_spot() -> void:
+	if _player_actor == null:
+		return
+	var pos := _player_actor.global_position
+	if is_walkable(pos):
+		return
+	var cell := _nearest_open_cell(_cell_id(pos))
+	if cell.x < 0:
+		push_error("PlayerController：出生点不可走且找不到安全落点 —— 玩家移动保持关闭。")
+		enabled = false
+		return
+	var safe := _cell_center(cell)
+	_player_actor.global_position = safe
+	if _walker != null:
+		_walker.teleport_to(safe)
+	_sync_position_to_core()
+	push_warning(
+		"PlayerController：出生点不可走（%.2f, %.2f）→ 已吸附到最近可走点（%.2f, %.2f）。"
+		% [pos.x, pos.z, safe.x, safe.z]
+	)
 
 
 func _is_walkable_2d(p: Vector2) -> bool:
@@ -492,7 +922,7 @@ func _load_config() -> void:
 			"stand_snap_radius":
 				_snap = value
 	if _speed <= 0.0:
-		_speed = 0.13
+		_speed = 0.8
 	if _grid <= 0.0:
 		_grid = 0.25
 
