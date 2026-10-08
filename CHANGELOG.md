@@ -9,6 +9,12 @@
 
 ## [未发布]
 
+- **角色移动功能缺口收口（2026-10-08）**：把 NPC 课间走动驱动器（`scripts/game/classroom_roam.gd`）的移动耗时口径统一切到与玩家 `PlayerController` 一致的「实际距离 / 统一速度」（`data/rules/movement.csv` 的 `meters_per_tick`，课间 1 tick = 1 秒），放弃此前「固定 15 tick（15 秒）」的旧口径（策划 2026-10-07 裁决第 6b 项）：
+  · `move_seconds(distance)` 按距离换算；距离为 0 / 未知（防御性）时回落到兜底时长（兜底值仍从 `behaviors.csv` 的 `move.duration` × `time_presentation.csv` 的每 tick 秒数换算，不引入新魔法数字）；
+  · 归位（上课铃响后全体走回座位）也改为按实际距离换算，且仍受「不超过上课段剩余时间 80%」的钳制（`_home_seconds(distance)`）；
+  · 新增 `tests/unit/test_classroom_roam_movement.gd`（5 例：距离→耗时线性 / 单调性 / 零距离兜底 / 剩余时间钳制 / 无快照回退）与 `tests/unit/test_student_character_movement.gd`（4 例：`ActorWalker.walk_to_at_speed()` 按速度到位、零速/负速防御、长距离更久），均不依赖场景装配（不挂树直接注入字段，风格同 `test_player_controller.gd`）。GUT `tests/unit` 135/135 全绿。
+  · `scenes/game/classroom3D.tscn` 资源引用按 Godot 重新导入后的 uid 顺序重排（无节点 / 逻辑变化，与仓库既有「补全 .uid」惯例一致）。
+
 - **玩家点击与情绪反馈计划（2026-10-07，素材/文档）**：生成透明落点标记 `assets/textures/ui/movement/click_destination_v01.png`；新增 `docs/superpowers/plans/2026-10-07-player-click-emotion-feedback.md`，规划实际寻路终点反馈、WASD取消、放松/生气/哭泣/开心男女两组气泡、可见事件摘要与暂停协调。八张既有气泡待确认实际素材路径，本次未实施组件。
 
 - **人物底部活动圈计划（2026-10-07，文档）**：新增 `docs/superpowers/plans/2026-10-07-activity-foot-rings.md`，明确统一个人圈、交互成功后的异色融合、真实会话分组、活动结束拆分及 3D 程序渲染方案；现有按行为名称汇总的接口不能直接作为融合成员来源。本次仅生成计划。

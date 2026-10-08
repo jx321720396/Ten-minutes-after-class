@@ -1,0 +1,16 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://c0ynx3uo0a8ln"
+
+[deps]
+
+source_file="res://tests/invariants/fixtures/data/characters/seeds.csv"
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

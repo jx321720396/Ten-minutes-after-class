@@ -13,14 +13,18 @@ extends Node3D
 ##   · **玩家**：点击地面任意位置走过去（快照 `player_control` 为假时直接拒绝点击）。
 ##
 ## 数值口径：
-##   · 移动耗时 = `data/rules/behaviors.csv` 的 `move.duration`（15 tick）×
-##     `data/rules/time_presentation.csv` 给出的每 tick 真实秒数（课间 100 tick / 100 秒 → 15 秒）；
+##   · 统一速度 = `data/rules/movement.csv` 的 `meters_per_tick`（米 / tick；课间 1 tick = 1 秒，
+##     因此同时就是米 / 秒）；移动耗时 = 实际行走距离 / 速度（策划 2026-10-07 裁决第 6b 项，
+##     放弃「固定 15 tick」），与玩家 PlayerController 同口径；
+##   · 归位等没有明确目标距离的场景仍用 `behaviors.csv` 的 `move.duration` × 每 tick 秒数换算
+##     的兜底时长（数值同样来自 data）；
 ##   · `leave_probability` 是**演示参数，不是玩法数值** —— 内核的离座概率来自
 ##     `data/rules/behavior_probs.csv` 的 `move`（当前 0.05）。
 
 const BEHAVIORS_TABLE := "rules/behaviors"
 const PHASES_TABLE := "rules/phases"
 const PRESENTATION_TABLE := "rules/time_presentation"
+const MOVEMENT_TABLE := "rules/movement"
 const MOVE_BEHAVIOR := "move"
 const KIND_BREAK := "break"
 ## §10.4：想加入的活动圈所在位置额外 ×1.5
@@ -66,7 +70,10 @@ var _occupant: Dictionary = {}
 var _point_of_actor: Dictionary = {}
 var _actor_count := 0
 var _player_index := -1
-var _move_seconds := 1.0
+## 统一移动速度（米 / 秒，来自 movement.csv 的 meters_per_tick；课间 1 tick = 1 秒）
+## 归位等没有明确目标距离的场景（如「回到自己座位」）仍用固定兜底时长
+var _speed := 0.13
+var _fallback_seconds := 1.0
 var _snapshot: Dictionary = {}
 var _decide_timer := 0.0
 
@@ -81,7 +88,7 @@ func _ready() -> void:
 		return
 	_actor_count = int(_core.node_count())
 	_player_index = _actor_count - 1
-	_move_seconds = _load_move_seconds()
+	_load_config()
 	_collect_points()
 	_collect_actors()
 	if show_stand_markers:
@@ -129,18 +136,23 @@ func _on_phase_changed(snapshot_data: Dictionary) -> void:
 		if walker == null:
 			continue
 		var seat_id := str(_core.seat_of(i))
-		walker.walk_to(_point_positions.get(seat_id, _point_positions.values()[0]), _home_seconds())
+		var target: Vector3 = _point_positions.get(seat_id, _point_positions.values()[0])
+		var start := _actors[i].global_position if _actors[i] != null else Vector3.ZERO
+		var distance := Vector2(start.x, start.z).distance_to(Vector2(target.x, target.z))
+		walker.walk_to(target, _home_seconds(distance))
 	if log_roam:
 		print("[roam] 进入上课：全体归位（本段共 %d 批离座）" % _batch_count)
 	_batch_count = 0
 
 
-## 归位时长：不超过上课段剩余时间的 80%，保证铃响后尽快坐好。
-func _home_seconds() -> float:
+## 归位时长：按实际距离 / 统一速度换算，且不超过上课段剩余时间的 80%（保证铃响后尽快坐好）；
+## 距离未知（0 或速度读不到）时用固定兜底时长（不再走「固定 15 tick」口径）。
+func _home_seconds(distance: float = 0.0) -> float:
 	var remaining := float(_snapshot.get("remaining_seconds", 0.0))
+	var base := move_seconds(distance)
 	if remaining <= 0.0:
-		return _move_seconds
-	return minf(_move_seconds, maxf(remaining * 0.8, 0.5))
+		return base
+	return minf(base, maxf(remaining * 0.8, 0.5))
 
 
 ## ⚠️ 玩家输入**已移交** PlayerController（scripts/game/player_controller.gd）：
@@ -182,9 +194,11 @@ func occupant_of(point_id: String) -> int:
 	return int(_occupant.get(point_id, -1))
 
 
-## 移动耗时（秒，由 data 的 move.duration 换算）。
-func move_seconds() -> float:
-	return _move_seconds
+## 移动耗时（秒，由实际行走距离 / movement.csv 的 meters_per_tick 换算；归位等无距离场景用兜底值）。
+func move_seconds(distance: float) -> float:
+	if distance <= 0.0 or _speed <= 0.0:
+		return _fallback_seconds
+	return distance / _speed
 
 
 # ------------------------------------------------------------------ 装配
@@ -254,11 +268,23 @@ func _build_markers() -> void:
 		add_child(marker)
 
 
-## 移动秒数：真读 data（move.duration / 课间 tick 数 × break_seconds）。
-## 移动秒数 = move.duration（tick）× 每个 tick 的真实秒数（来自 time_presentation）。
-## 课间：15 tick × (100 秒 / 100 tick) = 15 秒 —— 数值全部来自 data，本组件不留常数。
-func _load_move_seconds() -> float:
+## 真读 data：统一速度（movement.csv 的 meters_per_tick，课间 1 tick = 1 秒）+
+## 归位等无距离场景的兜底时长（仍用 behaviors.csv 的 move.duration × 每 tick 秒数换算，
+## 与玩家 PlayerController 的口径保持一致 —— 都来自 data，不在脚本里写死魔法数字）。
+func _load_config() -> void:
 	var loader := ConfigLoader.new()
+	var speed_rows: Array = loader.get_table(MOVEMENT_TABLE).get("rows", [])
+	for row in speed_rows:
+		if str(row.get("param", "")) == "meters_per_tick":
+			_speed = float(str(row.get("value", "0")))
+			break
+	_fallback_seconds = _load_fallback_seconds(loader)
+	if _speed <= 0.0:
+		_speed = 0.13
+		push_warning("ClassroomRoam：读不到 movement.csv 的 meters_per_tick，速度回退 0.13 m/s。")
+
+
+func _load_fallback_seconds(loader: ConfigLoader) -> float:
 	var duration_ticks := 0.0
 	var rows: Array = loader.get_table(BEHAVIORS_TABLE).get("rows", [])
 	for row in rows:
@@ -273,7 +299,7 @@ func _load_move_seconds() -> float:
 			seconds_per_tick = _break_seconds_per_tick(row, presentation_rows)
 			break
 	if duration_ticks <= 0.0 or seconds_per_tick <= 0.0:
-		push_warning("ClassroomRoam：读不到 move.duration / 课间 tick 间隔，移动时长回退 1 秒。")
+		push_warning("ClassroomRoam：读不到 move.duration / 课间 tick 间隔，兜底时长回退 1 秒。")
 		return 1.0
 	return duration_ticks * seconds_per_tick
 
@@ -383,7 +409,11 @@ func _move_actor_to(i: int, pos: Vector3, keep_occupancy: bool) -> void:
 		var nearest := _nearest_point(pos)
 		if not nearest.is_empty():
 			_occupy(nearest, i)
-	walker.walk_to(pos, _move_seconds)
+	var start := _actors[i].global_position if _actors[i] != null else Vector3.ZERO
+	var distance := Vector2(start.x, start.z).distance_to(Vector2(pos.x, pos.z))
+	# 统一速度口径（策划 2026-10-07 裁决第 6b 项）：耗时 = 实际距离 / meters_per_tick，
+	# 与玩家 PlayerController 同口径；距离为 0 或未知时走兜底时长。
+	walker.walk_to(pos, move_seconds(distance))
 
 
 # ------------------------------------------------------------------ 占用
