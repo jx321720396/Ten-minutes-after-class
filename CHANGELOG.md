@@ -24,6 +24,12 @@
 
 ## [未发布]
 
+- **WASD 手动移动输入映射正式落地（2026-10-08）**：此前 `move_up/down/left/right` 4 个动作**只**在 `PlayerController._ready()` 里运行时补注册，`project.godot` 里完全没有 `[input]` 段——编辑器「输入映射」界面看不到、无法审阅 / 调整，且一旦 `_ready()` 因场景装配顺序问题没跑到，WASD 会静默失效且无报错。本次：
+  · **`project.godot` 新增 `[input]` 段**（Godot 4.7.2 真实序列化格式，含 `keycode` + `physical_keycode` 双写），编辑器 / 输入映射界面可见可改（可换成方向键、加手柄）；
+  · `PlayerController._register_actions()` / `_add_key_action()` 保留为**幂等兜底**（静态映射存在时直接跳过，只有被人误删时才真正补注册）；
+  · 修掉 `_input_direction()` / `_ground_point()` 里 `get_viewport()` 为 null 时直接崩的隐患（节点未挂树 / 快速切场景等边缘状态下）；
+  · 新增 `tests/unit/test_player_wasd_input.gd`（4 例：动作注册幂等 / 手动行走驱动 `ActorWalker` 左移 / W-S 驱动 Z 轴 / 撞桌子时沿桌沿滑不穿透）。GUT `tests/unit` 全量 **139/139 全绿**。
+
 - **黑板左侧头像栏**：`scenes/game/clue_board_1.tscn` 绿板最左侧加了一列可滚动的正方形格子，格宽按最大头像的 0.5 倍（活泼女 256×0.5）取 128。17 个方格，前 16 格放了头像，最后一格空着。格子底是半透明黑（alpha 0.45），木色边还在。点在格子上不会开始画粉笔。按住格子里的头像拖到黑板外松手，会放下一份同样的头像，格子里的原件还在，同一个可以反复拖；松手仍在头像栏或粉笔按钮上则取消。
 - **角色头像 Sprite**：从 `assets/textures/characters/` 的 16 张立绘裁出脑袋，做成 `Sprite2D` 放在 `scenes/character_head/`。每张头像外轮廓加了 2 像素白边，贴图在 `assets/textures/character_head/`。英文名与 `scenes/characters/` 相同：`quiet` 安静、`stern` 严肃、`tsundere` 傲娇、`sensitive` 敏感、`lively` 活泼、`warm` 热情、`blunt` 直接、`shy` 社恐，女 `_female`、男 `_male`。
 - **八种情绪气泡 Sprite**：男女各一套，白底已抠掉。贴图在 `assets/textures/meme/`，`Sprite2D` 在 `scenes/meme/`。英文名：`relax` 放松、`bored` 无聊、`excited` 兴奋、`irritable` 烦躁、`agitated` 激动、`breakdown` 崩溃、`agree` 同意、`reject` 拒绝；女为 `_female`，男为 `_male`。尚未接到角色身上。
