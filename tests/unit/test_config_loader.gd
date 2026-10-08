@@ -5,13 +5,15 @@ extends GutTest
 func test_load_all_reads_all_tables() -> void:
 	var loader := ConfigLoader.new()
 	var tables := loader.load_all()
-	# data/ 现状：rules 19 + balance 2 + characters 3 = 24 张
-	assert_eq(tables.size(), 24, "应读到 24 张表")
+	# data/ 现状：rules 20 + ui 1 + balance 2 + characters 3 = 26 张
+	assert_eq(tables.size(), 26, "应读到 26 张表")
 	assert_true(tables.has("rules/behaviors"), "rules/behaviors 应在")
 	assert_true(tables.has("rules/stand_points"), "rules/stand_points 应在")
 	assert_true(tables.has("rules/time_presentation"), "rules/time_presentation 应在")
 	assert_true(tables.has("rules/time_runtime"), "rules/time_runtime 应在")
 	assert_true(tables.has("rules/movement"), "rules/movement 应在")
+	assert_true(tables.has("rules/player_interaction"), "rules/player_interaction 应在（玩家交互几何与线索参数）")
+	assert_true(tables.has("ui/chat_feedback_style"), "ui/chat_feedback_style 应在（闲聊反馈呈现参数）")
 	assert_true(tables.has("balance/npc_weights"), "balance/npc_weights 应在")
 	assert_true(tables.has("characters/seeds"), "characters/seeds 应在")
 	assert_true(tables.has("characters/bindings"), "characters/bindings 应在")

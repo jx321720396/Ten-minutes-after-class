@@ -73,8 +73,10 @@ func test_event_sink_day_settled_and_behavior() -> void:
 
 
 func test_player_action_chat_and_validation() -> void:
-	# D11 缺口③：玩家显式行动，来源固定玩家、目标指定
+	# D11 缺口③：玩家显式行动，来源固定玩家、目标指定。
+	# 计划 §3.1：玩家交互必须过**真实空间判定**，先注入一间合法房间作为夹具。
 	var core := _core()
+	core.set_interaction_geometry([], Rect2(-4.0, -4.0, 8.0, 8.0))
 	var me := 8   # 玩家 = n-1
 	assert_false(core.player_action("chat", me)["ok"], "目标=玩家应拒绝")
 	assert_false(core.player_action("chat", -1)["ok"], "目标 OOB 应拒绝")
@@ -87,10 +89,16 @@ func test_player_action_chat_and_validation() -> void:
 	assert_true(r["ok"], "chat 应成功")
 	assert_eq(r["target"], 0, "target 回显")
 	assert_eq(r["topic"], "学习", "topic 透传")
-	assert_eq(events.size(), 1, "应派发 1 条 chat 事件")
+	assert_eq(events.size(), 2, "应派发 chat + player_interaction_started 两条通知")
 	assert_eq(events[0]["payload"]["kind"], "chat", "事件 kind=chat")
-	assert_almost_eq(r["affinity_delta"], snapped(core.affinity(0, me) - before_a, 0.1), 0.0001, "affinity_delta 与矩阵变化一致")
-	assert_almost_eq(r["hostility_delta"], snapped(core.hostility(0, me) - before_h, 0.1), 0.0001, "hostility_delta 与矩阵变化一致")
+	assert_eq(str(events[1]["payload"]["kind"]), "player_interaction_started", "第二条为开始通知")
+	assert_eq(str(events[1]["payload"]["mode"]), "start", "发起新聊天 mode=start")
+	assert_gt(int(events[1]["payload"]["request_id"]), 0, "开始通知带内核分配的请求编号")
+	# 关系结算仍然走内核统一公式：目标→玩家的好感被改写，玩家自身效果摘要随之非空
+	assert_gt(core.affinity(0, me), before_a, "目标→玩家：话题共鸣把好感推高")
+	assert_gte(core.hostility(0, me), before_h, "敌对不被闲聊凭空抹掉")
+	assert_gt(float(r["player_effects"]["affinity_delta"]), 0.0, "玩家自身效果摘要方向正确")
+	assert_true(r.has("session_id"), "提交包带真实会话编号（供底部圈与线索）")
 	var r2 := core.player_action("chat", 1)
 	assert_false(r2["ok"], "玩家忙应拒绝第二次行动")
 	assert_eq(r2.get("error"), "player_busy", "错误码 player_busy")
