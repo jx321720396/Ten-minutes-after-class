@@ -1,4 +1,19 @@
-# 变更记录
+﻿# 变更记录
+
+- **修复聊天空间与移动互斥（2026-10-08）**：NPC 选目标和聊天执行入口接入空间检查，玩家不能拉移动中的目标聊天；Walker 开始/结束即时同步移动状态，聊天/行为占用/睡眠期间阻止 NPC 离座。按用户要求明确前后紧邻座位可转身交流（1.8 米内），其他情况需离座靠近到 1.2 米并停下；容差与范围集中到 `player_interaction.csv`。真实教室在铃声归位前结束/中断聊天，修复带圈归位。新增内核回归与整段课间场景测试；无场景几何的离线标定仍保留原抽象模型。
+
+- **剩余 UI 落地与联调计划（2026-10-07）**：新增 `docs/superpowers/plans/2026-10-07-ui-integration-delivery.md`，按用户确认复用已有情绪气泡与人物圈，收敛为输入、移动反馈、状态提示、情报日志、结算与既有组件联调六项任务；仅文档。
+
+- **聊天以外的 UI 落地计划（2026-10-07）**：新增 `docs/superpowers/plans/2026-10-07-other-ui-rollout.md`，明确输入协调、目的地反馈、行为状态、情报日志、四情绪气泡、融合活动圈及每日/期末报告的接入顺序。仅新增计划，未实施 UI 或调整玩法数值。
+
+- **闲聊完整可玩流程落地（2026-10-08）**：按 `docs/superpowers/plans/2026-10-07-chat-playable-loop.md` 落地「点击人物 → 选择行为 → 距离与占用校验 → 走到附近 → 单次判定 → 动画／圈／线索反馈 → 行为结束」。
+  - **内核**：新增 `scripts/core/activity_sessions.gd`（真实共同活动：一人只在一场活动里、结束点只延长不缩短）、`interaction_space.gd`（纯几何范围与连线阻挡，缺数据明确失败）、`player_interactions.gd`（只读预览、内核分配请求编号、原子提交、状态与完成／中断）、`player_chat_intel.gd`（条数由对象透明度决定、每条单轴、独立有种子流、历史日志）；`SimCore` 新增 `preview_player_interaction` / `commit_player_interaction` / `get_player_interaction` / `get_active_sessions` / `get_player_intel` / `set_interaction_geometry` / `set_moving` / `next_player_request_id` / `session_of`，段边界顺序改为「先结到期 → 再断未到期 → 再进入新段」。
+  - **行为**：闲聊在**真实成立点**登记一次会话；`join_chat` 新增群聊编排（一次判定、每个新边各结算一次、全体占用与共同结束点对齐、拒绝只占请求者 10 tick）；旧 NPC 路径与旧入口保持原样。
+  - **表现**：`PlayerController` 增加人物拾取优先（命中人物只选中、不走路）、`plan_approach` / `follow_path` / `cancel_request_movement` 与带 request_id 的到达／取消／失败信号、移动状态写回；`ClassroomActors` 增加 `actor_for`、拾取体（层来自 data）与反馈锚点；新增交互控制器、行为菜单、转笔／进度／线索 HUD、无字聊天气泡、四情绪（文字版）、脚下圈 SDF 呈现器，并在教室场景统一接线。
+  - **数据**：新增 `data/rules/player_interaction.csv`（闲聊范围 1.2m、连线步长、线索条数与透明度分界、拾取层掩码）与 `data/ui/chat_feedback_style.csv`（转笔四段、菜单、气泡、圈、情绪阈值）；`tools/check_config.py` 增加第 12 组「表 ↔ 消费者」双向一致校验；`data/README.md` 与架构总览 §2.2 同步。
+  - **验证**：GUT 全量 189 项通过（新增 `test_activity_sessions` 13 项、`test_player_interactions` 18 项、`test_player_approach` 17 项、`tests/integration/test_player_chat_scene` 5 项）；离线门第 1／2／3／5／6 道通过（配置 253 项、内核 39 项、公式 11 项、多样性、文档一致性）。
+  - **未完成 / 未验收**：八张情绪图片与玩家立绘仍未收录（情绪目前为文字呈现，属计划 §8.3 允许的阶段形态，情绪图片验收**未勾选**）；本机未做 1080p／720p 人工观感与「正常局里找得到加入机会」的实操验收。
+  - **已知不达标（与本次改动无关，沿用既有记录）**：第四道门 `check_metrics.py` 的「压力爆发均值 / 好感均值 / 好感标准差」不达标 —— 该门只跑 Python 参考内核，未读本次新增的表，数值未调、判据未改。
 
 本文件记录本项目的所有重要变更，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
@@ -8,6 +23,29 @@
 ---
 
 ## [未发布]
+
+- **走动速度上调（2026-10-08，用户裁决，平衡）**：`data/rules/movement.csv` 的 `meters_per_tick` 由 **0.13 上调到 0.8 米 / 秒**（1 课间 tick = 1 真实秒）。
+  - **为什么改**：原值下跨一排座位（1.6 米）要 **12.3 秒**、横穿教室（9.4 米）要 **72.3 秒**、纵穿（11.4 米）要 **87.7 秒** —— 而**一个课间段只有 100 秒实时**，走动几乎吃满整段，玩家与 NPC 都像在飘。
+  - **新值**：跨一排 **2.0 秒**、到讲台前（3.5 米）**4.4 秒**、横穿教室 **11.8 秒**、纵穿 **14.3 秒**；并与上课归位的隐含速度（`move.duration` 15 tick 换算约 0.76 米 / 秒）趋于一致 —— 此前归位比课间走动快约 6 倍，本身也不协调。
+  - **改了多少处**：玩家与 NPC **共用**该值（`player_controller.gd` / `classroom_roam.gd` 都从 data 读），所以只改 data 一行 + 两处代码兜底默认值（对齐 data，仅在读不到表时才用）；主文档只引用参数名 `meters_per_tick`、未写具体值，无需改动。
+  - **未受影响**：玩法数值与内核未动（移动占用尚未进内核，`do_move` 未实装）；`check_metrics` 跑的是 Python 抽象内核，不消费本表。
+
+- **教室导航网格接入（2026-10-07，修复 + 新增）**：教室内的路线改由 `NavigationRegion3D` 烘焙的导航网格给出，人物走动不再一律两点直线插值。
+  - **修复（可玩性阻塞）**：人物落位原取椅子处（`z = -0.45`），而该点落在桌椅避障区内（桌面深 0.46、玩家半径 0.24 外扩 → 禁行到 `z = ±0.47`），于是**玩家一进教室就被判成「不可行走」，WASD 与点地面移动全部无效**。改为统一取 `desk_chair.tscn` 的 `StandSpot`（`z = -0.80`，即行间过道中心，与既有 `StandPoints` 的 `AISLE_*` 摆位同一偏移），落位 / 站位 / 点击目标三处同源。
+  - **修复（表现）**：上课归位被玩家输入权限打断 —— `PlayerController._cancel_movement()` 原先无条件调 `ActorWalker.stop()`，把 `classroom_roam` 刚发起的归位一并停掉；改为只收尾玩家自己的步态（`stop_manual()`）。
+  - **修复（表现）**：WASD 步进只检查单步终点，会从家具角上穿过去；改为沿整段按 `nav_grid_size / 2` 采样推进，整段被挡才退回单轴滑行。
+  - **新增**：`tools/bake_classroom_nav.gd` 离线烘焙（参数取自 `data/rules/movement.csv`，产物 `resources/navigation/classroom_nav.tres` 随仓提交）；`scripts/game/nav_ready.gd` 集中「导航就绪」判定（**实测 Godot 4.7.2 下 `map_get_iteration_id` 先于多边形提交**，只查它会拿到空路径）；`ActorWalker.walk_to_navigated()` / `walk_to_navigated_in()` 沿导航折线行走，取不到路线时**明确失败且一步不走**（不用直线兜底穿桌）；`classroom3D.tscn` 新增 `NavGeometry`（地板盒，组 `nav_geometry`）与 `Navigation`（`NavigationRegion3D`）；`desk_chair.tscn` 增加 `NavBlocker`（0.66 × 0.8 × 0.46 桌面占地）与 `SitPoint`（**坐下帧动画预留锚点，本轮不驱动**）。
+  - **数值**：`data/rules/movement.csv` 新增 `nav_cell_size` / `nav_agent_height` / `nav_max_climb` / `nav_blocker_height` / `nav_path_epsilon`；`tools/check_config.py` 增加第 13 组（含 `nav_max_climb < nav_blocker_height`，防「人物沿导航走上桌子」这类静默失效）；新增 `tests/unit/test_nav_config.gd` 锁住「data ↔ 烘焙产物 ↔ 场景」三方一致。
+  - **验证**：新增 `tests/integration/check_classroom_nav.gd`（**连通性**验收，不是覆盖率）——公共起点到 17 个座位入口 + 13 个站立点 **30/30 可达**、末点偏差 0.000 m，桌椅不可走（桌中心距导航面 0.539 m）；GUT 全量 **203 项**通过；离线门第 1／2／3／6 道通过（配置 257 项、内核 39 项、公式 11 项、文档一致性）。
+  - **未完成 / 未验收**：玩家路线仍走既有 A\* 矩形网格（与内核 `InteractionSpace` 同一几何口径，分工见架构总览「教室导航」）；人物仍是无实体碰撞的纸片人，NPC 之间不避让；坐下帧动画与 `SitPoint` 驱动未实施。
+
+- **闲聊／搭话合并（2026-10-07，用户裁决，文档）**：闲聊统一为一个行为，发起新聊天与加入已有聊天分别记录 start/join；加入采用通用活动参与操作，不再单列搭话菜单。更新主文档 §10.5／10.7／10.31、菜单与行为速查、完整可玩流程计划、架构索引及底部圈计划；明确参与方式锁定与原会话校验，join_chat 代码／配置暂作兼容，不调现有数值。本次未修改功能代码。
+
+- **闲聊／搭话完整可玩流程计划（2026-10-07，文档）**：新增 `docs/superpowers/plans/2026-10-07-chat-playable-loop.md`，明确人物选择、行为菜单、真实距离与占用检查、专用接近路线、加入既有聊天会话、单次判定与转笔暂停、无字气泡／融合圈／四表情、自然完成的单轴时间线索，以及六项实施任务与场景验收。沿用现有平衡数值；群聊编排和几何／呈现参数为待实施设计，本次未修改代码。
+
+- **行为组件重构（2026-10-07）**：将十个 `_do_*` 执行体迁入 `scripts/systems/behaviors/`，新增固定 `BehaviorRegistry` 与弱引用 `BehaviorContext`，保留 SimCore 原入口及统一状态/RNG/结算。GUT 135/135；131 个分支/玩家入口/三种子30天快照与旧版严格一致。临时导出验证 1440 tick 跨语言均值误差≤1%；现存玩法指标与算法常量扫描失败如实记录，未调整平衡数值。
+
+- **行为组件重构设计（2026-10-07，文档）**：新增 `docs/superpowers/specs/2026-10-07-behavior-components-design.md`，定义十种 RefCounted 行为组件、共享上下文、注册分发、原入口兼容、生命周期及同种子等价验证；架构总览增加索引。设计待审阅，本次未修改内核代码。
 
 - **玩家点击与情绪反馈计划（2026-10-07，素材/文档）**：生成透明落点标记 `assets/textures/ui/movement/click_destination_v01.png`；新增 `docs/superpowers/plans/2026-10-07-player-click-emotion-feedback.md`，规划实际寻路终点反馈、WASD取消、放松/生气/哭泣/开心男女两组气泡、可见事件摘要与暂停协调。八张既有气泡待确认实际素材路径，本次未实施组件。
 

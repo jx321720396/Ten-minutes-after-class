@@ -15,14 +15,24 @@
   8. status_tags：`days` ≥ 1
   9. behaviors：`duration ≥ 0`、`|payoff| ∈ [1,5]`、**按 |payoff| 分组后平均耗时呈上升趋势**（效果越强耗时越长）
  10. social_event_triggers：metric / op / value 不得含日期类记号（不变式 1）
+ 11. 配置键存在性：`core_sim.py` 引用的阈值键必须真的在 behavior_thresholds.csv 里
+ 12. 玩家交互 / 闲聊反馈（2026-10-07 完整可玩流程）：
+     `rules/player_interaction.csv` 与 `ui/chat_feedback_style.csv` 的必需键、值域，
+     以及**表 ↔ 消费者**双向一致（写了没人读 / 读了没写都要报）
 """
 
 import csv
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
+
+
+def read(path):
+    with open(path, encoding="utf-8") as f:
+        return f.read()
 AXES_WORDS = ("affinity", "hostility", "trust", "stress")
 DATE_WORDS = ("day", "week", "month", "term_", "第", "天", "周", "month")
 
@@ -190,6 +200,120 @@ for _r in _phases_rows:
     else:
         check("%s: 活动相位实时时长为正" % _r["phase_id"], _seconds > 0.0, _seconds)
         check("%s: 活动相位 tick_count 为正" % _r["phase_id"], int(_r["tick_count"]) > 0, _r["tick_count"])
+
+print("=== 12. 玩家交互 / 闲聊反馈配置（计划 2026-10-07-chat-playable-loop）===")
+# 依据：docs/superpowers/plans/2026-10-07-chat-playable-loop.md §3.1、§7、§8；
+#     主文档 §10.5（闲聊范围与玩家专属透露）。
+# 两类校验：
+#   ① 值域（范围 / 步长 / 条数 / 掩码）；
+#   ② **表 ↔ 消费者**：表里每个键都必须被某个脚本引用（防「写了没人读」），
+#      脚本里 `params.get("键")` 的键必须真的在表里（防 `.get` 静默回落到默认值）。
+_pi_rows = load("rules/player_interaction.csv")
+_pi = {r["param"]: r["value"] for r in _pi_rows}
+_pi_required = [
+    "chat_range_m",
+    "seated_tolerance_m",
+    "seated_chat_range_m",
+    "range_step_m",
+    "clue_opacity_split",
+    "clue_count_low",
+    "clue_count_high",
+    "actor_pick_layer",
+    "world_pick_blocker_layer",
+]
+check("player_interaction 必需键齐全", all(k in _pi for k in _pi_required),
+      "缺失: %s" % sorted(set(_pi_required) - set(_pi)))
+if all(k in _pi for k in _pi_required):
+    check("chat_range_m 为正", float(_pi["chat_range_m"]) > 0, _pi["chat_range_m"])
+    check("座位聊天容差为正且小于通用范围",
+          0 < float(_pi["seated_tolerance_m"]) < float(_pi["chat_range_m"]),
+          _pi["seated_tolerance_m"])
+    check("前后座位聊天上限不小于通用范围",
+          float(_pi["seated_chat_range_m"]) >= float(_pi["chat_range_m"]),
+          _pi["seated_chat_range_m"])
+    check("range_step_m 为正", float(_pi["range_step_m"]) > 0, _pi["range_step_m"])
+    check("clue_opacity_split ∈ (0,100]", 0 < float(_pi["clue_opacity_split"]) <= 100,
+          _pi["clue_opacity_split"])
+    check("clue_count_low / high 为正整数且 low ≤ high",
+          int(_pi["clue_count_low"]) >= 1 and int(_pi["clue_count_high"]) >= int(_pi["clue_count_low"]),
+          "%s / %s" % (_pi["clue_count_low"], _pi["clue_count_high"]))
+    check("拾取层掩码为正且与遮挡层不同",
+          int(_pi["actor_pick_layer"]) > 0
+          and int(_pi["world_pick_blocker_layer"]) > 0
+          and _pi["actor_pick_layer"] != _pi["world_pick_blocker_layer"],
+          "%s / %s" % (_pi["actor_pick_layer"], _pi["world_pick_blocker_layer"]))
+
+_style_rows = load("ui/chat_feedback_style.csv")
+_style = {r["param"]: r["value"] for r in _style_rows}
+_style_required = [
+    "pen_windup_seconds",
+    "pen_spin_seconds",
+    "pen_settle_seconds",
+    "pen_result_seconds",
+    "menu_width_px",
+    "menu_margin_px",
+    "bubble_dot_seconds",
+    "bubble_follow_height_m",
+    "progress_bar_height_px",
+    "ring_radius_m",
+    "ring_line_width_m",
+    "ring_merge_gap_m",
+    "toast_seconds",
+    "emotion_positive_affinity_delta",
+    "emotion_negative_hostility_delta",
+    "emotion_crying_stress_delta",
+    "emotion_high_stress",
+]
+check("chat_feedback_style 必需键齐全", all(k in _style for k in _style_required),
+      "缺失: %s" % sorted(set(_style_required) - set(_style)))
+if all(k in _style for k in _style_required):
+    _pen_total = sum(float(_style[k]) for k in
+                     ("pen_windup_seconds", "pen_spin_seconds", "pen_settle_seconds",
+                      "pen_result_seconds"))
+    check("转笔四段合计为正", _pen_total > 0, _pen_total)
+    check("呈现尺寸 / 时长参数为正",
+          all(float(_style[k]) > 0 for k in
+              ("pen_windup_seconds", "pen_spin_seconds", "pen_settle_seconds",
+               "pen_result_seconds", "menu_width_px", "menu_margin_px", "bubble_dot_seconds",
+               "bubble_follow_height_m", "progress_bar_height_px", "toast_seconds")))
+    check("圈半径为正、线宽为负以外的非负数",
+          float(_style["ring_radius_m"]) > 0 and float(_style["ring_line_width_m"]) >= 0,
+          "%s / %s" % (_style["ring_radius_m"], _style["ring_line_width_m"]))
+
+_scripts = []
+for _root_dir, _dirs, _files in os.walk(os.path.join(ROOT, "scripts")):
+    for _f in _files:
+        if _f.endswith(".gd"):
+            _scripts.append(read(os.path.join(_root_dir, _f)))
+_src_all = "\n".join(_scripts)
+_dead = [k for k in list(_pi) + list(_style) if ('"%s"' % k) not in _src_all]
+check("新表的每个键都有脚本消费者（防「写了没人读」）", not _dead, "未被引用的键: %s" % _dead)
+_used = set()
+for _pat in (re.compile(r'params\.get\("([a-z_]+)"'), re.compile(r'\.get\("([a-z_]+)"\s*,')):
+    for _m in _pat.finditer(_src_all):
+        _used.add(_m.group(1))
+_ghost = sorted(k for k in _used
+                if k.startswith(("chat_range", "range_step", "clue_", "pen_", "menu_",
+                                 "bubble_", "ring_", "toast_", "emotion_", "progress_bar"))
+                and k not in _pi and k not in _style)
+check("脚本 params.get 的键都在新表里（防 .get 静默回落）", not _ghost, "无对应表项: %s" % _ghost)
+
+# 13. movement（导航口径）：数值集中 + 烘焙参数可校验
+#     桌椅阻挡盒必须高于 agent_max_climb —— 否则 Recast 会把桌顶面与地面判为连通，
+#     人物"沿导航走上桌子"，而且**没有任何报错**（静默失效）。
+_mv = params("rules/movement.csv")
+_want_mv = ("meters_per_tick", "player_radius", "nav_cell_size", "nav_agent_height",
+            "nav_max_climb", "nav_blocker_height")
+_missing_mv = sorted(k for k in _want_mv if _mv.get(k, 0.0) <= 0.0)
+check("movement：导航参数齐全且为正", not _missing_mv, "缺失 / 非正: %s" % _missing_mv)
+check("movement.nav_max_climb < nav_blocker_height",
+      _mv.get("nav_max_climb", 0.0) < _mv.get("nav_blocker_height", 0.0),
+      "%s / %s" % (_mv.get("nav_max_climb"), _mv.get("nav_blocker_height")))
+check("movement.nav_blocker_height ≥ 桌面实际高度 0.74",
+      _mv.get("nav_blocker_height", 0.0) >= 0.74, _mv.get("nav_blocker_height"))
+check("movement.nav_cell_size ≤ player_radius",
+      _mv.get("nav_cell_size", 0.0) <= _mv.get("player_radius", 0.0),
+      "%s / %s" % (_mv.get("nav_cell_size"), _mv.get("player_radius")))
 
 print("\n=== 结论 ===")
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))
