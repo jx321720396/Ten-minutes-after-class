@@ -678,8 +678,12 @@ func _nearest_free_stand(point: Vector3) -> Variant:
 # ------------------------------------------------------------------ 场景 → 几何（障碍 / 导航格）
 
 
-## 桌椅矩形从场景派生。**只取 `Desk` 子树**：`Chair`（z=-0.45）只是显示位置，
-## 可走站位是 `StandSpot`（z=-0.80），椅子不能当障碍，否则人物站不进自己的座位。
+## 障碍矩形从场景派生。
+##
+## **桌椅**只取 `Desk` 子树：`Chair`（z=-0.45）只是显示位置，可走站位是 `StandSpot`
+## （z=-0.80），椅子不能当障碍，否则人物站不进自己的座位。
+## **讲台**（`Room` 之外的 `Podium`）整棵子树取一个包围盒 —— 它原本不在障碍表里，
+## 玩家会直接走进讲桌（2026-10-08）。
 ## 同时留下**未外扩**的原始矩形，供内核做交互几何（范围与连线阻挡）判定。
 func _collect_obstacles() -> void:
 	_obstacles.clear()
@@ -693,9 +697,30 @@ func _collect_obstacles() -> void:
 					var rect := _xz_rect_of(mesh)
 					_raw_obstacles.append(rect)
 					_obstacles.append(rect.grow(_radius))
+	_append_podium_obstacle()
 	var floor_node := get_node_or_null(floor_path) as MeshInstance3D
 	if floor_node != null:
 		_bounds = _xz_rect_of(floor_node)
+
+
+## 讲台：整棵子树一个 XZ 包围盒（讲桌 + 高台），与 `_build_occluders` 找 `Podium`
+## 用同一处场景节点，不另填一套家具坐标。
+func _append_podium_obstacle() -> void:
+	# `find_child` 只搜**子树**，而 `Podium` 与 PlayerController 是**兄弟**（都挂在场景根下），
+	# 所以要先把范围抬到本场景的顶层节点。也不能走 `room_path` —— 它指向 `../Room`。
+	var top: Node = self
+	while top.get_parent() != null and top.get_parent() != get_tree().root:
+		top = top.get_parent()
+	var podium := top.find_child("Podium", true, false)
+	if podium == null:
+		push_warning("PlayerController：场景里找不到 Podium，讲台不会阻挡玩家。")
+		return
+	var box := _world_box_of(podium)
+	if box.size.length() <= 0.0:
+		return
+	var rect := Rect2(Vector2(box.position.x, box.position.z), Vector2(box.size.x, box.size.z))
+	_raw_obstacles.append(rect)
+	_obstacles.append(rect.grow(_radius))
 
 
 ## 拾取层与遮挡层：数值来自 data/rules/player_interaction.csv（位掩码），导出属性优先。
