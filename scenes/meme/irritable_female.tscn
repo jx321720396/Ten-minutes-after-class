@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" uid="uid://d2pokwl4ocp5i" path="res://assets/textures/meme/irritable_female.png" id="1_meme"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_meme"]
+atlas = ExtResource("1_meme")
+
+[node name="Irritable_female" type="Sprite2D"]
+texture_filter = 1
+texture = SubResource("AtlasTexture_meme")

@@ -1,0 +1,163 @@
+[gd_scene format=3 uid="uid://d3bbjkv5bvgba"]
+
+[ext_resource type="Texture2D" uid="uid://bwbafia05k3ka" path="res://assets/textures/characters2.5D/quiet_female/apologize_0.png" id="ap0"]
+[ext_resource type="Texture2D" uid="uid://bgbq18gase1cc" path="res://assets/textures/characters2.5D/quiet_female/apologize_1.png" id="ap1"]
+[ext_resource type="Texture2D" uid="uid://7lt24iu4l5uk" path="res://assets/textures/characters2.5D/quiet_female/apologize_2.png" id="ap2"]
+[ext_resource type="Texture2D" uid="uid://2vnh7qjymuij" path="res://assets/textures/characters2.5D/quiet_female/apologize_3.png" id="ap3"]
+[ext_resource type="Texture2D" uid="uid://dn5krnnmapd11" path="res://assets/textures/characters2.5D/quiet_female/apologize_right_0.png" id="ar0"]
+[ext_resource type="Texture2D" uid="uid://cnpem36ggcweq" path="res://assets/textures/characters2.5D/quiet_female/apologize_right_1.png" id="ar1"]
+[ext_resource type="Texture2D" uid="uid://co6hol8gvm1n1" path="res://assets/textures/characters2.5D/quiet_female/apologize_right_2.png" id="ar2"]
+[ext_resource type="Texture2D" uid="uid://o34lkp8gtgrw" path="res://assets/textures/characters2.5D/quiet_female/apologize_right_3.png" id="ar3"]
+[ext_resource type="Texture2D" uid="uid://bb581u5jpjo0l" path="res://assets/textures/characters2.5D/quiet_female/chat_0.png" id="ch0"]
+[ext_resource type="Texture2D" uid="uid://djy3dbf8dxgen" path="res://assets/textures/characters2.5D/quiet_female/chat_1.png" id="ch1"]
+[ext_resource type="Texture2D" uid="uid://b7bu0jmvjn2fh" path="res://assets/textures/characters2.5D/quiet_female/chat_2.png" id="ch2"]
+[ext_resource type="Texture2D" uid="uid://cb5frtbpykhhi" path="res://assets/textures/characters2.5D/quiet_female/chat_3.png" id="ch3"]
+[ext_resource type="Texture2D" uid="uid://52jqll25tj40" path="res://assets/textures/characters2.5D/quiet_female/homework_0.png" id="hw0"]
+[ext_resource type="Texture2D" uid="uid://2aj3r6ewtvel" path="res://assets/textures/characters2.5D/quiet_female/homework_1.png" id="hw1"]
+[ext_resource type="Texture2D" uid="uid://cfa74hsbiwn5u" path="res://assets/textures/characters2.5D/quiet_female/homework_2.png" id="hw2"]
+[ext_resource type="Texture2D" uid="uid://cr38rbn37el8x" path="res://assets/textures/characters2.5D/quiet_female/homework_3.png" id="hw3"]
+[ext_resource type="Texture2D" uid="uid://bjkfq7711t5ge" path="res://assets/textures/characters2.5D/quiet_female/inform_0.png" id="in0"]
+[ext_resource type="Texture2D" uid="uid://c3l74m81x4pe5" path="res://assets/textures/characters2.5D/quiet_female/inform_1.png" id="in1"]
+[ext_resource type="Texture2D" uid="uid://bhpcwpxb6ru8t" path="res://assets/textures/characters2.5D/quiet_female/inform_2.png" id="in2"]
+[ext_resource type="Texture2D" uid="uid://ryyw1tr4cqhk" path="res://assets/textures/characters2.5D/quiet_female/inform_3.png" id="in3"]
+[ext_resource type="Texture2D" uid="uid://kmbyw3po5y4n" path="res://assets/textures/characters2.5D/quiet_female/sleep_0.png" id="sl0"]
+[ext_resource type="Texture2D" uid="uid://d3qx0swj2bcsv" path="res://assets/textures/characters2.5D/quiet_female/sleep_1.png" id="sl1"]
+[ext_resource type="Texture2D" uid="uid://b1dp3ij7xqv5h" path="res://assets/textures/characters2.5D/quiet_female/sleep_2.png" id="sl2"]
+[ext_resource type="Texture2D" uid="uid://1g8w38s04phj" path="res://assets/textures/characters2.5D/quiet_female/sleep_3.png" id="sl3"]
+[ext_resource type="Texture2D" uid="uid://bopgt083m8nus" path="res://assets/textures/characters2.5D/quiet_female/stand_0.png" id="st0"]
+[ext_resource type="Texture2D" uid="uid://b26nmppq7en4o" path="res://assets/textures/characters2.5D/quiet_female/stand_1.png" id="st1"]
+[ext_resource type="Texture2D" uid="uid://cffcctufm6g64" path="res://assets/textures/characters2.5D/quiet_female/stand_2.png" id="st2"]
+[ext_resource type="Texture2D" uid="uid://csks2yff1ytoy" path="res://assets/textures/characters2.5D/quiet_female/stand_3.png" id="st3"]
+
+[sub_resource type="SpriteFrames" id="Frames_qf"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("ap0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("ap1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("ap2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("ap3")
+}],
+"loop": 1,
+"name": &"apologize_left",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("ar0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("ar1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("ar2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("ar3")
+}],
+"loop": 1,
+"name": &"apologize_right",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("ch0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("ch1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("ch2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("ch3")
+}],
+"loop": 1,
+"name": &"chat",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("hw0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("hw1")
+}, {
+"duration": 0.5,
+"texture": ExtResource("hw2")
+}, {
+"duration": 2.0,
+"texture": ExtResource("hw3")
+}],
+"loop": 1,
+"name": &"homework",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("in0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("in1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("in2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("in3")
+}],
+"loop": 1,
+"name": &"inform",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("sl0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("sl1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("sl2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("sl3")
+}],
+"loop": 1,
+"name": &"sleep",
+"speed": 1.5
+}, {
+"frames": [{
+"duration": 3.0,
+"texture": ExtResource("st0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("st1")
+}, {
+"duration": 0.5,
+"texture": ExtResource("st2")
+}, {
+"duration": 2.0,
+"texture": ExtResource("st3")
+}],
+"loop": 1,
+"name": &"stand",
+"speed": 4.0
+}]
+
+[node name="QuietFemaleBillboard" type="AnimatedSprite3D" unique_id=1049657150]
+offset = Vector2(0, 307)
+pixel_size = 0.0025
+billboard = 2
+alpha_cut = 1
+texture_filter = 0
+sprite_frames = SubResource("Frames_qf")
+animation = &"sleep"
+autoplay = "inform"
+frame_progress = 0.32731327
