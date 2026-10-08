@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/player_emotion_feedback.tscn" id="emotion_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/player_interaction_menu.tscn" id="interaction_menu_scene"]
 [ext_resource type="PackedScene" path="res://scenes/game/player_interaction_controller.tscn" id="interaction_scene"]
+[ext_resource type="PackedScene" path="res://scenes/ui/encyclopedia_entry.tscn" id="encyclopedia_entry"]
 [ext_resource type="Material" path="res://resources/materials/mat_ceiling.tres" id="m_ceiling"]
 [ext_resource type="Material" uid="uid://ch4e581dp5tgx" path="res://resources/materials/mat_board_cork.tres" id="m_cork"]
 [ext_resource type="Material" path="res://resources/materials/mat_dark.tres" id="m_dark"]
@@ -243,6 +244,8 @@ script = ExtResource("navigation_script")
 
 [node name="PauseMenu" parent="UI" unique_id=589524490 instance=ExtResource("pause_menu")]
 visible = false
+
+[node name="EncyclopediaEntry" parent="UI" instance=ExtResource("encyclopedia_entry")]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=281153324]
 environment = SubResource("Env_room")
