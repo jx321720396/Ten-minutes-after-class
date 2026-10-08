@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" uid="uid://c7ox61870vbrf" path="res://assets/textures/character_head/sensitive_female.png" id="1_tex"]
+
+[node name="Sensitive_female" type="Sprite2D"]
+texture_filter = 1
+texture = ExtResource("1_tex")

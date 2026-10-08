@@ -1,9 +1,33 @@
 [gd_scene format=3 uid="uid://85tyegdfkhg0"]
 
-[ext_resource type="Script" uid="uid://15g00axq0xxy" path="res://clueboard1/clue_board_1.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://cptn11dhvw3uq" path="res://clueboard1/chalk_white.png" id="2_chalk"]
-[ext_resource type="Texture2D" uid="uid://cti8ayrvx60ru" path="res://clueboard1/01.png" id="2_ddmx5"]
-[ext_resource type="Texture2D" uid="uid://c4bm2qlqi7b0h" path="res://clueboard1/eraser.png" id="3_eraser"]
+[ext_resource type="Script" uid="uid://15g00axq0xxy" path="res://scripts/game/clue_board_1.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cptn11dhvw3uq" path="res://assets/textures/clueboard/chalk_white.png" id="2_chalk"]
+[ext_resource type="Texture2D" uid="uid://cti8ayrvx60ru" path="res://assets/textures/clueboard/01.png" id="2_ddmx5"]
+[ext_resource type="Texture2D" uid="uid://c4bm2qlqi7b0h" path="res://assets/textures/clueboard/eraser.png" id="3_eraser"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/blunt_female.tscn" id="4_bf"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/blunt_male.tscn" id="4_bm"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/lively_female.tscn" id="4_lf"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/lively_male.tscn" id="4_lm"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/quiet_female.tscn" id="4_qf"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/quiet_male.tscn" id="4_qm"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/sensitive_female.tscn" id="4_sef"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/sensitive_male.tscn" id="4_sem"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/stern_female.tscn" id="4_sf"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/shy_female.tscn" id="4_shf"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/shy_male.tscn" id="4_shm"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/stern_male.tscn" id="4_sm"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/tsundere_female.tscn" id="4_tf"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/tsundere_male.tscn" id="4_tm"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/warm_female.tscn" id="4_wf"]
+[ext_resource type="PackedScene" path="res://scenes/character_head/warm_male.tscn" id="4_wm"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot"]
+bg_color = Color(0, 0, 0, 0.45)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.462745, 0.329412, 0.203922, 1)
 
 [node name="ClueBoard1" type="Control" unique_id=2096637661]
 layout_mode = 3
@@ -30,24 +54,22 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Chalk" type="TextureRect" parent="." unique_id=139972788]
-visible = false
 layout_mode = 0
-offset_left = -200.0
-offset_top = -200.0
-offset_right = -80.0
-offset_bottom = -170.0
+offset_left = 409.0
+offset_top = -247.0
+offset_right = 529.0
+offset_bottom = -217.0
 mouse_filter = 2
 texture = ExtResource("2_chalk")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="Eraser" type="TextureRect" parent="." unique_id=60578797]
-visible = false
 layout_mode = 0
-offset_left = -200.0
-offset_top = -200.0
-offset_right = -120.0
-offset_bottom = -140.0
+offset_left = 553.0
+offset_top = -216.0
+offset_right = 633.0
+offset_bottom = -156.0
 mouse_filter = 2
 texture = ExtResource("3_eraser")
 expand_mode = 1
@@ -103,56 +125,166 @@ offset_right = 360.0
 offset_bottom = 60.0
 color = Color(0.4, 1, 0.4, 1)
 
-[node name="Markers" type="Control" parent="." unique_id=521257606]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
+[node name="BoardAvatars" type="Node2D" parent="." unique_id=317813545]
 
-[node name="Marker0" type="ColorRect" parent="Markers" unique_id=1185808530]
+[node name="AvatarColumn" type="ScrollContainer" parent="." unique_id=665655205]
 layout_mode = 0
-offset_left = 80.0
-offset_top = 200.0
-offset_right = 110.0
-offset_bottom = 230.0
-mouse_filter = 2
-color = Color(1, 0.2, 0.2, 1)
+offset_left = 64.0
+offset_top = 43.0
+offset_right = 208.0
+offset_bottom = 997.0
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
 
-[node name="Marker1" type="ColorRect" parent="Markers" unique_id=439122790]
-layout_mode = 0
-offset_left = 80.0
-offset_top = 260.0
-offset_right = 110.0
-offset_bottom = 290.0
-mouse_filter = 2
-color = Color(0.2, 0.6, 1, 1)
+[node name="AvatarList" type="VBoxContainer" parent="AvatarColumn" unique_id=1161912663]
+layout_mode = 2
+theme_override_constants/separation = 0
 
-[node name="Marker2" type="ColorRect" parent="Markers" unique_id=927448230]
-layout_mode = 0
-offset_left = 80.0
-offset_top = 320.0
-offset_right = 110.0
-offset_bottom = 350.0
-mouse_filter = 2
-color = Color(1, 0.9, 0.2, 1)
+[node name="SlotQuietFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1135635338]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
-[node name="Marker3" type="ColorRect" parent="Markers" unique_id=2017590839]
-layout_mode = 0
-offset_left = 80.0
-offset_top = 380.0
-offset_right = 110.0
-offset_bottom = 410.0
-mouse_filter = 2
-color = Color(0.2, 1, 0.4, 1)
+[node name="Quiet_female" parent="AvatarColumn/AvatarList/SlotQuietFemale" unique_id=1304210888 instance=ExtResource("4_qf")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
 
-[node name="Marker4" type="ColorRect" parent="Markers" unique_id=1809437095]
-layout_mode = 0
-offset_left = 80.0
-offset_top = 440.0
-offset_right = 110.0
-offset_bottom = 470.0
-mouse_filter = 2
-color = Color(1, 0.5, 0.9, 1)
+[node name="SlotQuietMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1259803862]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Quiet_male" parent="AvatarColumn/AvatarList/SlotQuietMale" unique_id=37284335 instance=ExtResource("4_qm")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotSternFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=251931617]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Stern_female" parent="AvatarColumn/AvatarList/SlotSternFemale" unique_id=838118288 instance=ExtResource("4_sf")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotSternMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1522215030]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Stern_male" parent="AvatarColumn/AvatarList/SlotSternMale" unique_id=1001137291 instance=ExtResource("4_sm")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotTsundereFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1912539885]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Tsundere_female" parent="AvatarColumn/AvatarList/SlotTsundereFemale" unique_id=1489677518 instance=ExtResource("4_tf")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotTsundereMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1607493802]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Tsundere_male" parent="AvatarColumn/AvatarList/SlotTsundereMale" unique_id=787524406 instance=ExtResource("4_tm")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotSensitiveFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1808133948]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Sensitive_female" parent="AvatarColumn/AvatarList/SlotSensitiveFemale" unique_id=214806802 instance=ExtResource("4_sef")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotSensitiveMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=806685314]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Sensitive_male" parent="AvatarColumn/AvatarList/SlotSensitiveMale" unique_id=229570468 instance=ExtResource("4_sem")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotLivelyFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=767528331]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Lively_female" parent="AvatarColumn/AvatarList/SlotLivelyFemale" unique_id=1869552078 instance=ExtResource("4_lf")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotLivelyMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=442465289]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Lively_male" parent="AvatarColumn/AvatarList/SlotLivelyMale" unique_id=1688781278 instance=ExtResource("4_lm")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotWarmFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=2058929090]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Warm_female" parent="AvatarColumn/AvatarList/SlotWarmFemale" unique_id=2010729987 instance=ExtResource("4_wf")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotWarmMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1096985865]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Warm_male" parent="AvatarColumn/AvatarList/SlotWarmMale" unique_id=1424250193 instance=ExtResource("4_wm")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotBluntFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1261570466]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Blunt_female" parent="AvatarColumn/AvatarList/SlotBluntFemale" unique_id=1114294926 instance=ExtResource("4_bf")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotBluntMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=29252337]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Blunt_male" parent="AvatarColumn/AvatarList/SlotBluntMale" unique_id=288820711 instance=ExtResource("4_bm")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotShyFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1107070662]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Shy_female" parent="AvatarColumn/AvatarList/SlotShyFemale" unique_id=2133781159 instance=ExtResource("4_shf")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotShyMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1021526578]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="Shy_male" parent="AvatarColumn/AvatarList/SlotShyMale" unique_id=1345116334 instance=ExtResource("4_shm")]
+position = Vector2(64, 64)
+scale = Vector2(0.5, 0.5)
+
+[node name="SlotEmpty" type="Panel" parent="AvatarColumn/AvatarList" unique_id=177722052]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
