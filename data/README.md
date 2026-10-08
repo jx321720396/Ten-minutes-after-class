@@ -26,8 +26,11 @@ data/
 │   ├─ seats.csv              座位表（seat_id / row / col / kind；决定相邻关系）✓
 │   ├─ stand_points.csv       站立点表（课间走动目标；世界坐标在场景 StandPoints/*）✓
 │   ├─ difficulty.csv         难度档 → NPC 数量（+ `default` 列 = 新游戏默认档）✓
+│   ├─ player_interaction.csv 玩家交互几何与线索参数（闲聊范围 / 连线步长 / 拾取层 / 线索条数）✓
 │   ├─ social_events.csv      社会事件状态机（多阶段跨相位）✓
 │   └─ social_event_triggers.csv 社会事件触发条件（纯数值，禁日期记号）✓
+├─ ui/
+│   └─ chat_feedback_style.csv 闲聊反馈呈现参数（转笔四段 / 菜单 / 气泡 / 脚下圈 / 情绪阈值）✓
 └─ balance/
     ├─ w_events.csv        事件权重全表（含 tier: normal 1–3 / major 4–5；class: A–E 五分类）✓
     └─ npc_weights.csv     NPC 决策权重（alpha 派生系数 / tau0 / top_n）✓
@@ -56,6 +59,8 @@ data/
 | `rules/decay.csv` | `axis`、`no_interaction`、`interacted`、`note` |
 | `rules/phases.csv` | `phase_id`、`tick_count`、`active_rules`、`player_controllable` |
 | `balance/w_events.csv` | `event_id`、`axis`、`delta`、`delta_min`、`delta_max`、`note` |
+| `rules/player_interaction.csv` | `param`、`value`、`unit`、`note`（`chat_range_m` / `seated_chat_range_m` / `seated_tolerance_m` / `range_step_m` / `clue_*` / 拾取层掩码；玩家与 NPC 共用聊天空间口径） |
+| `ui/chat_feedback_style.csv` | `param`、`value`、`unit`、`note`（`pen_*_seconds` / `menu_*` / `bubble_*` / `ring_*` / `emotion_*`） |
 
 ## 校验要求
 
@@ -63,7 +68,9 @@ data/
 
 - 必需列存在、行数符合预期（如角色表 24 行）；
 - 数值范围合法（0–100 的轴、正数阈值）；
-- `w_events.csv` 的每个 `event_id` 能对应到 v3.0 中的规则编号（`note` 列必须写明出处章节）。
+- `w_events.csv` 的每个 `event_id` 能对应到 v3.0 中的规则编号（`note` 列必须写明出处章节）；
+- **表 ↔ 消费者双向一致**（`tools/check_config.py` §12）：新表的每个键都要有脚本读，
+  脚本里 `params.get("键")` 的键也必须真的在表里 —— 两边都不允许「静默回落默认值」。
 
 ## 权威性
 

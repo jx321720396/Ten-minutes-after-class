@@ -65,7 +65,7 @@ godot --headless --path . --script tests/balance/run_batch.gd -- --runs=100 --se
 
 | 目录 | 内容 | 现状 |
 |---|---|---|
-| [`integration/`](integration/README.md) | 无头整局 `run_term.gd` + **逐 tick 对拍器** [`test_tick_parity.py`](integration/test_tick_parity.py)（Python ↔ GDScript，误差 ≤ 1%） | 内核未落地 → 明确 SKIP；对拍器自带自检 |
+| [`integration/`](integration/README.md) | 无头整局 `run_term.gd` + **逐 tick 对拍器** [`test_tick_parity.py`](integration/test_tick_parity.py)（Python ↔ GDScript，误差 ≤ 1%）+ **教室导航连通性验收** [`check_classroom_nav.gd`](integration/check_classroom_nav.gd) | 内核未落地 → 明确 SKIP；对拍器自带自检；导航验收需先跑 `tools/bake_classroom_nav.gd` |
 | [`balance/`](balance/README.md) | 批量标定 `run_batch.gd` | 内核未落地 → 明确 SKIP；离线口径见 `tools/check_metrics.py`（100 局） |
 | [`emergence/`](emergence/README.md) | 主文档第十六章 **13 条现象**验收清单 [`cases.md`](emergence/cases.md) + GUT 骨架 | 逐条 `pending`，内核落地后填断言 |
 
