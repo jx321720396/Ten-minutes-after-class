@@ -51,6 +51,49 @@ func test_cell_center_roundtrip() -> void:
 	assert_almost_eq(center.z, 0.125, 0.001, "格中心 z")
 
 
+# ------------------------------------------------------------------ 出生点与整段采样（2026-10-07 修复）
+
+
+## 出生点落在家具里时，初始化把它吸附到最近可走点 —— 否则玩家一进教室就永远动不了。
+func test_verify_player_spot_snaps_out_of_furniture() -> void:
+	var pc := _controller()
+	pc._build_nav()
+	var actor := Node3D.new()
+	add_child_autofree(actor)
+	pc._player_actor = actor
+	actor.global_position = Vector3(0.0, 0.0, 0.0)  # 障碍矩形中心
+	assert_false(pc.is_walkable(actor.global_position), "前置：这个点确实不可走")
+	pc._verify_player_spot()
+	assert_true(pc.is_walkable(actor.global_position), "吸附后必须落在可走点")
+	assert_ne(actor.global_position, Vector3(0.0, 0.0, 0.0), "位置应被移动")
+
+
+func test_verify_player_spot_keeps_a_valid_position() -> void:
+	var pc := _controller()
+	pc._build_nav()
+	var actor := Node3D.new()
+	add_child_autofree(actor)
+	pc._player_actor = actor
+	actor.global_position = Vector3(2.0, 0.0, 2.0)
+	pc._verify_player_spot()
+	assert_eq(actor.global_position, Vector3(2.0, 0.0, 2.0), "合法出生点不该被挪动")
+
+
+## WASD 步进沿**整段**采样：一步跨过桌角时不能穿过去（只查终点会漏掉这种情况）。
+func test_slide_sampled_stops_before_a_desk_it_would_cross() -> void:
+	var pc := _controller()
+	var moved: Vector3 = pc._slide_sampled(Vector3(-2.0, 0.0, 0.0), Vector3(1.5, 0.0, 0.0))
+	assert_true(moved.x <= -1.0 + 0.001, "应在障碍左沿前停住（实际 x=%.3f）" % moved.x)
+	assert_true(pc.is_walkable(moved), "停下处必须可走")
+
+
+## 单步（每帧位移小于采样步长）时退回 `_slide`，保持贴桌滑行语义。
+func test_slide_sampled_delegates_short_steps_to_slide() -> void:
+	var pc := _controller()
+	var moved: Vector3 = pc._slide_sampled(Vector3(-1.5, 0.0, 0.0), Vector3(0.05, 0.0, 0.05))
+	assert_eq(moved, pc._slide(Vector3(-1.5, 0.0, 0.0), Vector3(0.05, 0.0, 0.05)), "短步与 _slide 等价")
+
+
 # ------------------------------------------------------------------ 内核位置 / 占用接口
 
 

@@ -29,6 +29,13 @@ func _free_player(core: SimCore) -> void:
 	core._sleeping = sleeping
 
 
+## 注入交互几何：一间 8×8 的空房间（左下角 (-4,-4)）。
+## 计划 §3.1 要求玩家交互走**真实空间判定**，缺几何时必须明确失败 —— 因此旧用例
+## 不再「没有几何也能远程聊天」，而是先给一个合法夹具再验证规则本身。
+func _ready_space(core: SimCore) -> void:
+	core.set_interaction_geometry([], Rect2(-4.0, -4.0, 8.0, 8.0))
+
+
 ## 跑完一个课间段，让内核真正进入上午上课（§3.3 禁止主动社交）。
 ## 注意：finish_time_boundary() 只推进相位游标、**不跑段首结算**（`_begin_phase`）——
 ## 铃声中断清理发生在上课段第一个 tick，所以这里要再推一 tick（与真实时钟一致）。
@@ -61,6 +68,7 @@ func test_player_never_acts_on_its_own() -> void:
 func test_player_cannot_act_during_class() -> void:
 	# P1-02：上课段玩家的行动入口必须**自己拒绝**，不能只靠 UI 隐藏按钮。
 	var core := _core()
+	_ready_space(core)
 	_enter_class(core)
 	_free_player(core)
 
@@ -72,6 +80,7 @@ func test_player_cannot_act_during_class() -> void:
 func test_player_cannot_act_on_sleeping_target() -> void:
 	# P1-02：目标在睡觉时不能交互（§10.8）。
 	var core := _core()
+	_ready_space(core)
 	_free_player(core)
 	var sleeping: Array = core._sleeping
 	sleeping[0] = true
@@ -79,7 +88,16 @@ func test_player_cannot_act_on_sleeping_target() -> void:
 
 	var result: Dictionary = core.player_action("chat", 0)
 	assert_false(result["ok"], "目标在睡觉 → 不能交互")
-	assert_eq(str(result["error"]), "target_unavailable")
+	assert_eq(str(result["error"]), "target_sleeping", "拒绝理由应是目标睡眠")
+
+
+func test_player_cannot_act_without_interaction_geometry() -> void:
+	# 计划 §3.1：初始化缺几何数据必须**明确失败**，不静默按「随便都能站」放行。
+	var core := _core()
+	_free_player(core)
+	var result: Dictionary = core.player_action("chat", 0)
+	assert_false(result["ok"], "没有交互几何 → 不能提交")
+	assert_eq(str(result["error"]), "geometry_missing", "拒绝理由应是几何缺失")
 
 
 func test_unknown_kind_is_rejected_before_anything_else() -> void:

@@ -9,8 +9,13 @@
 #
 # 列: param | value | unit | note
 param,value,unit,note
-meters_per_tick,0.13,m/tick,每 tick 移动距离;0.13 ≈ 1.95 米 / 15 tick,与旧“固定 15 tick 走完一段”的观感一致
+meters_per_tick,0.8,m/tick,每 tick 移动距离；0.8 米 / 秒 ≈ 跨一排 2 秒、横穿教室 9.4 米约 12 秒；与上课归位隐含速度（约 0.76 米 / 秒）趋于一致（2026-10-08 由 0.13 上调）
 player_radius,0.24,m,玩家碰撞半径;避障时把桌椅矩形外扩这个距离(人物中心不得进入)
 walk_epsilon,0.02,m,到位判定容差
-nav_grid_size,0.25,m,寻路网格边长（A* 用）；越小越精细也越慢
+nav_grid_size,0.25,m,寻路网格边长（A* 用）；玩家路线与 WASD 采样步长都取它的一半；越小越精细也越慢
 stand_snap_radius,1.0,m,点地面时的站立点吸附半径；此半径内有合法且空闲的站立点就吸附过去
+nav_cell_size,0.1,m,导航网格 cell_size；须与 resources/navigation/classroom_nav.tres 一致（行间过道净宽只有 0.66 米，网格要够细）
+nav_agent_height,1.5,m,导航网格 agent_height；须与烘焙产物一致；大于人物视觉高 1.35、小于层高 3.46
+nav_max_climb,0.25,m,导航网格 agent_max_climb；**必须显著小于 nav_blocker_height**，否则 Recast 会把桌顶面与地面判为连通（人物会沿导航“走上桌子”）
+nav_blocker_height,0.8,m,桌椅阻挡盒高度（米）；须 ≥ 桌面实际高度 0.74 且 > nav_max_climb；由 tools/bake_classroom_nav.gd 与场景校验共同锁住
+nav_path_epsilon,0.05,m,判定「点是否落在导航面上 / 路径末点是否到达目标」的容差

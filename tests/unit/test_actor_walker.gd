@@ -93,3 +93,39 @@ func test_teleport_does_not_emit_started() -> void:
 	assert_almost_eq(actor.global_position.z, 2.0, 0.001, "瞬移立即到位（Z）")
 	assert_false(walker.is_moving(), "瞬移不进入移动态")
 	assert_signal_not_emitted(walker, "walk_started")
+
+
+# ------------------------------------------------------------------ 导航行走（教室用；本测试场景没有导航地图）
+
+
+## 没有导航地图时：**明确失败且一步不走** —— 直线兜底会穿桌（§10.4）。
+func test_navigated_walk_without_a_map_fails_and_does_not_move() -> void:
+	var parts := _make_walker()
+	var actor: Node3D = parts[0]
+	var walker: ActorWalker = parts[1]
+	var before := actor.global_position
+	assert_false(walker.walk_to_navigated(Vector3(2.0, 0.0, 2.0), 1.0), "没有导航地图应返回 false")
+	assert_false(walker.is_moving(), "不应进入移动态")
+	await wait_seconds(0.2)
+	assert_eq(actor.global_position, before, "一步都不该走")
+
+
+## 按**时限**导航行走同样在没有地图时明确失败。
+func test_navigated_walk_in_without_a_map_fails() -> void:
+	var parts := _make_walker()
+	var walker: ActorWalker = parts[1]
+	assert_false(walker.walk_to_navigated_in(Vector3(1.0, 0.0, 0.0), 3.0), "没有导航地图应返回 false")
+	assert_false(walker.is_moving(), "不应进入移动态")
+
+
+## 直线回退是**显式开关**（只给"没有导航地图的单测"用），不是默认行为。
+func test_straight_fallback_is_opt_in() -> void:
+	var parts := _make_walker()
+	var actor: Node3D = parts[0]
+	var walker: ActorWalker = parts[1]
+	assert_true(
+		walker.walk_to_navigated(Vector3(1.0, 0.0, 0.0), 2.0, true), "显式开启回退 → 返回 true"
+	)
+	assert_true(walker.is_moving(), "回退会真的走直线")
+	await wait_seconds(1.0)
+	assert_almost_eq(actor.global_position.x, 1.0, 0.01, "直线回退到位")
