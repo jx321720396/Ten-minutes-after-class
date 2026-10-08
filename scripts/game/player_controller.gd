@@ -697,30 +697,46 @@ func _collect_obstacles() -> void:
 					var rect := _xz_rect_of(mesh)
 					_raw_obstacles.append(rect)
 					_obstacles.append(rect.grow(_radius))
-	_append_podium_obstacle()
+	_append_static_obstacles()
 	var floor_node := get_node_or_null(floor_path) as MeshInstance3D
 	if floor_node != null:
 		_bounds = _xz_rect_of(floor_node)
 
 
-## 讲台：整棵子树一个 XZ 包围盒（讲桌 + 高台），与 `_build_occluders` 找 `Podium`
-## 用同一处场景节点，不另填一套家具坐标。
-func _append_podium_obstacle() -> void:
-	# `find_child` 只搜**子树**，而 `Podium` 与 PlayerController 是**兄弟**（都挂在场景根下），
-	# 所以要先把范围抬到本场景的顶层节点。也不能走 `room_path` —— 它指向 `../Room`。
+## 固定障碍：**讲台 + 四面墙**。
+##
+## 以前障碍表里只有座位下的 `Desk`（注释写着"只取 Desk 子树"），于是玩家能穿讲台、
+## 也能走进墙里 —— `bounds` 直接取地板矩形 `../Room/Floor`，而左/右/后墙都缩在这个
+## 矩形**里面**（实测左墙内沿 x≈-4.29、右墙 x≈4.19、后墙 z≈-5.49，而 bounds 到 ±5.00 / -6.00），
+## 所以走到边界时人已经陷进墙里（2026-10-08）。
+##
+## 坐标一律从场景节点取包围盒，不另填一套家具坐标。
+## ⚠️ `room_path` 指向 `../Room`，而 `Podium` 挂在**场景根**下，所以先上溯到本场景顶层再找。
+func _append_static_obstacles() -> void:
 	var top: Node = self
 	while top.get_parent() != null and top.get_parent() != get_tree().root:
 		top = top.get_parent()
+	for node in _static_obstacle_sources(top):
+		var box := _world_box_of(node)
+		if box.size.length() <= 0.0:
+			continue
+		var rect := Rect2(Vector2(box.position.x, box.position.z), Vector2(box.size.x, box.size.z))
+		_raw_obstacles.append(rect)
+		_obstacles.append(rect.grow(_radius))
+
+
+## 固定障碍来源：讲台（`Podium`）与 `Room` 下的每面墙（`*Wall`）。
+func _static_obstacle_sources(top: Node) -> Array[Node]:
+	var out: Array[Node] = []
 	var podium := top.find_child("Podium", true, false)
-	if podium == null:
-		push_warning("PlayerController：场景里找不到 Podium，讲台不会阻挡玩家。")
-		return
-	var box := _world_box_of(podium)
-	if box.size.length() <= 0.0:
-		return
-	var rect := Rect2(Vector2(box.position.x, box.position.z), Vector2(box.size.x, box.size.z))
-	_raw_obstacles.append(rect)
-	_obstacles.append(rect.grow(_radius))
+	if podium != null:
+		out.append(podium)
+	var room := top.find_child("Room", true, false)
+	if room != null:
+		for child in room.get_children():
+			if str((child as Node).name).ends_with("Wall"):
+				out.append(child)
+	return out
 
 
 ## 拾取层与遮挡层：数值来自 data/rules/player_interaction.csv（位掩码），导出属性优先。

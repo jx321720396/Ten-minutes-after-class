@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cvvi06b7bmdyn"]
 
-[ext_resource type="PackedScene" uid="uid://lq7nghi63vmu" path="res://scenes/components/desk_chair.tscn" id="1_desk"]
+[ext_resource type="PackedScene" path="res://scenes/components/desk_chair.tscn" id="1_desk"]
 [ext_resource type="PackedScene" uid="uid://veknwyi71j7a" path="res://scenes/components/podium.tscn" id="2_podium"]
 [ext_resource type="PackedScene" path="res://scenes/components/window_tall.tscn" id="3_win_tall"]
 [ext_resource type="PackedScene" path="res://scenes/components/window_high.tscn" id="4_win_high"]
@@ -236,6 +236,18 @@ size = Vector3(0.03, 0.03, 12)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nav_floor"]
 size = Vector3(10, 0.2, 12)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_nav_wall_back"]
+size = Vector3(9.2, 0.8, 0.73)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_nav_wall_front"]
+size = Vector3(10.4, 0.8, 0.24)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_nav_wall_left"]
+size = Vector3(0.29, 0.8, 12.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_nav_wall_right"]
+size = Vector3(0.43, 0.8, 12.4)
 
 [node name="Classroom3D" type="Node3D" unique_id=1586539727]
 script = ExtResource("navigation_script")
@@ -653,6 +665,24 @@ omni_range = 5.5
 [node name="Shape" type="CollisionShape3D" parent="NavGeometry/FloorShape" unique_id=1951000003]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 shape = SubResource("BoxShape3D_nav_floor")
+
+[node name="WallShapes" type="StaticBody3D" parent="NavGeometry" groups=["nav_geometry"]]
+
+[node name="BackWallShape" type="CollisionShape3D" parent="NavGeometry/WallShapes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.02, 0.4, -5.855)
+shape = SubResource("BoxShape3D_nav_wall_back")
+
+[node name="FrontWallShape" type="CollisionShape3D" parent="NavGeometry/WallShapes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0.4, 6.1)
+shape = SubResource("BoxShape3D_nav_wall_front")
+
+[node name="LeftWallShape" type="CollisionShape3D" parent="NavGeometry/WallShapes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.435, 0.4, 0.0)
+shape = SubResource("BoxShape3D_nav_wall_left")
+
+[node name="RightWallShape" type="CollisionShape3D" parent="NavGeometry/WallShapes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.405, 0.4, 0.0)
+shape = SubResource("BoxShape3D_nav_wall_right")
 
 [node name="Navigation" type="NavigationRegion3D" parent="." unique_id=1951000004]
 navigation_mesh = ExtResource("nav_mesh")
