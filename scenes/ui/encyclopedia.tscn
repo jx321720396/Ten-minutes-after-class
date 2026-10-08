@@ -1,8 +1,7 @@
-[gd_scene format=3 uid="uid://cc7c5bw525vga"]
+[gd_scene load_steps=10 format=3]
 
-[ext_resource type="Script" uid="uid://cctsahkm2am3h" path="res://scripts/ui/main_menu.gd" id="1_menu"]
-
-[sub_resource type="FontVariation" id="FontVariation_title"]
+[ext_resource type="Script" path="res://scripts/ui/encyclopedia.gd" id="1_enc"]
+[ext_resource type="StyleBox" path="res://resources/new_style_box_flat.tres" id="2_panel"]
 
 [sub_resource type="FontVariation" id="FontVariation_btn"]
 
@@ -95,153 +94,173 @@ corner_radius_bottom_left = 18
 shadow_color = Color(0.12, 0.08, 0.04, 0.18)
 shadow_size = 7
 
-[node name="MainMenu" type="Control" unique_id=314385986]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toc_selected"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+bg_color = Color(1, 0.94, 0.8, 1)
+border_width_left = 4
+border_color = Color(0.78, 0.65, 0.42, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="Encyclopedia" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 4.0
-offset_top = -1.0
-offset_right = 4.0
-offset_bottom = -1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_menu")
+script = ExtResource("1_enc")
 
-[node name="ColorRect" type="ColorRect" parent="." unique_id=132265238]
+[node name="Overlay" type="ColorRect" parent="."]
 layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.50100005
-anchor_right = 0.5
-anchor_bottom = 0.50100005
-offset_left = -961.0
-offset_top = -539.0801
-offset_right = 948.0
-offset_bottom = 539.9199
-color = Color(0.97, 0.94, 0.87, 1)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.35)
 
-[node name="TopAccent" type="ColorRect" parent="." unique_id=172440876]
-layout_mode = 0
-offset_right = 1920.0
-offset_bottom = 6.0
-color = Color(0.78, 0.65, 0.42, 0.6)
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="Label" type="Label" parent="." unique_id=740808181]
-layout_mode = 0
-offset_left = 670.0
-offset_top = 141.0
-offset_right = 1270.0
-offset_bottom = 311.0
-theme_override_colors/font_color = Color(0.14, 0.24, 0.48, 1)
-theme_override_colors/font_shadow_color = Color(0.08, 0.12, 0.28, 0.25)
-theme_override_fonts/font = SubResource("FontVariation_title")
-theme_override_font_sizes/font_size = 120
-text = "下课十分钟"
+[node name="Panel" type="PanelContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(1180, 760)
+layout_mode = 2
+theme_override_styles/panel = ExtResource("2_panel")
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.15, 0.16, 0.22, 1)
+theme_override_font_sizes/font_size = 44
+text = "百科全书"
 horizontal_alignment = 1
 
-[node name="Separator" type="ColorRect" parent="." unique_id=805894501]
-layout_mode = 0
-offset_left = 845.0
-offset_top = 338.0
-offset_right = 1095.0
-offset_bottom = 342.0
-color = Color(0.78, 0.65, 0.42, 0.5)
+[node name="Sep" type="ColorRect" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0.72, 0.7, 0.64, 1)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1705651263]
-layout_mode = 0
-offset_left = 767.0
-offset_top = 375.0
-offset_right = 1170.0
-offset_bottom = 928.0
-theme_override_constants/separation = 16
+[node name="Spacer1" type="Control" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 18)
+layout_mode = 2
 
-[node name="NewGame" type="Button" parent="VBoxContainer" unique_id=239127956]
+[node name="Body" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="TOC" type="ItemList" parent="CenterContainer/Panel/Margin/VBox/Body"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_colors/font_selected_color = Color(0.2, 0.14, 0.06, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 22
+theme_override_styles/panel = ExtResource("2_panel")
+theme_override_styles/selected = SubResource("StyleBoxFlat_toc_selected")
+theme_override_styles/selected_focus = SubResource("StyleBoxFlat_toc_selected")
+
+[node name="VSep" type="ColorRect" parent="CenterContainer/Panel/Margin/VBox/Body"]
+custom_minimum_size = Vector2(1, 0)
+layout_mode = 2
+color = Color(0.72, 0.7, 0.64, 1)
+
+[node name="ContentMargin" type="MarginContainer" parent="CenterContainer/Panel/Margin/VBox/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="ContentScroll" type="ScrollContainer" parent="CenterContainer/Panel/Margin/VBox/Body/ContentMargin"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Content" type="RichTextLabel" parent="CenterContainer/Panel/Margin/VBox/Body/ContentMargin/ContentScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+theme_override_colors/default_color = Color(0.42, 0.44, 0.5, 1)
+theme_override_font_sizes/normal_font_size = 24
+
+[node name="Spacer2" type="Control" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
+[node name="Footer" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PrevBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/Footer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
 theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
 theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
 theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
 theme_override_fonts/font = SubResource("FontVariation_btn")
-theme_override_font_sizes/font_size = 40
+theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
-text = "新游戏"
+text = "← 上一章"
 
-[node name="ContinueGame" type="Button" parent="VBoxContainer" unique_id=543489735]
+[node name="Mid" type="Control" parent="CenterContainer/Panel/Margin/VBox/Footer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NextBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/Footer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
 theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
 theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
 theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
 theme_override_fonts/font = SubResource("FontVariation_btn")
-theme_override_font_sizes/font_size = 40
+theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
-text = "继续游戏"
+text = "下一章 →"
 
-[node name="Setting" type="Button" parent="VBoxContainer" unique_id=927929537]
+[node name="BackBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/Footer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
 theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
 theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
 theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
 theme_override_fonts/font = SubResource("FontVariation_btn")
-theme_override_font_sizes/font_size = 40
+theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
-text = "设置"
-
-[node name="About" type="Button" parent="VBoxContainer" unique_id=306431021]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
-theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
-theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
-theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
-theme_override_fonts/font = SubResource("FontVariation_btn")
-theme_override_font_sizes/font_size = 40
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
-theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
-text = "关于"
-
-[node name="Encyclopedia" type="Button" parent="VBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
-theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
-theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
-theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
-theme_override_fonts/font = SubResource("FontVariation_btn")
-theme_override_font_sizes/font_size = 40
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
-theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
-text = "百科全书"
-
-[node name="Exit" type="Button" parent="VBoxContainer" unique_id=1929693430]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
-theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
-theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
-theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
-theme_override_fonts/font = SubResource("FontVariation_btn")
-theme_override_font_sizes/font_size = 40
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
-theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
-theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
-text = "退出游戏"
+text = "返回"
