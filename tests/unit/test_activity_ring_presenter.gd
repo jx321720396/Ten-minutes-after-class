@@ -93,6 +93,26 @@ func test_session_end_restores_personal_rings() -> void:
 	assert_eq(presenter.personal_ring_count(), int(core.node_count()), "个人圈一直在")
 
 
+func test_merged_members_lose_their_personal_ring() -> void:
+	var core := _core()
+	var presenter: ActivityRingPresenter = await _presenter(core)
+	core._do_chat(0, 1)
+	presenter.refresh()
+	assert_false(_ring_node(presenter, 0).visible, "融合后 0 号的个人圈取消（切换而非叠加）")
+	assert_false(_ring_node(presenter, 1).visible, "融合后 1 号的个人圈取消")
+	assert_true(_ring_node(presenter, 2).visible, "旁观者仍保留个人圈")
+	var session_id := int(core.session_of(0))
+	core._sessions.end(session_id)
+	presenter.refresh()
+	assert_true(_ring_node(presenter, 0).visible, "活动结束后个人圈恢复")
+
+
+func _ring_node(presenter: ActivityRingPresenter, index: int) -> MeshInstance3D:
+	var node := presenter.get_node_or_null("PersonalRing_%d" % index)
+	assert_not_null(node, "个人圈节点 PersonalRing_%d 应存在" % index)
+	return node as MeshInstance3D
+
+
 func test_refresh_is_read_only() -> void:
 	var core := _core()
 	var presenter: ActivityRingPresenter = await _presenter(core)
