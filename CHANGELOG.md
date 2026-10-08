@@ -24,6 +24,10 @@
 
 ## [未发布]
 
+- **黑板左侧头像栏**：`scenes/game/clue_board_1.tscn` 绿板最左侧加了一列可滚动的正方形格子，格宽按最大头像的 0.5 倍（活泼女 256×0.5）取 128。17 个方格，前 16 格放了头像，最后一格空着。格子底是半透明黑（alpha 0.45），木色边还在。点在格子上不会开始画粉笔。按住格子里的头像拖到黑板外松手，会放下一份同样的头像，格子里的原件还在，同一个可以反复拖；松手仍在头像栏或粉笔按钮上则取消。
+- **角色头像 Sprite**：从 `assets/textures/characters/` 的 16 张立绘裁出脑袋，做成 `Sprite2D` 放在 `scenes/character_head/`。每张头像外轮廓加了 2 像素白边，贴图在 `assets/textures/character_head/`。英文名与 `scenes/characters/` 相同：`quiet` 安静、`stern` 严肃、`tsundere` 傲娇、`sensitive` 敏感、`lively` 活泼、`warm` 热情、`blunt` 直接、`shy` 社恐，女 `_female`、男 `_male`。
+- **八种情绪气泡 Sprite**：男女各一套，白底已抠掉。贴图在 `assets/textures/meme/`，`Sprite2D` 在 `scenes/meme/`。英文名：`relax` 放松、`bored` 无聊、`excited` 兴奋、`irritable` 烦躁、`agitated` 激动、`breakdown` 崩溃、`agree` 同意、`reject` 拒绝；女为 `_female`，男为 `_male`。尚未接到角色身上。
+- **安静女 2.5D**：`scenes/characters2.5D/quiet_female_billboard.tscn` 与 `assets/textures/characters2.5D/quiet_female/`。`sleep` 四帧去掉腿上的书；`apologize_left` / `apologize_right` 记为「左道歉」「右道歉」；`inform` 只保留四帧、只张合嘴巴。八种表情静帧在 `expr/`，尚未接进动画。
 - **走动速度上调（2026-10-08，用户裁决，平衡）**：`data/rules/movement.csv` 的 `meters_per_tick` 由 **0.13 上调到 0.8 米 / 秒**（1 课间 tick = 1 真实秒）。
   - **为什么改**：原值下跨一排座位（1.6 米）要 **12.3 秒**、横穿教室（9.4 米）要 **72.3 秒**、纵穿（11.4 米）要 **87.7 秒** —— 而**一个课间段只有 100 秒实时**，走动几乎吃满整段，玩家与 NPC 都像在飘。
   - **新值**：跨一排 **2.0 秒**、到讲台前（3.5 米）**4.4 秒**、横穿教室 **11.8 秒**、纵穿 **14.3 秒**；并与上课归位的隐含速度（`move.duration` 15 tick 换算约 0.76 米 / 秒）趋于一致 —— 此前归位比课间走动快约 6 倍，本身也不协调。
