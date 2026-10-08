@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://dplomsy76k6fd"]
+
+[ext_resource type="Texture2D" uid="uid://csjhvjky2jpv5" path="res://assets/textures/meme/agree_female.png" id="1_meme"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_meme"]
+atlas = ExtResource("1_meme")
+
+[node name="Agree_female" type="Sprite2D" unique_id=958444872]
+texture_filter = 1
+texture = SubResource("AtlasTexture_meme")
