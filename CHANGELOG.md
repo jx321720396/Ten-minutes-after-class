@@ -9,6 +9,12 @@
 
 ## [未发布]
 
+- **WASD 手动移动输入映射正式落地（2026-10-08）**：此前 `move_up/down/left/right` 4 个动作**只**在 `PlayerController._ready()` 里运行时补注册，`project.godot` 里完全没有 `[input]` 段——编辑器「输入映射」界面看不到、无法审阅 / 调整，且一旦 `_ready()` 因场景装配顺序问题没跑到，WASD 会静默失效且无报错。本次：
+  · **`project.godot` 新增 `[input]` 段**（Godot 4.7.2 真实序列化格式，含 `keycode` + `physical_keycode` 双写），编辑器 / 输入映射界面可见可改（可换成方向键、加手柄）；
+  · `PlayerController._register_actions()` / `_add_key_action()` 保留为**幂等兜底**（静态映射存在时直接跳过，只有被人误删时才真正补注册）；
+  · 修掉 `_input_direction()` / `_ground_point()` 里 `get_viewport()` 为 null 时直接崩的隐患（节点未挂树 / 快速切场景等边缘状态下）；
+  · 新增 `tests/unit/test_player_wasd_input.gd`（4 例：动作注册幂等 / 手动行走驱动 `ActorWalker` 左移 / W-S 驱动 Z 轴 / 撞桌子时沿桌沿滑不穿透）。GUT `tests/unit` 全量 **139/139 全绿**。
+
 - **角色移动功能缺口收口（2026-10-08）**：把 NPC 课间走动驱动器（`scripts/game/classroom_roam.gd`）的移动耗时口径统一切到与玩家 `PlayerController` 一致的「实际距离 / 统一速度」（`data/rules/movement.csv` 的 `meters_per_tick`，课间 1 tick = 1 秒），放弃此前「固定 15 tick（15 秒）」的旧口径（策划 2026-10-07 裁决第 6b 项）：
   · `move_seconds(distance)` 按距离换算；距离为 0 / 未知（防御性）时回落到兜底时长（兜底值仍从 `behaviors.csv` 的 `move.duration` × `time_presentation.csv` 的每 tick 秒数换算，不引入新魔法数字）；
   · 归位（上课铃响后全体走回座位）也改为按实际距离换算，且仍受「不超过上课段剩余时间 80%」的钳制（`_home_seconds(distance)`）；
