@@ -28,7 +28,7 @@ const STYLE_TABLE := "ui/chat_feedback_style"
 ## （既避开 z-fighting，也不会再出现"两层圈"）。
 const RING_HEIGHT := 0.016
 ## 填充透明度：实色但透出地面 —— 美术要求「完全的颜色，但不是色块」
-const FILL_ALPHA := 0.5
+const FILL_ALPHA := 0.75
 ## 平滑并集宽度（米）：越大，两人相接处越圆润
 const BLEND_RADIUS := 0.18
 ## 最大成员数 / 边数（与着色器数组一致）
@@ -36,8 +36,8 @@ const MAX_MEMBERS := 8
 const MAX_LINKS := 8
 
 ## 颜色不带 alpha：透明度统一由 FILL_ALPHA 决定（个人圈灰蓝 / 活动圈绿）
-const COLOR_PERSONAL := Color(0.36, 0.41, 0.46)
-const COLOR_ACTIVE := Color(0.20, 0.62, 0.42)
+const COLOR_PERSONAL := Color(0.38, 0.52, 0.68)
+const COLOR_ACTIVE := Color(0.22, 0.70, 0.46)
 
 var _core: Variant = null
 ## 索引 → 个人圈节点（池化复用，不每帧新建）
