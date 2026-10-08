@@ -1,0 +1,25 @@
+# 闲聊反馈呈现参数（表现层只读；不参与任何玩法判定）
+# 依据：docs/superpowers/plans/2026-10-07-chat-playable-loop.md §7、§8；
+#      docs/superpowers/plans/2026-10-07-player-click-emotion-feedback.md（四情绪映射）。
+#
+# ⚠️ 全部是可调整的**呈现初值**：它们不写回行为耗时，也不改变内核 tick。
+#   界面若要显示「还要等多久」，必须用时时钟把 tick 换算成秒（§4.1），不得用本表反推玩法。
+param,value,unit,note
+pen_windup_seconds,0.15,s,转笔起势
+pen_spin_seconds,0.65,s,转笔旋转
+pen_settle_seconds,0.20,s,转笔收尾
+pen_result_seconds,0.40,s,揭晓结果
+pen_size_px,180,px,笔贴图的显示边长
+menu_width_px,320,px,底部行为卡片宽度
+menu_margin_px,24,px,行为卡片与屏幕边缘的间距
+bubble_follow_height_m,1.5,m,无字气泡在世界里的锚点高度（人物头顶以上）
+bubble_dot_seconds,0.45,s,聊天气泡每个点的淡入淡出周期
+progress_bar_height_px,10,px,底部聊天进度条高度
+ring_radius_m,0.3,m,人物个人圈半径
+ring_line_width_m,0.035,m,圈线宽
+ring_merge_gap_m,0.16,m,两人圈之间填充胶囊的宽度
+toast_seconds,4.0,s,线索与完成提示的停留时长
+emotion_positive_affinity_delta,1.0,分,判定「正面」的玩家自身好感增量门槛
+emotion_negative_hostility_delta,1.0,分,判定「负面」的玩家自身敌对增量门槛
+emotion_crying_stress_delta,1.0,分,玩家自身压力上升到该值用哭泣表情
+emotion_high_stress,60.0,分,玩家当前压力达到该值时，正面闲聊更可能是「放松」而不是「开心」

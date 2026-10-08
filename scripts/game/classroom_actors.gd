@@ -14,8 +14,13 @@ extends Node3D
 ##    走动 / 聚散是后续可视化层的事（§15.1），本脚本只负责「坐在自己的座位上」。
 
 const APPEARANCE_TABLE := "characters/appearance"
+const PICK_TABLE := "rules/player_interaction"
 const CHARACTER_SCENE_DIR := "res://scenes/characters/"
 const PLAYER_LABEL := "我"
+## 座位**可走站位**（desk_chair.tscn 的 Marker3D）：落位与站位唯一来源
+const STAND_SPOT_NAME := "StandSpot"
+## 座位**坐姿锚点**（desk_chair.tscn 的 Marker3D）：坐下帧动画预留，本轮只读不驱动
+const SIT_SPOT_NAME := "SitPoint"
 ## 名字牌字体：优先中文字族，末位 sans-serif 兜底（Windows / macOS / Linux 都能命中一个）
 const NAME_FONTS: Array[String] = [
 	"Microsoft YaHei",
@@ -67,6 +72,16 @@ const NAME_FONTS: Array[String] = [
 ## 行走组件场景；留空则不挂
 @export var walker_scene: PackedScene = preload("res://scenes/components/actor_walker.tscn")
 
+@export_group("拾取与反馈锚点")
+## 人物拾取体所在 3D 物理层（位掩码，来自 data/rules/player_interaction.csv）；0 = 不建拾取体
+@export var pick_layer: int = 0
+## 拾取体厚度（米）：射线要能稳定命中纸片人
+@export var pick_depth: float = 0.36
+## 拾取体水平宽度上限（米）：立绘过宽时封顶，避免把邻座也框进去
+@export var max_pick_width: float = 1.1
+## 无字气泡等反馈锚点的高度（米，相对人物脚底）
+@export var feedback_anchor_height: float = 1.62
+
 @export_group("单场景调试")
 ## 直接运行本场景（不经主菜单）时自动建一个演示局 —— 便于在编辑器 / MCP 里
 ## 直接跑 classroom3D.tscn 就能看到人物。正常流程由 main_menu 调 GameState.start_game。
@@ -77,6 +92,10 @@ const NAME_FONTS: Array[String] = [
 var _appearances: Dictionary = {}
 ## 名字牌字体只加载一次（SystemFont 会去查系统字体，逐人新建会拖慢进教室）
 var _name_font_cache: Font = null
+## 索引 → 人物节点（表现层唯一入口：不许按名字找、不许按下标猜）
+var _actor_by_index: Array[Node3D] = []
+## 索引 → 座位节点：坐姿锚点等"回到自己的座位"的表现都从它取（不许按名字猜座位）
+var _seat_of_actor: Array[Node3D] = []
 
 
 func _ready() -> void:
@@ -87,6 +106,32 @@ func _ready() -> void:
 		push_error("ClassroomActors：没有本局内核实例（GameState.sim_core 为空）——请从主菜单「新游戏」进入教室。")
 		return
 	build(core)
+
+
+## 人物节点查询（表现层唯一入口）。越界返回 null。
+func actor_for(i: int) -> Node3D:
+	if i < 0 or i >= _actor_by_index.size():
+		return null
+	return _actor_by_index[i]
+
+
+func actor_count() -> int:
+	return _actor_by_index.size()
+
+
+## 从节点自身的元数据反查索引（拾取射线命中后使用）；不是人物返回 -1。
+func actor_index_of(node: Node) -> int:
+	if node == null or not node.has_meta("actor_index"):
+		return -1
+	return int(node.get_meta("actor_index"))
+
+
+## 无字气泡等反馈组件的世界锚点（缺失返回人物节点本身）。
+func feedback_anchor_of(i: int) -> Node3D:
+	var actor := actor_for(i)
+	if actor == null:
+		return null
+	return actor.get_node_or_null("FeedbackAnchor") as Node3D
 
 
 ## 单场景调试：直接运行本场景（不经主菜单）时自动建一个演示局，并写入 GameState，
@@ -130,6 +175,7 @@ func build(core: Variant) -> int:
 		push_error("ClassroomActors：找不到座位父节点 %s" % str(seat_root_path))
 		return 0
 	_appearances = _load_appearances()
+	_load_pick_layer()
 
 	var count := int(core.node_count())
 	var placed := 0
@@ -143,12 +189,93 @@ func build(core: Variant) -> int:
 			continue
 		var actor := _build_actor(core, i)
 		add_child(actor)
-		actor.global_position = seat.global_position + Vector3(0.0, foot_offset, chair_offset_z)
+		actor.set_meta("actor_index", i)
+		actor.global_position = _stand_position(seat)
+		_attach_pick_body(actor, i)
+		_attach_feedback_anchor(actor)
 		_attach_walker(actor)
+		_actor_by_index.append(actor)
+		_seat_of_actor.append(seat)
 		placed += 1
 	if placed != count:
 		push_warning("ClassroomActors：内核 %d 个节点，实际落位 %d 个" % [count, placed])
 	return placed
+
+
+## 落位点 = 座位的**可走站位**（desk_chair.tscn 的 StandSpot）。
+##
+## ⚠️ 必须落在导航面上：椅子处（z=-0.45）在桌子避障区内，人物一出生就被判定为
+##    "不可行走"，WASD 与点击全部失效（2026-10-07 复现）。所以站位统一取 StandSpot。
+## 缺失时回退旧偏移（chair_offset_z），保证老场景仍能跑。
+func _stand_position(seat: Node3D) -> Vector3:
+	var spot := seat.get_node_or_null(STAND_SPOT_NAME) as Node3D
+	if spot != null:
+		return spot.global_position + Vector3(0.0, foot_offset, 0.0)
+	return seat.global_position + Vector3(0.0, foot_offset, chair_offset_z)
+
+
+## 座位**坐姿锚点**的世界坐标（desk_chair.tscn 的 SitPoint，位于椅子上）。
+## 供后续接入的"坐下帧动画"使用：走到 StandSpot（可走）→ 坐到 SitPoint（显示）。
+## 本轮只预留锚点与接口，**不实现任何动画**。
+func sit_position_of(index: int) -> Vector3:
+	var actor := actor_for(index)
+	if actor == null:
+		return Vector3.ZERO
+	if index >= _seat_of_actor.size():
+		return Vector3.ZERO
+	var seat := _seat_of_actor[index]
+	if seat == null:
+		return actor.global_position
+	var point := seat.get_node_or_null(SIT_SPOT_NAME) as Node3D
+	if point == null:
+		return actor.global_position
+	return point.global_position + Vector3(0.0, foot_offset, 0.0)
+
+
+## 拾取层：数值来自 data/rules/player_interaction.csv（位掩码）；导出属性优先。
+func _load_pick_layer() -> void:
+	if pick_layer > 0:
+		return
+	for row in ConfigLoader.new().get_table(PICK_TABLE).get("rows", []):
+		if str(row.get("param", "")) == "actor_pick_layer":
+			pick_layer = int(str(row.get("value", "0")))
+			return
+
+
+## 给人物挂拾取体（Area3D，只用于射线命中，不参与寻路与玩法判定）。
+## 尺寸从**实际立绘尺寸**派生：宽度按贴图比例、高度按人物高度、厚度固定。
+func _attach_pick_body(actor: Node3D, index: int) -> void:
+	if pick_layer <= 0:
+		return
+	var width := marker_radius * 2.0
+	var height := marker_height
+	var sprite := actor.get_node_or_null("Sprite") as Sprite3D
+	if sprite != null and sprite.texture != null:
+		width = float(sprite.texture.get_width()) * sprite.pixel_size
+		height = character_height
+	width = clampf(width, 0.2, max_pick_width)
+	var area := Area3D.new()
+	area.name = "PickBody"
+	area.collision_layer = pick_layer
+	area.collision_mask = 0
+	area.monitoring = false
+	area.monitorable = false
+	area.set_meta("actor_index", index)
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(width, height, pick_depth)
+	shape.shape = box
+	shape.position = Vector3(0.0, height * 0.5, 0.0)
+	area.add_child(shape)
+	actor.add_child(area)
+
+
+## 反馈锚点（无字气泡 / 表情的挂点）：与名字牌分开，避免互相叠。
+func _attach_feedback_anchor(actor: Node3D) -> void:
+	var anchor := Marker3D.new()
+	anchor.name = "FeedbackAnchor"
+	anchor.position = Vector3(0.0, feedback_anchor_height, 0.0)
+	actor.add_child(anchor)
 
 
 ## 给人物挂上行走组件（组件只负责「怎么走」，不判断该不该走）。
@@ -162,6 +289,8 @@ func _attach_walker(actor: Node3D) -> void:
 
 ## 清掉上一次生成的人物（重复 build / 热重载时不会叠人）。
 func _clear_actors() -> void:
+	_actor_by_index.clear()
+	_seat_of_actor.clear()
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
