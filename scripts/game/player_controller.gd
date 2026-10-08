@@ -466,7 +466,10 @@ func _input_direction() -> Vector3:
 		raw.z += 1.0
 	if raw == Vector3.ZERO:
 		return Vector3.ZERO
-	var camera := get_viewport().get_camera_3d()
+	var viewport := get_viewport()
+	if viewport == null:
+		return raw.normalized()
+	var camera := viewport.get_camera_3d()
 	if camera == null:
 		return raw.normalized()
 	var forward := -camera.global_transform.basis.z
@@ -937,8 +940,9 @@ func _nearest_open_cell(start: Vector2i) -> Vector2i:
 # ------------------------------------------------------------------ 装配
 
 
-## WASD 动作若不存在就地注册 —— 避免手改 project.godot（AGENTS.md：手改需谨慎）。
-## 用 physical_keycode，非 QWERTY 布局下也仍是「同一物理键位置」。
+## WASD 动作已在 project.godot 的 [input] 段静态声明（编辑器 / 输入映射界面可见可改），
+## 这里是幂等兜底：正常路径下 has_action() 为真直接跳过，只有静态映射被人误删时才会补注册。
+## keycode + physical_keycode 双写，QWERTY 与非 QWERTY 布局下都命中同一物理键位置。
 func _register_actions() -> void:
 	_add_key_action(action_up, KEY_W)
 	_add_key_action(action_down, KEY_S)
@@ -951,6 +955,7 @@ func _add_key_action(action: StringName, keycode: Key) -> void:
 		return
 	InputMap.add_action(action)
 	var event := InputEventKey.new()
+	event.keycode = keycode
 	event.physical_keycode = keycode
 	InputMap.action_add_event(action, event)
 
@@ -1012,9 +1017,12 @@ func _sync_position_to_core() -> void:
 	_core.set_position(_player_index, pos.x, pos.z)
 
 
-## 屏幕点 → 地面（y = 0 平面）交点；无交点返回 null。
+## 屏幕点 → 地面（y = 0 平面）交点；无交点 / 无摄像机返回 null。
 func _ground_point(screen_pos: Vector2) -> Variant:
-	var camera := get_viewport().get_camera_3d()
+	var viewport := get_viewport()
+	if viewport == null:
+		return null
+	var camera := viewport.get_camera_3d()
 	if camera == null:
 		return null
 	var origin := camera.project_ray_origin(screen_pos)
