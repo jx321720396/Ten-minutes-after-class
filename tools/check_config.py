@@ -329,6 +329,34 @@ check("时间流速：行动倍率有限且不小于正常倍率",
       and _time_flow.get("player_action_scale", 0.0) >= _time_flow.get("normal_scale", 1.0),
       _time_flow.get("player_action_scale"))
 
+# 14. 学业系统（§17.1）：成绩轴初始化常量 + 涓流分段表
+_kp = params("rules/kernel_params.csv")
+_grade_keys = ("grade_max", "grade_init_player", "grade_init_npc_min", "grade_init_npc_max")
+check("kernel_params：成绩初始化常量齐全", all(k in _kp for k in _grade_keys),
+      "缺失: %s" % sorted(set(_grade_keys) - set(_kp)))
+if all(k in _kp for k in _grade_keys):
+    check("grade_max 为正", _kp["grade_max"] > 0, _kp["grade_max"])
+    check("grade_init_npc_min ≤ grade_init_npc_max",
+          _kp["grade_init_npc_min"] <= _kp["grade_init_npc_max"],
+          "%s / %s" % (_kp["grade_init_npc_min"], _kp["grade_init_npc_max"]))
+    check("grade_init_player ∈ [0, grade_max]",
+          0 <= _kp["grade_init_player"] <= _kp["grade_max"], _kp["grade_init_player"])
+    check("NPC 初始区间 ⊆ [0, grade_max]",
+          0 <= _kp["grade_init_npc_min"] and _kp["grade_init_npc_max"] <= _kp["grade_max"],
+          "%s / %s" % (_kp["grade_init_npc_min"], _kp["grade_init_npc_max"]))
+_grows = load("rules/grade_table.csv")
+_guppers = [float(r["band_upper"]) for r in _grows]
+_gtpp = [float(r["ticks_per_point"]) for r in _grows]
+check("grade_table：band_upper 严格递增",
+      all(a < b for a, b in zip(_guppers, _guppers[1:])), _guppers)
+check("grade_table：ticks_per_point 递增",
+      all(a <= b for a, b in zip(_gtpp, _gtpp[1:])), _gtpp)
+check("grade_table：末档上界 = grade_max",
+      bool(_guppers) and _guppers[-1] == _kp.get("grade_max"),
+      "末档 %s vs grade_max %s" % (_guppers[-1] if _guppers else "无", _kp.get("grade_max")))
+check("grade_table：上界与 ticks 均为正",
+      all(u > 0 and t > 0 for u, t in zip(_guppers, _gtpp)))
+
 print("\n=== 结论 ===")
 _invite_kinds = load("rules/player_invitation_kinds.csv")
 check("玩家邀请：行为键不重复", len({r["behavior"] for r in _invite_kinds}) == len(_invite_kinds))
