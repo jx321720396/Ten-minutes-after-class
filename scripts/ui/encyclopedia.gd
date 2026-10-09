@@ -202,6 +202,8 @@ func _build_category(title: String, rows: Array) -> Dictionary:
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.add_theme_font_size_override("font_size", 22)
 		btn.visible = false
+		# 当前词条用「按下」态高亮（走 Theme 的 pressed 样式），不再改 modulate 染色
+		btn.toggle_mode = true
 		btn.pressed.connect(_on_entry_pressed.bind(idx))
 		_toc.add_child(btn)
 		buttons.append(btn)
@@ -284,10 +286,10 @@ func _sync_toc_selection() -> void:
 	if _entries.is_empty():
 		return
 	for btn in _entry_buttons:
-		(btn as Button).modulate = Color(1, 1, 1, 1)
+		(btn as Button).button_pressed = false
 	if _index < 0 or _index >= _entry_buttons.size():
 		return
-	(_entry_buttons[_index] as Button).modulate = Color(1.0, 0.93, 0.72, 1.0)
+	(_entry_buttons[_index] as Button).button_pressed = true
 	for ci in range(_cats.size()):
 		if (_cats[ci] as Dictionary).get("entry_indices", []).has(_index):
 			if not bool((_cats[ci] as Dictionary).get("expanded", false)):
