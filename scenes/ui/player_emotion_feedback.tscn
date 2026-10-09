@@ -3,5 +3,5 @@
 [ext_resource type="Script" path="res://scripts/ui/player_emotion_feedback.gd" id="1_emotion"]
 
 [node name="PlayerEmotionFeedback" type="CanvasLayer"]
-layer = 4
+layer = -3
 script = ExtResource("1_emotion")
