@@ -13,6 +13,7 @@ extends Node3D
 @onready var clock: SimulationClock = $Clock
 @onready var time_flow: TimeFlow = $TimeFlow
 @onready var time_hud: TimeHUD = $TimeHUD
+@onready var transition: TransitionOverlay = $TransitionOverlay
 @onready var roam: Node = $Roam
 @onready var player: PlayerController = $Player
 @onready var actors: Node3D = $Actors
@@ -40,6 +41,9 @@ func _ready() -> void:
 		clock.hold(&"time_flow_config")
 		return
 	time_hud.bind_clock(clock)
+	transition.bind_clock(clock)
+	# 黑幕开始退场的瞬间就应用挂起的相位（含每日归位），不等淡出结束
+	transition.dismiss_started.connect(_on_transition_dismiss_started)
 	# ⚠️ 绑定 Roam 之前先等导航就绪：bind_clock 会立刻触发一次相位回调（上课归位），
 	#    地图没同步时那批走动会被全部判成「取不到路线」。
 	if await _wait_navigation():
@@ -112,8 +116,15 @@ func _bind_feedback(core: Variant) -> void:
 ## 不假装成功（计划 §6：不提供虚假的成功恢复）。
 func _on_continue_requested() -> void:
 	if clock.continue_after_report():
+		# 转场黑幕任务：进入次日确认后全员瞬间归位，再按原逻辑开始活动
+		roam.snap_to_seats()
 		return
 	push_warning("Classroom：未能进入下一天（学期已结束，或完整存档 / 简报组件尚未接入）——" + "时间停留在当前边界。")
+
+
+## 黑幕开始退场：立刻应用挂起的相位（含每日归位），避免淡出期间闪现旧位置。
+func _on_transition_dismiss_started() -> void:
+	roam.flush_pending_phase()
 
 
 func _core_from_state() -> Variant:
