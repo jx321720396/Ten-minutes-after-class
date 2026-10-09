@@ -40,6 +40,10 @@ const CIRCLE_BONUS := 1.5
 const MIN_WEIGHT := 0.1
 ## 活动圈判定半径（米）：点附近这个范围内有 ≥2 人 → 视为可加入的活动圈（§15.1）
 const CIRCLE_RADIUS := 1.2
+## 归位后至少停留的秒数（点按钮 / 空格确认进入次日，转场黑幕任务；0 = 归位后立即恢复原节奏）
+const SNAP_STAY_SECONDS := 0.0
+## 「第 N 天」黑幕结束首次归位的停留秒数（日末等待期，比确认进入稍长）
+const DAY_START_STAY_SECONDS := 0.7
 
 @export_group("表现开关")
 ## 关掉即纯静态教室（便于截图 / 对比）
@@ -84,6 +88,10 @@ var _speed := 0.8
 ## 取不到导航路线而放弃走动的次数：持续增长说明烘焙产物或几何出了问题（诊断用）
 var _missed_walks := 0
 var _snapshot: Dictionary = {}
+## 转场黑幕期间挂起的相位快照（时钟 hold 时存下，退场后补跑）
+var _pending_phase: Dictionary = {}
+## 上一次瞬间归位的天数（每天首个课间归位一次）
+var _last_snapped_day := -1
 var _decide_timer := 0.0
 ## 每个课间最多触发几批离座决策（段首与课间中段）
 var _max_decides_per_break: int = 2
@@ -131,6 +139,14 @@ func bind_clock(clock: SimulationClock) -> void:
 func _process(delta: float) -> void:
 	if not enabled or _core == null or _clock == null:
 		return
+	# 黑幕退场后补跑被挂起的相位反应（转场黑幕任务接入点）
+	if not _pending_phase.is_empty() and not _clock.is_paused():
+		var pending: Dictionary = _pending_phase
+		_pending_phase = {}
+		_apply_phase(pending)
+	# 黑幕显示期间（时钟被 hold）：倒计时与走动全部冻结（转场黑幕任务）
+	if _clock.is_paused():
+		return
 	if is_instance_valid(_time_flow):
 		delta = _time_flow.scale_delta(delta)
 	if delta <= 0.0:
@@ -149,15 +165,60 @@ func _process(delta: float) -> void:
 	_decide_batch()
 
 
+## 转场黑幕任务：全员（含玩家）瞬间贴回自己的座位（不走路），并终止在途行走。
+## 触发时机：「第 N 天」黑幕结束 / 点「进入第 N 天」或按空格确认进入次日。
+## 归位后全员在座位上停留 stay_seconds 秒，再按原逻辑开始活动。
+func snap_to_seats(stay_seconds: float = SNAP_STAY_SECONDS) -> void:
+	for i in range(_actor_count):
+		var seat_id := str(_core.seat_of(i))
+		if not _point_positions.has(seat_id):
+			continue
+		var actor: Node3D = _actors[i]
+		if actor == null:
+			continue
+		if _walkers[i] != null:
+			_walkers[i].stop()
+		actor.global_position = _point_positions[seat_id]
+		_core.set_position(i, actor.global_position.x, actor.global_position.z)
+		_core.set_moving(i, false)
+	# 归位后至少停留 stay_seconds 再进行下一批离座（计时为累加制，时钟节拍来自 data）
+	_decide_timer = maxf(decide_interval - stay_seconds, 0.0)
+
+
+## 转场黑幕任务：黑幕开始退场的瞬间立刻应用挂起的相位（含每日瞬间归位），
+## 不等下一帧 —— 避免黑幕淡出期间闪现昨天的位置。
+func flush_pending_phase() -> void:
+	if _pending_phase.is_empty():
+		return
+	var pending: Dictionary = _pending_phase
+	_pending_phase = {}
+	_apply_phase(pending)
+
+
 ## 相位切换（由时钟驱动）：进课间 → 可以离座；进上课 → 全体归位（§10.4 第 6 条）。
+## ⚠️ 转场黑幕期间（时钟被 hold）先存快照不执行，退场后由 _process 补跑 ——
+## 保证倒计时与 NPC 走动都从黑幕结束后才开始（转场黑幕任务接入点）。
 func _on_phase_changed(snapshot_data: Dictionary) -> void:
+	if _clock != null and _clock.is_paused():
+		_pending_phase = snapshot_data
+		return
+	_apply_phase(snapshot_data)
+
+
+## 执行相位切换的实际反应（离座 / 归位），由 _on_phase_changed 或补跑调用。
+func _apply_phase(snapshot_data: Dictionary) -> void:
 	_snapshot = snapshot_data
 	if not enabled or _core == null:
 		return
 	_occupy_seats()
-	_decide_timer = 0.0
 	if is_break_phase():
 		_decides_remaining = _max_decides_per_break
+		# 每天首个课间（「第 N 天」黑幕刚结束）：全员瞬间归位，首批离座延后 stay 秒再按原节奏
+		if int(snapshot_data.get("day", 0)) != _last_snapped_day:
+			_last_snapped_day = int(snapshot_data.get("day", 0))
+			snap_to_seats(DAY_START_STAY_SECONDS)
+			return
+		_decide_timer = 0.0
 		_decide_batch()
 		return
 	_decides_remaining = 0

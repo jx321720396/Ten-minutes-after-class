@@ -15,6 +15,11 @@ extends CanvasLayer
 ## 日报组件接入用：玩家点「进入第 N 天」
 signal continue_requested
 
+## 日末是否等待输入（点按钮 / 空格）才进入次日：
+##   true = 调试模式（当前）——按钮仅供内部调试，空格为快捷键；
+##   false = 正式上线用 —— 日末自动进入次日，不显示按钮。
+const WAIT_INPUT_ON_DAY_END := true
+
 const FONT_FAMILIES: Array[String] = [
 	"Microsoft YaHei",
 	"微软雅黑",
@@ -57,6 +62,15 @@ func _process(delta: float) -> void:
 		return
 	_toast_left = maxf(0.0, _toast_left - delta)
 	_toast.modulate.a = _toast_left / TOAST_SECONDS
+
+
+## 日末调试快捷键：空格等同点「进入第 N 天」（仅 report 状态生效）。
+func _unhandled_input(event: InputEvent) -> void:
+	if _last.is_empty() or str(_last.get("mode", "")) != SimulationClock.MODE_REPORT:
+		return
+	if event.is_action_pressed("ui_accept"):
+		continue_requested.emit()
+		get_viewport().set_input_as_handled()
 
 
 # ------------------------------------------------------------------ 绑定
@@ -137,6 +151,9 @@ func _on_phase_changed(snapshot_data: Dictionary) -> void:
 func _on_report_ready(ended_day: int) -> void:
 	_refresh(_clock.snapshot() if _clock != null else {})
 	_show_toast("第 %d 天结束" % ended_day)
+	if not WAIT_INPUT_ON_DAY_END:
+		# 正式上线模式：不等待输入，直接进入次日
+		continue_requested.emit()
 
 
 func _on_term_finished(ended_day: int) -> void:
