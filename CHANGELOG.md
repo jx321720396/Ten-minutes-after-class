@@ -87,7 +87,7 @@
   · 修掉 `_input_direction()` / `_ground_point()` 里 `get_viewport()` 为 null 时直接崩的隐患（节点未挂树 / 快速切场景等边缘状态下）；
   · 新增 `tests/unit/test_player_wasd_input.gd`（4 例：动作注册幂等 / 手动行走驱动 `ActorWalker` 左移 / W-S 驱动 Z 轴 / 撞桌子时沿桌沿滑不穿透）。GUT `tests/unit` 全量 **139/139 全绿**。
 
-- **黑板左侧头像栏**：`scenes/game/clue_board_1.tscn` 绿板最左侧加了一列可滚动的正方形格子，格宽按最大头像的 0.5 倍（活泼女 256×0.5）取 128。17 个方格，前 16 格放了头像，最后一格空着。格子底是半透明黑（alpha 0.45），木色边还在。点在格子上不会开始画粉笔。按住格子里的头像拖到黑板外松手，会放下一份同样的头像，格子里的原件还在，同一个可以反复拖；松手仍在头像栏或粉笔按钮上则取消。
+- **黑板左侧头像栏**：`scenes/game/clue_board_1.tscn` 绿板最左侧加了一列可滚动的正方形格子，格宽按最大头像的 0.5 倍（活泼女 256×0.5）取 128。17 个方格，前 16 格放了头像，最后一格空着。格子底是半透明黑（alpha 0.45），木色边还在。点在格子上不会开始画粉笔。按住格子里的头像拖到黑板外松手，会放下一份同样的头像，格子里的原件还在，同一个可以反复拖；松手仍在头像栏或粉笔按钮上则取消。黑板上的粉笔从已放下的头像下面穿过去，笔画被头像盖住。橡皮擦碰到头像会删掉该头像，并擦掉沿途粉笔，断开的两段不再连在一起。点下方色块会从橡皮擦切回粉笔，笔画颜色与被点的色块相同。色块和工具都放在木槽里：左边粉笔和橡皮竖着立在槽上，右边是五根粉笔颜色。画的时候粉笔光标是斜握的短粉笔，笔尖跟着鼠标；橡皮光标是一块完整的橡皮，四周没有白边。点中的工具和色块会放大并往上凸出来；切到橡皮时，色块缩回原大小。粉笔按钮用的是一支能随颜色染色的粉笔。
 - **角色头像 Sprite**：从 `assets/textures/characters/` 的 16 张立绘裁出脑袋，做成 `Sprite2D` 放在 `scenes/character_head/`。每张头像外轮廓加了 2 像素白边，贴图在 `assets/textures/character_head/`。英文名与 `scenes/characters/` 相同：`quiet` 安静、`stern` 严肃、`tsundere` 傲娇、`sensitive` 敏感、`lively` 活泼、`warm` 热情、`blunt` 直接、`shy` 社恐，女 `_female`、男 `_male`。
 - **八种情绪气泡 Sprite**：男女各一套，白底已抠掉。贴图在 `assets/textures/meme/`，`Sprite2D` 在 `scenes/meme/`。英文名：`relax` 放松、`bored` 无聊、`excited` 兴奋、`irritable` 烦躁、`agitated` 激动、`breakdown` 崩溃、`agree` 同意、`reject` 拒绝；女为 `_female`，男为 `_male`。尚未接到角色身上。
 - **安静女 2.5D**：`scenes/characters2.5D/quiet_female_billboard.tscn` 与 `assets/textures/characters2.5D/quiet_female/`。`sleep` 四帧去掉腿上的书；`apologize_left` / `apologize_right` 记为「左道歉」「右道歉」；`inform` 只保留四帧、只张合嘴巴。八种表情静帧在 `expr/`，尚未接进动画。
