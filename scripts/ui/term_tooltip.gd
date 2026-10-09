@@ -236,10 +236,12 @@ static func _overlaps(taken: Array, start: int, end: int) -> bool:
 	return false
 
 
-## 该区间是否已经落在 `[url=…]` / `[t]…[/t]` 之类的标记内部（保守判断：落在方括号里就不动）。
-static func _inside_existing_markup(text: String, start: int, end: int) -> bool:
-	var opens := text.rfind("[", start)
-	if opens < 0:
+## 该区间是否已经落在 `[url=…]…[/url]` 之内（避免把已有标记再包一层）。
+##
+## 判据：在 start 之前，最后一个 `[url=` 比最后一个 `[/url]` 更靠后 → 说明仍未闭合、我们在标记内部。
+static func _inside_existing_markup(text: String, start: int, _end: int) -> bool:
+	var last_open := text.rfind("[url=", start)
+	if last_open < 0:
 		return false
-	var closes := text.find("]", opens)
-	return closes >= end
+	var last_close := text.rfind("[/url]", start)
+	return last_open > last_close

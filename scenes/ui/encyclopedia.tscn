@@ -170,16 +170,16 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0
 
-[node name="TOC" type="ItemList" parent="CenterContainer/Panel/Margin/VBox/Body"]
+[node name="TOCScroll" type="ScrollContainer" parent="CenterContainer/Panel/Margin/VBox/Body"]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
-theme_override_colors/font_selected_color = Color(0.2, 0.14, 0.06, 1)
-theme_override_fonts/font = SubResource("FontVariation_btn")
-theme_override_font_sizes/font_size = 22
+horizontal_scroll_mode = 0
 theme_override_styles/panel = ExtResource("2_panel")
-theme_override_styles/selected = SubResource("StyleBoxFlat_toc_selected")
-theme_override_styles/selected_focus = SubResource("StyleBoxFlat_toc_selected")
+
+[node name="TOC" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/TOCScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
 
 [node name="VSep" type="ColorRect" parent="CenterContainer/Panel/Margin/VBox/Body"]
 custom_minimum_size = Vector2(1, 0)
@@ -229,7 +229,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
-text = "← 上一章"
+text = "← 上一条"
 
 [node name="Mid" type="Control" parent="CenterContainer/Panel/Margin/VBox/Footer"]
 layout_mode = 2
@@ -248,7 +248,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
-text = "下一章 →"
+text = "下一条 →"
 
 [node name="BackBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/Footer"]
 layout_mode = 2

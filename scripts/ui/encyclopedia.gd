@@ -6,20 +6,22 @@ extends Control
 ##     entries:    [ { id, term, category, short, body, aliases, implemented, player_usable? } ] }
 ## 文案一律不进代码（`docs/localization/本地化说明.md` §2 禁止硬编码中文字面量）。
 ##
-## 与档案页 / 简报的关系：本页是**独立查阅**入口；档案页与正文里的「问号 / 高亮词」
-## 走同一个数据源（见 `scripts/ui/term_tooltip.gd`）。为此每条的 `id` 是稳定引用键，
-## 任何地方引用词条都用 id，不要用中文名去匹配。
+## 左侧是可折叠的分类树：点分类标题展开 / 收起，点词条看正文。
+## 正文里的词条名会自动变成可悬停词（`TermTooltip`），鼠标移上去弹小解释。
 ##
 ## 信息纪律（§20.0.1 / §7）：词条只解释**机制**，不描述「此刻某人怎样」，
-## 也不写 NPC 的隐藏数值。`implemented=false` 的条目**不列出**（占位文案先不上线）。
-##
-## 界面风格与其它窗口一致：半透明遮罩 + 米黄 PanelContainer，Esc / 返回按钮关闭。
+## 也不写 NPC 的隐藏数值。`implemented=false` 的条目**不列出**。
 
 signal closed
 
 const DATA_PATH := "res://data/localization/encyclopedia.json"
+const TOOLTIP_SCENE := "res://scenes/ui/term_tooltip.tscn"
 
-@onready var _toc: ItemList = $CenterContainer/Panel/Margin/VBox/Body/TOC
+## 折叠标记（用符号，不用字母/数字编号）
+const ARROW_COLLAPSED := "▶ "
+const ARROW_EXPANDED := "▼ "
+
+@onready var _toc: VBoxContainer = $CenterContainer/Panel/Margin/VBox/Body/TOCScroll/TOC
 @onready
 var _scroll: ScrollContainer = $CenterContainer/Panel/Margin/VBox/Body/ContentMargin/ContentScroll
 @onready
@@ -28,13 +30,15 @@ var _content: RichTextLabel = $CenterContainer/Panel/Margin/VBox/Body/ContentMar
 @onready var _next: Button = $CenterContainer/Panel/Margin/VBox/Footer/NextBtn
 @onready var _back: Button = $CenterContainer/Panel/Margin/VBox/Footer/BackBtn
 
-## 数据（按 presentable 过滤后的结果，目录顺序 = categories.order → entries 原序）
+## 可见词条（按分类顺序铺平）；目录里的词条按钮与它一一对应
 var _entries: Array = []
-## 目录里第 i 项对应的 `_entries` 下标；类别标题行记 -1（不可选）
-var _toc_to_entry: Array[int] = []
+## 每个分类一组：{ title, header: Button, entry_indices: Array[int], rows: Array[Button], expanded: bool }
+var _cats: Array = []
 var _index := 0
+## 词条按钮列表，用于给当前项加高亮
+var _entry_buttons: Array = []
+var _tooltip: CanvasLayer
 
-## 词条库里全部条目（含未实装），供 tooltip 等按 id 取用
 static var _all_entries: Array = []
 
 
@@ -42,9 +46,14 @@ func _ready() -> void:
 	_prev.pressed.connect(_on_prev)
 	_next.pressed.connect(_on_next)
 	_back.pressed.connect(_on_back)
-	_toc.item_selected.connect(_on_toc_selected)
+	# 悬停解释：正文里的词条名移上去就弹小面板
+	if ResourceLoader.exists(TOOLTIP_SCENE):
+		_tooltip = (load(TOOLTIP_SCENE) as PackedScene).instantiate()
+		add_child(_tooltip)
+		_tooltip.bind_rich_text(_content)
 	_load_data()
-	_show_entry(0)
+	if not _entries.is_empty():
+		_show_entry(0)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -54,16 +63,24 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # ------------------------------------------------------------------ 供外部查询
 
-## 词条总数（对外可见的那些；供测试与调试）。
+## 可见词条数（供测试与调试）。
 func entry_count() -> int:
 	return _entries.size()
 
 
-## 当前词条名（供测试与调试）。
 func current_entry_term() -> String:
 	if _entries.is_empty() or _index < 0 or _index >= _entries.size():
 		return ""
 	return str((_entries[_index] as Dictionary).get("term", ""))
+
+
+## 当前展开的分类数（供测试）。
+func expanded_category_count() -> int:
+	var n := 0
+	for c in _cats:
+		if bool((c as Dictionary).get("expanded", false)):
+			n += 1
+	return n
 
 
 ## 兼容旧调用点：语义已由「章节」变为「词条」。
@@ -75,8 +92,7 @@ func current_chapter_title() -> String:
 	return current_entry_term()
 
 
-## 按 id 取词条（含未实装的）。找不到返回空字典。
-## 这是全局唯一取词入口 —— 档案页的问号、正文高亮都用它。
+## 按 id 取词条（含未实装的）。找不到返回空字典。全局唯一取词入口。
 static func find_entry(entry_id: String) -> Dictionary:
 	if _all_entries.is_empty():
 		_all_entries = _read_entries_from_disk()
@@ -87,7 +103,6 @@ static func find_entry(entry_id: String) -> Dictionary:
 
 
 ## 按正文里出现的词（词条名或别名）反查词条 id。找不到返回空串。
-## 供「行为文字特殊化 + 悬停解释」使用：先把可见文字切出候选词，再用它匹配。
 static func id_for_term(word: String) -> String:
 	if _all_entries.is_empty():
 		_all_entries = _read_entries_from_disk()
@@ -122,11 +137,12 @@ static func _read_entries_from_disk() -> Array:
 	return out
 
 
-## 读文件 → 按类别顺序铺开成「可见词条」列表，并同步目录。
 func _load_data() -> void:
 	_entries = []
-	_toc_to_entry = []
-	_toc.clear()
+	_cats = []
+	_entry_buttons = []
+	for child in _toc.get_children():
+		child.queue_free()
 
 	var f := FileAccess.open(DATA_PATH, FileAccess.READ)
 	if f == null:
@@ -147,32 +163,59 @@ func _load_data() -> void:
 
 	for cat in cats:
 		var cat_id := str((cat as Dictionary).get("id", ""))
-		# 该类下**已实装**的条目；未实装的先不上线
 		var rows: Array = []
 		for e in all_entries:
 			var d: Dictionary = e
 			if str(d.get("category", "")) != cat_id:
 				continue
 			if not bool(d.get("implemented", false)):
-				continue
+				continue  # 未实装的先不上线
 			rows.append(d)
 		if rows.is_empty():
 			continue
-		# 类别标题行（不可选）
-		_toc.add_item(str((cat as Dictionary).get("title", cat_id)))
-		_toc_to_entry.append(-1)
-		_toc.set_item_disabled(_toc.item_count - 1, true)
-		for d in rows:
-			_entries.append(d)
-			_toc.add_item("    %s" % str(d.get("term", "")))
-			_toc_to_entry.append(_entries.size() - 1)
+		# _build_category 内部已把自己登记进 _cats，这里**不能再 append**（否则每类重复一次）
+		_build_category(str((cat as Dictionary).get("title", cat_id)), rows)
 
-	_update_buttons()
+	# 默认展开哪一类不在这里定：_show_entry(0) → _sync_toc_selection 会展开当前词条所在类
+
+
+## 建一个分类：可点击的标题行 + 若干词条行（展开时才显示）。
+func _build_category(title: String, rows: Array) -> Dictionary:
+	var header := Button.new()
+	header.name = "Cat_%s" % title
+	header.text = ARROW_COLLAPSED + title
+	header.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	header.focus_mode = Control.FOCUS_NONE
+	header.add_theme_font_size_override("font_size", 24)
+	_toc.add_child(header)
+
+	var buttons: Array = []
+	var indices: Array[int] = []
+	for d in rows:
+		_entries.append(d)
+		var idx := _entries.size() - 1
+		indices.append(idx)
+		var btn := Button.new()
+		btn.name = "Entry_%s" % str(d.get("id", idx)).replace(".", "_")
+		btn.text = "　　%s" % str(d.get("term", ""))  # 全角空格缩进，不用编号
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.add_theme_font_size_override("font_size", 22)
+		btn.visible = false
+		btn.pressed.connect(_on_entry_pressed.bind(idx))
+		_toc.add_child(btn)
+		buttons.append(btn)
+		_entry_buttons.append(btn)
+
+	var cat := {"title": title, "header": header, "entry_indices": indices,
+		"rows": buttons, "expanded": false}
+	header.pressed.connect(_on_category_pressed.bind(_cats.size()))
+	_cats.append(cat)
+	return cat
 
 
 # ------------------------------------------------------------------ 渲染
 
-## 渲染第 i 条词条：词条名 + 短句 + 正文。
 func _show_entry(i: int) -> void:
 	if _entries.is_empty():
 		return
@@ -183,23 +226,72 @@ func _show_entry(i: int) -> void:
 	var short := str(e.get("short", ""))
 	if not short.is_empty():
 		out += "[color=#6b7a5e][i]%s[/i][/color]\n" % short
-	out += "\n" + str(e.get("body", "")) + "\n"
+	out += "\n%s\n" % _linkify(str(e.get("body", "")))
 
 	_content.clear()
 	_content.append_text(out.strip_edges())
 	_sync_toc_selection()
 	_update_buttons()
-	# 等一帧让新内容完成布局，再回到顶部
 	await get_tree().process_frame
 	if is_instance_valid(_scroll):
 		_scroll.scroll_vertical = 0
 
 
-## 让左侧目录选中当前词条那一行（跳过类别标题行）。
+## 把正文里可能出现的词条引用变成可悬停词。
+##
+## 两种来源：
+##  ① 文案里显式写的 `[t]词条名[/t]` → 转成 `[url=entry:<id>]词条名[/url]`；
+##  ② 其余出现的词条名 / 别名 → 交给 TermTooltip.mark_terms() 自动认出来。
+## 显式引用先处理，`mark_terms` 会跳过已有 `[url=…]` 的区间，不会重复包。
+static func _linkify(body: String) -> String:
+	var re := RegEx.new()
+	re.compile("\\[t\\]([^\\[\\]]+)\\[/t\\]")
+	var out := body
+	for m in re.search_all(body):
+		var word := m.get_string(1)
+		var idx := id_for_term(word)
+		if idx.is_empty():
+			out = out.replace(m.get_string(0), word)
+		else:
+			out = out.replace(m.get_string(0), "[url=%s%s]%s[/url]" % [TermTooltip.META_PREFIX, idx, word])
+	var tt: GDScript = load("res://scripts/ui/term_tooltip.gd")
+	return tt.mark_terms(out)
+
+
+# ------------------------------------------------------------------ 目录交互
+
+func _on_category_pressed(cat_index: int) -> void:
+	if cat_index < 0 or cat_index >= _cats.size():
+		return
+	var cat: Dictionary = _cats[cat_index]
+	_set_category_expanded(cat_index, not bool(cat.get("expanded", false)))
+
+
+func _set_category_expanded(cat_index: int, expanded: bool) -> void:
+	var cat: Dictionary = _cats[cat_index]
+	cat["expanded"] = expanded
+	(cat["header"] as Button).text = (ARROW_EXPANDED if expanded else ARROW_COLLAPSED) + str(cat.get("title", ""))
+	for btn in cat.get("rows", []) as Array:
+		(btn as Button).visible = expanded
+
+
+func _on_entry_pressed(entry_index: int) -> void:
+	_show_entry(entry_index)
+
+
+## 目录高亮当前词条，并保证它所在分类是展开的。
 func _sync_toc_selection() -> void:
-	for row in range(_toc_to_entry.size()):
-		if _toc_to_entry[row] == _index:
-			_toc.select(row)
+	if _entries.is_empty():
+		return
+	for btn in _entry_buttons:
+		(btn as Button).modulate = Color(1, 1, 1, 1)
+	if _index < 0 or _index >= _entry_buttons.size():
+		return
+	(_entry_buttons[_index] as Button).modulate = Color(1.0, 0.93, 0.72, 1.0)
+	for ci in range(_cats.size()):
+		if (_cats[ci] as Dictionary).get("entry_indices", []).has(_index):
+			if not bool((_cats[ci] as Dictionary).get("expanded", false)):
+				_set_category_expanded(ci, true)
 			return
 
 
@@ -209,17 +301,6 @@ func _update_buttons() -> void:
 
 
 # ------------------------------------------------------------------ 交互
-
-func _on_toc_selected(row: int) -> void:
-	if row < 0 or row >= _toc_to_entry.size():
-		return
-	var target := _toc_to_entry[row]
-	if target < 0:
-		# 类别标题行：不切内容
-		_sync_toc_selection()
-		return
-	_show_entry(target)
-
 
 func _on_prev() -> void:
 	_show_entry(_index - 1)
