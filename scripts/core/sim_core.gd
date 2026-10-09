@@ -51,6 +51,8 @@ var _h_deep := PackedFloat64Array()  # 深层敌对 n*n（§10.22，永不衰减
 var _t := PackedFloat64Array()  # 信任 T  n*n
 var _o := PackedFloat64Array()  # 透明度 O  n
 var _stress := PackedFloat64Array()  # 压力 Stress  n
+var _grade := PackedFloat64Array()  # 成绩 grade  n（§17.1）
+var _study_acc := PackedFloat64Array()  # 学习时长累加器 study_acc  n（§17.1.2）
 var _dims := PackedFloat64Array()  # MBTI 四维（dim-major）DIMS.size()*n
 var _b_a := PackedFloat64Array()  # 信念·好感 n*n
 var _b_h := PackedFloat64Array()  # 信念·敌对 n*n
@@ -67,6 +69,8 @@ var _global_tick := 0
 var _volume := 0.0
 var _active_phases: Array = []  # 非 settle 段（课间/上课）顺序，供单步推进（D11）
 var _phase_setup_done := false  # 当前段是否已跑段首一次性结算（D11）
+var _settled_boundary := Vector2i(-1, -1)  # 已结算的相位边界幂等键（天, 旧相位）
+var _interrupted_nodes: Array = []  # 本段边界被打断的节点（供 _cleanup_phase 清理）
 
 ## 事件出口（D11 缺口④）：表现层把此回调绑到 EventBus 四信号，内核零 autoload 依赖。
 ## 收到 {"type": String, "payload": Dictionary}；
@@ -77,6 +81,7 @@ var event_sink: Callable = Callable()  # gdlint:ignore = class-definitions-order
 var _p: Dictionary = {}  # transmission 参数（含 settle_interval）
 var _bp: Dictionary = {}  # belief 参数（先验 / 学习率 / 偏差）
 var _kp: Dictionary = {}  # kernel 硬编码系数（kernel_params.csv）
+var _grade_bands: Array = []  # 成绩分段表（[band_upper, ticks_per_point]，按上界升序）
 var _probs: Dictionary = {}  # behavior_probs：行为 -> 基础概率
 var _thresholds_lookup: Dictionary = {}
 var _decay: Dictionary = {}
@@ -171,6 +176,7 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 			_b_t[i * n + j] = prior_t
 
 	_init_relations()
+	_init_grade()
 	_init_belief_bias()
 
 	_volume = float(_env.get("init_volume", 0.0))
@@ -221,6 +227,7 @@ func _load_config(tables: Dictionary) -> void:
 	_p = _params(tables, "rules/transmission")
 	_bp = _params(tables, "rules/belief")
 	_kp = _params(tables, "rules/kernel_params")
+	_grade_bands = _build_grade_bands(tables)
 	_probs = _build_behavior_probs(tables)
 	_thresholds_lookup = _build_thresholds(tables)
 	_decay = _params(tables, "rules/decay")
@@ -249,6 +256,8 @@ func _alloc(n: int) -> void:
 	_t.resize(n * n)
 	_o.resize(n)
 	_stress.resize(n)
+	_grade.resize(n)
+	_study_acc.resize(n)
 	_dims.resize(DIMS.size() * n)
 	_b_a.resize(n * n)
 	_b_h.resize(n * n)
@@ -264,6 +273,8 @@ func _reset_runtime(n: int) -> void:
 	_vol_log = []
 	_day_events = {}
 	_settled = {}
+	_settled_boundary = Vector2i(-1, -1)
+	_interrupted_nodes = []
 	_stats = {
 		"events": 0,
 		"chats": 0,
@@ -391,6 +402,16 @@ func _init_belief_bias() -> void:
 			_b_t[i * n + j] = _clamp100(_b_t[i * n + j] + tr * w * observer * ts)
 
 
+## 成绩初始化（§17.1.1）：NPC 种子化均匀 [min,max)，玩家固定。消费 len(chars) 次 RNG。
+## ⚠️ 必须紧跟 _init_relations() 之后调用，与 Python 同一点插入，保同种子 RNG 流不漂移。
+func _init_grade() -> void:
+	var gmin := float(_kp["grade_init_npc_min"])
+	var gmax := float(_kp["grade_init_npc_max"])
+	for i in range(_chars.size()):
+		_grade[i] = gmin + _rng.random() * (gmax - gmin)
+	_grade[_n - 1] = float(_kp["grade_init_player"])
+
+
 ## 「看起来多友善」：外向(E) + 共情(F) 归一化加权（perceived 与 observer 同式）。
 func _friendly_bias(node: int, neutral: float, scale: float, we: float, wf: float) -> float:
 	var e := (_dims[node] - neutral) / scale * we
@@ -446,15 +467,28 @@ func _are_neighbors(i: int, j: int) -> bool:
 
 
 # ------------------------------------------------------------------ 时间系统
-## 段首一次性结算：睡觉收尾 / 入睡 / 自由跟随 /（课间）举报 / 打断（§10.8 等）。
-## 边界顺序（计划 §5.3）：**先把「已到期」的结为完成，再把「尚未到期」的跨段活动与占用
-## 结为中断，最后才进入新段设置** —— 完成时刻恰好等于铃声时不许误算成中断、不许漏线索。
+## 统一边界协议 ②③④⑤：结束旧段（不推进 tick）。
+## 顺序固定：到期结算 → 睡眠收尾 → 中断 → 清理 →（日末）跨天结算。
+## 幂等键 = (天, 旧相位)：finish_time_boundary / advance_tick 重复进入同一边界只结算一次。
+func _end_phase() -> void:
+	var key := Vector2i(_day, _phase_index)
+	if _settled_boundary == key:
+		return
+	_settled_boundary = key
+	_settle_finished_actions()
+	_settle_sleep()
+	_check_interrupt()
+	_cleanup_phase()
+	if _phase_index + 1 >= _active_phases.size():
+		_settle_day()
+
+
+## 统一边界协议 ⑥⑦：进入当前段（_phase_index 已指向本段）并执行新段判定。
+## 核心 RNG 消费序：roll_sleep → free_join → [break: phone_exposure → roll_reports]。
 func _begin_phase() -> void:
 	var row: Dictionary = _active_phases[_phase_index]
 	_phase = str(row["kind"])
 	_tick_in_phase = 0
-	_check_interrupt()
-	_settle_sleep()
 	_roll_sleep()
 	_free_join()
 	if _phase == "break":
@@ -478,18 +512,16 @@ func advance_tick() -> int:
 	return _global_tick
 
 
-## 上一段跑完后，把游标推进到下一段；跨天则先 _settle_day 再回到段 0。
+## 上一段跑完后，结束旧段并把游标推进到下一段（跨天结算由 _end_phase 负责）。
 func _transition_if_needed() -> void:
 	if not _phase_setup_done:
 		return
 	var row: Dictionary = _active_phases[_phase_index]
 	if _tick_in_phase < int(str(row["tick_count"])):
 		return
-	_phase_index += 1
+	_end_phase()                                  # ②③④⑤（末段触发 _settle_day）
+	_phase_index = (_phase_index + 1) % _active_phases.size()
 	_phase_setup_done = false
-	if _phase_index >= _active_phases.size():
-		_phase_index = 0
-		_settle_day()
 
 
 ## 推进一个段（从当前位置跑到当前段末尾），返回本段跑的 tick 数。
@@ -552,10 +584,9 @@ func finish_time_boundary() -> Dictionary:
 		# 边界完成后新相位还没跑过 tick：显式归零。
 		# 否则快照会出现「phase_id 已是下一段、tick_in_phase 却还是上一段的满值」这种
 		# 自相矛盾的状态，实时驱动会据此误判「剩余 0 秒」并立刻重复触发边界、跳掉一整段。
-		# 段首设置仍留给下一次 advance_tick；真实场景必须先结束旧活动再发布归位信号。
+		# 段首设置仍留给下一次 advance_tick；「结束旧活动」已由 _transition_if_needed →
+		# _end_phase（含 _check_interrupt + _cleanup_phase）在发布归位信号前完成。
 		_tick_in_phase = 0
-		if _scene_space_required:
-			_check_interrupt()
 	var day_settled := _day != day_before
 	return {
 		"changed": _phase_index != index_before or day_settled,
@@ -612,10 +643,40 @@ func _tick() -> void:
 	_global_tick += 1
 	_settle_finished_actions()
 	_decide_and_act()
+	_study_accumulate()
 	_update_environment()
 	if _global_tick % int(_p["settle_interval"]) == 0:
 		_transmission()
 		_stress_drip()
+
+
+## 成绩涓流（§17.1.2）：每 tick 处于「学习状态」（默认空闲 = 无行为且不忙碌）时累积 study_acc，
+## 满档 +1 分。上课段不累积；跨天保留（_settle_day 不清 study_acc）。不消耗 RNG。
+func _study_accumulate() -> void:
+	if _phase != "break":
+		return
+	var gmax := float(_kp["grade_max"])
+	for i in range(_n):
+		if _grade[i] >= gmax:
+			_study_acc[i] = 0.0
+			continue
+		if _current_act[i] != null or _global_tick < _busy_until[i]:
+			continue
+		_study_acc[i] += 1.0
+		var tpp := _grade_ticks_per_point(_grade[i])
+		if tpp <= 0.0:
+			continue
+		if _study_acc[i] >= tpp:
+			_grade[i] += 1.0
+			_study_acc[i] -= tpp
+
+
+## 当前成绩档的「每 +1 分所需 tick」（§17.1.2 分段表）；越界返回 0。
+func _grade_ticks_per_point(g: float) -> float:
+	for band in _grade_bands:
+		if g < float(band[0]):
+			return float(band[1])
+	return 0.0
 
 
 # -------------------------------------------------- 事件出口（D11 缺口④：内核 → 表现层，零 autoload 依赖）
@@ -1151,41 +1212,49 @@ func _settle_sleep() -> void:
 			_current_act[i] = null
 
 
-## 铃声打断（段边界）：先结**到期**、再断**未到期**，最后才让新段开始设置。
-## 只挂 `_check_interrupt()` 而把到期记录清掉、不给 UI 完成信息是错的（计划 §5.3）。
-## ⚠️ 判据是**跨段**（`_busy_phase != 当前段`）而不是「有没有记录」：开局第一个 tick 也会
-##    走到这里，此时刚成立的会话与占用都属于当前段，不能被打断。
+## 铃声打断（统一边界协议 ③）：只断**未到期**的占用。
+## 到期结算由 ① _settle_finished_actions 负责（完成时刻恰好等于铃声 → 不误算中断、不漏线索）。
+## ⚠️ 判据是「是否仍在进行」（`_busy_until > _global_tick`）；边界协议里本方法先于
+##    switch_phase 执行，此刻 _phase_index 仍指向旧段，因此不能再按「跨段」判据。
 func _check_interrupt() -> void:
-	# ① 到期即完成（完成时刻恰好等于铃声 → 不误算中断、不漏线索）
-	_settle_finished_actions()
-	# ② 未到期的跨段占用 → 中断（施加打断代价，与完成严格互斥）
+	# ③ 未到期的占用 → 中断（施加打断代价，与完成严格互斥）
 	var cost := float(_probs.get("interrupted_stress", 0.0))
-	var interrupted: Array = []
+	_interrupted_nodes = []
 	for i in range(_n):
 		if _busy_phase[i] < 0:
 			continue
-		if _busy_until[i] <= _global_tick:
-			_busy_phase[i] = -1
-			continue
-		if _busy_phase[i] != _phase_index:
+		if _busy_until[i] > _global_tick:
 			_busy_until[i] = 0
 			_busy_phase[i] = -1
 			if cost > 0.0:
 				_stress[i] = _clamp100(_stress[i] + cost)
 			_stats["interrupts"] = int(_stats["interrupts"]) + 1
-			interrupted.append(i)
-	# ③ 有成员被打断的共同活动整场中断（不留半场会话、不残留融合圈）
+			_interrupted_nodes.append(i)
+
+
+## 统一边界协议 ④：清理被打断动作的残余状态（占用 / 会话 / 移动锁）。
+## 不消耗 RNG；抽象内核（无移动输入）下移动锁清理为 no-op。
+func _cleanup_phase() -> void:
+	for i in _interrupted_nodes:
+		_current_act[i] = null
+		_busy_act[i] = null
+		_in_conversation[i] = false
+	# 有成员被打断的共同活动整场中断（不留半场会话、不残留融合圈）
 	var unfinished: Array = []
-	if not interrupted.is_empty():
+	if not _interrupted_nodes.is_empty():
 		for snap in _sessions.active_snapshots():
 			for m in snap["members"]:
-				if interrupted.has(int(m)):
+				if _interrupted_nodes.has(int(m)):
 					unfinished.append(snap)
 					_sessions.end(int(snap["session_id"]))
 					break
-	# ④ 发布中断通知（未揭晓的结果不再发完成类信息）
-	for payload in _player_interactions.on_interrupted(unfinished, interrupted):
+	# 发布中断通知（未揭晓的结果不再发完成类信息）
+	for payload in _player_interactions.on_interrupted(unfinished, _interrupted_nodes):
 		_emit("event_happened", payload)
+	# 跨段不再保留「正在走过去」的移动锁（铃声响起，各自归位）
+	for i in range(_n):
+		if is_moving(i):
+			set_moving(i, false)
 
 
 # ------------------------------------------------------------------ 信念观测（§11 信念矩阵，D10）
@@ -2280,6 +2349,18 @@ func stress(i: int) -> float:
 	return _stress[i]
 
 
+func grade(i: int) -> float:
+	if i < 0 or i >= _n:
+		return 0.0
+	return _grade[i]
+
+
+func study_acc(i: int) -> float:
+	if i < 0 or i >= _n:
+		return 0.0
+	return _study_acc[i]
+
+
 ## 性格四维第 dim 轴（0=E, 1=N, 2=F, 3=P）；越界返回 50（中性值）。
 func dimension(i: int, dim: int) -> float:
 	if i < 0 or i >= _n or dim < 0 or dim >= DIMS.size():
@@ -2407,6 +2488,14 @@ func _build_behaviors(tables: Dictionary) -> Dictionary:
 			"join_mode": str(row.get("join_mode", "none")).strip_edges(),
 		}
 	return out
+
+
+func _build_grade_bands(tables: Dictionary) -> Array:
+	var bands: Array = []
+	for row in _rows(tables, "rules/grade_table"):
+		bands.append([float(row["band_upper"]), float(row["ticks_per_point"])])
+	bands.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	return bands
 
 
 func _build_character_tags() -> Array:

@@ -43,8 +43,8 @@ OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
 
 FIELDS = [
     "tick", "day", "phase", "phase_index", "tick_in_phase",
-    "A_mean", "H_mean", "T_mean", "O_mean", "stress_mean",
-    "A_hash", "H_hash", "T_hash",
+    "A_mean", "H_mean", "T_mean", "O_mean", "stress_mean", "grade_mean",
+    "A_hash", "H_hash", "T_hash", "grade_hash", "study_acc_hash",
     "events", "bursts", "transmits",
 ]
 
@@ -76,9 +76,12 @@ def snapshot(sim):
         "T_mean": _mean(t),
         "O_mean": _mean(list(sim.O)),
         "stress_mean": _mean(list(sim.Stress)),
+        "grade_mean": _mean(list(sim.Grade)),
         "A_hash": _digest(a),
         "H_hash": _digest(h),
         "T_hash": _digest(t),
+        "grade_hash": _digest(list(sim.Grade)),
+        "study_acc_hash": _digest(list(sim.StudyAcc)),
         "events": sim.stats.get("events", 0),
         "bursts": sim.stats.get("bursts", 0),
         "transmits": sim.stats.get("transmission_ticks", 0),
