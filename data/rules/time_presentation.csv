@@ -1,5 +1,5 @@
 # 相位呈现表（时间组件的显示与换算）
-# 依据：主文档 §3.2（tick 定义）、§3.3（上课发酵层）；docs/superpowers/plans/2026-10-07-time-component.md §2。
+# 依据：主文档 §2.2（tick 定义）、§2.3（上课发酵层）；docs/superpowers/plans/2026-10-07-time-component.md §2。
 # 相位顺序 / tick 数 / 玩家操作权限**只从 phases.csv 读**，本表不重复定义，只补两件事：
 #   ① 人类可读的阶段名（HUD 显示）；
 #   ② 每个相位的实时标称时长与游戏内时长（展示用，不参与 tick 计算）。
