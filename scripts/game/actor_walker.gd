@@ -59,6 +59,11 @@ var _path := PackedVector3Array()
 var _path_index := 0
 ## 折线推进速度（米 / 秒，来自 data/rules/movement.csv 的 meters_per_tick）
 var _nav_speed := 0.0
+var _time_flow: TimeFlow = null
+
+
+func bind_time_flow(flow: TimeFlow) -> void:
+	_time_flow = flow
 
 
 func _ready() -> void:
@@ -273,6 +278,10 @@ func teleport_to(target: Vector3) -> void:
 
 func _process(delta: float) -> void:
 	if not _moving:
+		return
+	if is_instance_valid(_time_flow):
+		delta = _time_flow.scale_delta(delta)
+	if delta <= 0.0:
 		return
 	# 导航折线优先；折线为空 = 原有直线语义（walk_to）
 	if not _path.is_empty():

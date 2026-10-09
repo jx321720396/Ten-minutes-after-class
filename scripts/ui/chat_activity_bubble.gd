@@ -25,6 +25,7 @@ const ANCHOR_LIFT := 0.18
 var _core: Variant = null
 var _actors: Node3D = null
 var _clock: SimulationClock = null
+var _time_flow: TimeFlow = null
 ## 索引 → 气泡节点
 var _bubbles: Dictionary = {}
 var _hidden: Dictionary = {}
@@ -53,6 +54,10 @@ func bind_actors(actors: Node3D) -> void:
 
 func bind_clock(clock: SimulationClock) -> void:
 	_clock = clock
+
+
+func bind_time_flow(flow: TimeFlow) -> void:
+	_time_flow = flow
 
 
 func hide_member(index: int) -> void:
@@ -90,7 +95,8 @@ func _process(delta: float) -> void:
 		return
 	var paused := _clock != null and is_instance_valid(_clock) and _clock.is_paused()
 	if not paused:
-		_phase += delta / maxf(_dot_seconds, 0.01)
+		var world_delta := _time_flow.scale_delta(delta) if is_instance_valid(_time_flow) else delta
+		_phase += world_delta / maxf(_dot_seconds, 0.01)
 	_sync()
 	_layout()
 

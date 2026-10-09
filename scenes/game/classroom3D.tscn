@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/chat_activity_bubble.tscn" id="chat_bubble_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/chat_feedback_hud.tscn" id="chat_hud_scene"]
 [ext_resource type="Script" uid="uid://cmnryfc43ne1v" path="res://scripts/game/simulation_clock.gd" id="clock_script"]
+[ext_resource type="PackedScene" path="res://scenes/game/time_flow.tscn" id="time_flow_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/player_emotion_feedback.tscn" id="emotion_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/player_interaction_menu.tscn" id="interaction_menu_scene"]
 [ext_resource type="PackedScene" path="res://scenes/game/player_interaction_controller.tscn" id="interaction_scene"]
@@ -789,6 +790,8 @@ script = ExtResource("roam_script")
 
 [node name="Clock" type="Node" parent="." unique_id=1420650017]
 script = ExtResource("clock_script")
+
+[node name="TimeFlow" parent="." instance=ExtResource("time_flow_scene")]
 
 [node name="Player" type="Node3D" parent="." unique_id=14910236]
 script = ExtResource("player_script")

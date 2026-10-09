@@ -153,6 +153,9 @@ func _refresh(snapshot_data: Dictionary) -> void:
 	var mode := str(snapshot_data.get("mode", SimulationClock.MODE_RUNNING))
 	var display_name := str(snapshot_data.get("display_name", ""))
 	_title.text = "第 %d / %d 天 · %s" % [day, term_days, display_name]
+	var speed := float(snapshot_data.get("time_scale", 1.0))
+	if speed > 1.0:
+		_title.text += " · ×%s" % str(speed)
 	_bar.value = float(snapshot_data.get("progress", 0.0)) * 100.0
 
 	if mode == SimulationClock.MODE_FINISHED:

@@ -78,6 +78,8 @@ const PICK_DISTANCE := 100.0
 
 var _core: Variant = null
 var _clock: SimulationClock = null
+var _time_flow: TimeFlow = null
+
 var _player_actor: Node3D = null
 var _walker: ActorWalker = null
 var _player_index := -1
@@ -106,6 +108,10 @@ var _pick_layer := 2
 var _blocker_layer := 1
 ## 移动状态是否已写回内核（避免每帧重复调用）
 var _moving_written := false
+
+
+func bind_time_flow(flow: TimeFlow) -> void:
+	_time_flow = flow
 
 
 func _ready() -> void:
@@ -411,6 +417,10 @@ func _process(delta: float) -> void:
 			_sync_position_to_core()
 			return
 		_cancel_movement(&"lost_control")
+		return
+	if is_instance_valid(_time_flow):
+		delta = _time_flow.scale_delta(delta)
+	if delta <= 0.0:
 		return
 	var dir := _input_direction() if wasd_enabled else Vector3.ZERO
 	if dir != Vector3.ZERO:
