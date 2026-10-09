@@ -1,5 +1,5 @@
 # 绑定组（结构化替代 seeds.csv note 里的自由文本绑定）
-# 依据：主文档 §11.5 抽取规则；tools/core_sim.py `_init_relations` 的硬编码绑定
+# 依据：主文档 §9.5 抽取规则；tools/core_sim.py `_init_relations` 的硬编码绑定
 # 用途：
 #   ① RosterSelector 强制纳入绑定组成员（from 或 to 中出现的非 * 别名）
 #   ② SimCore `_init_relations` 在随机初始化之后，按本表覆盖对应关系值
