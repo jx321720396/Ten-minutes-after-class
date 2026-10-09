@@ -251,6 +251,7 @@ func snapshot() -> Dictionary:
 	out["progress"] = _progress(out) if running else 0.0
 	out["ended_day"] = _ended_day
 	out["term_days"] = _term_days
+	out["player_grade"] = int(_core.grade(_core.node_count() - 1)) if _core != null else 0
 	out["display_name"] = _display_name_of(str(out.get("phase_id", "")))
 	return out
 

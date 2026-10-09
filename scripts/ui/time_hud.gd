@@ -42,6 +42,7 @@ const TOAST_SECONDS := 1.6
 var _clock: SimulationClock = null
 var _panel: PanelContainer = null
 var _title: Label = null
+var _grade: Label = null
 var _detail: Label = null
 var _bar: ProgressBar = null
 var _toast: Label = null
@@ -167,6 +168,8 @@ func _refresh(snapshot_data: Dictionary) -> void:
 	_last = snapshot_data
 	var day := int(snapshot_data.get("day", 0))
 	var term_days := int(snapshot_data.get("term_days", 0))
+	var player_grade := int(snapshot_data.get("player_grade", 0))
+	_grade.text = "成绩 %d ｜ 距期末考 %d 天" % [player_grade, maxi(0, term_days - day)]
 	var mode := str(snapshot_data.get("mode", SimulationClock.MODE_RUNNING))
 	var display_name := str(snapshot_data.get("display_name", ""))
 	_title.text = "第 %d / %d 天 · %s" % [day, term_days, display_name]
@@ -245,6 +248,8 @@ func _build_ui() -> void:
 	box.add_theme_constant_override("separation", 6)
 	_panel.add_child(box)
 
+	_grade = _make_label(DETAIL_FONT_SIZE, COLOR_ACCENT)
+	box.add_child(_grade)
 	_title = _make_label(TITLE_FONT_SIZE, COLOR_INK)
 	box.add_child(_title)
 	_detail = _make_label(DETAIL_FONT_SIZE, COLOR_SUB)

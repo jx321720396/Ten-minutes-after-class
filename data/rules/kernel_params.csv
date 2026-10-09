@@ -14,3 +14,7 @@ bias_f_weight,0.5,信念偏差 F 维权重（同上）
 bias_trust_scale,0.1,信任偏差额外缩放（trust_bias = tr × w × observer × 此值）
 opacity_default,50,透明度缺省值（seeds 未填 opacity_init 时的回退）
 saturated_threshold,95,报告统计「接近饱和」判定阈值
+grade_max,750,成绩上限（grade ∈ [0,750]，主文档 §17.1.1）
+grade_init_player,250,玩家初始成绩（固定）
+grade_init_npc_min,200,NPC 初始成绩下界
+grade_init_npc_max,650,NPC 初始成绩上界
