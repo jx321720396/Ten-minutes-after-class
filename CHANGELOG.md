@@ -1,5 +1,7 @@
 ﻿# 变更记录
 
+- **进入 P0 大调整期：数值门不达标属预期（2026-10-09）**：团队正在按 `docs/gdd/v4/17-P0功能细分规格.md` 做**大调整**（学业系统 / 老师巡查 / 减压行为等，顺序见 `docs/superpowers/plans/2026-10-09-p1-p3-plan.md`）。**调整期间第四 / 第五道门的数值判据不达标属预期**（好感均值 **31.1**，目标 45–65；排挤 **69%**，目标 ≥70%），**不在调整完成前逐项调参** —— 调整落地后统一重标定并复跑六道门。CI 的 `offline-gates` 仍保留（仅 PR / 手动 / 每晚定时跑），结论仅供记录参考，**不作为提交阻断条件**。
+
 - **CI 触发条件调整：数值门移出 push（2026-10-09，用户决策）**：`offline-gates`（六道门 + 铁律 + 对拍）改为**只在 PR / 手动 / 每晚定时（UTC 18:00 = 北京 02:00）**跑。理由：其中第四 / 第五道门是**多种子标定信号**（各 100 局、约 2 分钟），与 UI / 美术 / 文档改动无关，且当前存在**已知不达标项**（好感均值 **31.1**，目标 45–65；排挤 **69%**，目标 ≥ 70%）—— 每次 push 都红会让 CI 彻底失去信号价值。push 改为跑 `structure` + `gdscript`（gdformat/gdlint）+ 新增的 `fast-gates`（`check_config` / `test_core` / `verify_formula` / `check_docs`，秒级）。同步 `CONTRIBUTING.md` §3 的推送前硬条件与 `AGENTS.md`。
 
 - **gdlint 恢复全绿（2026-10-09）**：`.gdlintrc` 放宽 `max-line-length` 100 → 120、`max-public-methods` 40 → 60，新增 `max-returns` 15（默认 6）与 `function-arguments-number` 12（默认 10）；`player_interactions.gd` 的两个未使用参数 `me` / `snap` 改为 `_me` / `_snap`。此前 9 个静态检查问题里 7 个属风格偏好而非缺陷，却把 CI 长期卡红。另：`gdformat` 已对 15 个存量脚本做全量格式化。
