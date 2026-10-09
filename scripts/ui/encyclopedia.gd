@@ -135,7 +135,7 @@ static func _read_entries_from_disk() -> Array:
 ## RichTextLabel 没有「加粗专用颜色」这类 theme 项，只能在 BBCode 层面把 `[b]…[/b]`
 ## 再包一层颜色；字号与正文一致由场景里的 `bold_font_size` 保证。
 ## 注意：必须是 `_plain_refs()` 之后调用（先把跨引用标记清成纯文字，避免颜色包进标记里）。
-const BOLD_COLOR := "9ea8b8"
+const BOLD_COLOR := "5c657e"
 
 
 static func _brighten_bold(text: String) -> String:
