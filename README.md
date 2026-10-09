@@ -46,7 +46,7 @@
 ├─ shaders/                 着色器
 ├─ tests/                   测试（GUT / gdUnit4）
 ├─ tools/                   离线标定与校验工具（Python：内核、六道门、参数扫描）
-└─ .github/                 Issue / PR 模板与 CI
+└─ .github/                 Issue / PR 模板
 ```
 
 完整目录约定见 `docs/design/架构总览.md`。
