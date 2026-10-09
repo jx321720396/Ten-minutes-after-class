@@ -58,7 +58,7 @@ GDScript 约定：矩阵访问一律走 `Affinity(i,j)` 等访问器；风格与
 ## 提交与 PR
 
 - 提交信息：`<类型>(<范围>): <描述>`，类型见 `CONTRIBUTING.md`。
-- **`main` 允许直接推送**（小团队主干开发，2026-10-08 起）：推送前跑**快门禁**（`check_config` / `test_core` / `verify_formula` / `check_docs`，秒级）+ `gdformat scripts/` + `gdlint scripts/`，**红灯不推**。完整六道门（含多种子标定门）在 CI 里只在 **PR / 手动 / 每晚定时**跑 —— 那两道与 UI / 美术改动无关，且有已知不达标项。跨模块大改或需要他人复看的改动仍推荐走 PR（`CONTRIBUTING.md` §8）。
+- **`main` 允许直接推送**（小团队主干开发，2026-10-08 起）：推送前跑**快门禁**（`check_config` / `test_core` / `verify_formula` / `check_docs`，秒级）+ `gdformat scripts/` + `gdlint scripts/`，**红灯不推** —— **仓库已移除 GitHub Actions（2026-10-09）**，没有 CI 兜底，全靠这一步。完整六道门（含多种子标定门，与 UI / 美术改动无关且有已知不达标项）需要时手动跑 `bash tools/run_tests.sh --no-godot`。跨模块大改或需要他人复看的改动仍推荐走 PR（`CONTRIBUTING.md` §8）。
 - **规格变更**必须同批更新受影响的 `docs/` 与 `CHANGELOG.md`；其余改动在同一批推送内补记即可，不要求每个提交都写条目。
 - 涉及玩法逻辑的改动，说明"检验一（换成脚本还成立吗）"如何通过。
 

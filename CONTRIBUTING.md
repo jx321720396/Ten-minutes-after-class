@@ -41,8 +41,8 @@
 **直接推送 `main` 的两条硬条件**（别省）：
 
 1. **推送前快门禁全绿**：`python tools/check_config.py && python tools/test_core.py && python tools/verify_formula.py && python tools/check_docs.py`（秒级）——**红灯不推送**；
-   - 完整的 `bash tools/run_tests.sh --no-godot`（含第四 / 第五道门）**push 时不强制** —— 那两道是**多种子标定信号**（各 100 局、约 2 分钟），与 UI / 美术 / 文档改动无关，且当前有已知不达标项（见 `CHANGELOG.md`）。CI 侧已改为只在 **PR / 手动 / 每晚定时**跑；
-2. **先格式化再推**：`gdformat scripts/`（可自动修正）→ `gdlint scripts/`，避免 CI 因格式变红。
+   - 完整的 `bash tools/run_tests.sh --no-godot`（含第四 / 第五道门）**push 时不强制** —— 那两道是**多种子标定信号**（各 100 局、约 2 分钟），与 UI / 美术 / 文档改动无关，且当前有已知不达标项（见 `CHANGELOG.md`）。**仓库已于 2026-10-09 移除 GitHub Actions**，六道门改为需要时手动跑；
+2. **先格式化再推**：`gdformat scripts/`（可自动修正）→ `gdlint scripts/` —— 没有 CI 兜底后，这一步完全靠本地自律。
 
 > **为什么改（2026-10-08，用户决策）**：原规则与现实脱节 —— 最近 40 个提交里 **20 个是 merge**（本地合并进 `main`），说明大家都在绕过「一律走 PR」。新口径：条目少、范围清晰的改动**直接推**；**跨模块大改或需要他人复看**的走 PR（§8）。保住的只有两件事：**提交信息规范**与**推送前门禁**。
 
