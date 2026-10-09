@@ -223,7 +223,7 @@ func _blocked_reason(core: Variant, me: int, target: int, joining: bool) -> Stri
 
 ## 提交时要满足距离条件的目标点集合（start：目标一人；join：全体原成员）。
 func _target_positions(
-	core: Variant, me: int, target: int, joining: bool, session_id: int
+	core: Variant, _me: int, target: int, joining: bool, session_id: int
 ) -> Array:
 	if joining:
 		return _member_positions(core, session_id)
@@ -488,7 +488,7 @@ func on_interrupted(snapshots: Array, members: Array) -> Array:
 
 
 ## 一个请求真正完成：先读情报写日志，再标记状态（顺序见计划 §5.3）。
-func _complete_request(rec: Dictionary, session_id: int, snap: Dictionary) -> Array:
+func _complete_request(rec: Dictionary, session_id: int, _snap: Dictionary) -> Array:
 	var core: Variant = _core()
 	var out: Array = []
 	var request_id: int = int(rec["request_id"])
