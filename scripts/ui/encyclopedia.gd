@@ -130,6 +130,23 @@ static func _read_entries_from_disk() -> Array:
 	return out
 
 
+## 正文里的加粗统一提一点亮度。
+##
+## RichTextLabel 没有「加粗专用颜色」这类 theme 项，只能在 BBCode 层面把 `[b]…[/b]`
+## 再包一层颜色；字号与正文一致由场景里的 `bold_font_size` 保证。
+## 注意：必须是 `_plain_refs()` 之后调用（先把跨引用标记清成纯文字，避免颜色包进标记里）。
+const BOLD_COLOR := "9ea8b8"
+
+
+static func _brighten_bold(text: String) -> String:
+	var re := RegEx.new()
+	re.compile("\\[b\\]([^\\[\\]]+)\\[/b\\]")
+	var out := text
+	for m in re.search_all(text):
+		out = out.replace(m.get_string(0), "[color=#%s][b]%s[/b][/color]" % [BOLD_COLOR, m.get_string(1)])
+	return out
+
+
 func _load_data() -> void:
 	_entries = []
 	_cats = []
@@ -243,7 +260,7 @@ static func _plain_refs(body: String) -> String:
 	var out := body
 	for m in re.search_all(body):
 		out = out.replace(m.get_string(0), m.get_string(1))
-	return out
+	return _brighten_bold(out)
 
 
 # ------------------------------------------------------------------ 目录交互
