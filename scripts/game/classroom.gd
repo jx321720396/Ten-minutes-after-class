@@ -11,6 +11,7 @@ extends Node3D
 
 @onready var pause_menu: Control = $UI/PauseMenu
 @onready var clock: SimulationClock = $Clock
+@onready var time_flow: TimeFlow = $TimeFlow
 @onready var time_hud: TimeHUD = $TimeHUD
 @onready var roam: Node = $Roam
 @onready var player: PlayerController = $Player
@@ -35,6 +36,9 @@ func _ready() -> void:
 	if not clock.bind_core(core):
 		push_error("Classroom：时钟绑定失败（时间配置有问题），时间系统未启动。")
 		return
+	if not _bind_time_flow(core):
+		clock.hold(&"time_flow_config")
+		return
 	time_hud.bind_clock(clock)
 	# ⚠️ 绑定 Roam 之前先等导航就绪：bind_clock 会立刻触发一次相位回调（上课归位），
 	#    地图没同步时那批走动会被全部判成「取不到路线」。
@@ -44,6 +48,20 @@ func _ready() -> void:
 	_bind_feedback(core)
 	clock.time_updated.connect(_sync_state_mirror)
 	time_hud.continue_requested.connect(_on_continue_requested)
+
+
+func _bind_time_flow(core: SimCore) -> bool:
+	if not time_flow.bind_sources(core, clock):
+		return false
+	clock.bind_time_flow(time_flow)
+	roam.bind_time_flow(time_flow)
+	player.bind_time_flow(time_flow)
+	chat_bubble.bind_time_flow(time_flow)
+	for actor in actors.get_children():
+		var walker := actor.get_node_or_null("Walker") as ActorWalker
+		if walker != null:
+			walker.bind_time_flow(time_flow)
+	return true
 
 
 ## 等导航网格可用（教室内所有走动的唯一路线来源）。

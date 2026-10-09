@@ -65,6 +65,8 @@ var decide_interval: float = 0.0
 
 var _core: Variant = null
 var _clock: SimulationClock = null
+var _time_flow: TimeFlow = null
+
 var _rng := RandomNumberGenerator.new()
 var _batch_count := 0
 var _actors: Array[Node3D] = []
@@ -87,6 +89,10 @@ var _decide_timer := 0.0
 var _max_decides_per_break: int = 2
 ## 本课间还剩几批决策额度
 var _decides_remaining: int = 0
+
+
+func bind_time_flow(flow: TimeFlow) -> void:
+	_time_flow = flow
 
 
 func _ready() -> void:
@@ -124,6 +130,10 @@ func bind_clock(clock: SimulationClock) -> void:
 
 func _process(delta: float) -> void:
 	if not enabled or _core == null or _clock == null:
+		return
+	if is_instance_valid(_time_flow):
+		delta = _time_flow.scale_delta(delta)
+	if delta <= 0.0:
 		return
 	# 只课间推进决策；上课段不发起新走动（§10.4）
 	if not is_break_phase():

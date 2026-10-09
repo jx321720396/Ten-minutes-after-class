@@ -55,6 +55,7 @@ data/
 | `rules/stand_points.csv` | `point_id`、`kind`、`note`（课间走动目标；世界坐标在场景 `StandPoints/<point_id>`） |
 | `rules/time_presentation.csv` | `phase_id`、`display_name`、`real_duration_seconds`、`game_duration_seconds` |
 | `rules/time_runtime.csv` | `key`、`value`、`note`（`term_days` / `max_ticks_per_frame`） |
+| `rules/time_flow.csv` | `param`、`value`、`note`（`normal_scale` / `player_action_scale`；世界播放倍率，事件可持有正常速度） |
 | `rules/difficulty.csv` | `difficulty`、`npc_count`、`default`（新游戏默认档） |
 | `rules/transmission.csv` | `theta_a`、`theta_h`、`sigma`、`beta_affinity`、`beta_hostility`、`epsilon` |
 | `rules/decay.csv` | `axis`、`no_interaction`、`interacted`、`note` |

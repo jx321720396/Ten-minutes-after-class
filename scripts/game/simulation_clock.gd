@@ -44,10 +44,24 @@ var _paused_by: Dictionary = {}
 var _ended_day := 0
 var _term_days := 0
 var _max_ticks_per_frame := 1
+var _time_flow: TimeFlow = null
 
 
 func _process(delta: float) -> void:
 	pump(delta)
+
+
+func bind_time_flow(flow: TimeFlow) -> void:
+	if is_instance_valid(_time_flow) and _time_flow.scale_changed.is_connected(_on_scale_changed):
+		_time_flow.scale_changed.disconnect(_on_scale_changed)
+	_time_flow = flow
+	if is_instance_valid(_time_flow):
+		_time_flow.scale_changed.connect(_on_scale_changed)
+	time_updated.emit(snapshot())
+
+
+func _on_scale_changed(_multiplier: float) -> void:
+	time_updated.emit(snapshot())
 
 
 # ------------------------------------------------------------------ 绑定与配置
@@ -160,6 +174,10 @@ func pump(delta_seconds: float) -> void:
 		return
 	if delta_seconds <= 0.0:
 		return
+	if is_instance_valid(_time_flow):
+		delta_seconds = _time_flow.scale_delta(delta_seconds)
+	if delta_seconds <= 0.0:
+		return
 	_accumulator += delta_seconds
 	var processed := 0
 	while processed < _max_ticks_per_frame:
@@ -226,6 +244,7 @@ func snapshot() -> Dictionary:
 		}
 	out["mode"] = _mode
 	out["paused"] = is_paused()
+	out["time_scale"] = _time_flow.multiplier() if is_instance_valid(_time_flow) else 1.0
 	# 日末简报 / 学期结束期间**不计时**：剩余与进度一律归零，别显示下一天的倒计时
 	var running := _mode == MODE_RUNNING
 	out["remaining_seconds"] = _remaining_seconds(out) if running else 0.0

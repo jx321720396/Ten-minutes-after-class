@@ -25,6 +25,7 @@ import csv
 import os
 import re
 import sys
+import math
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -319,6 +320,14 @@ check("movement.nav_blocker_height ≥ 桌面实际高度 0.74",
 check("movement.nav_cell_size ≤ player_radius",
       _mv.get("nav_cell_size", 0.0) <= _mv.get("player_radius", 0.0),
       "%s / %s" % (_mv.get("nav_cell_size"), _mv.get("player_radius")))
+
+_time_flow = params("rules/time_flow.csv")
+check("时间流速：正常倍率必须为 1", _time_flow.get("normal_scale", 0.0) == 1.0,
+      _time_flow.get("normal_scale"))
+check("时间流速：行动倍率有限且不小于正常倍率",
+      math.isfinite(_time_flow.get("player_action_scale", 0.0))
+      and _time_flow.get("player_action_scale", 0.0) >= _time_flow.get("normal_scale", 1.0),
+      _time_flow.get("player_action_scale"))
 
 print("\n=== 结论 ===")
 _invite_kinds = load("rules/player_invitation_kinds.csv")
