@@ -49,6 +49,8 @@ const TITLE_FONT_SIZE := 64
 const SUB_FONT_SIZE := 24
 const TITLE_CLASS := "上课了"
 const TITLE_BREAK := "下课了"
+## 放学边界（进入晚自习留白）的短闪文案
+const TITLE_EVENING := "晚自习了"
 const SKIP_BUTTON_TEXT := "跳过 ▶（空格）"
 const CORNER_MARGIN := Vector2(24.0, 20.0)
 const LAYER := 10
@@ -62,6 +64,8 @@ var _tween: Tween = null
 var _font: Font = null
 ## 已展示过黑幕的最后一天（判定「每天首个课间」用；-1 = 尚未展示）
 var _last_day := -1
+## 开局首日是否已展示过「第 1 天」黑幕（首日用第 N 天黑幕，之后放学边界改用晚自习短闪）
+var _first_day_shown := false
 
 
 func _ready() -> void:
@@ -120,6 +124,8 @@ func _on_term_finished(_ended_day: int) -> void:
 
 
 ## 黑幕只跟相位走：上课与课间都是短闪（时长不同），结算等其余相位一律退场。
+## 跨天：开局首日用「第 N 天」黑幕；之后放学边界改短闪「晚自习了」——
+## 真正的「第 N 天」黑幕改到点按钮 / 空格确认进入后由 show_day_start() 显示。
 func _sync_with(snapshot_data: Dictionary) -> void:
 	var kind := str(snapshot_data.get("kind", ""))
 	var running := str(snapshot_data.get("mode", "")) == SimulationClock.MODE_RUNNING
@@ -131,16 +137,26 @@ func _sync_with(snapshot_data: Dictionary) -> void:
 		_show_overlay(display_name, TITLE_CLASS, FLASH_HOLD_CLASS)
 		return
 	if kind == "break":
-		# 每天首个课间（跨天边界后才出现）：大字换成「第 N 天」
 		var day := int(snapshot_data.get("day", 0))
 		var is_day_start := day != _last_day
 		_last_day = day
 		if is_day_start:
-			_show_overlay(display_name, "第 %d 天" % day, FLASH_HOLD_DAY)
+			if not _first_day_shown:
+				_first_day_shown = true
+				_show_overlay(display_name, "第 %d 天" % day, FLASH_HOLD_DAY)
+			else:
+				# 晚自习过场不带阶段小字（已放学，"上午课间"字样不符）
+				_show_overlay("", TITLE_EVENING, FLASH_HOLD_BREAK)
 		else:
 			_show_overlay(display_name, TITLE_BREAK, FLASH_HOLD_BREAK)
 		return
 	_hide_overlay()
+
+
+## 转场黑幕任务：确认进入次日（点按钮 / 空格）后由 classroom 调用，
+## 显示「第 N 天」黑幕并 hold 时钟；黑幕结束后的归位与停留由走动组件接管。
+func show_day_start(day: int, display_name: String) -> void:
+	_show_overlay(display_name, "第 %d 天" % day, FLASH_HOLD_DAY)
 
 
 # ------------------------------------------------------------------ 显示与跳过
