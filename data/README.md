@@ -27,6 +27,7 @@ data/
 │   ├─ stand_points.csv       站立点表（课间走动目标；世界坐标在场景 StandPoints/*）✓
 │   ├─ difficulty.csv         难度档 → NPC 数量（+ `default` 列 = 新游戏默认档）✓
 │   ├─ player_interaction.csv 玩家交互几何与线索参数（闲聊范围 / 连线步长 / 拾取层 / 线索条数）✓
+│   ├─ player_invitation_kinds.csv 需要玩家自主接受／拒绝的行为类型（邀请等待不占用）✓
 │   ├─ social_events.csv      社会事件状态机（多阶段跨相位）✓
 │   └─ social_event_triggers.csv 社会事件触发条件（纯数值，禁日期记号）✓
 ├─ ui/
@@ -60,6 +61,7 @@ data/
 | `rules/phases.csv` | `phase_id`、`tick_count`、`active_rules`、`player_controllable` |
 | `balance/w_events.csv` | `event_id`、`axis`、`delta`、`delta_min`、`delta_max`、`note` |
 | `rules/player_interaction.csv` | `param`、`value`、`unit`、`note`（`chat_range_m` / `seated_chat_range_m` / `seated_tolerance_m` / `range_step_m` / `clue_*` / 拾取层掩码；玩家与 NPC 共用聊天空间口径） |
+| `rules/player_invitation_kinds.csv` | `behavior`、`requires_choice`（0/1；配合 player_interaction 的邀请有效期与再次邀请间隔） |
 | `ui/chat_feedback_style.csv` | `param`、`value`、`unit`、`note`（`pen_*_seconds` / `menu_*` / `bubble_*` / `ring_*` / `emotion_*`） |
 
 ## 校验要求
