@@ -111,6 +111,13 @@ class Sim:
         self.feedback = self.p.get("feedback", 0.0)
         self.event_rows = load_table("balance/w_events.csv")
         self.nw = load_params("balance/npc_weight" + "s.csv")
+        # 内核硬编码系数（grade 等初始化常量）—— 从 kernel_params.csv 读，与 GDScript 内核同源。
+        self.kp = load_params("rules/kernel_params.csv")
+        # 成绩涓流分段表（§17.1.2）：band_upper 升序。
+        self.grade_bands = sorted(
+            [(float(r["band_upper"]), float(r["ticks_per_point"]))
+             for r in load_table("rules/grade_table.csv")],
+            key=lambda x: x[0])
         seeds = load_table("characters/seeds.csv")
 
         # --- 抽角色（简化：随机取 npc_count 个；§11.5 的绑定组/原型去重留待正式版）---
@@ -135,6 +142,8 @@ class Sim:
         self.T = [[0.0] * n for _ in range(n)]
         self.O = [0.0] * n
         self.Stress = [0.0] * n
+        self.Grade = [0.0] * n         # 成绩（§17.1）
+        self.StudyAcc = [0.0] * n      # 学习时长累加器（§17.1.2）
         self.dims = [[50.0] * 4 for _ in range(n)]  # E N F P
 
         # --- 信念矩阵：B_X[i][j] = i 估计的「j 对 i 的 X」---
@@ -152,12 +161,15 @@ class Sim:
         self.O[n - 1] = 50.0
         self.dims[n - 1] = [50.0] * 4
         self._init_relations()
+        self._init_grade()
         self._init_belief_bias()   # 按 信念矩阵.md §3：初始值 = 先验 + 性格偏差
 
         # --- 时间与统计 ---
         self.day = 1
         self.phase = "break"
         self.tick_in_phase = 0
+        # 一天的相位序列（段名, tick 数）。与 GDScript 内核 `_active_phases` 对齐（break/class 交替）。
+        self.day_phases = [("break", 100), ("class", 90), ("break", 100), ("class", 90), ("break", 100)]
         self.stats = {"events": 0, "chats": 0, "joins": 0, "reports": 0, "bursts": 0,
                       "interrupts": 0,
                       "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0,
@@ -272,6 +284,17 @@ class Sim:
             for j in range(n):
                 if j != g:
                     self.A[g][j] = 50.0
+
+    def _init_grade(self):
+        """成绩初始化（§17.1.1）：NPC 种子化均匀 [min,max)，玩家固定。消费 len(chars) 次 RNG。
+
+        ⚠️ 必须紧跟 `_init_relations()` 之后调用，与 GDScript 同一点插入，保同种子 RNG 流不漂移。
+        """
+        gmin = self.kp["grade_init_npc_min"]
+        gmax = self.kp["grade_init_npc_max"]
+        for i in range(len(self.chars)):
+            self.Grade[i] = gmin + self.rng.random() * (gmax - gmin)
+        self.Grade[self.N - 1] = self.kp["grade_init_player"]
 
     def _init_belief_bias(self):
         """按 `docs/design/信念矩阵.md` §3 补**初始信念偏差**。
@@ -1605,29 +1628,30 @@ class Sim:
                 self.current_act[i] = None
 
     def check_interrupt(self):
-        """跨相位中断：行为还没做完就被「下课铃 / 上课铃」打断。
+        """跨相位中断（统一边界协议 ③）：**尚未完成**的占用即被打断。
 
-        耗时机制的直接推论 —— 课间只有 100 tick，一个 60 tick 的秘密交换很容易跨越过相位边界。
-        被打断者获得压力代价（`interrupted_stress`），因为「话说到一半被打断」本身就是压力源。
-        这也让「长行为」有了真实的代价：不是不能做，而是**要挑时机做**。
+        只做「判定 + 打断代价」，**不再**内含到期结算（到期动作由 ① `settle_finished_actions`
+        处理），也不再依赖 `phase_index` 是否已切换到新段 —— 边界协议里本方法先于
+        `switch_phase`（⑥）执行，此刻 `phase_index` 仍指向旧段。
 
         ⚠️ 只有**尚未完成**的行为才算被打断（内核策划符合性审查 P1-04）：
-        `busy_until <= global_tick` 说明它早就做完了，此时只清理占用记录、不施加压力代价。
-        修复前只要有 busy_phase 记录且跨了相位就加压力，把「已完成」误判成「被铃声打断」。
+        `busy_until <= global_tick` 说明它早就做完了（已由 ① 清理占用），此处只剩
+        `busy_until > global_tick` 的未完成占用。
+        返回被打断节点下标，供 `cleanup_phase`（④）清理残余状态。
         """
         cost = self.probs.get("interrupted_stress", 0.0)
+        interrupted = []
         for i in range(self.N):
             if self.busy_phase[i] < 0:
                 continue
-            if self.busy_until[i] <= self.global_tick:
-                self.busy_phase[i] = -1
-                continue
-            if self.busy_phase[i] != self.phase_index:
+            if self.busy_until[i] > self.global_tick:
                 self.busy_until[i] = 0
                 self.busy_phase[i] = -1
                 if cost > 0:
                     self.Stress[i] = clamp100(self.Stress[i] + cost)
                 self.stats["interrupts"] = self.stats.get("interrupts", 0) + 1
+                interrupted.append(i)
+        return interrupted
 
     def settle_finished_actions(self):
         """行为完成结算：把**已到期**的占用收尾（§10.4 / §12.2 行为耗时契约）。
@@ -1653,31 +1677,90 @@ class Sim:
         self.global_tick += 1
         self.settle_finished_actions()
         self.decide_and_act()
+        self.study_accumulate()
         self.update_environment()
         if self.global_tick % int(self.p["settle_interval"]) == 0:   # 每天 2 次（上午/下午）
             self.transmission()
             self.stress_drip()
         # 压力爆发已在每日结算时按概率判定（见 try_burst），此处不再做阈值相变
 
+    def study_accumulate(self):
+        """成绩涓流（§17.1.2）：每 tick 处于「学习状态」（默认空闲 = 无行为且不忙碌）时累积
+        study_acc，满档 +1 分。上课段不累积；跨天保留（settle_day 不清 study_acc）。不消耗 RNG。
+        """
+        if self.phase != "break":
+            return
+        gmax = self.kp["grade_max"]
+        for i in range(self.N):
+            if self.Grade[i] >= gmax:
+                self.StudyAcc[i] = 0.0
+                continue
+            if self.current_act[i] is not None or self.global_tick < self.busy_until[i]:
+                continue
+            self.StudyAcc[i] += 1.0
+            tpp = self._grade_ticks_per_point(self.Grade[i])
+            if tpp <= 0.0:
+                continue
+            if self.StudyAcc[i] >= tpp:
+                self.Grade[i] += 1.0
+                self.StudyAcc[i] -= tpp
+
+    def _grade_ticks_per_point(self, g):
+        """当前成绩档的「每 +1 分所需 tick」（§17.1.2 分段表）；越界返回 0。"""
+        for upper, ticks in self.grade_bands:
+            if g < upper:
+                return ticks
+        return 0.0
+
+    def cleanup_phase(self, interrupted):
+        """统一边界协议 ④：清理被打断动作的残余状态（旧段占用）。
+
+        不消耗 RNG。被打断节点的 `busy_until`/`busy_phase` 已由 ③ 清掉，这里清掉仍残留的
+        `current_act`/`busy_act`/`in_conversation`，让新段判定看到一致的空闲状态。
+        """
+        for i in interrupted:
+            self.current_act[i] = None
+            self.busy_act[i] = None
+            self.in_conversation[i] = False
+
+    def end_phase(self):
+        """统一边界协议 ②③④⑤：结束旧段（不推进 tick）。
+
+        顺序固定：到期结算 → 睡眠收尾 → 中断 → 清理 →（日末）跨天结算。
+        核心 RNG 只由 `settle_day → try_burst` 消耗一次，其余步骤无核心 RNG。
+        """
+        self.settle_finished_actions()
+        self.settle_sleep()
+        interrupted = self.check_interrupt()
+        self.cleanup_phase(interrupted)
+        if self.phase_index + 1 >= len(self.day_phases):
+            self.settle_day()
+
+    def begin_phase(self):
+        """统一边界协议 ⑦：进入当前段（`phase_index` 已指向本段）并执行新段判定。
+
+        核心 RNG 消费序：roll_sleep → free_join → [break: phone_exposure → roll_reports]。
+        """
+        self.phase = self.day_phases[self.phase_index][0]
+        self.tick_in_phase = 0
+        self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
+        self.free_join()                  # 「别人做什么我也跟着做」（free 类活动，§10.31）
+        if self.phase == "break":
+            self.phone_exposure()         # 举报把柄：课间目击「带手机」等标签行为痕迹（§10.2）
+            self.roll_reports()           # 举报判定：每段一次，有把柄才掷骰（§10.2）
+
     def run_day(self):
-        phases = [("break", 100), ("class", 90), ("break", 100), ("class", 90), ("break", 100)]
         total_ticks = 0
-        for pidx, (phase, ticks) in enumerate(phases):
-            self.phase_index = pidx
-            self.phase, self.tick_in_phase = phase, 0
-            self.settle_sleep()               # 上一相位睡着的醒来（课间段结束才结算）
-            self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
-            self.free_join()                  # 「别人做什么我也跟着做」（free 类活动，§10.31）
-            if phase == "break":
-                self.phone_exposure()         # 举报把柄：课间目击「带手机」等标签行为痕迹（§10.2）
-                self.roll_reports()           # 举报判定：每段一次，有把柄才掷骰（§10.2）
-            self.check_interrupt()            # 相位切换 → 未完成的行为被打断
+        for _ in range(len(self.day_phases)):
+            self.begin_phase()                      # ⑥⑦ 进入本段 + 新段判定
+            _phase, ticks = self.day_phases[self.phase_index]
             for _ in range(ticks):
                 self.tick()
                 self.tick_in_phase += 1
                 total_ticks += 1
             self.vol_log.append(round(self.volume, 1))   # 相位末采样
-        self.settle_day()
+            self.end_phase()                        # ②③④⑤ 结束本段（末段触发跨天结算）
+            self.phase_index = (self.phase_index + 1) % len(self.day_phases)
         return total_ticks
 
     def try_burst(self):

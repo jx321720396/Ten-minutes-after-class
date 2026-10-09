@@ -43,8 +43,8 @@ KERNEL = os.path.join(ROOT, "scripts", "core", "sim_core.gd")
 GD_EXPORTER = os.path.join(ROOT, "tests", "integration", "export_ticks_gd.gd")
 GODOT_PATH_FILE = os.path.join(ROOT, ".godot_path")
 
-NUMERIC_FIELDS = ("A_mean", "H_mean", "T_mean", "O_mean", "stress_mean")
-HASH_FIELDS = ("A_hash", "H_hash", "T_hash")
+NUMERIC_FIELDS = ("A_mean", "H_mean", "T_mean", "O_mean", "stress_mean", "grade_mean")
+HASH_FIELDS = ("A_hash", "H_hash", "T_hash", "grade_hash", "study_acc_hash")
 
 
 # ------------------------------------------------------------------ 比对逻辑
