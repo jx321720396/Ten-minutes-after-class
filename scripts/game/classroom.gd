@@ -116,8 +116,10 @@ func _bind_feedback(core: Variant) -> void:
 ## 不假装成功（计划 §6：不提供虚假的成功恢复）。
 func _on_continue_requested() -> void:
 	if clock.continue_after_report():
-		# 转场黑幕任务：进入次日确认后全员瞬间归位，再按原逻辑开始活动
-		roam.snap_to_seats()
+		# 转场黑幕任务：确认进入次日 → 显示「第 N 天」黑幕；
+		# 黑幕结束后的归位停留（0.7 秒）由走动组件在退场补跑时接管
+		var snap: Dictionary = clock.snapshot()
+		transition.show_day_start(int(snap.get("day", 0)), str(snap.get("display_name", "")))
 		return
 	push_warning("Classroom：未能进入下一天（学期已结束，或完整存档 / 简报组件尚未接入）——" + "时间停留在当前边界。")
 

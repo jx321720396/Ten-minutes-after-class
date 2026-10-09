@@ -144,6 +144,9 @@ func _process(delta: float) -> void:
 		var pending: Dictionary = _pending_phase
 		_pending_phase = {}
 		_apply_phase(pending)
+	# 日末留白（晚自习 / 夜晚）：全员归位静坐，冻结走动，等待「进入第 N 天」（转场黑幕任务）
+	if str(_clock.snapshot().get("mode", "")) != SimulationClock.MODE_RUNNING:
+		return
 	# 黑幕显示期间（时钟被 hold）：倒计时与走动全部冻结（转场黑幕任务）
 	if _clock.is_paused():
 		return

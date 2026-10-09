@@ -182,7 +182,7 @@ func _refresh(snapshot_data: Dictionary) -> void:
 		return
 	if mode == SimulationClock.MODE_REPORT:
 		var ended_day := int(snapshot_data.get("ended_day", 0))
-		_detail.text = "第 %d 天结束" % ended_day
+		_detail.text = "第 %d 天结束 · 晚自习与夜晚悄然过去……" % ended_day
 		_detail.modulate = COLOR_ACCENT
 		_show_action("进入第 %d 天" % (ended_day + 1))
 		return
