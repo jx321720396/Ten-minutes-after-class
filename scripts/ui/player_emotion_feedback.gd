@@ -74,6 +74,7 @@ func bind_clock(clock: SimulationClock) -> void:
 
 # ------------------------------------------------------------------ 映射（可测的纯函数）
 
+
 ## 本次已结算的玩家自身效果 → 一个表情。effects 见 PlayerInteractions 的 player_effects。
 func pick_emotion(effects: Dictionary, stress: float) -> String:
 	var hostility := float(effects.get("hostility_delta", 0.0))
@@ -105,6 +106,7 @@ func is_visible_now() -> bool:
 
 
 # ------------------------------------------------------------------ 展示
+
 
 ## 显示一次情绪（seconds 后自动淡出）。
 func show_emotion(kind: String, seconds: float = 4.0) -> void:

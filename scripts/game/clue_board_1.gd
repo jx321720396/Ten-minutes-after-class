@@ -174,7 +174,9 @@ func _update_avatar_drag(pos: Vector2) -> void:
 func _finish_avatar_drag(pos: Vector2) -> void:
 	if drag_ghost:
 		var on_column := avatar_column.get_global_rect().has_point(pos)
-		var on_chrome := palette.get_global_rect().has_point(pos) or tool_toggle.get_global_rect().has_point(pos)
+		var on_chrome := (
+			palette.get_global_rect().has_point(pos) or tool_toggle.get_global_rect().has_point(pos)
+		)
 		if on_column or on_chrome:
 			drag_ghost.queue_free()
 		else:

@@ -31,9 +31,7 @@ func _ready() -> void:
 		push_warning("Classroom：没有本局内核实例 —— 时间与走动都不启动（请从主菜单「新游戏」进教室）。")
 		return
 	if not _inject_interaction_geometry(core):
-		push_warning(
-			"Classroom：交互几何未就绪（房间范围 / 桌椅矩形读不到）—— 玩家交互会明确失败，不会放行。"
-		)
+		push_warning("Classroom：交互几何未就绪（房间范围 / 桌椅矩形读不到）—— 玩家交互会明确失败，不会放行。")
 	if not clock.bind_core(core):
 		push_error("Classroom：时钟绑定失败（时间配置有问题），时间系统未启动。")
 		return
@@ -58,8 +56,10 @@ func _wait_navigation() -> bool:
 	if await NavReady.wait(self, probe):
 		return true
 	push_error(
-		"Classroom：导航网格未同步 —— NavigationRegion3D 是否已烘焙？"
-		+ "（godot --headless --path . --script tools/bake_classroom_nav.gd）"
+		(
+			"Classroom：导航网格未同步 —— NavigationRegion3D 是否已烘焙？"
+			+ "（godot --headless --path . --script tools/bake_classroom_nav.gd）"
+		)
 	)
 	return false
 
@@ -73,6 +73,7 @@ func _inject_interaction_geometry(core: Variant) -> bool:
 		return false
 	core.set_interaction_geometry(geometry.get("obstacles", []), bounds)
 	return bool(core.interaction_space_ready())
+
 
 ## 表现组件只读绑定：核心 / 人物 / 时钟，各自的可见性由内核真实会话决定。
 func _bind_feedback(core: Variant) -> void:

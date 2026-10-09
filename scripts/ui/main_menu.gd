@@ -88,8 +88,10 @@ func _on_continue():
 func _on_encyclopedia():
 	encyclopedia_panel.visible = true
 
+
 func _on_close_encyclopedia():
 	encyclopedia_panel.visible = false
+
 
 func _on_settings():
 	settings_panel.visible = true

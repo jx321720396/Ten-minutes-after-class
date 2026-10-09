@@ -14,8 +14,10 @@ signal closed
 const DATA_PATH := "res://data/localization/encyclopedia.json"
 
 @onready var _toc: ItemList = $CenterContainer/Panel/Margin/VBox/Body/TOC
-@onready var _scroll: ScrollContainer = $CenterContainer/Panel/Margin/VBox/Body/ContentMargin/ContentScroll
-@onready var _content: RichTextLabel = $CenterContainer/Panel/Margin/VBox/Body/ContentMargin/ContentScroll/Content
+@onready
+var _scroll: ScrollContainer = $CenterContainer/Panel/Margin/VBox/Body/ContentMargin/ContentScroll
+@onready
+var _content: RichTextLabel = $CenterContainer/Panel/Margin/VBox/Body/ContentMargin/ContentScroll/Content
 @onready var _prev: Button = $CenterContainer/Panel/Margin/VBox/Footer/PrevBtn
 @onready var _next: Button = $CenterContainer/Panel/Margin/VBox/Footer/NextBtn
 @onready var _back: Button = $CenterContainer/Panel/Margin/VBox/Footer/BackBtn
@@ -80,7 +82,7 @@ func _show_chapter(i: int) -> void:
 	var intro := str(ch.get("intro", ""))
 	if not intro.is_empty():
 		out += intro + "\n\n"
-	for sec in (ch.get("sections", []) as Array):
+	for sec in ch.get("sections", []) as Array:
 		var s: Dictionary = sec
 		out += "[font_size=28][b]%s[/b][/font_size]\n\n" % str(s.get("heading", ""))
 		out += str(s.get("body", "")) + "\n\n"

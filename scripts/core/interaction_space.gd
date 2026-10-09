@@ -97,7 +97,9 @@ func segment_blocked(a: Vector2, b: Vector2, step_m: float = 0.1) -> bool:
 
 ## 「站得住 + 对每个目标都在范围内 + 连线不穿家具」—— 一次交互的完整空间合法性。
 ## targets 为空表示只检查站位本身。
-func valid_position_for(origin: Vector2, targets: Array, range_m: float, step_m: float = 0.1) -> bool:
+func valid_position_for(
+	origin: Vector2, targets: Array, range_m: float, step_m: float = 0.1
+) -> bool:
 	if not _ready or not position_valid(origin):
 		return false
 	for t in targets:

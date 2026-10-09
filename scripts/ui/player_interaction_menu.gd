@@ -58,6 +58,7 @@ func _ready() -> void:
 
 # ------------------------------------------------------------------ 对外接口
 
+
 ## 打开（或刷新）某个人物的卡片。info 由交互控制器按内核预览组装。
 func open(index: int, info: Dictionary) -> void:
 	_index = index
@@ -65,14 +66,18 @@ func open(index: int, info: Dictionary) -> void:
 	_open = true
 	_panel.visible = true
 	_name_label.text = str(info.get("name", "同学"))
-	_activity_label.text = activity_text(str(info.get("activity", "")), bool(info.get("moving", false)))
+	_activity_label.text = activity_text(
+		str(info.get("activity", "")), bool(info.get("moving", false))
+	)
 	var eligible := bool(info.get("eligible", false))
 	var in_range := bool(info.get("in_range", false))
 	var mode := str(info.get("mode", "start"))
 	_action.text = "加入 · 加入闲聊" if mode == "join" else "闲聊"
 	_action.disabled = not (eligible and bool(info.get("phase_ok", true)))
 	_action.tooltip_text = "" if _action.disabled else hint_text(mode, in_range)
-	_reason_label.text = "" if _action.disabled == false else reason_text(str(info.get("reason", "")))
+	_reason_label.text = (
+		"" if _action.disabled == false else reason_text(str(info.get("reason", "")))
+	)
 	_eta_label.text = eta_text(bool(info.get("in_range", true)))
 	_reason_label.visible = not _reason_label.text.is_empty()
 
@@ -165,6 +170,7 @@ func eta_text(in_range: bool) -> String:
 
 
 # ------------------------------------------------------------------ 内部
+
 
 func _on_action_pressed() -> void:
 	if _action.disabled:

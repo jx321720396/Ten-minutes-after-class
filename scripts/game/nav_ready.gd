@@ -41,9 +41,7 @@ static func is_ready(node: Node3D, probe: Vector3) -> bool:
 
 ## 等地图可用（连续 STABLE_FRAMES 帧稳定）；超时返回 false。
 ## 调用方拿到 false 必须**明确失败**，不许退化成直线走动（见 §10.4：走动不穿家具）。
-static func wait(
-	node: Node3D, probe: Vector3, max_frames: int = DEFAULT_MAX_FRAMES
-) -> bool:
+static func wait(node: Node3D, probe: Vector3, max_frames: int = DEFAULT_MAX_FRAMES) -> bool:
 	if node == null or not node.is_inside_tree():
 		return false
 	var stable := 0
