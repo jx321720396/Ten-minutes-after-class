@@ -107,6 +107,57 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toc_normal"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0, 0, 0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toc_hover"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(1, 0.96, 0.86, 0.55)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toc_pressed"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(1, 0.94, 0.8, 1)
+border_width_left = 4
+border_color = Color(0.78, 0.65, 0.42, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toc_focus"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0, 0, 0, 0)
+
+[sub_resource type="Theme" id="Theme_toc"]
+Button/colors/font_color = Color(0.34, 0.26, 0.16, 1)
+Button/colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
+Button/colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
+Button/colors/font_focus_color = Color(0.2, 0.14, 0.06, 1)
+Button/colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
+Button/font_sizes/font_size = 22
+Button/styles/normal = SubResource("StyleBoxFlat_toc_normal")
+Button/styles/hover = SubResource("StyleBoxFlat_toc_hover")
+Button/styles/pressed = SubResource("StyleBoxFlat_toc_pressed")
+Button/styles/focus = SubResource("StyleBoxFlat_toc_focus")
+Button/styles/disabled = SubResource("StyleBoxFlat_toc_normal")
+
 [node name="Encyclopedia" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -179,6 +230,7 @@ theme_override_styles/panel = ExtResource("2_panel")
 [node name="TOC" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/TOCScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme = SubResource("Theme_toc")
 theme_override_constants/separation = 2
 
 [node name="VSep" type="ColorRect" parent="CenterContainer/Panel/Margin/VBox/Body"]
