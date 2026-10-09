@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://lq7nghi63vmu"]
 
-[ext_resource type="Material" path="res://resources/materials/mat_wood.tres" id="1_wood"]
+[ext_resource type="Material" path="res://resources/materials/mat_wood_desk.tres" id="1_wood"]
 [ext_resource type="Material" path="res://resources/materials/mat_metal_frame.tres" id="2_metal"]
 
 [sub_resource type="BoxMesh" id="Box_top"]

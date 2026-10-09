@@ -1,0 +1,12 @@
+# 需要玩家同意参与的已实现行为；外部伤害不作为邀请，也不占用玩家。
+behavior,requires_choice
+chat,1
+join_chat,1
+ask_help,1
+comfort,1
+apologize,1
+roughhouse,1
+tease,0
+exclude,0
+rumor,0
+report,0

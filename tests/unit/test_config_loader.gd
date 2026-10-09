@@ -6,7 +6,7 @@ func test_load_all_reads_all_tables() -> void:
 	var loader := ConfigLoader.new()
 	var tables := loader.load_all()
 	# data/ 现状：rules 20 + ui 1 + balance 2 + characters 3 = 26 张
-	assert_eq(tables.size(), 26, "应读到 26 张表")
+	assert_eq(tables.size(), 27, "应读到 27 张表（含玩家邀请类型）")
 	assert_true(tables.has("rules/behaviors"), "rules/behaviors 应在")
 	assert_true(tables.has("rules/stand_points"), "rules/stand_points 应在")
 	assert_true(tables.has("rules/time_presentation"), "rules/time_presentation 应在")

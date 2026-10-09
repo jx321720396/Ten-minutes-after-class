@@ -8,6 +8,8 @@
 # 启动校验：chat_range_m / range_step_m 为正；clue_* 为正整数且 low ≤ high；
 #          clue_opacity_split ∈ (0,100]；拾取层位掩码为正整数且两层不同。
 param,value,unit,note
+invitation_timeout_ticks,12,tick,邀请等待回应的有效期；超时关闭，不自动接受，不产生拒绝处罚
+invitation_cooldown_ticks,20,tick,同一 NPC 再次邀请玩家的最小间隔；避免每 tick 重复弹卡
 chat_range_m,1.2,m,闲聊双方的交互范围（真实地面位置距离上限，§10.5）
 seated_tolerance_m,0.1,m,判定仍在本座位入口的平面距离容差
 seated_chat_range_m,1.8,m,同列前后紧邻且都在本座位时允许转身聊天的距离上限

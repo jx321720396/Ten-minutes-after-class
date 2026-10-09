@@ -244,6 +244,38 @@ sim5.report()
 print("  压力：max %.1f / 均值 %.1f" % (max(sim5.Stress), sum(sim5.Stress) / sim5.N))
 
 print("\n=== 结论 ===")
+sim_player = Sim(seed=12345, npc_count=16)
+sim_player.sleeping = [False] * sim_player.N
+sim_player.busy_until = [0] * sim_player.N
+sim_player.probs["sleep"] = 100.0
+sim_player.roll_sleep()
+check("随机睡觉只决定 NPC，不替玩家选择", not sim_player.sleeping[-1])
+check("随机睡觉仍允许 NPC 睡觉", sim_player.sleeping[0])
+sim_player.sleeping = [False] * sim_player.N
+sim_player.busy_until = [0] * sim_player.N
+sim_player.current_act = [None] * sim_player.N
+sim_player.current_act[-1] = "player_choice"
+sim_player.neighbor_idx[-1] = [0]
+sim_player.current_act[0] = "study"
+sim_player.behaviors["study"]["join_mode"] = "free"
+sim_player.probs["free_join_rate"] = 100.0
+sim_player.free_join()
+check("自由跟随不替玩家选择活动", sim_player.current_act[-1] == "player_choice")
+sim_invite = Sim(seed=12345, npc_count=16)
+sim_invite.do_chat(0, sim_invite.N - 1)
+pending = sim_invite.get_player_invitation()
+check("NPC 找玩家聊天先邀请，不占用玩家", bool(pending) and sim_invite.busy_until[-1] == 0)
+sim_invite.respond_player_invitation(pending["id"], False)
+check("玩家拒绝聊天后仍自由", sim_invite.busy_until[-1] == 0 and sim_invite.stats["chats"] == 0)
+sim_help = Sim(seed=12345, npc_count=16)
+sim_help.A[-1][0] = 0.0
+sim_help.dims[-1][0] = 0.0
+sim_help.do_ask_help(0, sim_help.N - 1)
+pending = sim_help.get_player_invitation()
+sim_help.respond_player_invitation(pending["id"], True)
+check("玩家接受求助不掷愿意帮忙的骰子", sim_help.stats["helps"] == 1 and sim_help.busy_until[-1] > 0)
+sim_help.respond_player_invitation(pending["id"], False)
+check("邀请重复回应只结算一次", sim_help.stats["helps"] == 1)
 print("  通过 %d 项，失败 %d 项" % (len(PASSED), len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)

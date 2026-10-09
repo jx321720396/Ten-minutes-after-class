@@ -321,6 +321,12 @@ check("movement.nav_cell_size ≤ player_radius",
       "%s / %s" % (_mv.get("nav_cell_size"), _mv.get("player_radius")))
 
 print("\n=== 结论 ===")
+_invite_kinds = load("rules/player_invitation_kinds.csv")
+check("玩家邀请：行为键不重复", len({r["behavior"] for r in _invite_kinds}) == len(_invite_kinds))
+check("玩家邀请：requires_choice 为 0/1", all(r["requires_choice"] in ("0", "1") for r in _invite_kinds))
+check("玩家邀请：行为存在于 behaviors", all(r["behavior"] in {r["behavior"] for r in load("rules/behaviors.csv")} for r in _invite_kinds))
+_invite_params = params("rules/player_interaction.csv")
+check("玩家邀请：有效期与再次邀请间隔为正整数", all(_invite_params.get(k, 0) > 0 and int(_invite_params[k]) == _invite_params[k] for k in ("invitation_timeout_ticks", "invitation_cooldown_ticks")))
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)

@@ -12,8 +12,8 @@ extends Node3D
 ##   · **表现只读**：菜单 / 圈 / 气泡 / 情绪 / HUD 都是消费者，唯一的放行口是 `result_revealed`。
 ##
 ## 状态机（计划 §6）：Idle → Selected → Approaching → Validating → Active，
-## 加入闲聊多一段 PenPresenting →（接受）Active /（拒绝）RejectedBusy；
-## 提交后的 Active / PenPresenting / RejectedBusy **禁止新行为与移动**，Esc 只打开暂停菜单。
+## 加入闲聊多一段 PenPresenting →（接受）Active /（拒绝）直接回到 Idle；
+## 提交后的 Active / PenPresenting **禁止新行为与移动**，Esc 只打开暂停菜单。
 
 signal state_changed(state: StringName)
 
@@ -62,8 +62,11 @@ func _ready() -> void:
 
 # ------------------------------------------------------------------ 绑定
 
+
 ## 计划 §9 的公共接口：一次绑定内核 / 玩家 / 人物 / 时钟。
-func bind_sources(core: Variant, player: PlayerController, actors: Node3D, clock: SimulationClock) -> void:
+func bind_sources(
+	core: Variant, player: PlayerController, actors: Node3D, clock: SimulationClock
+) -> void:
 	_core = core
 	_player = player
 	_actors = actors
@@ -133,6 +136,7 @@ func _exit_tree() -> void:
 
 
 # ------------------------------------------------------------------ 对外接口
+
 
 ## 选中一个人物：只选中，不走动（走动由「选择行为」触发）。
 func select_actor(index: int) -> void:
@@ -204,6 +208,7 @@ func current_state() -> StringName:
 
 # ------------------------------------------------------------------ 状态机
 
+
 func _set_state(state: StringName) -> void:
 	if _state == state:
 		return
@@ -213,7 +218,7 @@ func _set_state(state: StringName) -> void:
 
 ## 已经提交、结果不再由玩家撤销的阶段。
 func _is_committed() -> bool:
-	return _state == STATE_ACTIVE or _state == STATE_PEN or _state == STATE_REJECTED
+	return _state == STATE_ACTIVE or _state == STATE_PEN
 
 
 func _open_menu() -> void:
@@ -258,6 +263,7 @@ func _display_name(index: int) -> String:
 
 
 # ------------------------------------------------------------------ 接近
+
 
 func _approach(mode: String, session_id: int) -> void:
 	if _player == null:
@@ -313,6 +319,7 @@ func _chat_range() -> float:
 
 
 # ------------------------------------------------------------------ 提交与演出
+
 
 ## 提交（request_id 沿用接近阶段那一个：一次尝试只有一个编号）。
 func _commit(mode: String, session_id: int, request_id: int = -1) -> void:
@@ -387,9 +394,26 @@ func _on_result_revealed(request_id: int) -> void:
 		_set_state(STATE_ACTIVE)
 		_show_active()
 	else:
-		_set_state(STATE_REJECTED)
-		if _hud != null:
-			_hud.clear_active()
+		_handle_rejection()
+
+
+## 拒绝收尾：拒绝不产生占用，表现层直接显示反馈并回到 Idle，玩家立即可移动。
+func _handle_rejection() -> void:
+	if _hud != null:
+		_hud.clear_active()
+	if _emotion != null:
+		var effects: Dictionary = _packet.get("player_effects", {})
+		var stress := 0.0
+		if _core != null:
+			stress = float(_core.stress(int(_core.node_count()) - 1))
+		_emotion.show_emotion(_emotion.pick_emotion(effects, stress))
+	if _hud != null:
+		_hud.show_status("没能加入聊天")
+	_recent_request_id = _request_id
+	_request_id = -1
+	_packet = {}
+	_selected = -1
+	_set_state(STATE_IDLE)
 
 
 func _show_active() -> void:
@@ -399,6 +423,7 @@ func _show_active() -> void:
 
 
 # ------------------------------------------------------------------ 移动回调
+
 
 func _on_actor_picked(index: int) -> void:
 	select_actor(index)
@@ -444,6 +469,7 @@ func _on_request_failed(request_id: int, reason: StringName) -> void:
 
 
 # ------------------------------------------------------------------ 内核通知
+
 
 ## 只处理带 request_id 的玩家通知；圈 / 气泡 / 线索全部走这一条入口。
 func _on_event_happened(payload: Dictionary) -> void:
@@ -516,6 +542,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # ------------------------------------------------------------------ 每帧
 
+
 func _process(delta: float) -> void:
 	if _state != STATE_SELECTED or _menu == null:
 		return
@@ -555,6 +582,7 @@ func _phase_ok() -> bool:
 	if _clock == null or not is_instance_valid(_clock):
 		return true
 	var snapshot := _clock.snapshot()
-	return str(snapshot.get("mode", "")) == SimulationClock.MODE_RUNNING and bool(
-		snapshot.get("player_control", true)
+	return (
+		str(snapshot.get("mode", "")) == SimulationClock.MODE_RUNNING
+		and bool(snapshot.get("player_control", true))
 	)

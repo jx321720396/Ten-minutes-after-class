@@ -29,6 +29,7 @@ const ACTIVITY_SESSIONS = preload("res://scripts/core/activity_sessions.gd")
 const INTERACTION_SPACE = preload("res://scripts/core/interaction_space.gd")
 const PLAYER_CHAT_INTEL = preload("res://scripts/core/player_chat_intel.gd")
 const PLAYER_INTERACTIONS = preload("res://scripts/core/player_interactions.gd")
+const PLAYER_INVITATIONS = preload("res://scripts/core/player_invitations.gd")
 const PLAYER_INTERACTION_TABLE := "rules/player_interaction"
 
 var _behavior_context: RefCounted
@@ -41,6 +42,7 @@ var _seat_world_positions: Dictionary = {}
 var _scene_space_required := false
 var _intel: PlayerChatIntel
 var _player_interactions: PlayerInteractions
+var _player_invitations: RefCounted
 
 # —— 关系 / 个体状态（float64 平铺，与 Python 逐位一致）——
 var _a := PackedFloat64Array()  # 好感 A  n*n
@@ -193,6 +195,7 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 	var pi_params := _params(tables, PLAYER_INTERACTION_TABLE)
 	_player_interactions.configure(pi_params)
 	_intel.configure(pi_params)
+	_player_invitations = PLAYER_INVITATIONS.new(self, tables, pi_params)
 
 
 ## difficulty（1/2/3）→ npc_count（8/16/24），映射表 data/rules/difficulty.csv（铁律 3：数值不落脚本）。
@@ -577,6 +580,7 @@ func run_day() -> int:
 ## 顺序（计划 §5.3）：① 认定到期 → ② 读取这一刻情报并写入本局日志 → ③ 清理活动／占用
 ## → ④ 发布线索与完成通知（下一步才继续本 tick 的 NPC 决策）。
 func _settle_finished_actions() -> void:
+	_player_invitations.expire()
 	_last_finished = []
 	for i in range(_n):
 		_last_finished.append(null)
@@ -592,7 +596,7 @@ func _settle_finished_actions() -> void:
 		_current_act[i] = null
 		_busy_act[i] = null
 		_busy_phase[i] = -1
-	# 拒绝加入的占用不建立会话，靠占用到期收尾（同样只收一次）
+	# 旧路径 join_chat 的占用不建立会话，靠占用到期收尾（群聊拒绝不再占用请求者）
 	notifications.append_array(_player_interactions.on_occupancy_completed(_global_tick))
 	# 玩家不再处于任何会话、也不再被占用时，清掉「正在对话」标记
 	# （NPC 的标记由 _decide_and_act 每回合自清；玩家没有决策回合，必须在这里清）
@@ -1361,7 +1365,8 @@ func _roll_sleep() -> void:
 	if not _allowed("sleep"):
 		return
 	var p := float(_probs["sleep"])
-	for i in range(_n):
+	# 玩家由人的主动选择驱动，不参加 NPC 的睡觉决策。
+	for i in range(_n - 1):
 		if _sleeping[i] or is_moving(i):
 			continue
 		if _rng.random() < p * (1.0 + _tag_bias(i, "alone_bias")):
@@ -1373,7 +1378,8 @@ func _roll_sleep() -> void:
 
 ## 「别人做什么我也跟着做」：join_mode=free 的活动可自由跟随（§10.31），强度由从众度决定。
 func _free_join() -> void:
-	for i in range(_n):
+	# 自动跟随同样属于 NPC 决策，不能覆盖玩家选择。
+	for i in range(_n - 1):
 		if _sleeping[i] or _busy_until[i] > _global_tick or is_moving(i):
 			continue
 		var acts: Array = []
@@ -1456,6 +1462,8 @@ func _decide_and_act() -> void:
 	_rng.shuffle(order)
 	for i in order:
 		if _sleeping[i] or busy[i] or _global_tick < _busy_until[i] or is_moving(i):
+			continue
+		if _player_invitations.is_waiting(i):
 			continue
 		_in_conversation[i] = false
 		# 环境类：闲聊（标签调制：爱学习更少聊、爱聊天更多聊）
@@ -1749,27 +1757,34 @@ func _pick_target(i: int, neighbors_only: bool = false) -> int:
 ## 按行为耗时把双方置为忙碌（收益越大耗时越长）。
 func _occupy(i: int, j: int, behavior: String, quiet: bool = false) -> void:
 	_current_act[i] = behavior
-	_current_act[j] = null if quiet else behavior
+	var occupy_target: bool = not is_player(j) or is_player(i) or _player_invitations.authorizes(i)
+	if occupy_target:
+		_current_act[j] = null if quiet else behavior
 	var dur := int(_behaviors.get(behavior, {}).get("duration", 0))
 	if dur > 0:
 		# 时长**累积**而不是覆盖（策划 2026-10-07：「群聊作为同一个交互管理，
 		# 不能靠覆盖占用实现」）—— 否则加入一场进行中的活动会把已占用的时长改短。
 		var until := _global_tick + dur
 		_busy_until[i] = maxi(_busy_until[i], until)
-		_busy_until[j] = maxi(_busy_until[j], until)
 		_busy_phase[i] = _phase_index
-		_busy_phase[j] = _phase_index
 		_busy_act[i] = behavior
-		_busy_act[j] = behavior
+		if occupy_target:
+			_busy_until[j] = maxi(_busy_until[j], until)
+			_busy_phase[j] = _phase_index
+			_busy_act[j] = behavior
 
 
 ## 按成员列表占用（群聊编排用）：全体占用与共同结束点**对齐**，只取更晚的结束点。
 ## 声源只有一个（音量按「场」计）：`sound_source` 之外的人一律不计声源，
 ## 加入者不会因为「多一个人说话」把音量叠上去。
-func _occupy_members(members: Array, behavior: String, until: int, sound_source: int) -> void:
+func _occupy_members(
+	members: Array, behavior: String, until: int, sound_source: int, actor: int = -1
+) -> void:
 	for m in members:
 		var idx := int(m)
 		if idx < 0 or idx >= _n:
+			continue
+		if is_player(idx) and not is_player(actor) and not _player_invitations.authorizes(actor):
 			continue
 		_current_act[idx] = behavior if idx == sound_source else null
 		_busy_until[idx] = maxi(_busy_until[idx], until)
@@ -1922,9 +1937,7 @@ func commit_player_interaction(
 	request_id: int, kind: String, target: int, mode: String, session_id: int = -1
 ) -> Dictionary:
 	var known: bool = bool(_player_interactions.get_request(request_id).get("ok", false))
-	var packet: Dictionary = _player_interactions.commit(
-		request_id, kind, target, mode, session_id
-	)
+	var packet: Dictionary = _player_interactions.commit(request_id, kind, target, mode, session_id)
 	if not bool(packet.get("ok", false)):
 		return packet
 	if not known:
@@ -1958,6 +1971,18 @@ func next_player_request_id() -> int:
 ## 真正共同活动的只读快照（供底部圈与「能不能加入」查询，深拷贝）。
 func get_active_sessions() -> Array:
 	return _sessions.active_snapshots()
+
+
+func get_player_invitation() -> Dictionary:
+	return _player_invitations.pending()
+
+
+func respond_player_invitation(id: int, accepted: bool) -> Dictionary:
+	return _player_invitations.respond(id, accepted)
+
+
+func is_waiting_for_player(i: int) -> bool:
+	return _player_invitations.is_waiting(i)
 
 
 ## 玩家本局已获得的线索（历史日志；记录于当时，不跟着矩阵实时刷新）。
@@ -2253,6 +2278,18 @@ func stress(i: int) -> float:
 	if i < 0 or i >= _n:
 		return 0.0
 	return _stress[i]
+
+
+## 性格四维第 dim 轴（0=E, 1=N, 2=F, 3=P）；越界返回 50（中性值）。
+func dimension(i: int, dim: int) -> float:
+	if i < 0 or i >= _n or dim < 0 or dim >= DIMS.size():
+		return 50.0
+	return _dims[dim * _n + i]
+
+
+## 行为基础概率（来自 data/rules/behavior_probs.csv）；未注册返回 0.0。
+func behavior_base_p(behavior: String) -> float:
+	return float(_probs.get(behavior, 0.0))
 
 
 ## 某人此刻在做什么（UI 用；空闲/学习 = 空串）。

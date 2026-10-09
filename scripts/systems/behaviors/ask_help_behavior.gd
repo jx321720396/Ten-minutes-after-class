@@ -17,7 +17,8 @@ func execute(context: Context, i: int, j: int, _options: Dictionary = {}) -> voi
 			/ context.threshold("ask_help_accept_scale")
 		)
 	)
-	var accepted := context.random() < p
+	var choice: Variant = context.player_choice(i)
+	var accepted: bool = bool(choice) if choice != null else context.random() < p
 	if accepted:
 		context.apply_event(i, j, "ask_help_ok_asker_affinity")
 		context.apply_event(i, j, "ask_help_ok_asker_stress")

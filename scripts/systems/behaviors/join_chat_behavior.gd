@@ -3,7 +3,7 @@ extends RefCounted
 ##
 ##   · **旧路径**（NPC 决策 / 玩家兼容别名）：`i` 请求 `j`，通过则执行一次双人闲聊；
 ##   · **群聊编排**（玩家加入，计划 §4.3）：options.mode = "group" 时按**一场活动**处理 ——
-##     一次判定、新边各结算一次、全体占用与结束点对齐、拒绝只占请求者。
+##     一次判定、新边各结算一次、全体占用与结束点对齐、拒绝不占用请求者。
 ##
 ## 为什么不让两种形态走同一段代码：旧路径的随机数、事件顺序与通知是既有基线，
 ## 动了它就是动了数值；玩家群聊是**行为新增**，单独成段并另做用例与基线记录。
@@ -26,7 +26,11 @@ func execute(context: Context, i: int, j: int, options: Dictionary = {}) -> void
 	context.set_in_conversation(j, true)
 	context.occupy(i, j, "join_chat", true)
 	var p := context.join_probability(i, j)
-	if roll < 0.0:
+	var choice: Variant = context.player_choice(i)
+	if choice != null:
+		p = 1.0 if bool(choice) else 0.0
+		roll = 0.0
+	elif roll < 0.0:
 		roll = context.random()
 	if roll < p:
 		context.execute_behavior(&"chat", i, j)
@@ -52,7 +56,11 @@ func _execute_group(context: Context, i: int, j: int, options: Dictionary) -> vo
 	var members := _members(options, i)
 	var roll: float = float(options.get("roll", -1.0))
 	var p := context.join_probability(i, j)
-	if roll < 0.0:
+	var choice: Variant = context.player_choice(i)
+	if choice != null:
+		p = 1.0 if bool(choice) else 0.0
+		roll = 0.0
+	elif roll < 0.0:
 		roll = context.random()
 	var accepted := roll < p
 	context.set_in_conversation(i, true)
@@ -67,16 +75,19 @@ func _execute_group(context: Context, i: int, j: int, options: Dictionary) -> vo
 	if not accepted:
 		context.increment_stat("skipped_events")
 	# 表现层只收到一个加入结果：不因多条关系边弹多次反馈
-	context.emit_event(
-		"event_happened",
-		{
-			"kind": "chat",
-			"i": i,
-			"j": j,
-			"mode": "join",
-			"accepted": accepted,
-			"session_id": session_id,
-		}
+	(
+		context
+		. emit_event(
+			"event_happened",
+			{
+				"kind": "chat",
+				"i": i,
+				"j": j,
+				"mode": "join",
+				"accepted": accepted,
+				"session_id": session_id,
+			}
+		)
 	)
 
 
@@ -100,12 +111,12 @@ func _accept(context: Context, i: int, j: int, session_id: int, members: Array) 
 	var all_members: Array = members.duplicate()
 	all_members.append(i)
 	all_members.sort()
-	context.occupy_members(all_members, "chat", until, _sound_source(context, members, j))
+	context.occupy_members(all_members, "chat", until, _sound_source(context, members, j), i)
 	# 把玩家真正并入原会话（同一场活动只登记一次；结束点只后延不缩短）
 	context.session_begin_or_join("chat", all_members, until)
 
 
-## 拒绝：只占请求者（join_chat 耗时），原组的关系、剩余时间与圈都不变。
+## 拒绝：不占用请求者——加入失败不是物理活动，不应阻止玩家移动或发起新交互。
 ## 敌对反馈对**各原成员**分别执行（§10.7：A 对闲聊成员敌对值增加）。
 func _reject(context: Context, i: int, j: int, members: Array) -> void:
 	context.apply_event(i, j, "reject_affinity")
@@ -113,8 +124,6 @@ func _reject(context: Context, i: int, j: int, members: Array) -> void:
 		context.apply_event(i, int(m), "reject_hostility")
 	context.apply_event(i, j, "reject_stress")
 	context.observe(i, j, "affinity")
-	var until := context.global_tick() + context.duration_of("join_chat")
-	context.occupy_members([i], "join_chat", until, i)
 
 
 ## 可加入的原成员（升序，不含请求者自己）。

@@ -34,6 +34,11 @@ var _progress_bar: ProgressBar = null
 var _toast: Label = null
 var _history: PanelContainer = null
 var _history_list: VBoxContainer = null
+var _invitation_card: PanelContainer = null
+var _invitation_text: Label = null
+var _invitation_accept: Button = null
+var _invitation_reject: Button = null
+var _invitation_id := -1
 
 var _clock: SimulationClock = null
 var _core: Variant = null
@@ -53,6 +58,7 @@ var _result := 0.4
 var _pen_size := 180.0
 var _toast_seconds := 4.0
 var _bar_height := 10.0
+var _invitation_margin := 0.0
 
 
 func _ready() -> void:
@@ -79,6 +85,7 @@ func bind_core(core: Variant) -> void:
 
 
 # ------------------------------------------------------------------ 对外接口
+
 
 ## 锁定结果并播放转笔：起势 → 旋转 → 收尾 → **揭晓**（此时才发 result_revealed）。
 ## packet 是内核的提交包（含 accepted / p_belief / mode）。
@@ -133,6 +140,7 @@ func revealed_request_id() -> int:
 func show_active(packet: Dictionary) -> void:
 	_active = packet.duplicate(true)
 	_progress_card.visible = true
+	_progress_bar.visible = true
 	var mode := str(packet.get("mode", "start"))
 	_active_label = "正在和同学%s" % ("聊天" if mode == "start" else "一起聊")
 	_progress_text.text = _active_label
@@ -167,9 +175,10 @@ func format_clue(clue: Dictionary) -> String:
 	var subject := _name_of(int(clue.get("subject", -1)))
 	var axis := str(AXIS_NAMES.get(str(clue.get("axis", "")), "关系"))
 	var day := int(clue.get("day", 0))
-	return "第 %d 天 · %s 透露：他对%s的%s是 %.0f（记录于当时，关系可能变化）" % [
-		day, source, subject, axis, float(clue.get("value", 0.0))
-	]
+	return (
+		"第 %d 天 · %s 透露：他对%s的%s是 %.0f（记录于当时，关系可能变化）"
+		% [day, source, subject, axis, float(clue.get("value", 0.0))]
+	)
 
 
 func toggle_history() -> void:
@@ -208,23 +217,108 @@ func clear() -> void:
 	clear_active()
 	_toast.text = ""
 	_toast_left = 0.0
+	_invitation_id = -1
+	_invitation_card.visible = false
 
 
 func _process(delta: float) -> void:
+	_refresh_invitation()
 	if _toast_left > 0.0:
 		_toast_left = maxf(0.0, _toast_left - delta)
 		_toast.modulate.a = minf(1.0, _toast_left / 0.6)
 		if _toast_left <= 0.0:
 			_toast.text = ""
 	if _active.is_empty():
+		_show_current_player_activity()
 		return
 	var seconds := _remaining_seconds()
 	var total := float(_active.get("duration_ticks", 0)) * _seconds_per_tick()
-	_progress_bar.value = 0.0 if total <= 0.0 else clampf(100.0 * (1.0 - seconds / total), 0.0, 100.0)
+	_progress_bar.value = (
+		0.0 if total <= 0.0 else clampf(100.0 * (1.0 - seconds / total), 0.0, 100.0)
+	)
 	_progress_text.text = "%s · 还剩 %.0f 秒" % [_active_label, seconds]
 
 
+func _refresh_invitation() -> void:
+	if _core == null:
+		return
+	var invitation: Dictionary = _core.get_player_invitation()
+	_invitation_card.visible = not invitation.is_empty()
+	if invitation.is_empty():
+		_invitation_id = -1
+		return
+	_invitation_id = int(invitation.id)
+	var kind := str(invitation.kind)
+	var names := {
+		"chat": "一起聊天",
+		"join_chat": "加入聊天",
+		"ask_help": "帮个忙",
+		"comfort": "聊聊心事",
+		"apologize": "和解",
+		"roughhouse": "一起打闹",
+	}
+	var seconds := maxf(
+		0.0, float(int(invitation.expires_tick) - _current_tick()) * _seconds_per_tick()
+	)
+	_invitation_text.text = (
+		"%s 想和你%s\n接受或拒绝由你决定 · 还剩 %.0f 秒"
+		% [_name_of(int(invitation.actor)), str(names.get(kind, "一起活动")), seconds]
+	)
+	var paused := _clock != null and is_instance_valid(_clock) and _clock.is_paused()
+	_invitation_accept.disabled = paused
+	_invitation_reject.disabled = paused
+
+
+func _respond_invitation(accepted: bool) -> void:
+	if _core == null or _invitation_id < 0:
+		return
+	var result: Dictionary = _core.respond_player_invitation(_invitation_id, accepted)
+	show_status(("已接受邀请" if accepted else "已拒绝邀请") if bool(result.get("ok", false)) else "邀请已失效")
+	_refresh_invitation()
+
+
+## 没有主动聊天请求时，仍显示玩家被动参与的活动与移动限制。
+## 只读内核占用与真实会话，不因缺少 request_id 把被动聊天显示为空闲。
+func _show_current_player_activity() -> void:
+	if _core == null:
+		return
+	var me := int(_core.node_count()) - 1
+	_progress_card.visible = true
+	_progress_bar.visible = false
+	if _clock != null and is_instance_valid(_clock):
+		var snapshot := _clock.snapshot()
+		if bool(snapshot.get("paused", false)):
+			_progress_text.text = "当前：转笔判定中" if is_presenting() else "当前：已暂停"
+			return
+		if not bool(snapshot.get("player_control", false)):
+			_progress_text.text = (
+				"当前：正在上课 · 暂时不能移动"
+				if str(snapshot.get("kind", "")) == "class"
+				else "当前：等待结算 · 暂时不能移动"
+			)
+			return
+	if bool(_core._sleeping[me]):
+		_progress_text.text = "当前：睡觉中 · 本课间无法移动"
+		return
+	if bool(_core.is_busy(me)):
+		var activity := str(_core._busy_act[me])
+		var end_tick := int(_core._busy_until[me])
+		for session in _core.get_active_sessions():
+			if (session["members"] as Array).has(me):
+				activity = str(session["kind"])
+				end_tick = int(session["end_tick"])
+				break
+		var label := str(PlayerInteractionMenu.ACTIVITY_NAMES.get(activity, "正在参与同学的活动"))
+		if activity == "chat":
+			label = "正在和同学聊天"
+		var seconds := maxf(0.0, float(end_tick - _current_tick()) * _seconds_per_tick())
+		_progress_text.text = "%s · 还剩 %.0f 秒 · 暂时不能移动" % [label, seconds]
+		return
+	_progress_text.text = ("当前：走动中" if bool(_core.is_moving(me)) else "当前：空闲 · 可以移动")
+
+
 # ------------------------------------------------------------------ tick → 秒（只读时钟）
+
 
 ## 当前相位一个 tick 折合多少真实秒（读时钟快照，不自己推算相位）。
 func _seconds_per_tick() -> float:
@@ -241,7 +335,14 @@ func _seconds_per_tick() -> float:
 func _remaining_seconds() -> float:
 	if _active.is_empty():
 		return 0.0
-	var ticks := int(_active.get("end_tick", 0)) - _current_tick()
+	var end_tick := int(_active.get("end_tick", 0))
+	# NPC 加入或继续聊天可能延长会话；倒计时必须跟随真实结束点。
+	var session_id := int(_active.get("linked_session", _active.get("session_id", -1)))
+	for session in _core.get_active_sessions() if _core != null else []:
+		if int(session["session_id"]) == session_id:
+			end_tick = int(session["end_tick"])
+			break
+	var ticks := end_tick - _current_tick()
 	if ticks < 0:
 		ticks = 0
 	return float(ticks) * _seconds_per_tick()
@@ -256,6 +357,7 @@ func _current_tick() -> int:
 
 
 # ------------------------------------------------------------------ 内部
+
 
 func _reveal_result() -> void:
 	if _pending.is_empty():
@@ -407,12 +509,49 @@ func _build_ui() -> void:
 	_history_list.add_theme_constant_override("separation", 4)
 	_history.add_child(_history_list)
 	_history.visible = false
+	_build_invitation_ui()
+
+
+func _build_invitation_ui() -> void:
+	_invitation_card = PanelContainer.new()
+	_invitation_card.name = "InvitationCard"
+	_invitation_card.add_theme_stylebox_override("panel", _panel_box())
+	_invitation_card.anchor_left = 1.0
+	_invitation_card.anchor_right = 1.0
+	_invitation_card.anchor_top = 1.0
+	_invitation_card.anchor_bottom = 1.0
+	_invitation_card.offset_right = -_invitation_margin
+	_invitation_card.offset_bottom = -_invitation_margin
+	_invitation_card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_invitation_card.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	add_child(_invitation_card)
+	var column := VBoxContainer.new()
+	_invitation_card.add_child(column)
+	_invitation_text = _make_label(16, COLOR_INK)
+	column.add_child(_invitation_text)
+	var buttons := HBoxContainer.new()
+	column.add_child(buttons)
+	_invitation_accept = Button.new()
+	_invitation_accept.text = "接受"
+	_invitation_accept.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_invitation_accept.add_theme_font_override("font", _font())
+	_invitation_accept.pressed.connect(_respond_invitation.bind(true))
+	buttons.add_child(_invitation_accept)
+	_invitation_reject = Button.new()
+	_invitation_reject.text = "拒绝"
+	_invitation_reject.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_invitation_reject.add_theme_font_override("font", _font())
+	_invitation_reject.pressed.connect(_respond_invitation.bind(false))
+	buttons.add_child(_invitation_reject)
+	_invitation_card.visible = false
 
 
 func _load_style() -> void:
 	for row in ConfigLoader.new().get_table(STYLE_TABLE).get("rows", []):
 		var value := float(str(row.get("value", "0")))
 		match str(row.get("param", "")):
+			"menu_margin_px":
+				_invitation_margin = value
 			"pen_windup_seconds":
 				_windup = value
 			"pen_spin_seconds":
