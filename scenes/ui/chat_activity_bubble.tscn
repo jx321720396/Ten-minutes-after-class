@@ -3,5 +3,5 @@
 [ext_resource type="Script" path="res://scripts/ui/chat_activity_bubble.gd" id="1_bubble"]
 
 [node name="ChatActivityBubble" type="CanvasLayer"]
-layer = 4
+layer = -3
 script = ExtResource("1_bubble")
