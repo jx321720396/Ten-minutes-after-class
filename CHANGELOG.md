@@ -1,5 +1,9 @@
 ﻿# 变更记录
 
+- **CI 触发条件调整：数值门移出 push（2026-10-09，用户决策）**：`offline-gates`（六道门 + 铁律 + 对拍）改为**只在 PR / 手动 / 每晚定时（UTC 18:00 = 北京 02:00）**跑。理由：其中第四 / 第五道门是**多种子标定信号**（各 100 局、约 2 分钟），与 UI / 美术 / 文档改动无关，且当前存在**已知不达标项**（好感均值 **31.1**，目标 45–65；排挤 **69%**，目标 ≥ 70%）—— 每次 push 都红会让 CI 彻底失去信号价值。push 改为跑 `structure` + `gdscript`（gdformat/gdlint）+ 新增的 `fast-gates`（`check_config` / `test_core` / `verify_formula` / `check_docs`，秒级）。同步 `CONTRIBUTING.md` §3 的推送前硬条件与 `AGENTS.md`。
+
+- **gdlint 恢复全绿（2026-10-09）**：`.gdlintrc` 放宽 `max-line-length` 100 → 120、`max-public-methods` 40 → 60，新增 `max-returns` 15（默认 6）与 `function-arguments-number` 12（默认 10）；`player_interactions.gd` 的两个未使用参数 `me` / `snap` 改为 `_me` / `_snap`。此前 9 个静态检查问题里 7 个属风格偏好而非缺陷，却把 CI 长期卡红。另：`gdformat` 已对 15 个存量脚本做全量格式化。
+
 - **协作流程简化：`main` 允许直接推送（2026-10-08，用户决策）**：原「`main` 禁止直接推送、一律走 PR + Squash merge」的规则与团队实际做法脱节 —— 最近 40 个提交里 **20 个是 merge**（本地合并进 `main`），分支 / PR / 评审 / 删分支的仪式性开销挤占开发时间。现在：条目少、范围清晰的改动**直接推 `main`**，两条硬条件 —— ① 推送前 `bash tools/run_tests.sh --no-godot`（六道门 + 铁律）全绿，**红灯不推**；② 先 `gdformat scripts/` + `gdlint scripts/`（避免 CI 因格式变红）。**跨模块大改或需要他人复看**的改动仍推荐走 PR。文档义务同步放宽：**规格变更**仍须同批更新 `docs/` 与 `CHANGELOG.md`，其余改动只需在同一批推送内补记。已同步 `CONTRIBUTING.md` §3/§7/§8、`AGENTS.md`、`docs/production/团队分工任务单.md` §2。
 
 - **玩家邀请自主选择（2026-10-09，玩法／实现）**：NPC 请求玩家参与闲聊、加入聊天、求助、安慰、和解和打闹时，先显示接受／拒绝卡片；等待回应不占用玩家、不结算效果、不暂停世界。接受时重新校验距离、状态与相位，并直接执行玩家选择，不掷玩家接受骰子；拒绝不锁移动，求助／道歉／加入保留既有发起方拒绝效果。有效期 12 tick、再次邀请间隔 20 tick 与类型开关集中在 data/，过期不自动接受。NPC 加入玩家已有聊天也需要批准；外部调侃、排挤和举报仍结算影响，但不强制玩家参加或占用。GDScript 与 Python 同步邀请口径；新增内核、卡片和真实教室回归。

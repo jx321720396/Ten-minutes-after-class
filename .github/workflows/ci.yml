@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    # 每晚 02:00（北京）= 18:00 UTC：跑完整的多种子数值门，不占用日常 push
+    - cron: '0 18 * * *'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -62,8 +65,28 @@ jobs:
       - name: gdlint（静态检查有问题即失败）
         run: gdlint scripts/
 
+  fast-gates:
+    name: 离线快门禁（配置 / 内核 / 公式 / 文档一致性）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 四道快门禁（秒级；用 && 串联，保证失败即中断）
+        run: |
+          export PYTHONIOENCODING=utf-8
+          python tools/check_config.py &&
+          python tools/test_core.py &&
+          python tools/verify_formula.py &&
+          python tools/check_docs.py
+
   offline-gates:
-    name: 离线六道门 + 铁律测试 + 对拍自检
+    name: 离线六道门 + 铁律测试 + 对拍自检（PR / 手动 / 定时）
+    # 不在 push 时跑：第四 / 第五道门是**多种子标定信号**（各 100 局、约 2 分钟），
+    # 与 UI / 美术 / 文档改动无关；且当前存在已知不达标项（见 CHANGELOG.md 的「已知不达标」记录），
+    # 每次 push 都红会让 CI 失去信号价值。改为 PR / 手动 / 每晚定时（schedule）执行。
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
