@@ -105,4 +105,4 @@ O ← clamp( O + Δ_O + λ_O · ( O_init × M_stress − O ) , 0, 100 )
 2. **状态标记**：每篇文档头部标注 `状态：骨架 / 草案 / 评审中 / 生效 / 归档` 与 `维护者`。
 3. **同步义务**：影响实现的规格改动，须在同一 PR 内更新 `design/` 文档并在 `CHANGELOG.md` 记录。
 4. **禁止新增顶层分类**：新文档归入现有目录；确需新增须在 PR 说明理由。
-5. CI 会校验文档内的相对链接有效性（`.github/scripts/check_docs_links.py`）。
+5. 文档相对链接有效性用 `.github/scripts/check_docs_links.py` 校验（手动运行 `python .github/scripts/check_docs_links.py`；原强制此检查的 CI 已于 2026-10-09 移除）。
