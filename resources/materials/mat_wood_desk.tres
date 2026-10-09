@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://tbwj8x3j4wio"]
+
+[ext_resource type="Texture2D" uid="uid://dkcad4mvi8b78" path="res://assets/textures/classroom/scene_classroom_wood_plank.png" id="1_albedo"]
+
+[resource]
+albedo_texture = ExtResource("1_albedo")
+roughness = 0.55
+uv1_scale = Vector3(1.5, 1.5, 1.5)
+uv1_triplanar = true
+texture_filter = 2
