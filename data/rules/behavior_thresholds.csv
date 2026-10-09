@@ -1,5 +1,5 @@
 # 阈值类行为的触发条件（确定性：条件满足即发生）
-# 依据：主文档 §10.2（举报）、§8.5（爆发）、docs/design/NPC行为决策.md §3
+# 依据：主文档 §8.2（举报）、§6.5（爆发）、docs/design/NPC行为决策.md §3
 behavior,metric,op,value,note
 report,hostility,>=,40,举报：对某人的敌对累积到阈值即触发（sigmoid 拐点）
 report,scale,>=,8,举报软门槛 sigmoid 坡度（H 低于 40 仍有极小概率）

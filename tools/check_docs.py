@@ -1,7 +1,7 @@
 """第六道门：文档一致性检查（`check_docs.py`）
 
 **为什么需要它**：本会话在自检里发现 4 处「**文档与实现脱节**」——
-`adapt_rate` 错值、§18.9 三项过时、§10.17.1 整章过时、`deep_cap` 标注过时。
+`adapt_rate` 错值、§14.9 三项过时、§8.17.1 整章过时、`deep_cap` 标注过时。
 这**不是疏忽，而是长期迭代的必然**：
 
     每次改机制/调参 → 代码立即生效，文档却停留在「当时的结论」
@@ -27,7 +27,8 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
-MAIN = os.path.join(DOCS, "gdd", "core-gameplay-v3.1.md")
+# v4.0 起主文档为拆分版（docs/gdd/v4/ 下多文件）；历史单体 v3.1 仅作参考，不再作为门的检查对象
+V4_DIR = os.path.join(DOCS, "gdd", "v4")
 CORE = os.path.join(ROOT, "tools", "core_sim.py")
 
 FAILED = []
@@ -85,14 +86,17 @@ def main():
     ap.add_argument("--verbose", action="store_true")
     a = ap.parse_args()
 
-    if not os.path.exists(MAIN):
-        print("!! 找不到主文档：%s" % MAIN)
+    if not os.path.isdir(V4_DIR):
+        print("!! 找不到主文档目录：%s" % V4_DIR)
         return 1
-    doc = read(MAIN)
+    v4_files = sorted(
+        os.path.join(V4_DIR, f) for f in os.listdir(V4_DIR)
+        if f.endswith(".md"))
+    doc = "\n".join(read(f) for f in v4_files)
     core = read(CORE)
     _BEHAVIORS[0] = behavior_names()
 
-    print("=== 第六道门：文档一致性（%s）===" % os.path.relpath(MAIN, ROOT))
+    print("=== 第六道门：文档一致性（拆分版主文档 docs/gdd/v4/，%d 个文件）===" % len(v4_files))
 
     # ---------- ① 「未实现」标记 vs 实际实现 ----------
     print("\n  — ① 「未实现 / 尚未 / 待办」标记 vs 代码实现 —")
@@ -115,7 +119,7 @@ def main():
     #    初版只写了前一种，而文档实际多用后一种 → **门根本没匹配上，是个「假的绿」**。
     PAT_BQ = re.compile(r"`([a-z_]{4,})\s*[=＝]\s*([0-9]+(?:\.[0-9]+)?)`|`([a-z_]{4,})`\s*[=＝]\s*([0-9]+(?:\.[0-9]+)?)")
     # 2026-10-07 补强①：**无反引号**的 `name = 1.2` 此前完全不扫 ——
-    #   文档 §10.28.3 的 `noise_base_fear = 1.3`（配置为 2.8）因此长期漏过。
+    #   文档 §9.9.3 的 `noise_base_fear = 1.3`（配置为 2.8）因此长期漏过。
     #   只在**代码块内**与**表格行内**扫，避免把正文叙述里的数字误当参数值。
     PAT_PLAIN = re.compile(r"\b([a-z_]{4,})\s*[=＝]\s*([0-9]+(?:\.[0-9]+)?)\b")
     # 「历史对照」语境豁免：**必须是明确的过去 / 对照记号**。
@@ -151,7 +155,7 @@ def main():
     check("文档里引用的参数值都与 data/ 一致", not bad,
           "不一致：%s" % bad[:5])
 
-    # ---------- ②b data/ 各表的 note 与 value 是否脱节（§3.4.1 纪律④）----------
+    # ---------- ②b data/ 各表的 note 与 value 是否脱节（§2.4.1 纪律④）----------
     print("\n  — ②b data/ 表的 note 与 value 是否一致 —")
     drift = []
     for sub in ("rules", "balance"):
@@ -210,7 +214,7 @@ def main():
     refs = set(re.findall(r"§([0-9]+\.[0-9]+(?:\.[0-9]+)?)", doc))
     miss = sorted(r for r in refs
                   if r not in heads_main and r not in heads_other
-                  and r.split(".")[0] not in {str(i) for i in range(3, 19)})
+                  and r.split(".")[0] not in {str(i) for i in range(1, 16)})
     check("§ 引用都能找到对应标题", not miss, "找不到：%s" % miss[:8])
 
     # ---------- ⑤ 陈旧标记 ----------
