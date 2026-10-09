@@ -138,11 +138,12 @@ func hide_term() -> void:
 	_panel.visible = false
 
 
-func _on_meta_hover_started(meta: Variant, label: RichTextLabel) -> void:
+func _on_meta_hover_started(meta: Variant, _label: RichTextLabel) -> void:
 	var m := str(meta)
 	if not m.begins_with(META_PREFIX):
 		return
-	_show_entry(m.substr(META_PREFIX.length()), label.get_global_rect().end + MOUSE_OFFSET)
+	# 位置传 ZERO → _place() 改用鼠标当前位置，提示就贴在光标边上
+	_show_entry(m.substr(META_PREFIX.length()), Vector2.ZERO)
 
 
 func _on_meta_hover_ended() -> void:
@@ -183,7 +184,8 @@ func _place(at: Vector2) -> void:
 	if pos.x + size.x > vp.x - 8.0:
 		pos.x = maxf(8.0, vp.x - size.x - 8.0)
 	if pos.y + size.y > vp.y - 8.0:
-		pos.y = maxf(8.0, at.y - size.y - 36.0)
+		# 下面放不下就翻到光标上方
+		pos.y = maxf(8.0, at.y - size.y - MOUSE_OFFSET.y)
 	_panel.global_position = pos
 
 
