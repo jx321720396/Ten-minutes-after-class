@@ -9,6 +9,7 @@
 #
 # 列: param | value | unit | note
 param,value,unit,note
+leave_decide_interval_seconds,50,s,每段课间段首判定一次离座；50 秒后再判定一次；事件结束不追加判定
 meters_per_tick,0.8,m/tick,每 tick 移动距离；0.8 米 / 秒 ≈ 跨一排 2 秒、横穿教室 9.4 米约 12 秒；与上课归位隐含速度（约 0.76 米 / 秒）趋于一致（2026-10-08 由 0.13 上调）
 player_radius,0.24,m,玩家碰撞半径;避障时把桌椅矩形外扩这个距离(人物中心不得进入)
 walk_epsilon,0.02,m,到位判定容差

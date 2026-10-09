@@ -41,6 +41,8 @@ func execute(kind: StringName, actor: int, target: int, options: Dictionary = {}
 	if not _context.is_bound():
 		push_warning("BehaviorRegistry：本局内核已释放")
 		return false
+	if _context.defer_for_player(str(kind), actor, target, options):
+		return false
 	_components[kind].execute(_context, actor, target, options)
 	return true
 

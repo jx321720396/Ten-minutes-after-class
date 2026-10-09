@@ -369,6 +369,7 @@ func test_reject_occupies_only_the_player_and_leaves_the_group_alone() -> void:
 	var member_end_before := int(core._busy_until[1])
 	var session_end_before := core.session_end_tick(sid)
 	var old_edge_before := float(core._a[0 * n + 1])
+	var busy_before := int(core._busy_until[me])
 	var request_id := core.next_player_request_id()
 	var packet := core.commit_player_interaction(request_id, "chat", 0, "join", sid)
 	assert_true(bool(packet["ok"]), "拒绝也是一次合法提交：%s" % str(packet))
@@ -377,14 +378,9 @@ func test_reject_occupies_only_the_player_and_leaves_the_group_alone() -> void:
 	assert_eq(int(core._stats["join_rejects"]), 1, "拒绝统计一次")
 	assert_eq(core.session_end_tick(sid), session_end_before, "原组结束点不被改短或延长")
 	assert_eq(int(core._busy_until[1]), member_end_before, "原成员占用不变")
+	assert_eq(int(core._busy_until[me]), busy_before, "拒绝不占用玩家——玩家立即可移动")
 	assert_eq(float(core._a[0 * n + 1]), old_edge_before, "原成员之间的关系不被拒绝改写")
 	assert_false((core._sessions.snapshot(sid)["members"] as Array).has(me), "拒绝不把玩家塞进原会话")
-	assert_eq(str(core.get_player_interaction(request_id)["request"]["status"]), "active", "拒绝先等占用到期")
-	while core.global_tick() < int(core._busy_until[me]):
-		core.advance_tick()
-	var status: Dictionary = core.get_player_interaction(request_id)
-	assert_eq(str(status["request"]["status"]), "completed", "拒绝占用到期后收尾")
-	assert_eq(str(status["request"]["outcome"]), "join_rejected")
 	assert_eq(core.get_player_intel().size(), 0, "拒绝不给线索")
 
 

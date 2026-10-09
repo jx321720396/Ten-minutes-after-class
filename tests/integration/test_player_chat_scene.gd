@@ -226,6 +226,48 @@ func _advance_to_free(scene: Node3D) -> void:
 		sim.advance_tick()
 
 
+func test_incoming_invitation_accept_button_starts_activity() -> void:
+	await _check_incoming_invitation(true)
+
+
+func test_incoming_invitation_reject_button_keeps_player_free() -> void:
+	await _check_incoming_invitation(false)
+
+
+func _check_incoming_invitation(accept: bool) -> void:
+	var scene: Node3D = await _open_scene()
+	var sim: Variant = _sim(scene)
+	var clock: SimulationClock = scene.get_node("Clock")
+	var hud: ChatFeedbackHUD = scene.get_node("ChatHUD")
+	var player: PlayerController = scene.get_node("Player")
+	var pair := _free_pair(scene, 0.7, true)
+	_free(scene, 0)
+	sim._sessions.clear()
+	_place(scene, 0, pair[1].x, pair[1].z)
+	_teleport_player(scene, pair[0].x, pair[0].z)
+	var me := _player_index(sim)
+	_free(scene, me)
+	sim._do_chat(0, me)
+	hud._process(0.0)
+	assert_true(hud._invitation_card.visible, "真实教室显示接受／拒绝卡片")
+	assert_true(player.can_control(), "邀请等待期间仍可移动")
+	assert_false(sim.is_busy(me))
+	assert_false(hud._invitation_accept.disabled)
+	if accept:
+		hud._invitation_accept.pressed.emit()
+	else:
+		hud._invitation_reject.pressed.emit()
+	hud._process(0.0)
+	assert_false(hud._invitation_card.visible)
+	assert_eq(bool(sim.is_busy(me)), accept, "只有接受才占用玩家")
+	assert_eq(player.can_control(), not accept)
+	if accept:
+		assert_string_contains(hud._progress_text.text, "聊天")
+	else:
+		assert_string_contains(hud._progress_text.text, "可以移动")
+	clock.hold(&"invitation_fixture_finished")
+
+
 # ------------------------------------------------------------------ ① 近距离直接闲聊
 
 
@@ -319,7 +361,11 @@ func test_far_target_requires_approach_before_commit() -> void:
 	var plan := player.plan_approach([pair[1]], 1.2)
 	assert_true(bool(plan["ok"]), "存在合法站位：%s" % str(plan))
 	var destination: Vector3 = plan["destination"]
-	assert_lte(Vector2(destination.x, destination.z).distance_to(Vector2(pair[1].x, pair[1].z)), 1.2, "终点在范围内")
+	assert_lte(
+		Vector2(destination.x, destination.z).distance_to(Vector2(pair[1].x, pair[1].z)),
+		1.2,
+		"终点在范围内"
+	)
 	_teleport_player(scene, destination.x, destination.z)
 	player._finish_path()
 	assert_eq(str(interaction.current_state()), "active", "到达后再次校验并提交")
@@ -365,7 +411,9 @@ func test_join_existing_chat_reveals_only_after_the_pen() -> void:
 	assert_true(rings.is_merged(0), "原组继续可见")
 
 	hud.skip()
-	assert_eq(int(hud.revealed_request_id()), int(interaction.state_snapshot()["request_id"]), "揭晓带请求编号")
+	assert_eq(
+		int(hud.revealed_request_id()), int(interaction.state_snapshot()["request_id"]), "揭晓带请求编号"
+	)
 	assert_false(clock._paused_by.has("player_pen_check"), "揭晓后释放自己持有的 hold")
 	var accepted: bool = bool(interaction.state_snapshot()["accepted"])
 	assert_true(accepted, "夹具保证这次被接受")
@@ -402,16 +450,13 @@ func test_join_rejection_keeps_the_group_intact() -> void:
 	assert_eq(str(interaction.current_state()), "pen_presenting", "加入要先转笔")
 	hud.skip()
 	assert_false(bool(interaction.state_snapshot()["accepted"]), "夹具保证这次被拒")
-	assert_eq(str(interaction.current_state()), "rejected_busy", "拒绝后等占用到期")
+	assert_eq(str(interaction.current_state()), "idle", "拒绝后直接回到 idle——不占用玩家")
 	assert_eq(int(sim.session_end_tick(session_id)), end_before, "原组结束点不变")
 	assert_eq(int(sim._busy_until[1]), member_end_before, "原成员占用不变")
 	assert_false(int(sim.session_of(_player_index(sim))) == session_id, "玩家没有被塞进原会话")
 	rings.refresh()
 	assert_true(rings.is_merged(0), "原组的融合圈照旧")
 	assert_false(rings.is_merged(_player_index(sim)), "拒绝不产生融合")
-
-	_advance_to_free(scene)
-	assert_eq(str(interaction.current_state()), "idle", "拒绝占用到期后解除操作锁")
 
 
 # ------------------------------------------------------------------ ④ 暂停与清理

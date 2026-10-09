@@ -53,10 +53,7 @@ var _moving: Dictionary = {}
 
 
 func _init(
-	core: RefCounted,
-	space: InteractionSpace,
-	sessions: ActivitySessions,
-	intel: PlayerChatIntel
+	core: RefCounted, space: InteractionSpace, sessions: ActivitySessions, intel: PlayerChatIntel
 ) -> void:
 	_core_ref = weakref(core)
 	_space = space
@@ -101,7 +98,7 @@ func next_request_id() -> int:
 
 
 ## 请求状态查询（深拷贝）：status = active / completed / interrupted。
-## 拒绝也先处于 active 等占用到期，不依赖只存在一 tick 的「刚完成」。
+## 拒绝的请求不产生占用，由表现层直接收尾。
 func get_request(request_id: int) -> Dictionary:
 	if not _requests.has(request_id):
 		return {"ok": false, "error": "unknown_request"}
@@ -273,7 +270,9 @@ func commit(
 
 
 ## 同 request_id 重复调用：签名一致返回缓存结果，否则冲突；已中断的请求不再受理。
-func _replay(rec: Dictionary, kind: String, target: int, mode: String, session_id: int) -> Dictionary:
+func _replay(
+	rec: Dictionary, kind: String, target: int, mode: String, session_id: int
+) -> Dictionary:
 	if not _same_signature(rec, kind, target, mode, session_id):
 		return {"ok": false, "error": "request_conflict"}
 	if str(rec["status"]) == STATUS_INTERRUPTED:
@@ -334,7 +333,7 @@ func _commit_join(request_id: int, target: int, session_id: int, pv: Dictionary)
 	)
 	var linked := session_id if accepted else -1
 	var end_tick: int = (
-		int(_sessions.end_tick_of(session_id)) if accepted else int(core._busy_until[me])
+		int(_sessions.end_tick_of(session_id)) if accepted else int(core.global_tick())
 	)
 	var outcome := OUTCOME_JOIN_ACCEPTED if accepted else OUTCOME_JOIN_REJECTED
 	var effects := _player_effects(core, me, before)
@@ -452,7 +451,7 @@ func on_sessions_completed(snapshots: Array) -> Array:
 	return out
 
 
-## 占用到期（拒绝加入的 10 tick 占用）：拒绝没有会话，靠占用结束收尾，不发线索。
+## 占用到期收尾：拒绝不再产生占用，此回调只处理旧路径的占用到期。
 func on_occupancy_completed(at_tick: int) -> Array:
 	var out: Array = []
 	for rid in _sorted_request_ids():
@@ -499,12 +498,17 @@ func _complete_request(rec: Dictionary, session_id: int, snap: Dictionary) -> Ar
 		clues = _draw_clues(core, request_id, session_id, source)
 	# 线索通知排在完成通知**之前**：完成通知一旦发出，调用方就会收掉本次请求的上下文
 	for clue in clues:
-		out.append({
-			"kind": "player_intel_received",
-			"request_id": request_id,
-			"session_id": session_id,
-			"clue": clue,
-		})
+		(
+			out
+			. append(
+				{
+					"kind": "player_intel_received",
+					"request_id": request_id,
+					"session_id": session_id,
+					"clue": clue,
+				}
+			)
+		)
 	out.append(_finish_request(request_id, rec, STATUS_COMPLETED))
 	return out
 
@@ -532,7 +536,13 @@ func _draw_clues(core: Variant, request_id: int, session_id: int, source: int) -
 		var axis := str(entry["axis"])
 		out.append(
 			_intel.record(
-				request_id, session_id, source, subject, axis, _axis_value(core, source, subject, axis), at
+				request_id,
+				session_id,
+				source,
+				subject,
+				axis,
+				_axis_value(core, source, subject, axis),
+				at
 			)
 		)
 	return out

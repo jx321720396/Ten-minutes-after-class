@@ -1,5 +1,35 @@
 ﻿# 变更记录
 
+- **协作流程简化：`main` 允许直接推送（2026-10-08，用户决策）**：原「`main` 禁止直接推送、一律走 PR + Squash merge」的规则与团队实际做法脱节 —— 最近 40 个提交里 **20 个是 merge**（本地合并进 `main`），分支 / PR / 评审 / 删分支的仪式性开销挤占开发时间。现在：条目少、范围清晰的改动**直接推 `main`**，两条硬条件 —— ① 推送前 `bash tools/run_tests.sh --no-godot`（六道门 + 铁律）全绿，**红灯不推**；② 先 `gdformat scripts/` + `gdlint scripts/`（避免 CI 因格式变红）。**跨模块大改或需要他人复看**的改动仍推荐走 PR。文档义务同步放宽：**规格变更**仍须同批更新 `docs/` 与 `CHANGELOG.md`，其余改动只需在同一批推送内补记。已同步 `CONTRIBUTING.md` §3/§7/§8、`AGENTS.md`、`docs/production/团队分工任务单.md` §2。
+
+- **玩家邀请自主选择（2026-10-09，玩法／实现）**：NPC 请求玩家参与闲聊、加入聊天、求助、安慰、和解和打闹时，先显示接受／拒绝卡片；等待回应不占用玩家、不结算效果、不暂停世界。接受时重新校验距离、状态与相位，并直接执行玩家选择，不掷玩家接受骰子；拒绝不锁移动，求助／道歉／加入保留既有发起方拒绝效果。有效期 12 tick、再次邀请间隔 20 tick 与类型开关集中在 data/，过期不自动接受。NPC 加入玩家已有聊天也需要批准；外部调侃、排挤和举报仍结算影响，但不强制玩家参加或占用。GDScript 与 Python 同步邀请口径；新增内核、卡片和真实教室回归。
+
+- **玩家移动与活动反馈修复、离座概率落地（2026-10-08）**：随机睡觉和自动跟随仅决定 NPC，不再替玩家选择活动（GDScript 与 Python 同步）；底部提示直接读取玩家真实占用与会话，被 NPC 主动找来聊天时也显示活动及剩余时间，会话延长同步倒计时，空闲时提示可以移动。move 基础概率由 0.05 调为 0.20，保留外向修正并移除误用的闲聊压力减半；判定仍在段首与 50 秒后。16 NPC 理想条件下平均约 6 人至少离座一次，真实人数受占用与路径限制。新增玩家自主决策、被动聊天反馈和倒计时延长回归。
+
+- **离座第二批移到课间中段（2026-10-08，节奏调整）**：离座判定由段首与约 6 秒后调整为段首与 50 秒后，每课间重新计时，最多两批；事件结束不追加或提前触发。间隔集中在 data/rules/movement.csv 的 leave_decide_interval_seconds，同步主文档 §10.4、移动设计与概率表注释。
+
+- **木纹板面改用 AI 实木纹、去掉法线（2026-10-08，变更 / 美术，用户决定）**：课桌 / 讲台 / 门 / 教室门叶共用的板面贴图 `scene_classroom_wood_plank.png` 换成用户提供的 **AI 生成实木纹**（384×384 源图取**中间 256×256**，右下角平台水印天然被裁掉），**不再接法线**，也不再加任何中高频颗粒。
+  - **为什么撤掉程序化板面**：用户认为程序化板面「不好看」，要求**直接采用实木纹**，并明确要「最简单的方式」—— 不做无缝化、不做去水印修补（裁中间即可）、不做法线、不加颗粒。
+  - **改了什么**：`mat_wood_desk.tres` / `mat_wood.tres` 去掉 `normal_texture` 与 `normal_enabled`；`uv1_scale` 由 `(3,3,3)` 改 `(1.5,1.5,1.5)` —— 桌面 0.66 m 差不多正好铺一张图，非无缝贴图因此不会在桌面上出现接缝线；`roughness 0.55` / `uv1_triplanar` / 过滤 Nearest + Mipmaps 不变。
+  - **移除**：`tools/gen_classroom_textures.py`（程序化板面生成器）与配套法线 `scene_classroom_wood_plank_normal.png` 一并删除，`tools/README.md` 同步去掉登记行。新贴图 91 KB（256×256 PNG）。
+  - **未受影响**：桌椅几何、`NavBlocker`、`StandSpot`（z = −0.80）、`SitPoint` 与烘焙产物 `resources/navigation/classroom_nav.tres` 均未动，**无需重烘焙**。
+  - **备选**：同批另外两张 AI 木纹（深褐 / 极浅米白）已同样裁好留在 `tmp/userwood/`（不入库）；换色只需替换该 PNG 并跑一次 `godot --headless --path . --import`。
+
+- **教室木纹板面统一并提精度（2026-10-08，变更 / 美术）**：教室所有木制表面（课桌 / 椅面 / 椅背 / 讲台 / 门 / 教室门叶）统一到一套程序化生成的板面 `assets/textures/classroom/scene_classroom_wood_plank.png` + 法线 `_normal.png`；课桌另拆出 `resources/materials/mat_wood_desk.tres`（与 `mat_wood.tres` 参数完全一致，只为以后能单独调课桌而不同时改讲台）。
+  - **板面口径（返工三次，别再退回老做法）**：真实教室课桌是**刷漆的光滑板面** —— 接近纯色、几乎看不到木纹线。① 第一版按「8 级色板 + 深色沟槽 + 节疤」做粗木纹，**被否**（像斑马纹地板，还不如原 32×32 的淡纹）；② 第二版收敛成 96×96 / `soft`（4 阶、跨度 12），被评价为「太素，跟原来分不出来」；③ 现按用户口径**放开精度**：**256×256 / `fine`（8 阶色板、跨度 17）**，并在大色斑之上叠**中频横向细木纹**与**高频漆面颗粒**两档层次 —— 结构上仍**没有**深色沟槽 / 硬边接缝 / 节疤。
+  - **为什么是 256 而不是 128**：128 下同样的中高频噪声会退化成颗粒噪点（格点相对分辨率太密），256 才画得出细腻过渡 —— 故格点数改为随分辨率缩放（`N/42`、`N/6.4`、`N/4`），任何尺寸观感一致。近景木色亮度标准差实测：96 `soft` 30.5 → 128 `fine` 39.4（有颗粒噪点）→ **256 `fine` 39.3（细腻）**。
+  - **风格档**（`--list-styles`，跨度按 0–255 计）：`fine` 17（默认，采用）、`classic` 18、`soft` 12、`soft6` 12、`grain` 27。基准色取原木纹主色 `#E29A52`，故板面与教室其余暖木色同色系、同光照反应。换档：`python tools/gen_classroom_textures.py --style soft --size 96`，再 `godot --headless --path . --import`。
+  - **贴图怎么来**：工具 `tools/gen_classroom_textures.py`（纯函数 + 固定种子，可复现；`--style` / `--size` / `--out-dir` 试风格 / `--check` 逐像素校验）。板条周期 = 边长 / 4，故换尺寸**不改变世界尺度**（`uv1_scale` 保持 3 时每个 uv 周期仍是 4 条板条，约每 33 cm 一条）。
+  - **材质**：两个材质都在 albedo 之外接法线（`normal_enabled`，强度 0.60）；`roughness 0.55`、`uv1_triplanar`、`uv1_scale (3,3,3)`、过滤 Nearest + Mipmaps 沿用旧木纹。
+  - **砂砾噪点修复（用户反馈）**：把中频木纹与高频颗粒一并喂给法线后，桌面出现明显噪点 —— 法线是**逐像素斜率**，高频进去就变成明暗抖动（砂纸感）。修法：**albedo 用完整高度场（细腻靠它表达），法线只用低频**（`plank_field(low_only=True)`），强度 0.80 → 0.60。实测近景相邻像素亮度差 **3.79 / P99 68.7 → 0.65 / P99 12.9**（「完全关掉法线」的下限是 0.22，即噪声基本清零）。
+  - **修掉的误配**：动工前工作区里 `mat_wood.tres` 把**同一张** albedo 木纹图同时挂在 `normal_texture` 与 `roughness_texture` 上（拿颜色图当法线用，凹凸方向错误），`scene_classroom_wood.png.import` 也被设成 normal map 预设（`roughness/mode=1`）。统一板面后这些配置一并作废：albedo 走正常颜色导入，法线指向真法线图，`roughness` 回到 0.55。
+  - **移除 / 备用**：删除本轮新建的临时贴图（`scene_classroom_desk_wood*` 与 `scene_classroom_wood_normal.png`）；原 `scene_classroom_wood.png`（32×32）**当前未被任何材质引用**，留作备用（要用回则 `--target wood-normal` 生成配套法线），`assets/CREDITS.md` 已标注。
+  - **未受影响**：桌椅几何、`NavBlocker`、`StandSpot`（z = −0.80）、`SitPoint` 与烘焙产物 `resources/navigation/classroom_nav.tres` 一律未动，**无需重烘焙**。
+  - **验证**：临时校验脚本 20/20（两材质共用同一张 albedo / 法线；17 个座位、讲台、教室门叶引用正确；导航锚点未变）；`gen_classroom_textures.py --check` 与磁盘逐像素一致（最大差 0）、2×2 平铺无额外接缝；`tools/check_docs.py` 通过；GUT 全量 **224/224**。截帧对比（`--write-movie`，1920×1080）：`soft`→`fine` 改动落在课桌区 4.2%、讲台区 13.4% 像素，亮度均值与标准差基本不变；地面与后墙 0.0%。贴图体积：albedo 8 KB、法线 179 KB（均远低于 1 MB 上限）。
+  - **观感实测（如实记录）**：**近景**（640×640，桌面占满画面）能明显看出精细度提升（`soft` 30.5 → `fine` 39.3 的木色层次标准差）；但**教室默认远机位**（相机 6.7 m 高）下课桌区标准差只有 31.85 → 32.22 —— 课桌在画面里仅约 70 像素宽，纹理像素比屏幕像素还小，mipmap 会直接把它压平。**想让「精细」在大画面里看得见，杠杆不在贴图，而在相机（拉近 / 降低 / 特写机位）或 `uv1_scale`**，本轮未动这些。
+  - **踩过的坑**：① 贴图内容变了而 `.ctex` 导入缓存未刷新时，Godot 会继续用旧图 —— 改完 PNG 必须跑一次 `godot --headless --path . --import` 再截图（本轮据此白拍过一轮）。② 工作区长期开着 Godot 编辑器时会与外部改动互相覆盖（编辑器持有内存状态），改完建议在该编辑器里 Reload Project。
+  - **顺带说明**：`resources/navigation/classroom_nav.tres` 的 `uid` 字段来自本轮之前的编辑器保存（mtime 17:17–17:20，晚于提交 `302af93` 的 16:38），非本次改动。
+
 - **修复聊天空间与移动互斥（2026-10-08）**：NPC 选目标和聊天执行入口接入空间检查，玩家不能拉移动中的目标聊天；Walker 开始/结束即时同步移动状态，聊天/行为占用/睡眠期间阻止 NPC 离座。按用户要求明确前后紧邻座位可转身交流（1.8 米内），其他情况需离座靠近到 1.2 米并停下；容差与范围集中到 `player_interaction.csv`。真实教室在铃声归位前结束/中断聊天，修复带圈归位。新增内核回归与整段课间场景测试；无场景几何的离线标定仍保留原抽象模型。
 
 - **剩余 UI 落地与联调计划（2026-10-07）**：新增 `docs/superpowers/plans/2026-10-07-ui-integration-delivery.md`，按用户确认复用已有情绪气泡与人物圈，收敛为输入、移动反馈、状态提示、情报日志、结算与既有组件联调六项任务；仅文档。
@@ -34,6 +64,10 @@
 - **角色头像 Sprite**：从 `assets/textures/characters/` 的 16 张立绘裁出脑袋，做成 `Sprite2D` 放在 `scenes/character_head/`。每张头像外轮廓加了 2 像素白边，贴图在 `assets/textures/character_head/`。英文名与 `scenes/characters/` 相同：`quiet` 安静、`stern` 严肃、`tsundere` 傲娇、`sensitive` 敏感、`lively` 活泼、`warm` 热情、`blunt` 直接、`shy` 社恐，女 `_female`、男 `_male`。
 - **八种情绪气泡 Sprite**：男女各一套，白底已抠掉。贴图在 `assets/textures/meme/`，`Sprite2D` 在 `scenes/meme/`。英文名：`relax` 放松、`bored` 无聊、`excited` 兴奋、`irritable` 烦躁、`agitated` 激动、`breakdown` 崩溃、`agree` 同意、`reject` 拒绝；女为 `_female`，男为 `_male`。尚未接到角色身上。
 - **安静女 2.5D**：`scenes/characters2.5D/quiet_female_billboard.tscn` 与 `assets/textures/characters2.5D/quiet_female/`。`sleep` 四帧去掉腿上的书；`apologize_left` / `apologize_right` 记为「左道歉」「右道歉」；`inform` 只保留四帧、只张合嘴巴。八种表情静帧在 `expr/`，尚未接进动画。
+
+- **同学档案概念图（2026-10-08）**：新增 `docs/art/ui_mockups/ui_npc_profile_concept_v01.png` 及设计说明，展示闲聊真实关系快照、获知时间、未知信息与主观判断分区；仅概念设计，未修改游戏代码。
+
+
 - **走动速度上调（2026-10-08，用户裁决，平衡）**：`data/rules/movement.csv` 的 `meters_per_tick` 由 **0.13 上调到 0.8 米 / 秒**（1 课间 tick = 1 真实秒）。
   - **为什么改**：原值下跨一排座位（1.6 米）要 **12.3 秒**、横穿教室（9.4 米）要 **72.3 秒**、纵穿（11.4 米）要 **87.7 秒** —— 而**一个课间段只有 100 秒实时**，走动几乎吃满整段，玩家与 NPC 都像在飘。
   - **新值**：跨一排 **2.0 秒**、到讲台前（3.5 米）**4.4 秒**、横穿教室 **11.8 秒**、纵穿 **14.3 秒**；并与上课归位的隐含速度（`move.duration` 15 tick 换算约 0.76 米 / 秒）趋于一致 —— 此前归位比课间走动快约 6 倍，本身也不协调。

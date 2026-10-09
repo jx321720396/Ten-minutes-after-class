@@ -200,7 +200,9 @@ func test_interrupted_chat_clears_session_and_does_not_complete() -> void:
 		core.advance_tick()
 	var status: Dictionary = core.get_player_interaction(request_id)
 	assert_eq(str(status["request"]["status"]), "interrupted", "被铃声打断 → interrupted")
-	assert_eq(core.get_active_sessions().size(), 0, "中断不留半场会话")
+	assert_eq(core.session_of(me), -1, "中断不留下玩家的半场会话；上课时 NPC 可另开合法活动")
+	for session in core.get_active_sessions():
+		assert_ne(int(session.session_id), int(packet.session_id), "原会话确实被中断，不得残留")
 	assert_eq(core.get_player_intel().size(), 0, "中断不发完成线索")
 	var acts: Array = core._current_act
 	assert_eq(acts[me], null, "中断后当前动作被清空")

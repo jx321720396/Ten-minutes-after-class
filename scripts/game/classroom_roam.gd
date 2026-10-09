@@ -6,7 +6,7 @@ extends Node3D
 ## 「课间走动 → 段末 / 上课归位」表现出来。
 ##
 ## 做什么：
-##   · **课间段**：每隔 `decide_interval` 秒让一部分 NPC 离座，目标按 §10.4 的权重式挑
+##   · **课间段**：段首与配置的间隔之后各判定一次离座，目标按 §10.4 的权重式挑
 ##     （`1 + Σ_j A[i][j]/100 − Σ_j H[i][j]/200`，目标点附近有活动圈则 ×1.5，下限 0.1）；
 ##   · **上课段**：进入上课时全体走回自己座位，整段不动（§10.4 第 6 条归位）；
 ##   · **占用**：每个站立点同时只容纳一个人（含玩家），先到者锁定（NPC移动决策 §2.2）；
@@ -19,8 +19,9 @@ extends Node3D
 ##     保证 §10.4 第 6 条「相位切换后回座位」在段内完成；
 ##   · 路线一律来自**导航网格**（`scenes/game/classroom3D.tscn` 的 NavigationRegion3D）：
 ##     取不到路线就留在原地并计数，**不用直线兜底**（直线会穿桌椅）；
-##   · `leave_probability` 是**演示参数，不是玩法数值** —— 内核的离座概率来自
-##     `data/rules/behavior_probs.csv` 的 `move`（当前 0.05）。
+##   · **离座概率走统一公式**：`p = base_p × 外向修正(E)`，
+##     `base_p` 来自 `data/rules/behavior_probs.csv` 的 `move`（当前 0.20），
+##     外向修正（§10.4）：E≥50 → ×(1+(E−50)/100)，E<50 → ×(1−(50−E)/200)，下限 0.1；
 
 const BEHAVIORS_TABLE := "rules/behaviors"
 const PHASES_TABLE := "rules/phases"
@@ -43,11 +44,6 @@ const CIRCLE_RADIUS := 1.2
 @export_group("表现开关")
 ## 关掉即纯静态教室（便于截图 / 对比）
 @export var enabled: bool = true
-## 课间里每隔多久让一批人重新决定去留（秒）—— 表现节奏，不影响内核 tick
-@export var decide_interval: float = 6.0
-## 演示用离座概率（见文件头：非玩法数值）
-@export var leave_probability: float = 0.35
-
 @export_group("节点路径")
 @export var stand_points_path: NodePath = ^"../StandPoints"
 @export var seats_path: NodePath = ^"../Seats"
@@ -63,6 +59,9 @@ const CIRCLE_RADIUS := 1.2
 ## 打印每批离座与归位的汇总 —— 演示期默认开，便于在编辑器 / MCP 的调试输出里
 ## 确认走动真的在发生；接上内核后建议关掉。
 @export var log_roam: bool = true
+
+## 第二批离座距段首的秒数，来自 movement.csv 的 leave_decide_interval_seconds。
+var decide_interval: float = 0.0
 
 var _core: Variant = null
 var _clock: SimulationClock = null
@@ -84,6 +83,10 @@ var _speed := 0.8
 var _missed_walks := 0
 var _snapshot: Dictionary = {}
 var _decide_timer := 0.0
+## 每个课间最多触发几批离座决策（段首与课间中段）
+var _max_decides_per_break: int = 2
+## 本课间还剩几批决策额度
+var _decides_remaining: int = 0
 
 
 func _ready() -> void:
@@ -98,6 +101,7 @@ func _ready() -> void:
 	_player_index = _actor_count - 1
 	_home_limit = _load_home_limit()
 	_speed = _load_speed()
+	decide_interval = _load_decide_interval()
 	_collect_points()
 	_collect_actors()
 	if show_stand_markers:
@@ -126,6 +130,8 @@ func _process(delta: float) -> void:
 		_sync_positions_to_core()
 		return
 	_sync_positions_to_core()
+	if _decides_remaining <= 0 or decide_interval <= 0.0:
+		return
 	_decide_timer += delta
 	if _decide_timer < decide_interval:
 		return
@@ -136,10 +142,15 @@ func _process(delta: float) -> void:
 ## 相位切换（由时钟驱动）：进课间 → 可以离座；进上课 → 全体归位（§10.4 第 6 条）。
 func _on_phase_changed(snapshot_data: Dictionary) -> void:
 	_snapshot = snapshot_data
-	_occupy_seats()
-	_decide_timer = decide_interval
-	if is_break_phase():
+	if not enabled or _core == null:
 		return
+	_occupy_seats()
+	_decide_timer = 0.0
+	if is_break_phase():
+		_decides_remaining = _max_decides_per_break
+		_decide_batch()
+		return
+	_decides_remaining = 0
 	var seconds := _home_seconds()
 	for i in range(_actor_count):
 		var seat_id := str(_core.seat_of(i))
@@ -340,6 +351,17 @@ func _load_speed() -> float:
 	return 0.8
 
 
+## 第二次判定的间隔只读配置；缺失时禁用第二批，避免两批挤在段首。
+func _load_decide_interval() -> float:
+	for row in ConfigLoader.new().get_table(MOVEMENT_TABLE).get("rows", []):
+		if str(row.get("param", "")) == "leave_decide_interval_seconds":
+			var value := float(str(row.get("value", "0")))
+			if value > 0.0:
+				return value
+	push_warning("ClassroomRoam：缺少有效的 leave_decide_interval_seconds，第二批离座关闭。")
+	return 0.0
+
+
 func _break_seconds_per_tick(phase_row: Dictionary, presentation_rows: Array) -> float:
 	var ticks := float(str(phase_row.get("tick_count", "0")))
 	var phase_id := str(phase_row.get("phase_id", ""))
@@ -355,18 +377,25 @@ func _break_seconds_per_tick(phase_row: Dictionary, presentation_rows: Array) ->
 
 
 ## 课间一批离座决策：按角色索引升序（NPC移动决策 §9 可复现性）。
+## 离座概率走统一公式：p = base_p × 外向修正(E)
 func _decide_batch() -> void:
+	if _decides_remaining > 0:
+		_decides_remaining -= 1
 	_batch_count += 1
 	var moved := 0
+	var base_p: float = _core.behavior_base_p("move")
 	for i in range(_actor_count):
 		if i == _player_index:
 			continue
 		if _core.is_busy(i) or _core.session_of(i) >= 0 or _core._sleeping[i]:
 			continue
+		if _core.is_waiting_for_player(i):
+			continue
 		var walker: ActorWalker = _walkers[i]
 		if walker == null or walker.is_moving():
 			continue
-		if _rng.randf() > leave_probability:
+		var p_move: float = base_p * _e_correction(i)
+		if _rng.randf() > p_move:
 			continue
 		var point_id := _pick_point(i)
 		if point_id.is_empty():
@@ -375,6 +404,14 @@ func _decide_batch() -> void:
 		moved += 1
 	if log_roam and moved > 0:
 		print("[roam] 课间第 %d 批：%d 人离座" % [_batch_count, moved])
+
+
+## 外向修正（主文档 §10.4）：E≥50 爱动，E<50 不爱动但概率永不为零（下限 0.1）。
+func _e_correction(i: int) -> float:
+	var e: float = _core.dimension(i, 0)
+	if e >= 50.0:
+		return 1.0 + (e - 50.0) / 100.0
+	return maxf(0.1, 1.0 - (50.0 - e) / 200.0)
 
 
 ## 按 §10.4 权重抽一个站立点；没有候选返回空串。
@@ -465,9 +502,7 @@ func _send_to_point(i: int, target: Vector3, seconds: float) -> bool:
 	if not ok:
 		_missed_walks += 1
 		if log_roam:
-			push_warning(
-				"[roam] 节点 %d 取不到导航路线 → 留在原地 (%.2f, %.2f)" % [i, target.x, target.z]
-			)
+			push_warning("[roam] 节点 %d 取不到导航路线 → 留在原地 (%.2f, %.2f)" % [i, target.x, target.z])
 	return ok
 
 

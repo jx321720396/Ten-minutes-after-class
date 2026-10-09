@@ -1,10 +1,10 @@
-[gd_resource type="StandardMaterial3D" format=3]
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://csprcagi0dg6n"]
 
-[ext_resource type="Texture2D" path="res://assets/textures/classroom/scene_classroom_wood.png" id="1_tex"]
+[ext_resource type="Texture2D" uid="uid://dkcad4mvi8b78" path="res://assets/textures/classroom/scene_classroom_wood_plank.png" id="1_tex"]
 
 [resource]
 albedo_texture = ExtResource("1_tex")
 roughness = 0.55
-uv1_scale = Vector3(3, 3, 3)
+uv1_scale = Vector3(1.5, 1.5, 1.5)
 uv1_triplanar = true
 texture_filter = 2

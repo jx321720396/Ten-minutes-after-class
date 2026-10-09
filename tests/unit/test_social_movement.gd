@@ -115,7 +115,6 @@ func test_roam_does_not_reserve_destination_while_chatting() -> void:
 	roam._walkers = [walker]
 	roam._point_positions = {"home": Vector3.ZERO, "away": Vector3(2, 0, 0)}
 	roam._occupy("home", 0)
-	roam.leave_probability = 1.0
 	roam.log_roam = false
 	roam._decide_batch()
 	assert_eq(roam.occupant_of("home"), 0, "聊天期间不能离座并预占其他点")

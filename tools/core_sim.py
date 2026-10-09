@@ -19,6 +19,7 @@ import csv
 import math
 import os
 import random
+from player_invitations import PlayerInvitations, invitation_behavior
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -208,6 +209,15 @@ class Sim:
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
         self.day_events = {}            # (i,j) -> 当天事件类结算次数，用于「有互动」判定
+        self.player_invitations = PlayerInvitations(
+            self, load_table("rules/player_invitation_kinds.csv"),
+            load_params("rules/player_interaction.csv"))
+
+    def get_player_invitation(self):
+        return self.player_invitations.pending()
+
+    def respond_player_invitation(self, invitation_id, accepted):
+        return self.player_invitations.respond(invitation_id, accepted)
 
     def _build_neighbors(self):
         """按 8 邻域（相邻 ≤1 格）建立邻接表；讲桌旁（row 0）与第一排（row 1）相邻。
@@ -577,7 +587,8 @@ class Sim:
         只看**邻居**（看得见才谈得上跟随），且只跟随**当前真在做的**活动。
         """
         rates = self.probs
-        for i in range(self.N):
+        # 玩家（末位）由人选择活动，不参与自动跟随。
+        for i in range(self.N - 1):
             if self.sleeping[i] or self.busy_until[i] > self.global_tick:
                 continue
             # ⚠️ **「学习」是个例外**：它是 `default` 状态、不占用时间槽，因此**不体现在 `current_act` 里**。
@@ -700,7 +711,8 @@ class Sim:
         if not self.allowed("sleep"):
             return
         p = self.probs.get("sleep", 0.0)
-        for i in range(self.N):
+        # 随机睡觉属于 NPC 决策，不能替玩家选择。
+        for i in range(self.N - 1):
             if self.sleeping[i]:
                 continue
             if self.rng.random() < p * (1.0 + self.tag_bias(i, "alone_bias")):
@@ -762,6 +774,8 @@ class Sim:
         busy = set()
 
         for i in order:
+            if self.player_invitations.is_waiting(i):
+                continue
             if self.sleeping[i] or i in busy or self.global_tick < self.busy_until[i]:
                 continue
             self.in_conversation[i] = False
@@ -1008,19 +1022,23 @@ class Sim:
         self.current_act[i] = behavior
         # quiet=True：加入 / 被搭话的一方 —— 同一场对话只算**一个声源**
         # （现实里多一个人加入同一场聊天，音量几乎不变；让教室变吵的是「多摊人各自在聊」）
-        self.current_act[j] = None if quiet else behavior
+        occupy_target = j != self.N - 1 or i == self.N - 1 or self.player_invitations.authorizes(i)
+        if occupy_target:
+            self.current_act[j] = None if quiet else behavior
         dur = self.behaviors.get(behavior, {}).get("duration", 0)
         if dur > 0:
             # 时长**累积**而不是覆盖（策划 2026-10-07：「群聊作为同一个交互管理，
             # 不能靠覆盖占用实现」）—— 否则加入一场进行中的活动会把已占用的时长改短。
             until = self.global_tick + dur
             self.busy_until[i] = max(self.busy_until[i], until)
-            self.busy_until[j] = max(self.busy_until[j], until)
             self.busy_phase[i] = self.phase_index
-            self.busy_phase[j] = self.phase_index
             self.busy_act[i] = behavior
-            self.busy_act[j] = behavior
+            if occupy_target:
+                self.busy_until[j] = max(self.busy_until[j], until)
+                self.busy_phase[j] = self.phase_index
+                self.busy_act[j] = behavior
 
+    @invitation_behavior("chat")
     def do_chat(self, i, j):
         """闲聊：话题共鸣事件 + 双方观测"""
         self.in_conversation[i] = True
@@ -1035,6 +1053,7 @@ class Sim:
         self.observe(j, i, "affinity")
         self.stats["chats"] += 1
 
+    @invitation_behavior("join_chat")
     def do_join_chat(self, i, j, roll=None):
         """搭话判定侧：**p = σ((score − θ)/scale) 掷骰**（§6.4）。
 
@@ -1045,7 +1064,10 @@ class Sim:
         self.in_conversation[j] = True
         self.occupy(i, j, "join_chat", quiet=True)   # 同一场对话：只计一个声源
         p = self.join_probability(i, j)
-        if roll is None:
+        choice = self.player_invitations.choice_for(i)
+        if choice is not None:
+            p, roll = (1.0 if choice else 0.0), 0.0
+        elif roll is None:
             roll = self.rng.random()
         if roll < p:
             self.do_chat(i, j)
@@ -1157,6 +1179,7 @@ class Sim:
                 self.observe(k, j, "hostility")     # 二手观测（会带噪声）
         self.stats["rumors"] += 1
 
+    @invitation_behavior("roughhouse")
     def do_roughhouse(self, i, j, bystanders):
         """【追逐打闹】（§10.18）—— 全系统唯一不依赖既有敌对的「敌对种子」。
 
@@ -1183,6 +1206,7 @@ class Sim:
     # 它们的共同点：**发起者要付出压力成本**（主动接近别人是有代价的）——
     # 于是「谁被照顾、谁被求、谁被原谅」都不白给，代价由发起者承担。
 
+    @invitation_behavior("comfort")
     def do_comfort(self, i, j):
         """安慰（§10.13，A 类）：**i 主动去关心正处在高压区的 j**。
 
@@ -1205,6 +1229,7 @@ class Sim:
         self.apply_event(j, i, "comfort_target_trust")     # 目标 → 安慰者：信任 ↑
         self.stats["comforts"] += 1
 
+    @invitation_behavior("ask_help")
     def do_ask_help(self, i, j):
         """求助（§10.10，C 类）：**i 开口求 j 帮忙**。
 
@@ -1227,7 +1252,8 @@ class Sim:
         score = self.A[j][i] + self.dims[j][0] / 100.0 * thk.get("ask_help_extrovert_bonus", 10.0)
         p = sigmoid((score - thk.get("ask_help_accept_theta", 40.0))
                     / thk.get("ask_help_accept_scale", 12.0))
-        if self.rng.random() < p:
+        if (self.player_invitations.choice_for(i) if self.player_invitations.choice_for(i) is not None
+                else self.rng.random() < p):
             self.apply_event(i, j, "ask_help_ok_asker_affinity")
             self.apply_event(i, j, "ask_help_ok_asker_stress")
             self.apply_event(j, i, "ask_help_ok_helper_affinity")
@@ -1239,6 +1265,7 @@ class Sim:
             self.apply_event(i, j, "ask_help_no_trust")
             self.stats["help_rejects"] += 1
 
+    @invitation_behavior("apologize")
     def do_apologize(self, i, j):
         """道歉 / 和解（§10.11，E 类）：**i 主动向 j 低头**。双方敌对 ≥30 才谈得上和解。
 
@@ -1269,7 +1296,8 @@ class Sim:
                  - self.H[j][i] * thk.get("apologize_hostility_penalty", 0.5))
         p = sigmoid((score - thk.get("apologize_accept_theta", 40.0))
                     / thk.get("apologize_accept_scale", 12.0))
-        if self.rng.random() < p:
+        if (self.player_invitations.choice_for(i) if self.player_invitations.choice_for(i) is not None
+                else self.rng.random() < p):
             for a, b in ((i, j), (j, i)):          # 双向：和解是双方的事
                 self.apply_event(a, b, "apologize_ok_hostility", no_modulation=True)
                 self.apply_event(a, b, "apologize_ok_affinity", no_modulation=True)
@@ -1611,6 +1639,7 @@ class Sim:
         ⚠️ 与「被铃声打断」严格互斥：到期的不算被打断；未到期的才可能被 check_interrupt()
         在相位切换时打断。两边都不重复记。
         """
+        self.player_invitations.expire()
         self.last_finished = [None] * self.N
         for i in range(self.N):
             if self.busy_phase[i] < 0 or self.busy_until[i] > self.global_tick:

@@ -44,6 +44,14 @@ func node_count() -> int:
 	return _core_ref.get_ref().node_count()
 
 
+func defer_for_player(kind: String, actor: int, target: int, options: Dictionary) -> bool:
+	return _core_ref.get_ref()._player_invitations.intercept(kind, actor, target, options)
+
+
+func player_choice(actor: int) -> Variant:
+	return _core_ref.get_ref()._player_invitations.choice_for(actor)
+
+
 func can_chat_in_space(i: int, j: int) -> bool:
 	var core: Variant = _core_ref.get_ref()
 	return not core.is_moving(i) and not core.is_moving(j) and core.chat_pair_in_range(i, j)
@@ -99,8 +107,10 @@ func busy_until_of(member: int) -> int:
 
 
 ## 按成员列表占用：群聊用，全体占用与共同结束点对齐、声源只有一个。
-func occupy_members(members: Array, behavior: String, until: int, sound_source: int) -> void:
-	_core_ref.get_ref()._occupy_members(members, behavior, until, sound_source)
+func occupy_members(
+	members: Array, behavior: String, until: int, sound_source: int, actor: int
+) -> void:
+	_core_ref.get_ref()._occupy_members(members, behavior, until, sound_source, actor)
 
 
 ## 真实共同活动：成立或并入（同一场活动只登记一次）。
