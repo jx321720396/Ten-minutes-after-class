@@ -7,7 +7,7 @@ extends Control
 ## 文案一律不进代码（`docs/localization/本地化说明.md` §2 禁止硬编码中文字面量）。
 ##
 ## 左侧是可折叠的分类树：点分类标题展开 / 收起，点词条看正文。
-## 正文里的词条名会自动变成可悬停词（`TermTooltip`），鼠标移上去弹小解释。
+## 本页**不做悬停解释** —— 悬停组件是给别处（角色档案、简报）用的，见 scripts/ui/term_tooltip.gd。
 ##
 ## 信息纪律（§20.0.1 / §7）：词条只解释**机制**，不描述「此刻某人怎样」，
 ## 也不写 NPC 的隐藏数值。`implemented=false` 的条目**不列出**。
@@ -15,7 +15,6 @@ extends Control
 signal closed
 
 const DATA_PATH := "res://data/localization/encyclopedia.json"
-const TOOLTIP_SCENE := "res://scenes/ui/term_tooltip.tscn"
 
 ## 折叠标记（用符号，不用字母/数字编号）
 const ARROW_COLLAPSED := "▶ "
@@ -37,7 +36,6 @@ var _cats: Array = []
 var _index := 0
 ## 词条按钮列表，用于给当前项加高亮
 var _entry_buttons: Array = []
-var _tooltip: CanvasLayer
 
 static var _all_entries: Array = []
 
@@ -46,11 +44,6 @@ func _ready() -> void:
 	_prev.pressed.connect(_on_prev)
 	_next.pressed.connect(_on_next)
 	_back.pressed.connect(_on_back)
-	# 悬停解释：正文里的词条名移上去就弹小面板
-	if ResourceLoader.exists(TOOLTIP_SCENE):
-		_tooltip = (load(TOOLTIP_SCENE) as PackedScene).instantiate()
-		add_child(_tooltip)
-		_tooltip.bind_rich_text(_content)
 	_load_data()
 	if not _entries.is_empty():
 		_show_entry(0)
@@ -228,7 +221,7 @@ func _show_entry(i: int) -> void:
 	var short := str(e.get("short", ""))
 	if not short.is_empty():
 		out += "[color=#6b7a5e][i]%s[/i][/color]\n" % short
-	out += "\n%s\n" % _linkify(str(e.get("body", "")))
+	out += "\n%s\n" % _plain_refs(str(e.get("body", "")))
 
 	_content.clear()
 	_content.append_text(out.strip_edges())
@@ -239,25 +232,18 @@ func _show_entry(i: int) -> void:
 		_scroll.scroll_vertical = 0
 
 
-## 把正文里可能出现的词条引用变成可悬停词。
+## 把文案里的 `[t]词条名[/t]` 跨引用标记去掉，只留文字。
 ##
-## 两种来源：
-##  ① 文案里显式写的 `[t]词条名[/t]` → 转成 `[url=entry:<id>]词条名[/url]`；
-##  ② 其余出现的词条名 / 别名 → 交给 TermTooltip.mark_terms() 自动认出来。
-## 显式引用先处理，`mark_terms` 会跳过已有 `[url=…]` 的区间，不会重复包。
-static func _linkify(body: String) -> String:
+## 百科页**不做悬停**：悬停组件（scripts/ui/term_tooltip.gd）是给**别处**用的 ——
+## 角色档案、每日简报这类「正文里突然冒出一个术语」的地方。
+## 百科本身就是解释术语的去处，再给它套悬停只会自相矛盾。
+static func _plain_refs(body: String) -> String:
 	var re := RegEx.new()
 	re.compile("\\[t\\]([^\\[\\]]+)\\[/t\\]")
 	var out := body
 	for m in re.search_all(body):
-		var word := m.get_string(1)
-		var idx := id_for_term(word)
-		if idx.is_empty():
-			out = out.replace(m.get_string(0), word)
-		else:
-			out = out.replace(m.get_string(0), "[url=%s%s]%s[/url]" % [TermTooltip.META_PREFIX, idx, word])
-	var tt: GDScript = load("res://scripts/ui/term_tooltip.gd")
-	return tt.mark_terms(out)
+		out = out.replace(m.get_string(0), m.get_string(1))
+	return out
 
 
 # ------------------------------------------------------------------ 目录交互
