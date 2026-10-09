@@ -111,7 +111,9 @@ func walk_to_at_speed(target: Vector3, speed: float) -> void:
 ## 沿**导航网格**走到世界坐标 target（主文档 §10.4）：绕开桌椅，耗时随实际路径长度变化。
 ## 返回 false = 这次没有可执行路线（地图未就绪 / 目标不可达）—— 调用方决定怎么办；
 ## 本组件**不用直线兜底**（直线会穿桌）。allow_straight_fallback 只给"没有导航地图的单测"用。
-func walk_to_navigated(target: Vector3, speed: float, allow_straight_fallback: bool = false) -> bool:
+func walk_to_navigated(
+	target: Vector3, speed: float, allow_straight_fallback: bool = false
+) -> bool:
 	if _body == null or speed <= 0.0:
 		return false
 	var points := _query_path(target)

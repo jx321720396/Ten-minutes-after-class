@@ -220,6 +220,7 @@ func is_approaching() -> bool:
 
 # ------------------------------------------------------------------ 人物拾取（射线）
 
+
 ## 屏幕点 → 人物索引；最近命中是墙壁 / 桌椅则返回 -1（**隔着家具选不中**）。
 ## 由交互控制器在「地面移动」之前调用，人物输入因此不会被先走一步。
 func pick_actor(screen_pos: Vector2) -> int:
@@ -245,6 +246,7 @@ func pick_actor(screen_pos: Vector2) -> int:
 
 
 # ------------------------------------------------------------------ 接近算路（零移动副作用）
+
 
 ## 在目标周围枚举合法站位，挑**路径最短**的一个；只算不走，改变不了任何移动状态。
 ## 返回 {ok, error, path, destination, length_m}；同长度按格点坐标固定排序（不用随机数）。
@@ -308,9 +310,12 @@ func follow_path(request_id: int, path: PackedVector3Array) -> bool:
 	_active_request = request_id
 	_sync_moving_state()
 	if log_player:
-		print("[player] 接近请求 %d：%d 段 → (%.2f, %.2f)" % [
-			request_id, path.size(), _destination.x, _destination.z
-		])
+		print(
+			(
+				"[player] 接近请求 %d：%d 段 → (%.2f, %.2f)"
+				% [request_id, path.size(), _destination.x, _destination.z]
+			)
+		)
 	return true
 
 
@@ -896,8 +901,10 @@ func _verify_player_spot() -> void:
 		_walker.teleport_to(safe)
 	_sync_position_to_core()
 	push_warning(
-		"PlayerController：出生点不可走（%.2f, %.2f）→ 已吸附到最近可走点（%.2f, %.2f）。"
-		% [pos.x, pos.z, safe.x, safe.z]
+		(
+			"PlayerController：出生点不可走（%.2f, %.2f）→ 已吸附到最近可走点（%.2f, %.2f）。"
+			% [pos.x, pos.z, safe.x, safe.z]
+		)
 	)
 
 

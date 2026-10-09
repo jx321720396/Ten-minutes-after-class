@@ -172,7 +172,10 @@ func _bubble(index: int) -> Control:
 	var dots := HBoxContainer.new()
 	dots.name = "Dots"
 	dots.add_theme_constant_override("separation", int(DOT_SPACING))
-	dots.position = Vector2(BUBBLE_SIZE.x * 0.5 - (DOT_SIZE * 3.0 + DOT_SPACING * 2.0) * 0.5, BUBBLE_SIZE.y * 0.5 - DOT_SIZE * 0.5)
+	dots.position = Vector2(
+		BUBBLE_SIZE.x * 0.5 - (DOT_SIZE * 3.0 + DOT_SPACING * 2.0) * 0.5,
+		BUBBLE_SIZE.y * 0.5 - DOT_SIZE * 0.5
+	)
 	dots.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(dots)
 	for _k in range(3):
