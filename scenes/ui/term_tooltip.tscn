@@ -1,0 +1,32 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/term_tooltip.gd" id="1"]
+
+[node name="TermTooltip" type="CanvasLayer"]
+layer = 2
+script = ExtResource("1")
+
+[node name="Panel" type="PanelContainer" parent="."]
+visible = false
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+theme_override_constants/separation = 6
+
+[node name="TermLabel" type="RichTextLabel" parent="Panel/Margin/VBox"]
+custom_minimum_size = Vector2(320, 0)
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="BodyLabel" type="RichTextLabel" parent="Panel/Margin/VBox"]
+custom_minimum_size = Vector2(320, 0)
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
