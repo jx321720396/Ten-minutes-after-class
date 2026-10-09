@@ -1,9 +1,7 @@
 [gd_scene format=3 uid="uid://85tyegdfkhg0"]
 
 [ext_resource type="Script" uid="uid://15g00axq0xxy" path="res://scripts/game/clue_board_1.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://cptn11dhvw3uq" path="res://assets/textures/clueboard/chalk_white.png" id="2_chalk"]
 [ext_resource type="Texture2D" uid="uid://cti8ayrvx60ru" path="res://assets/textures/clueboard/01.png" id="2_ddmx5"]
-[ext_resource type="Texture2D" uid="uid://c4bm2qlqi7b0h" path="res://assets/textures/clueboard/eraser.png" id="3_eraser"]
 [ext_resource type="PackedScene" path="res://scenes/character_head/blunt_female.tscn" id="4_bf"]
 [ext_resource type="PackedScene" path="res://scenes/character_head/blunt_male.tscn" id="4_bm"]
 [ext_resource type="PackedScene" path="res://scenes/character_head/lively_female.tscn" id="4_lf"]
@@ -20,6 +18,114 @@
 [ext_resource type="PackedScene" path="res://scenes/character_head/tsundere_male.tscn" id="4_tm"]
 [ext_resource type="PackedScene" path="res://scenes/character_head/warm_female.tscn" id="4_wf"]
 [ext_resource type="PackedScene" path="res://scenes/character_head/warm_male.tscn" id="4_wm"]
+[ext_resource type="Texture2D" uid="uid://dynpunggmu5fj" path="res://assets/textures/clueboard/chalk_stick_up.png" id="6_stick_up"]
+[ext_resource type="Texture2D" uid="uid://c2hjal68sxr7w" path="res://assets/textures/clueboard/chalk_cursor.png" id="7_chalk_cursor"]
+[ext_resource type="Texture2D" uid="uid://dxeqk8j3ir7rt" path="res://assets/textures/clueboard/eraser_cursor.png" id="8_eraser_cursor"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tray"]
+bg_color = Color(0.16, 0.1, 0.06, 0.82)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.55, 0.38, 0.22, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 6
+shadow_offset = Vector2(0, 3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_eraser_pick"]
+bg_color = Color(0.94, 0.58, 0.64, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.18, 0.24, 0.45)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 3
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sw0"]
+bg_color = Color(0.95, 0.95, 0.92, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0, 0, 0.28)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 3
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sw1"]
+bg_color = Color(1, 0.95, 0.3, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0, 0, 0.28)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 3
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sw2"]
+bg_color = Color(1, 0.4, 0.55, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0, 0, 0.28)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 3
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sw3"]
+bg_color = Color(0.3, 0.85, 1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0, 0, 0.28)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 3
+shadow_offset = Vector2(0, 2)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sw4"]
+bg_color = Color(0.4, 1, 0.4, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 0, 0, 0.28)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.3)
+shadow_size = 3
+shadow_offset = Vector2(0, 2)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot"]
 bg_color = Color(0, 0, 0, 0.45)
@@ -54,76 +160,110 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Chalk" type="TextureRect" parent="." unique_id=139972788]
+texture_filter = 2
 layout_mode = 0
-offset_left = 409.0
-offset_top = -247.0
-offset_right = 529.0
-offset_bottom = -217.0
+offset_right = 48.0
+offset_bottom = 44.0
 mouse_filter = 2
-texture = ExtResource("2_chalk")
+texture = ExtResource("7_chalk_cursor")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="Eraser" type="TextureRect" parent="." unique_id=60578797]
+texture_filter = 2
 layout_mode = 0
-offset_left = 553.0
-offset_top = -216.0
-offset_right = 633.0
-offset_bottom = -156.0
+offset_right = 44.0
+offset_bottom = 70.0
 mouse_filter = 2
-texture = ExtResource("3_eraser")
+texture = ExtResource("8_eraser_cursor")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ToolToggle" type="Button" parent="." unique_id=1673985814]
+[node name="ToolTray" type="Panel" parent="." unique_id=1653739267]
 layout_mode = 0
-offset_left = 1750.0
-offset_top = 20.0
-offset_right = 1900.0
-offset_bottom = 60.0
-text = "粉笔"
+offset_left = 731.0
+offset_top = 988.0
+offset_right = 887.0
+offset_bottom = 1066.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_tray")
 
-[node name="ColorPalette" type="ColorRect" parent="." unique_id=591564681]
+[node name="ChalkPick" type="TextureRect" parent="ToolTray" unique_id=1966780685]
+texture_filter = 2
 layout_mode = 0
-offset_left = 760.0
-offset_top = 990.0
-offset_right = 1129.0
-offset_bottom = 1060.0
-color = Color(0, 0, 0, 0)
+offset_left = 16.0
+offset_top = -28.0
+offset_right = 64.0
+offset_bottom = 70.0
+mouse_filter = 0
+texture = ExtResource("6_stick_up")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="Swatch0" type="ColorRect" parent="ColorPalette" unique_id=1253455113]
+[node name="EraserPick" type="Panel" parent="ToolTray" unique_id=945861605]
 layout_mode = 0
-offset_right = 60.0
-offset_bottom = 60.0
-color = Color(0.95, 0.95, 0.92, 1)
+offset_left = 82.0
+offset_top = -16.0
+offset_right = 140.0
+offset_bottom = 70.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_eraser_pick")
 
-[node name="Swatch1" type="ColorRect" parent="ColorPalette" unique_id=1400772183]
-layout_mode = 0
-offset_left = 75.0
-offset_right = 135.0
-offset_bottom = 60.0
-color = Color(1, 0.95, 0.3, 1)
+[node name="Band" type="ColorRect" parent="ToolTray/EraserPick" unique_id=1621591382]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.08
+anchor_top = 0.36
+anchor_right = 0.92
+anchor_bottom = 0.64
+mouse_filter = 2
+color = Color(0.96, 0.95, 0.92, 1)
 
-[node name="Swatch2" type="ColorRect" parent="ColorPalette" unique_id=176744383]
+[node name="ColorPalette" type="Panel" parent="." unique_id=591564681]
 layout_mode = 0
-offset_left = 150.0
-offset_right = 210.0
-offset_bottom = 60.0
-color = Color(1, 0.4, 0.55, 1)
+offset_left = 903.0
+offset_top = 988.0
+offset_right = 1247.0
+offset_bottom = 1066.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_tray")
 
-[node name="Swatch3" type="ColorRect" parent="ColorPalette" unique_id=1255266249]
+[node name="Swatch0" type="Panel" parent="ColorPalette" unique_id=1253455113]
 layout_mode = 0
-offset_left = 225.0
-offset_right = 285.0
-offset_bottom = 60.0
-color = Color(0.3, 0.85, 1, 1)
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 64.0
+offset_bottom = 66.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_sw0")
 
-[node name="Swatch4" type="ColorRect" parent="ColorPalette" unique_id=1008814457]
+[node name="Swatch1" type="Panel" parent="ColorPalette" unique_id=1400772183]
 layout_mode = 0
-offset_left = 300.0
-offset_right = 360.0
-offset_bottom = 60.0
-color = Color(0.4, 1, 0.4, 1)
+offset_left = 82.0
+offset_top = 12.0
+offset_right = 130.0
+offset_bottom = 66.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_sw1")
+
+[node name="Swatch2" type="Panel" parent="ColorPalette" unique_id=176744383]
+layout_mode = 0
+offset_left = 148.0
+offset_top = 12.0
+offset_right = 196.0
+offset_bottom = 66.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_sw2")
+
+[node name="Swatch3" type="Panel" parent="ColorPalette" unique_id=1255266249]
+layout_mode = 0
+offset_left = 214.0
+offset_top = 12.0
+offset_right = 262.0
+offset_bottom = 66.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_sw3")
+
+[node name="Swatch4" type="Panel" parent="ColorPalette" unique_id=1008814457]
+layout_mode = 0
+offset_left = 280.0
+offset_top = 12.0
+offset_right = 328.0
+offset_bottom = 66.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_sw4")
 
 [node name="BoardAvatars" type="Node2D" parent="." unique_id=317813545]
 

@@ -4,7 +4,9 @@ extends Control
 @onready var chalk: TextureRect = $Chalk
 @onready var eraser: TextureRect = $Eraser
 @onready var palette: Control = $ColorPalette
-@onready var tool_toggle: Button = $ToolToggle
+@onready var tool_tray: Control = $ToolTray
+@onready var chalk_pick: TextureRect = $ToolTray/ChalkPick
+@onready var eraser_pick: Panel = $ToolTray/EraserPick
 @onready var markers_root: Control = get_node_or_null("Markers")
 @onready var avatar_column: Control = $AvatarColumn
 @onready var avatar_list: Control = $AvatarColumn/AvatarList
@@ -22,39 +24,126 @@ var dragged_marker: ColorRect = null
 var drag_source: Sprite2D = null
 var drag_ghost: Sprite2D = null
 var drag_press := Vector2.ZERO
-
-var palette_colors := [
-	Color(0.95, 0.95, 0.92, 1),
-	Color(1, 0.95, 0.3, 1),
-	Color(1, 0.4, 0.55, 1),
-	Color(0.3, 0.85, 1, 1),
-	Color(0.4, 1, 0.4, 1),
-]
-
+var _rest: Dictionary = {}
+var _pop_lift := 28.0
+var _pop_scale := 1.22
 
 func _ready():
+	drawing_surface.z_index = 0
+	board_avatars.z_index = 1
+	chalk.z_index = 5
+	eraser.z_index = 5
 	drawing_surface.draw.connect(_on_draw)
-	tool_toggle.pressed.connect(_on_tool_toggle)
-	for i in palette.get_child_count():
-		var swatch := palette.get_child(i) as ColorRect
+	palette.z_index = 4
+	tool_tray.z_index = 4
+	_cache_rest(palette)
+	_cache_rest(tool_tray)
+	chalk_pick.gui_input.connect(_on_chalk_pick_input)
+	eraser_pick.gui_input.connect(_on_eraser_pick_input)
+	for child in palette.get_children():
+		var swatch := child as Panel
 		if swatch:
-			swatch.gui_input.connect(_on_swatch_input.bind(palette_colors[i]))
+			swatch.gui_input.connect(_on_swatch_input.bind(swatch))
+	var first := palette.get_child(0) as Panel
+	if first:
+		_select_chalk_color(_swatch_color(first))
 
 
-func _on_tool_toggle():
-	is_eraser_mode = not is_eraser_mode
-	if is_eraser_mode:
-		tool_toggle.text = "橡皮擦"
-		chalk.visible = false
-	else:
-		tool_toggle.text = "粉笔"
-		eraser.visible = false
+func _cache_rest(root_node: Node) -> void:
+	for child in root_node.get_children():
+		var control := child as Control
+		if control:
+			_rest[control] = Rect2(control.position, control.size)
 
 
-func _on_swatch_input(event: InputEvent, color: Color):
+func _on_chalk_pick_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		current_color = color
-		chalk.modulate = color
+		_select_chalk_color(current_color)
+
+
+func _on_eraser_pick_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_select_eraser()
+
+
+func _place_chalk_cursor(pos: Vector2) -> void:
+	chalk.position = pos - Vector2(chalk.size.x * 0.05, chalk.size.y * 0.99)
+
+
+func _place_eraser_cursor(pos: Vector2) -> void:
+	eraser.position = pos - eraser.size * 0.5
+
+
+func _select_eraser() -> void:
+	is_eraser_mode = true
+	is_erasing = false
+	chalk.visible = false
+	eraser.visible = false
+	_mark_selected_swatch(current_color)
+	_mark_selected_tool()
+
+
+func _on_swatch_input(event: InputEvent, swatch: Panel) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_select_chalk_color(_swatch_color(swatch))
+
+
+func _swatch_color(swatch: Panel) -> Color:
+	var style := swatch.get_theme_stylebox("panel") as StyleBoxFlat
+	if style == null:
+		return current_color
+	return style.bg_color
+
+
+func _mark_selected_swatch(color: Color) -> void:
+	for child in palette.get_children():
+		var swatch := child as Panel
+		if swatch == null:
+			continue
+		var style := swatch.get_theme_stylebox("panel") as StyleBoxFlat
+		if style == null:
+			continue
+		var selected := not is_eraser_mode and style.bg_color.is_equal_approx(color)
+		_set_pop(swatch, selected)
+
+
+func _set_pop(node: Control, selected: bool) -> void:
+	var rest: Rect2 = _rest[node]
+	var grow := _pop_scale if selected else 1.0
+	var new_size := rest.size * grow
+	var center := rest.get_center()
+	if selected:
+		center.y -= _pop_lift
+	if node.has_meta("pop_tween"):
+		var old: Tween = node.get_meta("pop_tween")
+		if old != null and old.is_valid():
+			old.kill()
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(node, "position", center - new_size * 0.5, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(node, "size", new_size, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	node.set_meta("pop_tween", tween)
+	node.z_index = 2 if selected else 0
+
+
+func _mark_selected_tool() -> void:
+	_set_pop(chalk_pick, not is_eraser_mode)
+	_set_pop(eraser_pick, is_eraser_mode)
+
+
+func _tint_chalk_pick(color: Color) -> void:
+	chalk_pick.modulate = color
+
+
+func _select_chalk_color(color: Color) -> void:
+	current_color = color
+	chalk.modulate = color
+	_tint_chalk_pick(color)
+	is_eraser_mode = false
+	is_erasing = false
+	eraser.visible = false
+	_mark_selected_swatch(color)
+	_mark_selected_tool()
 
 
 func _get_marker_at(pos: Vector2) -> ColorRect:
@@ -67,10 +156,18 @@ func _get_marker_at(pos: Vector2) -> ColorRect:
 	return null
 
 
-func _is_on_ui(pos: Vector2) -> bool:
-	if palette.get_global_rect().has_point(pos):
+func _hits_control(node: Control, pos: Vector2) -> bool:
+	if node.get_global_rect().has_point(pos):
 		return true
-	if tool_toggle.get_global_rect().has_point(pos):
+	for child in node.get_children():
+		var control := child as Control
+		if control and control.get_global_rect().has_point(pos):
+			return true
+	return false
+
+
+func _is_on_ui(pos: Vector2) -> bool:
+	if _hits_control(palette, pos) or _hits_control(tool_tray, pos):
 		return true
 	if avatar_column.get_global_rect().has_point(pos):
 		return true
@@ -89,19 +186,19 @@ func _input(event):
 				dragged_marker = _get_marker_at(event.position)
 				if dragged_marker:
 					return
-				if _is_on_ui(event.position) or _is_on_board_avatar(event.position):
+				if _is_on_ui(event.position):
 					return
 				is_drawing = true
 				if is_eraser_mode:
 					is_erasing = true
 					eraser.visible = true
-					eraser.position = event.position - Vector2(40, 30)
+					_place_eraser_cursor(event.position)
 					_erase_at(event.position)
 				else:
 					current_line = PackedVector2Array()
 					current_line.append(event.position)
 					chalk.visible = true
-					chalk.position = event.position - Vector2(60, 15)
+					_place_chalk_cursor(event.position)
 			else:
 				_finish_avatar_drag(event.position)
 				dragged_marker = null
@@ -118,12 +215,12 @@ func _input(event):
 			dragged_marker.position = event.position - dragged_marker.size / 2.0
 		elif is_drawing:
 			if is_eraser_mode:
-				eraser.position = event.position - Vector2(40, 30)
+				_place_eraser_cursor(event.position)
 				if is_erasing:
 					_erase_at(event.position)
 			else:
 				current_line.append(event.position)
-				chalk.position = event.position - Vector2(60, 15)
+				_place_chalk_cursor(event.position)
 			drawing_surface.queue_redraw()
 
 
@@ -144,17 +241,26 @@ func _head_in_column(pos: Vector2) -> Sprite2D:
 	return null
 
 
-func _is_on_board_avatar(pos: Vector2) -> bool:
-	var local_pos := _to_local_point(pos)
-	for child in board_avatars.get_children():
-		var sprite := child as Sprite2D
-		if sprite == null or sprite.texture == null:
-			continue
-		var size := sprite.texture.get_size() * sprite.scale
-		var rect := Rect2(sprite.position - size * 0.5, size)
-		if rect.has_point(local_pos):
-			return true
-	return false
+func _board_avatar_rect(sprite: Sprite2D) -> Rect2:
+	var size := sprite.texture.get_size() * sprite.scale
+	return Rect2(sprite.position - size * 0.5, size)
+
+
+func _circle_hits_rect(center: Vector2, radius: float, rect: Rect2) -> bool:
+	var closest := Vector2(
+		clampf(center.x, rect.position.x, rect.end.x),
+		clampf(center.y, rect.position.y, rect.end.y)
+	)
+	return closest.distance_to(center) <= radius
+
+
+func _segment_hits_circle(a: Vector2, b: Vector2, center: Vector2, radius: float) -> bool:
+	var ab := b - a
+	var length_sq := ab.length_squared()
+	if length_sq <= 0.001:
+		return a.distance_to(center) <= radius
+	var t := clampf((center - a).dot(ab) / length_sq, 0.0, 1.0)
+	return (a + ab * t).distance_to(center) <= radius
 
 
 func _to_local_point(pos: Vector2) -> Vector2:
@@ -174,9 +280,7 @@ func _update_avatar_drag(pos: Vector2) -> void:
 func _finish_avatar_drag(pos: Vector2) -> void:
 	if drag_ghost:
 		var on_column := avatar_column.get_global_rect().has_point(pos)
-		var on_chrome := (
-			palette.get_global_rect().has_point(pos) or tool_toggle.get_global_rect().has_point(pos)
-		)
+		var on_chrome := _hits_control(palette, pos) or _hits_control(tool_tray, pos)
 		if on_column or on_chrome:
 			drag_ghost.queue_free()
 		else:
@@ -188,20 +292,34 @@ func _finish_avatar_drag(pos: Vector2) -> void:
 	drag_ghost = null
 
 
-func _erase_at(pos: Vector2):
-	var i := lines.size() - 1
-	while i >= 0:
-		var line = lines[i]
+func _erase_at(pos: Vector2) -> void:
+	var local_pos := _to_local_point(pos)
+	for child in board_avatars.get_children():
+		var sprite := child as Sprite2D
+		if sprite == null or sprite.texture == null:
+			continue
+		if _circle_hits_rect(local_pos, eraser_radius, _board_avatar_rect(sprite)):
+			sprite.queue_free()
+	var kept: Array = []
+	for line in lines:
 		var pts: PackedVector2Array = line.points
-		var keep := PackedVector2Array()
-		for pt in pts:
-			if pt.distance_to(pos) > eraser_radius:
-				keep.append(pt)
-		if keep.size() < 2:
-			lines.remove_at(i)
-		else:
-			line.points = keep
-		i -= 1
+		var run := PackedVector2Array()
+		for i in pts.size():
+			var inside := pts[i].distance_to(pos) <= eraser_radius
+			var segment_cut := false
+			if i > 0:
+				segment_cut = _segment_hits_circle(pts[i - 1], pts[i], pos, eraser_radius)
+			if inside or segment_cut:
+				if run.size() >= 2:
+					kept.append({"points": run, "color": line.color})
+				run = PackedVector2Array()
+				if not inside:
+					run.append(pts[i])
+			else:
+				run.append(pts[i])
+		if run.size() >= 2:
+			kept.append({"points": run, "color": line.color})
+	lines = kept
 	drawing_surface.queue_redraw()
 
 
