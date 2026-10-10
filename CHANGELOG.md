@@ -1,5 +1,7 @@
 # 变更记录
 
+- **信息版从教室进入（2026-10-10，UI）**：百科全书按钮下方加了「黑板」。点开后黑板像弹窗盖住教室，教室压上一层半透明的黑，并暂停游戏；左上角「退出」或 Esc 关掉。关掉不会清掉粉笔和已放下的头像；学期结束才清板，新开一局会进入一间新教室，板面是空的。
+
 - **加入对话次数限制（2026-10-10，策划修正）**：补充 v4 策划案 §8.7 与 §10.4：同一角色在同一个课间内，对同一个对话会话只能加入一次，离开后也不能再次加入；按对话会话区分，不限制加入其他对话。用于约束同一会话的重复加入；仅更新策划文档，代码待实现。检验一：限制依据角色的参与记录与会话状态，对所有角色统一适用，不依赖预设剧情。
 
 - **修复导出包丢失全部 `data/**/*.csv`（2026-10-10，构建／导出修复）**：现象是**手机上跑导出的 APK 时，教室里一个人物都没有**（连玩家的橙色球也没有）、**左上角时间 HUD 卡片没有文字**（只剩空卡与进度条），而桌面编辑器里一切正常。根因：`data/**/*.csv` 被 Godot 的 `csv_translation` 导入器认领（各 `.csv.import` 写着 `importer="csv_translation"` / `type="Translation"`），导出时源文件被「此文件是导入资源」的规则顶掉，而这些 Translation 又没在 `internationalization/locale/translations` 注册、无人引用，于是**源文件与导入产物两头落空**；编辑器里 `ConfigLoader` 用 `FileAccess` 直读磁盘的 `res://data/...csv`，所以本地永远看不出问题。后果链：`_collect_csvs` 扫不到任何 `.csv` → `_tables` 为空 → `SimCore` 拿不到 `difficulty.csv` / `kernel_params.csv` → 内核建不起来 → `classroom.gd` 在 core 检查处早退（`time_hud.bind_clock()` 未被调用 → HUD 文字全空），`classroom_actors` 也没有可摆放的人物。修法：29 个 `data/**/*.csv.import` 的 `importer` 由 `csv_translation` 改为 **`keep`**（编辑器等价操作：FileSystem 多选全部 CSV → Import 面板 → **Import As → Keep File (exported as is)** → Reimport），CSV 即以原文进包。**验证**：重导 APK 后解包，`assets/data/**` 下 29 个 `.csv` 原文在位、抽查正文可读；另用 `--export-pack` 对比，pack 内 grep CSV 正文由 **0 命中 → 1 命中**。**已验证无效的路子**：给导出预设加 `include_filter="*.csv"` —— 被导入器认领的文件无法再作为「非资源文件」导出，勿再尝试。**影响面**：所有导出平台（Windows 同样中招，非 Android 特有）；未动玩法代码与任何数值。

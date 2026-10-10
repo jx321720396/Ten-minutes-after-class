@@ -109,4 +109,11 @@ func _open() -> void:
 func _close() -> void:
 	if _panel != null:
 		_panel.visible = false
+	# 黑板还开着时，不要把游戏一起恢复
+	var board := get_node_or_null("../ClueBoardEntry")
+	if board != null and board.has_method("is_open") and board.is_open():
+		return
+	var pause_menu := get_node_or_null("../PauseMenu")
+	if pause_menu != null and pause_menu.visible:
+		return
 	get_tree().paused = false
