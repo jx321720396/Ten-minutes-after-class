@@ -28,6 +28,7 @@ var _rest: Dictionary = {}
 var _pop_lift := 28.0
 var _pop_scale := 1.22
 
+
 func _ready():
 	drawing_surface.z_index = 0
 	board_avatars.z_index = 1
@@ -120,8 +121,15 @@ func _set_pop(node: Control, selected: bool) -> void:
 			old.kill()
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(node, "position", center - new_size * 0.5, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(node, "size", new_size, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	(
+		tween
+		. tween_property(node, "position", center - new_size * 0.5, 0.14)
+		. set_trans(Tween.TRANS_BACK)
+		. set_ease(Tween.EASE_OUT)
+	)
+	tween.tween_property(node, "size", new_size, 0.14).set_trans(Tween.TRANS_BACK).set_ease(
+		Tween.EASE_OUT
+	)
 	node.set_meta("pop_tween", tween)
 	node.z_index = 2 if selected else 0
 
@@ -248,8 +256,7 @@ func _board_avatar_rect(sprite: Sprite2D) -> Rect2:
 
 func _circle_hits_rect(center: Vector2, radius: float, rect: Rect2) -> bool:
 	var closest := Vector2(
-		clampf(center.x, rect.position.x, rect.end.x),
-		clampf(center.y, rect.position.y, rect.end.y)
+		clampf(center.x, rect.position.x, rect.end.x), clampf(center.y, rect.position.y, rect.end.y)
 	)
 	return closest.distance_to(center) <= radius
 
