@@ -23,6 +23,8 @@ extends Node3D
 @onready var chat_hud: ChatFeedbackHUD = $ChatHUD
 @onready var interaction_menu: PlayerInteractionMenu = $InteractionMenu
 @onready var interaction: PlayerInteractionController = $Interaction
+@onready var note_prompt: NotePrompt = $NotePrompt
+@onready var behavior_badge: BehaviorBadgePresenter = $BehaviorBadge
 
 
 func _ready() -> void:
@@ -119,7 +121,10 @@ func _bind_feedback(core: Variant) -> void:
 	emotion.bind_clock(clock)
 	chat_hud.bind_core(core)
 	chat_hud.bind_clock(clock)
-	interaction.bind_feedback(interaction_menu, chat_hud, rings, chat_bubble, emotion)
+	# 头顶行为徽标（§20.1.4）：本批只接「手里拿着纸条」（§21.2.9）
+	behavior_badge.bind_core(core)
+	behavior_badge.bind_actors(actors)
+	interaction.bind_feedback(interaction_menu, chat_hud, rings, chat_bubble, emotion, note_prompt)
 	interaction.bind_sources(core, player, actors, clock)
 
 

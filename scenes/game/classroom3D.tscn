@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" path="res://scenes/game/time_flow.tscn" id="time_flow_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/player_emotion_feedback.tscn" id="emotion_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/player_interaction_menu.tscn" id="interaction_menu_scene"]
+[ext_resource type="PackedScene" path="res://scenes/ui/note_prompt.tscn" id="note_prompt_scene"]
 [ext_resource type="PackedScene" path="res://scenes/game/player_interaction_controller.tscn" id="interaction_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/encyclopedia_entry.tscn" id="encyclopedia_entry"]
 [ext_resource type="PackedScene" path="res://scenes/ui/clue_board_entry.tscn" id="clue_board_entry"]
@@ -33,6 +34,7 @@
 [ext_resource type="PackedScene" uid="uid://ckhk7pqoo1clw" path="res://scenes/ui/pause_menu.tscn" id="pause_menu"]
 [ext_resource type="Script" uid="uid://dxpho1kag814v" path="res://scripts/game/player_controller.gd" id="player_script"]
 [ext_resource type="PackedScene" path="res://scenes/game/activity_ring_presenter.tscn" id="rings_scene"]
+[ext_resource type="PackedScene" path="res://scenes/game/behavior_badge_presenter.tscn" id="badge_scene"]
 [ext_resource type="Script" uid="uid://dgh0sb6vwakqo" path="res://scripts/game/classroom_roam.gd" id="roam_script"]
 [ext_resource type="PackedScene" path="res://scenes/ui/time_hud.tscn" id="time_hud_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/transition_overlay.tscn" id="transition_scene"]
@@ -813,5 +815,9 @@ script = ExtResource("player_script")
 [node name="ChatHUD" parent="." unique_id=2020022478 instance=ExtResource("chat_hud_scene")]
 
 [node name="InteractionMenu" parent="." unique_id=1418027662 instance=ExtResource("interaction_menu_scene")]
+
+[node name="NotePrompt" parent="." instance=ExtResource("note_prompt_scene")]
+
+[node name="BehaviorBadge" parent="." instance=ExtResource("badge_scene")]
 
 [node name="Interaction" parent="." unique_id=1165301091 instance=ExtResource("interaction_scene")]
