@@ -63,8 +63,7 @@ func _initialize() -> void:
 		"tease_taunt",
 		"tease_neutral",
 		"report",
-		"rumor_negative",
-		"rumor_positive",
+		"pass_note",
 		"roughhouse",
 		"exclude",
 		"comfort",
@@ -82,11 +81,11 @@ func _initialize() -> void:
 			"chat":
 				c._do_chat(0, 1)
 			"join_accept":
-				c._do_join_chat(0, 1, 0.0)
+				c._do_chat_join(0, 1, 0.0)
 			"join_reject":
-				c._do_join_chat(0, 1, 1.0)
+				c._do_chat_join(0, 1, 1.0)
 			"join_random":
-				c._do_join_chat(0, 1)
+				c._do_chat_join(0, 1)
 			"tease_laugh":
 				c._do_tease(0, 1, [2, 3, 4, 5])
 			"tease_taunt":
@@ -98,11 +97,8 @@ func _initialize() -> void:
 				c._do_tease(0, 1, [])
 			"report":
 				c._do_report(0, 1)
-			"rumor_negative":
-				c._h[1] = 90.0
-				c._do_rumor(0, 1)
-			"rumor_positive":
-				c._do_rumor(0, 1)
+			"pass_note":
+				c._do_pass_note(0, 1)
 			"roughhouse":
 				c._do_roughhouse(0, 1, [4, 2, 3])
 			"exclude":
@@ -127,7 +123,7 @@ func _initialize() -> void:
 		c.advance_phase()
 		c.advance_tick()
 		rows.append(_snapshot(c, events, scenario + "_boundary"))
-	for kind in ["chat", "join_chat", "tease", "rumor", "report", "roughhouse", "exclude"]:
+	for kind in ["chat", "chat_join", "tease", "pass_note", "report", "roughhouse", "exclude"]:
 		var c: Variant = _new_core(core_script, 12345, tables)
 		var events: Array = []
 		c.event_sink = func(e: Dictionary): events.append(e)

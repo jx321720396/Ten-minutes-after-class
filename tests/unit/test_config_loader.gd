@@ -6,7 +6,7 @@ func test_load_all_reads_all_tables() -> void:
 	var loader := ConfigLoader.new()
 	var tables := loader.load_all()
 	# 新增独立世界倍速表与学业成绩分段表；其余既有表继续全部加载。
-	assert_eq(tables.size(), 29, "应读到 29 张表（含玩家邀请类型、世界倍速与学业成绩分段表）")
+	assert_eq(tables.size(), 30, "应读到 30 张表（含玩家邀请类型、世界倍速、学业成绩分段表与选择侧系数表）")
 	assert_true(tables.has("rules/behaviors"), "rules/behaviors 应在")
 	assert_true(tables.has("rules/stand_points"), "rules/stand_points 应在")
 	assert_true(tables.has("rules/time_presentation"), "rules/time_presentation 应在")
@@ -29,7 +29,7 @@ func test_skips_comments_and_header() -> void:
 	var headers: Array = t["headers"]
 	assert_eq(headers[0], "behavior", "首列应为 behavior")
 	var rows: Array = t["rows"]
-	assert_eq(rows.size(), 18, "behaviors 应有 18 个行为（不含注释与表头）")
+	assert_eq(rows.size(), 13, "behaviors 应有 13 个行为（不含注释与表头）")
 
 
 func test_rows_keyed_by_header() -> void:

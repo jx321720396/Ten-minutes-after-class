@@ -12,6 +12,8 @@ extends CanvasLayer
 ##   ③ 菜单**不暂停全班**，状态随世界变化 —— 所以每次刷新都要重新取预览。
 
 signal chat_requested
+## 递纸条（§8.6）：以选中的同学为「被说的人」写一张纸条
+signal note_requested
 signal closed
 
 const STYLE_TABLE := "ui/chat_feedback_style"
@@ -24,7 +26,6 @@ const COLOR_LOCKED := Color(0.62, 0.34, 0.22)
 ## 公开活动的中文名（只描述「看得见的行为」，不含隐藏状态）
 const ACTIVITY_NAMES := {
 	"chat": "正在闲聊",
-	"join_chat": "正在插话",
 	"tease": "正在起哄",
 	"comfort": "正在安慰人",
 	"ask_help": "在请人帮忙",
@@ -32,7 +33,6 @@ const ACTIVITY_NAMES := {
 	"roughhouse": "在打闹",
 	"exclude": "在排挤人",
 	"report": "去了老师那儿",
-	"rumor": "在传闲话",
 	"move": "走动中",
 	"sleep": "睡着了",
 }
@@ -41,6 +41,7 @@ var _panel: PanelContainer = null
 var _name_label: Label = null
 var _activity_label: Label = null
 var _action: Button = null
+var _note_action: Button = null
 var _reason_label: Label = null
 var _eta_label: Label = null
 var _open := false
@@ -75,6 +76,9 @@ func open(index: int, info: Dictionary) -> void:
 	_action.text = "加入 · 加入闲聊" if mode == "join" else "闲聊"
 	_action.disabled = not (eligible and bool(info.get("phase_ok", true)))
 	_action.tooltip_text = "" if _action.disabled else hint_text(mode, in_range)
+	# 递纸条（§8.6）：上课段也能用（是唯一允许的动作），但仍需座位相邻或已走近
+	_note_action.disabled = not bool(info.get("note_ok", false))
+	_note_action.tooltip_text = str(info.get("note_hint", ""))
 	_reason_label.text = (
 		"" if _action.disabled == false else reason_text(str(info.get("reason", "")))
 	)
@@ -102,6 +106,19 @@ func selected_index() -> int:
 
 func action_text() -> String:
 	return _action.text
+
+
+## 递纸条按钮（灰置时 tooltip 给原因）
+func note_action_text() -> String:
+	return _note_action.text
+
+
+func note_disabled() -> bool:
+	return _note_action.disabled
+
+
+func note_hint() -> String:
+	return _note_action.tooltip_text
 
 
 func reason_text_visible() -> String:
@@ -178,6 +195,12 @@ func _on_action_pressed() -> void:
 	chat_requested.emit()
 
 
+func _on_note_pressed() -> void:
+	if _note_action.disabled:
+		return
+	note_requested.emit()
+
+
 func _build_ui() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "Card"
@@ -200,11 +223,17 @@ func _build_ui() -> void:
 	_action.name = "ChatAction"
 	_action.focus_mode = Control.FOCUS_NONE
 	_action.pressed.connect(_on_action_pressed)
+	_note_action = Button.new()
+	_note_action.name = "NoteAction"
+	_note_action.text = "递纸条"
+	_note_action.focus_mode = Control.FOCUS_NONE
+	_note_action.pressed.connect(_on_note_pressed)
 	_reason_label = _make_label(15, COLOR_LOCKED)
 	_eta_label = _make_label(14, COLOR_SUB)
 	column.add_child(_name_label)
 	column.add_child(_activity_label)
 	column.add_child(_action)
+	column.add_child(_note_action)
 	column.add_child(_reason_label)
 	column.add_child(_eta_label)
 	_panel.anchor_left = 0.0

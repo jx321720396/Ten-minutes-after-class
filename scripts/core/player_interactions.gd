@@ -160,7 +160,7 @@ func preview(kind: String, target: int) -> Dictionary:
 		"in_range": false,
 		"reason": "",
 		"duration_ticks": _duration(core, "chat"),
-		"reject_duration_ticks": _duration(core, "join_chat"),
+		"reject_duration_ticks": float(core._thresholds_lookup.get("chat_join_duration", 10.0)),
 		"p_belief": -1.0,
 	}
 	var session_id: int = int(_sessions.session_of(target))
@@ -326,7 +326,7 @@ func _commit_join(request_id: int, target: int, session_id: int, pv: Dictionary)
 	var roll: float = float(core._rng.random())
 	var accepted: bool = roll < float(core._join_probability(me, target))
 	core._behavior_registry.execute(
-		&"join_chat",
+		&"chat",
 		me,
 		target,
 		{"mode": "group", "session_id": session_id, "members": members, "roll": roll}

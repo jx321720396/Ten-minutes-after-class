@@ -16,20 +16,21 @@ tease_laugh,affinity,>=,55,玩笑档：好感下限
 tease_laugh,hostility,<,25,玩笑档：敌对上限
 tease_taunt,hostility,>=,40,嘲讽档：敌对下限
 tease_taunt,affinity,<,25,嘲讽档：低好感触发
-# 搭话是否被接纳：判据 = **被请求者的真值好感 A[j][i]** + 对方外向度修正
+# 加入闲聊是否被接纳：判据 = **被请求者的真值好感 A[j][i]** + 对方外向度修正
 #   （判定读真值、展示读信念 —— §6.4 / §10.32.3。2026-10-07 由「信念 B_A」改为真值口径）
-# θ（join_chat_affinity）是 p=0.5 的拐点而非闸门。
+# θ（chat_join_affinity）是 p=0.5 的拐点而非闸门。
 # ⚠️ 旧注释要求「θ 须高于 belief.csv 的 prior_a(=40)」—— 那是**信念口径**的约束
 #   （当时判定输入是 B_A，其期望恰为先验 40）。判定改读真值后输入是 A[j][i]，
 #   该约束已失效，故删除。
 # 43：60 局实测 爆发 21.9 / 好感均值 54.1 / SD 23.0 / 饱和 0%（2026-10-07 重标定）
-join_chat,affinity,>=,43,搭话被接纳的 sigmoid 拐点（含对方外向度修正后）
-join_chat,scale,>=,10,加入判定 sigmoid 坡度（score−θ 除以它；越大越缓）
-join_chat,stress_penalty,>=,12,对方压力对 score 的压制（压力是程度不是闸门）
-join_chat,gate_affinity,>=,30,决策侧软门槛：我对他好感低于此值仍有小概率发起
-join_chat,gate_stress,>=,80,决策侧软门槛：我压力高于此值仍有小概率发起
-join_chat,gate_scale,>=,8,决策侧软门槛 sigmoid 坡度
-join_chat,gate_weight,>=,4,决策侧软门槛在 U_b 中的权重
+chat,join_affinity,>=,43,加入闲聊被接纳的 sigmoid 拐点（含对方外向度修正后）
+chat,join_duration,>=,10,加入尝试本身的耗时（tick）；成功后的持续聊天按 chat.duration=30 计
+chat,join_scale,>=,10,加入判定 sigmoid 坡度（score−θ 除以它；越大越缓）
+chat,join_stress_penalty,>=,12,对方压力对 score 的压制（压力是程度不是闸门）
+chat,join_gate_affinity,>=,30,决策侧软门槛：我对他好感低于此值仍有小概率发起
+chat,join_gate_stress,>=,80,决策侧软门槛：我压力高于此值仍有小概率发起
+chat,join_gate_scale,>=,8,决策侧软门槛 sigmoid 坡度
+chat,join_gate_weight,>=,4,决策侧软门槛在 U_b 中的权重
 # 调侃时**围观者**的立场（与主行为同一套轴、同一套阈值 —— 围观分裂也走表驱动）：
 #   围观者站谁，由「他对被调侃者的态度」决定，而不是由他的性格决定；
 #   性格只应影响「是否发声」，不该影响「站哪边」。

@@ -19,7 +19,7 @@ extends RefCounted
 const DIMS := ["e", "n", "f", "p"]
 const AXES := ["affinity", "hostility", "trust"]
 ## 玩家可通过 player_action 发起的行为（与 data/rules/behaviors.csv 的行名一致）
-const PLAYER_KINDS := ["chat", "join_chat", "tease", "rumor", "report", "roughhouse", "exclude"]
+const PLAYER_KINDS := ["chat", "tease", "report", "roughhouse", "exclude", "pass_note"]
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
 const OBSERVER_LAYER = preload("res://scripts/systems/observer/observer_layer.gd")
@@ -126,7 +126,10 @@ var _settled: Dictionary = {}
 var _stats: Dictionary = {}
 var _hurt_day: Array = []  # 施害者侧证据：最近一次 i 对 j 做重大敌对行为的日（§8.4）
 var _exclude_last_day: Array = []  # 排挤冷却：同一目标最近被驱逐的日（§10.25）
-var _witness_day: Array = []  # 举报把柄：i 最近目击 j 违规的日（§10.2）
+var _witness_day: Array = []
+var _notes: Array = []  # 活跃纸条（§8.6 纸条链）
+var _note_next_id := 0
+var _choice: Dictionary = {}  # 选择侧系数表（§4.5）  # 举报把柄：i 最近目击 j 违规的日（§10.2）
 
 
 func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
@@ -247,6 +250,7 @@ func _load_config(tables: Dictionary) -> void:
 		_phase_rules[str(r["phase_id"])] = str(r.get("active_rules", "none")).split("|")
 	_bindings = _rows(tables, "characters/bindings")
 	_feedback = float(_p.get("feedback", 0.0))
+	_choice = _build_choice_weights(tables)
 
 
 func _alloc(n: int) -> void:
@@ -287,7 +291,6 @@ func _reset_runtime(n: int) -> void:
 		"dedup_skips": 0,
 		"teases": 0,
 		"tease_fail": 0,
-		"rumors": 0,
 		"excludes": 0,
 		"roughhouse": 0,
 		"sleeps": 0,
@@ -302,7 +305,12 @@ func _reset_runtime(n: int) -> void:
 		"help_rejects": 0,
 		"apologizes": 0,
 		"apologize_rejects": 0,
+		"notes_written": 0,
+		"notes_read": 0,
+		"notes_destroyed": 0,
 	}
+	_notes.clear()
+	_note_next_id = 0
 	_next_action = []
 	_busy_until = []
 	_busy_phase = []
@@ -627,7 +635,7 @@ func _settle_finished_actions() -> void:
 		_current_act[i] = null
 		_busy_act[i] = null
 		_busy_phase[i] = -1
-	# 旧路径 join_chat 的占用不建立会话，靠占用到期收尾（群聊拒绝不再占用请求者）
+	# 加入路径（原 join_chat）的占用不建立会话，靠占用到期收尾（群聊拒绝不再占用请求者）
 	notifications.append_array(_player_interactions.on_occupancy_completed(_global_tick))
 	# 玩家不再处于任何会话、也不再被占用时，清掉「正在对话」标记
 	# （NPC 的标记由 _decide_and_act 每回合自清；玩家没有决策回合，必须在这里清）
@@ -643,6 +651,7 @@ func _tick() -> void:
 	_global_tick += 1
 	_settle_finished_actions()
 	_decide_and_act()
+	_process_notes()  # 纸条链（§8.6）：每 tick 处理一张纸条
 	_study_accumulate()
 	_update_environment()
 	if _global_tick % int(_p["settle_interval"]) == 0:
@@ -1173,7 +1182,7 @@ func _deviance_pressure() -> void:
 	if k <= 0.0:
 		return
 	var v := _volume / 100.0
-	var loud := ["chat", "join_chat", "tease", "roughhouse"]
+	var loud := ["chat", "tease", "roughhouse"]
 	for i in range(_n):
 		var act = _current_act[i]
 		if act == null:
@@ -1239,6 +1248,8 @@ func _cleanup_phase() -> void:
 		_current_act[i] = null
 		_busy_act[i] = null
 		_in_conversation[i] = false
+	# 纸条链（§8.6）：纸条只在当前时间段内存活，进入下一个时间段即销毁。
+	_notes.clear()
 	# 有成员被打断的共同活动整场中断（不留半场会话、不残留融合圈）
 	var unfinished: Array = []
 	if not _interrupted_nodes.is_empty():
@@ -1369,32 +1380,32 @@ func _tau(i: int) -> float:
 	return maxf(t, 0.01)
 
 
-## 搭话决策侧软门槛：低于门槛只降概率、不排除候选（§6.4）。
+## 加入闲聊决策侧软门槛：低于门槛只降概率、不排除候选（§6.4）。
 func _join_gate_utility(i: int, j: int) -> float:
-	var ga := float(_thresholds_lookup["join_chat_gate_affinity"])
-	var gs := float(_thresholds_lookup["join_chat_gate_stress"])
-	var scale := float(_thresholds_lookup["join_chat_gate_scale"])
-	var w := float(_thresholds_lookup["join_chat_gate_weight"])
+	var ga := float(_thresholds_lookup["chat_join_gate_affinity"])
+	var gs := float(_thresholds_lookup["chat_join_gate_stress"])
+	var scale := float(_thresholds_lookup["chat_join_gate_scale"])
+	var w := float(_thresholds_lookup["chat_join_gate_weight"])
 	var za := (_a[i * _n + j] - ga) / scale
 	var zs := (gs - _stress[i]) / scale
 	return w * (_sigmoid(za) + _sigmoid(zs) - 1.0)
 
 
-## 搭话判定侧 score：**被请求者的真值好感 A[j][i]** + 对方外向度 − 对方压力惩罚（§6.4）。
+## 加入闲聊判定侧 score：**被请求者的真值好感 A[j][i]** + 对方外向度 − 对方压力惩罚（§6.4）。
 ## 判定读真值 ——「他会不会接纳我」由他的真实态度决定，不由我的猜测决定；我的猜测只进
 ## 决策侧（要不要去试）与展示层（成功率）。读 A[j][i] 不违反 §18.7 不变式 3 ——
 ## 该不变式禁止的是**决策路径**读它；本方法属**判定路径**，规格要求它读真值。
 func _join_score(i: int, j: int) -> float:
 	var base := _a[j * _n + i] + (_dims[j] - 50.0) * 0.3
 	var hot := maxf(0.0, _stress[j] - 50.0) / 50.0
-	var penalty := float(_thresholds_lookup["join_chat_stress_penalty"])
+	var penalty := float(_thresholds_lookup["chat_join_stress_penalty"])
 	return base - penalty * hot
 
 
-## 搭话判定侧概率：p = σ((score − θ)/scale)，永不为 0/1（§6.4）。
+## 加入闲聊判定侧概率：p = σ((score − θ)/scale)，永不为 0/1（§6.4）。
 func _join_probability(i: int, j: int) -> float:
-	var theta := float(_thresholds_lookup["join_chat_affinity"])
-	var scale := float(_thresholds_lookup["join_chat_scale"])
+	var theta := float(_thresholds_lookup["chat_join_affinity"])
+	var scale := float(_thresholds_lookup["chat_join_scale"])
 	return _sigmoid((_join_score(i, j) - theta) / scale)
 
 
@@ -1406,16 +1417,16 @@ func _join_feedback(i: int, j: int) -> Dictionary:
 	var score := (
 		_b_a[i * _n + j]
 		+ (_dims[j] - 50.0) * 0.3
-		- float(_thresholds_lookup["join_chat_stress_penalty"]) * hot
+		- float(_thresholds_lookup["chat_join_stress_penalty"]) * hot
 	)
-	var theta := float(_thresholds_lookup["join_chat_affinity"])
-	var scale := float(_thresholds_lookup["join_chat_scale"])
+	var theta := float(_thresholds_lookup["chat_join_affinity"])
+	var scale := float(_thresholds_lookup["chat_join_scale"])
 	return {"p": _r2(_sigmoid((score - theta) / scale))}
 
 
-## 一次判定的展示包（只读，不参与结算；实际掷骰在 _do_join_chat 里做，D11 玩家侧用）。
-func _verdict(i: int, j: int, kind: String = "join_chat") -> Dictionary:
-	if kind == "join_chat":
+## 一次判定的展示包（只读，不参与结算；实际掷骰在 _do_chat_join 里做，D11 玩家侧用）。
+func _verdict(i: int, j: int, kind: String = "join") -> Dictionary:
+	if kind == "join":
 		var fb: Dictionary = _join_feedback(i, j)
 		var roll := _rng.random()
 		return {
@@ -1516,7 +1527,7 @@ func _roll_reports() -> void:
 				break
 
 
-## 一 tick 内的行为决策：闲聊 → 调侃 → 打闹 → 排挤 → 流言 → 搭话。
+## 一 tick 内的行为决策：闲聊 → 调侃 → 打闹 → 排挤 → 搭话。
 ## 铁律：决策顺序按索引升序（可复现，取代 Python 的 shuffle）；只读信念 B_*，不读真值 A[j][i]。
 func _decide_and_act() -> void:
 	var n := _n
@@ -1544,6 +1555,15 @@ func _decide_and_act() -> void:
 				_do_chat(i, tgt)
 				busy[i] = true
 				busy[tgt] = true
+				continue
+		# 环境类：传纸条（§8.6 纸条链）—— 写一张纸条，投给相邻或走近的人
+		# 纸条本身不做判定；接收者的「看不看 / 销毁 / 继传」由 _process_notes() 走 §4.5 选择侧公式
+		if _allowed("pass_note") and _rng.random() < float(_probs["pass_note"]):
+			var pn_target := _pick_target(i)
+			if pn_target >= 0:
+				_do_pass_note(i, pn_target)
+				busy[i] = true
+				busy[pn_target] = true
 				continue
 		# 意向类：当众调侃（需物理接近 + ≥3 人围观；目标偏好敌对高 / 好感低者）
 		var cands_t: Array = []
@@ -1641,23 +1661,8 @@ func _decide_and_act() -> void:
 					break
 			if done:
 				continue
-		# 附加行为：流言（负面染色；目标偏好敌对高者）
-		if _allowed("rumor") and _rng.random() < float(_probs["rumor_p"]):
-			var c2: Array = []
-			for j in range(n):
-				if j != i and not busy[j] and _can_interact_with(j):
-					c2.append(j)
-			if not c2.is_empty():
-				var w2: Array = []
-				for m in c2:
-					w2.append(maxf(1.0, 20.0 + _h[i * n + m] - _a[i * n + m] * 0.5))
-				var tgt: int = int(_rng.choices(c2, w2, 1)[0])
-				_do_rumor(i, tgt)
-				busy[i] = true
-				busy[tgt] = true
-				continue
 		# ---------- 意向类：三条「主动接近他人」的行为（§10.10 / §10.11 / §10.13）----------
-		# 三者都必须排在下面无门槛的搭话回退块之前，否则会被它永远抢先。
+		# 三者都必须排在下面无门槛的加入回退块之前，否则会被它永远抢先。
 		# 门槛一律读「我自己的立场」（A[i][j] / H[i][j] / Stress[j]）与信念 B，
 		# 不读 A[j][i] / H[j][i]（§18.7 不变式 3：决策路径不得读「别人对我的态度」）。
 		var e_i := _dims[i]
@@ -1724,7 +1729,7 @@ func _decide_and_act() -> void:
 				busy[i] = true
 				busy[j] = true
 				continue
-		# 意向类：搭话（softmax 采样）
+		# 意向类：加入闲聊（softmax 采样）
 		var cands: Array = []
 		for j in range(n):
 			if j != i and not busy[j] and _can_interact_with(j) and chat_pair_in_range(i, j):
@@ -1748,7 +1753,7 @@ func _decide_and_act() -> void:
 			if not scores.is_empty():
 				var k := _softmax(scores, _tau(i))
 				var tgt: int = int(cands[k])
-				_do_join_chat(i, tgt)
+				_do_chat_join(i, tgt)
 				busy[i] = true
 				busy[tgt] = true
 
@@ -1867,13 +1872,245 @@ func session_end_tick(session_id: int) -> int:
 
 
 ## 闲聊：话题共鸣事件 + 双方观测。
+# ------------------------------------------------------------------ 纸条链（§8.6，2026-10-10）
+## 纸条链：**状态与时机在内核，行为逻辑在 pass_note_behavior.gd**（与 chat 同构）。
+## 依据：主文档 §8.6（纸条链）、§4.5（选择侧统一公式）、§8.2（1 级把柄）。
+## 参考实现 tools/core_sim.py —— 两套内核必须同种子逐位一致（RNG 顺序与次数对齐）。
+
+
+## 新建一张纸条（**不消耗 RNG**）。返回纸条编号。
+func _note_create(author: int, target: int, tone: int, template: int, holder: int) -> int:
+	_note_next_id += 1
+	var note := {
+		"id": _note_next_id,
+		"author": author,
+		"target": target,
+		"tone": tone,
+		"tpl": template,
+		"holder": holder,
+		"prev": author,
+		"seen": [author, holder],
+		"read": false,
+	}
+	_notes.append(note)
+	return _note_next_id
+
+
+## 某张纸条的深拷贝快照（不存在返回空字典）。
+func _note_row(note_id: int) -> Dictionary:
+	for nt in _notes:
+		if int(nt["id"]) == note_id:
+			return {
+				"id": int(nt["id"]),
+				"author": int(nt["author"]),
+				"target": int(nt["target"]),
+				"tone": int(nt["tone"]),
+				"tpl": int(nt["tpl"]),
+				"holder": int(nt["holder"]),
+				"prev": int(nt["prev"]),
+				"seen": (nt["seen"] as Array).duplicate(),
+				"read": bool(nt["read"]),
+			}
+	return {}
+
+
+## 纸条转手：prev 递给了 new_holder（已经手集合去重）。
+func _note_pass_on(note_id: int, prev: int, new_holder: int) -> void:
+	for nt in _notes:
+		if int(nt["id"]) == note_id:
+			nt["prev"] = prev
+			nt["holder"] = new_holder
+			var seen: Array = nt["seen"]
+			if not seen.has(new_holder):
+				seen.append(new_holder)
+			return
+
+
+## 销毁一张纸条。
+func _note_destroy(note_id: int) -> void:
+	for i in range(_notes.size() - 1, -1, -1):
+		if int(_notes[i]["id"]) == note_id:
+			_notes.remove_at(i)
+			return
+
+
+## §4.5 选择侧统一公式（与 Python 参考的 choice_prob 同式；未登记退回 0.5）。
+func _choice_prob(event: String, option: String, i: int) -> float:
+	var row: Dictionary = _choice.get("%s|%s" % [event, option], {})
+	if row.is_empty():
+		return 0.5
+	var d0 := (_dims[i] - 50.0) / 50.0
+	var d1 := (_dims[_n + i] - 50.0) / 50.0
+	var d2 := (_dims[2 * _n + i] - 50.0) / 50.0
+	var d3 := (_dims[3 * _n + i] - 50.0) / 50.0
+	var score := (
+		float(row["w_e"]) * d0
+		+ float(row["w_s"]) * d1
+		+ float(row["w_f"]) * d2
+		+ float(row["w_j"]) * d3
+		+ float(row["w_stress"]) * (_stress[i] - 50.0) / 50.0
+	)
+	return _sigmoid((score - float(row["theta"])) / float(row["scale"]))
+
+
+## 选择侧系数表（§4.5）：event|option -> 系数行。
+func _build_choice_weights(tables: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for r in _rows(tables, "rules/choice_weights"):
+		var stress_col := str(r.get("w_stress", ""))
+		out["%s|%s" % [str(r["event"]), str(r["option"])]] = {
+			"theta": float(str(r["theta"])),
+			"scale": float(str(r["scale"])),
+			"w_e": float(str(r["w_e"])),
+			"w_s": float(str(r["w_s"])),
+			"w_f": float(str(r["w_f"])),
+			"w_j": float(str(r["w_j"])),
+			"w_stress": float(stress_col) if stress_col != "" else 0.0,
+		}
+	return out
+
+
+## 写纸条（§8.6）：内核只做触发与状态，行为逻辑在组件里。
+func _do_pass_note(i: int, j: int) -> void:
+	_behavior_registry.execute(&"pass_note", i, j)
+
+
+## 每 tick 处理一张纸条：按编号升序找第一张可处理的
+## （持有者不忙不睡、且不是玩家 —— 玩家持有的纸条等玩家选择）。
+func _process_notes() -> void:
+	if _notes.is_empty():
+		return
+	var ids: Array = []
+	for nt in _notes:
+		ids.append(int(nt["id"]))
+	ids.sort()
+	var me := _n - 1
+	for note_id in ids:
+		var row := _note_row(int(note_id))
+		if row.is_empty():
+			continue
+		var holder := int(row["holder"])
+		if holder < 0 or holder == me:
+			continue
+		if _sleeping[holder] or _global_tick < _busy_until[holder]:
+			continue
+		var component: RefCounted = _behavior_registry.component(&"pass_note")
+		if component != null:
+			component.handle_receipt(_behavior_context, int(note_id))
+		return
+
+
+## 当前手里拿着纸条的节点编号（升序，只读）—— 供表现层画「纸条」徽标（§21.2.9）。
+## 不消耗 RNG，也不改任何状态。
+func note_holders() -> Array:
+	var out: Array = []
+	for nt in _notes:
+		var h := int(nt["holder"])
+		if h >= 0 and not out.has(h):
+			out.append(h)
+	out.sort()
+	return out
+
+
+## 玩家手上是否有待处理的纸条（供 UI / 表现层查询）。不消耗 RNG。
+func note_pending_for_player() -> Dictionary:
+	var me := _n - 1
+	var ids: Array = []
+	for nt in _notes:
+		ids.append(int(nt["id"]))
+	ids.sort()
+	for note_id in ids:
+		var row := _note_row(int(note_id))
+		if not row.is_empty() and int(row["holder"]) == me:
+			return row
+	return {}
+
+
+## 玩家手上最早的一张纸条（没有返回空字典）。
+func _player_note_id() -> int:
+	var me := _n - 1
+	var ids: Array = []
+	for nt in _notes:
+		if int(nt["holder"]) == me:
+			ids.append(int(nt["id"]))
+	if ids.is_empty():
+		return -1
+	ids.sort()
+	return int(ids[0])
+
+
+## **只读**（§8.6）：结算一次并占 10 tick 打断当前行为；纸条留在手上等归属决策。
+## 已读过的不重复结算。消耗 RNG：0 次。返回是否真的读了。
+func read_note() -> bool:
+	var me := _n - 1
+	var note_id := _player_note_id()
+	if note_id < 0:
+		return false
+	var row := _note_row(note_id)
+	if row.is_empty() or bool(row["read"]):
+		return false
+	var component: RefCounted = _behavior_registry.component(&"pass_note")
+	if component == null:
+		return false
+	component.settle(_behavior_context, me, int(row["target"]), int(row["tone"]))
+	_behavior_context.occupy(me, me, "pass_note")
+	_behavior_context.increment_stat("notes_read")
+	_note_mark_read(note_id)
+	return true
+
+
+## 标记某张纸条已被读过（玩家侧）。
+func _note_mark_read(note_id: int) -> void:
+	for nt in _notes:
+		if int(nt["id"]) == note_id:
+			nt["read"] = true
+			return
+
+
+## 归属决策（§8.6）：继续传 / 撕掉 / **当场举报**（只能在看之后做）。
+## 消耗 RNG：继续传时 1 次（randbelow 挑下一个）。
+func finish_note(forward: bool = true, report_prev: bool = false) -> bool:
+	var me := _n - 1
+	var note_id := _player_note_id()
+	if note_id < 0:
+		return false
+	var row := _note_row(note_id)
+	if report_prev:
+		if not bool(row["read"]):
+			return false
+		if int(row["prev"]) >= 0:
+			# 1 级把柄：写入现有举报链的把柄表（被举报者 = 上一个递给我的人）；
+			# 等级在判定里的数值口径待定（§8.2，聊举报那轮定）。
+			_witness_day[me * _n + int(row["prev"])] = _day
+	if forward:
+		var component: RefCounted = _behavior_registry.component(&"pass_note")
+		if component != null:
+			var next_holder := int(component.pick_next(_behavior_context, me, row["seen"]))
+			if next_holder >= 0:
+				_note_pass_on(note_id, me, next_holder)
+				_behavior_context.occupy(me, me, "pass_note")
+				return true
+	_note_destroy(note_id)
+	_behavior_context.increment_stat("notes_destroyed")
+	return true
+
+
+## 玩家处理手上的纸条（§8.6）：read / forward / report_prev。
+## - read：读（立即结算并占 10 tick）；forward：是否继续传（false = 撕掉）
+## - report_prev：**当场举报** —— 把柄写给「上一个递给我的人」（§8.2，1 级把柄）
+func respond_note(read: bool, forward: bool, report_prev: bool = false) -> bool:
+	if read:
+		read_note()
+	return finish_note(forward, report_prev)
+
+
 func _do_chat(i: int, j: int) -> void:
 	_behavior_registry.execute(&"chat", i, j)
 
 
-## 搭话判定侧：p 掷骰，无硬闸门；roll 可由调用方预掷（保证三拍展示一致）。
-func _do_join_chat(i: int, j: int, roll: float = -1.0) -> void:
-	_behavior_registry.execute(&"join_chat", i, j, {"roll": roll})
+## 加入闲聊判定侧：p 掷骰，无硬闸门；roll 可由调用方预掷（保证三拍展示一致）。
+func _do_chat_join(i: int, j: int, roll: float = -1.0) -> void:
+	_behavior_registry.execute(&"chat", i, j, {"mode": "join", "roll": roll})
 
 
 ## 举报（§10.2）：i = 举报者，j = 被举报者；效果落在被举报者身上。
@@ -1889,11 +2126,6 @@ func _do_tease(i: int, j: int, audience: Array) -> void:
 ## 排挤（B 类纯损害）：群体驱逐；被排挤者压力↑且对参与者好感↓（双向疏远）。
 func _do_exclude(i: int, j: int, crowd: Array) -> void:
 	_behavior_registry.execute(&"exclude", i, j, {"crowd": crowd})
-
-
-## 流言（§10.1）：i 传关于 j 的话；旁观者二手观测（带噪声）。
-func _do_rumor(i: int, j: int) -> void:
-	_behavior_registry.execute(&"rumor", i, j)
 
 
 ## 追逐打闹（§10.18）：参与者互相好感↑、旁观者对参与者敌对↑（敌对种子）。
@@ -1940,8 +2172,8 @@ func _player_action_error(kind: String, target: int, me: int) -> String:
 func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 	var me := _n - 1
 	# 闲聊（发起／加入）统一走交互服务：真实范围校验、幂等提交、真实会话登记。
-	# 旧 join_chat 只作为「chat + mode=join」的兼容别名，不能绕过距离与会话校验。
-	if kind == "chat" or kind == "join_chat":
+	# 玩家只有一个聊天入口：`kind=chat` + `mode=start/join` 由预览决定参与方式。
+	if kind == "chat":
 		return _player_chat_entry(kind, target, topic)
 	# 「能不能做」先过公共门槛，再执行具体行为（玩家可跳过「想不想」，不能跳过「能不能」）
 	var blocked := _player_action_error(kind, target, me)
@@ -1952,14 +2184,14 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 	match kind:
 		"tease":
 			_do_tease(me, target, _player_audience(target))
-		"rumor":
-			_do_rumor(me, target)
 		"report":
 			_do_report(me, target)
 		"roughhouse":
 			_do_roughhouse(me, target, _player_bystanders(target))
 		"exclude":
 			_do_exclude(me, target, _player_hurters(target))
+		"pass_note":
+			_do_pass_note(me, target)
 		_:
 			return {"ok": false, "error": "unknown_kind"}
 	return {
@@ -1973,14 +2205,11 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 	}
 
 
-## 旧聊天入口的兼容转发：预览决定参与方式（start / join），提交使用内核分配的请求编号。
-## start 模式下 join_chat 兼容别名**明确拒绝**（宁可不做，也不把 join 静默变成 start）。
-func _player_chat_entry(kind: String, target: int, topic: String) -> Dictionary:
+## 玩家聊天入口：由预览决定参与方式（start / join），提交时使用内核分配的请求编号。
+func _player_chat_entry(_kind: String, target: int, topic: String) -> Dictionary:
 	var pv: Dictionary = _player_interactions.preview("chat", target)
 	if not bool(pv.get("ok", false)):
 		return {"ok": false, "error": str(pv.get("error", "invalid"))}
-	if kind == "join_chat" and str(pv["mode"]) != "join":
-		return {"ok": false, "error": "target_unavailable"}
 	if not bool(pv["eligible"]):
 		return {"ok": false, "error": str(pv["reason"])}
 	if not bool(pv["in_range"]):
@@ -2200,11 +2429,8 @@ func _allowed(behavior: String) -> bool:
 		return true
 	var banned := [
 		"chat",
-		"join_chat",
-		"pass_note",
 		"tease",
 		"ask_help",
-		"inform",
 		"comfort",
 		"apologize",
 		"share_secret",
@@ -2253,21 +2479,31 @@ func report() -> String:
 	lines.append("  接近饱和(>=%.0f)比例：%.1f%%" % [sat_th, saturated * 100.0])
 	lines.append(
 		(
-			"  事件 %d 次（闲聊 %d / 搭话 %d / 举报 %d）"
+			"  事件 %d 次（闲聊 %d / 加入 %d / 举报 %d）"
 			% [_stats["events"], _stats["chats"], _stats["joins"], _stats["reports"]]
 		)
 	)
 	lines.append(
 		(
-			"  睡着 %d 人次 | 调侃 %d（过火 %d）/ 流言 %d / 排挤 %d / 打闹 %d / 被打断 %d"
+			"  睡着 %d 人次 | 调侃 %d（过火 %d）/ 排挤 %d / 打闹 %d / 被打断 %d"
 			% [
 				_stats["sleeps"],
 				_stats["teases"],
 				_stats["tease_fail"],
-				_stats["rumors"],
 				_stats["excludes"],
 				_stats["roughhouse"],
 				_stats["interrupts"]
+			]
+		)
+	)
+	lines.append(
+		(
+			"  纸条：写 %d / 读 %d / 销毁 %d（活跃 %d）"
+			% [
+				_stats["notes_written"],
+				_stats["notes_read"],
+				_stats["notes_destroyed"],
+				_notes.size()
 			]
 		)
 	)
