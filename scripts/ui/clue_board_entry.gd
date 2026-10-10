@@ -130,9 +130,12 @@ func _open() -> void:
 	_pop = create_tween()
 	_pop.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	_pop.set_parallel(true)
-	_pop.tween_property(_board, "scale", Vector2(POP_SCALE, POP_SCALE), POP_TIME).set_trans(
-		Tween.TRANS_BACK
-	).set_ease(Tween.EASE_OUT)
+	(
+		_pop
+		. tween_property(_board, "scale", Vector2(POP_SCALE, POP_SCALE), POP_TIME)
+		. set_trans(Tween.TRANS_BACK)
+		. set_ease(Tween.EASE_OUT)
+	)
 	_pop.tween_property(_board, "modulate:a", 1.0, 0.12)
 	_pop.tween_property(_shade, "color:a", SHADE_ALPHA, POP_TIME)
 	_pop.chain().tween_callback(_enable_board_input)

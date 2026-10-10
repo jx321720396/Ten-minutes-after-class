@@ -26,12 +26,13 @@ var dragged_marker: ColorRect = null
 var drag_source: Sprite2D = null
 var drag_ghost: Sprite2D = null
 var drag_press := Vector2.ZERO
+# 弹出动画期间先不接收画笔，避免缩放时笔画坐标对不齐。
+var input_enabled := true
+
 var _rest: Dictionary = {}
 var _pop_lift := 28.0
 var _pop_scale := 1.22
 var _close_button: Button
-## 弹出动画期间先不接收画笔，避免缩放时笔画坐标对不齐。
-var input_enabled := true
 
 
 func _ready():
