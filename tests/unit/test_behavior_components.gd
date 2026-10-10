@@ -4,19 +4,18 @@ extends GutTest
 const REGISTRY_PATH := "res://scripts/systems/behaviors/behavior_registry.gd"
 const EXPECTED := [
 	&"chat",
-	&"join_chat",
 	&"tease",
 	&"report",
-	&"rumor",
 	&"roughhouse",
 	&"exclude",
 	&"comfort",
 	&"ask_help",
-	&"apologize"
+	&"apologize",
+	&"pass_note"
 ]
 
 
-func test_ten_behaviors_are_registered() -> void:
+func test_all_behaviors_are_registered() -> void:
 	assert_true(ResourceLoader.exists(REGISTRY_PATH), "独立行为注册表必须存在")
 	if not ResourceLoader.exists(REGISTRY_PATH):
 		return
@@ -54,9 +53,9 @@ func test_component_dispatch_matches_all_compatibility_entries() -> void:
 		direct.event_sink = func(e: Dictionary): new_events.append(e)
 		var options := {}
 		match kind:
-			&"join_chat":
-				options = {"roll": 0.0}
-				old_entry._do_join_chat(0, 1, 0.0)
+			&"chat":
+				options = {"mode": "join", "roll": 0.0}
+				old_entry._do_chat_join(0, 1, 0.0)
 			&"tease":
 				options = {"audience": [5, 2, 3, 4]}
 				old_entry._do_tease(0, 1, options.audience)
@@ -78,11 +77,11 @@ func test_pre_rolled_join_does_not_draw_again_and_keeps_event_order() -> void:
 	var events: Array = []
 	c.event_sink = func(e: Dictionary): events.append(e)
 	var rng_before := var_to_bytes([c._rng._mt, c._rng._mti])
-	c._do_join_chat(0, 1, 0.0)
+	c._do_chat_join(0, 1, 0.0)
 	assert_eq(var_to_bytes([c._rng._mt, c._rng._mti]), rng_before)
 	assert_eq(events.size(), 2)
 	assert_eq(events[0].payload.kind, "chat")
-	assert_eq(events[1].payload.kind, "join_chat")
+	assert_eq(events[1].payload.mode, "join")
 	assert_true(events[1].payload.accepted)
 
 
@@ -90,7 +89,7 @@ func test_default_join_consumes_exactly_one_roll() -> void:
 	var c := _core()
 	var expected := _core()
 	expected._rng.random()
-	c._do_join_chat(0, 1)
+	c._do_chat_join(0, 1)
 	assert_eq(
 		var_to_bytes([c._rng._mt, c._rng._mti]),
 		var_to_bytes([expected._rng._mt, expected._rng._mti])

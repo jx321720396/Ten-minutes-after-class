@@ -41,6 +41,7 @@ var _hud: ChatFeedbackHUD = null
 var _rings: ActivityRingPresenter = null
 var _bubbles: ChatActivityBubble = null
 var _emotion: PlayerEmotionFeedback = null
+var _note: NotePrompt = null
 
 var _state: StringName = STATE_IDLE
 var _selected := -1
@@ -80,13 +81,15 @@ func bind_feedback(
 	hud: ChatFeedbackHUD,
 	rings: ActivityRingPresenter,
 	bubbles: ChatActivityBubble,
-	emotion: PlayerEmotionFeedback
+	emotion: PlayerEmotionFeedback,
+	note_prompt: NotePrompt
 ) -> void:
 	_menu = menu
 	_hud = hud
 	_rings = rings
 	_bubbles = bubbles
 	_emotion = emotion
+	_note = note_prompt
 
 
 func _connect_sources() -> void:
@@ -103,6 +106,10 @@ func _connect_sources() -> void:
 			_player.request_failed.connect(_on_request_failed)
 	if _menu != null and not _menu.chat_requested.is_connected(request_behavior_chat):
 		_menu.chat_requested.connect(request_behavior_chat)
+	if _menu != null and not _menu.note_requested.is_connected(request_behavior_note):
+		_menu.note_requested.connect(request_behavior_note)
+	if _note != null and not _note.choice_made.is_connected(_on_note_choice):
+		_note.choice_made.connect(_on_note_choice)
 	if _hud != null and not _hud.result_revealed.is_connected(_on_result_revealed):
 		_hud.result_revealed.connect(_on_result_revealed)
 	var bus := get_node_or_null("/root/EventBus")
@@ -176,6 +183,112 @@ func request_behavior_chat() -> void:
 	request_behavior(KIND_CHAT)
 
 
+## 递纸条（§8.6）：以选中的同学为**被说的人**写一张纸条，投给座位相邻或已走近的人。
+## 玩家只决定「说的是谁」——**写什么内容、递给谁由内核按写者自己的关系决定**，不做内容编辑。
+func request_behavior_note() -> void:
+	if _core == null or _selected < 0 or _state != STATE_SELECTED:
+		return
+	var result: Dictionary = _core.player_action("pass_note", _selected)
+	if not bool(result.get("ok", false)):
+		if _hud != null:
+			_hud.show_status(_note_reason(str(result.get("error", ""))))
+		_open_menu()
+		return
+	if _hud != null:
+		_hud.show_status("纸条塞出去了。")
+	_selected = -1
+	if _menu != null:
+		_menu.close()
+	_set_state(STATE_IDLE)
+
+
+## 纸条的两次决策（§21.2.9）：先看不看，看完再决定去向。内核是唯一事实源。
+func _on_note_choice(action: StringName) -> void:
+	if _core == null or _note == null:
+		return
+	match action:
+		&"skip_forward":
+			_core.respond_note(false, true)
+			_note.close()
+		&"skip_destroy":
+			_core.respond_note(false, false)
+			_note.close()
+		&"read":
+			# 「看」会打断当前动作并占一点时间；纸条仍在手上，等第二步决定去向
+			_core.read_note()
+			var row: Dictionary = _core.note_pending_for_player()
+			_note.show_after_read(int(row.get("tone", 1)))
+		&"destroy":
+			_core.finish_note(false, false)
+			_note.close()
+		&"forward":
+			_core.finish_note(true, false)
+			_note.close()
+		&"report":
+			# 只能**当场**举报（撕掉之后不能再举）：被举报的是上一个递给我的人（§8.2）
+			_core.finish_note(false, true)
+			if _hud != null:
+				_hud.show_status("你把纸条交给了老师。")
+			_note.close()
+
+
+## 纸条到手（§8.6）：**不打断当前动作**，只在界面角落提示，等玩家自己做选择。
+func _poll_note() -> void:
+	if _core == null or _note == null:
+		return
+	var pending: Dictionary = _core.note_pending_for_player()
+	if pending.is_empty():
+		if _note.is_open():
+			_note.close()
+		return
+	if _note.is_open():
+		return
+	if bool(pending.get("read", false)):
+		_note.show_after_read(int(pending.get("tone", 1)))
+	else:
+		_note.show_offer()
+
+
+## 递纸条的可用性**预览**（真正的裁决在内核 `player_action`）：
+## 上课段也能用（纸条是上课唯一允许的动作），但需坐位相邻或已走近、自己此刻没在忙。
+func _note_ok(index: int) -> bool:
+	if _core == null or index < 0 or not bool(_core._allowed("pass_note")):
+		return false
+	var me := int(_core.node_count()) - 1
+	if _core.is_moving(me) or not str(_core.activity_of(me)).is_empty():
+		return false
+	if int(_core._busy_until[me]) > int(_core._global_tick):
+		return false
+	return bool(_preview().get("in_range", false))
+
+
+func _note_hint(index: int) -> String:
+	if _core == null:
+		return ""
+	if _note_ok(index):
+		return "写一张纸条，说说%s（写什么由你与他的关系决定）" % _display_name(index)
+	if not bool(_core._allowed("pass_note")):
+		return "现在不能传纸条"
+	var me := int(_core.node_count()) - 1
+	if _core.is_moving(me) or not str(_core.activity_of(me)).is_empty():
+		return "你正忙着"
+	return "先走近一点再递"
+
+
+## 内核错误码 → 一句人话（纸条侧；不暴露任何隐藏数值）
+func _note_reason(error: String) -> String:
+	match error:
+		"player_busy":
+			return "你正忙着"
+		"phase_not_allowed":
+			return "现在不能传纸条"
+		"target_unavailable":
+			return "现在递不过去"
+		"invalid_target", "unknown_kind":
+			return "现在没法传纸条"
+	return "现在没法传纸条"
+
+
 ## 取消尚未提交的接近请求（选中 / 接近阶段可取消；提交后不撤销结果）。
 ## 状态回到 Idle（计划 §6：Approaching → Idle: 取消／不可达／失去权限）。
 func cancel_pending(reason: StringName) -> void:
@@ -243,6 +356,8 @@ func _menu_info(index: int) -> Dictionary:
 		"chat_seconds": float(preview.get("duration_ticks", 0)) * _seconds_per_tick(),
 		"travel_seconds": _travel_seconds(index),
 		"remaining_seconds": _remaining_seconds(),
+		"note_ok": _note_ok(index),
+		"note_hint": _note_hint(index),
 	}
 	return info
 
@@ -544,6 +659,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	# 纸条提示优先于菜单刷新：它**不打断**正在做的事，任何时候都可能到手
+	_poll_note()
 	if _state != STATE_SELECTED or _menu == null:
 		return
 	_menu_timer += delta

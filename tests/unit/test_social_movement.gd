@@ -25,7 +25,7 @@ func test_npc_chat_cannot_start_across_the_room() -> void:
 func test_npc_join_cannot_bypass_distance() -> void:
 	var core := _core()
 	core.set_position(1, 8, 0)
-	core._do_join_chat(0, 1, 0.0)
+	core._do_chat_join(0, 1, 0.0)
 	assert_eq(core.session_of(0), -1, "旧加入入口也不能远程聊天")
 	assert_false(core.is_busy(0), "非法加入不占用")
 

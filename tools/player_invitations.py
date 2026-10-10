@@ -50,7 +50,7 @@ class PlayerInvitations:
         core = self._core()
         if core is None or core.global_tick >= rec["expires_tick"] or core.phase_index != rec["phase"]:
             return False
-        if not core.allowed("chat" if rec["kind"] == "join_chat" else rec["kind"]):
+        if not core.allowed(rec["kind"]):
             return False
         actor, target = rec["actor"], rec["target"]
         if not (0 <= actor < core.N - 1 and target == core.N - 1):
@@ -79,7 +79,7 @@ class PlayerInvitations:
         core = self._core()
         self.choice = dict(actor=rec["actor"], accepted=bool(accepted))
         try:
-            if accepted or rec["kind"] in ("ask_help", "apologize", "join_chat"):
+            if accepted or rec["kind"] in ("ask_help", "apologize"):
                 getattr(core, "do_" + rec["kind"])(rec["actor"], rec["target"],
                                                 *rec["args"], **rec["kwargs"])
         finally:

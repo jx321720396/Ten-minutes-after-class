@@ -121,7 +121,7 @@ func test_invitation_card_can_reject_without_blocking_player() -> void:
 
 
 func test_all_cooperative_behaviors_wait_for_consent() -> void:
-	for kind in ["chat", "join_chat", "ask_help", "comfort", "apologize", "roughhouse"]:
+	for kind in ["chat", "ask_help", "comfort", "apologize", "roughhouse"]:
 		var core := _core()
 		var me := core.node_count() - 1
 		var before := core.affinity(me, 0)
@@ -144,9 +144,9 @@ func test_npc_joining_player_chat_requires_player_approval() -> void:
 		var me := core.node_count() - 1
 		core._do_chat(me, 0)
 		var sid := core.session_of(me)
-		core._do_join_chat(1, 0)
+		core._do_chat_join(1, 0)
 		var invitation: Dictionary = core.get_player_invitation()
-		assert_eq(str(invitation.kind), "join_chat")
+		assert_eq(str(invitation.kind), "chat")
 		assert_eq(core.session_of(1), -1, "玩家批准前 NPC 不进入玩家会话")
 		var result: Dictionary = core.respond_player_invitation(int(invitation.id), accept)
 		assert_true(bool(result.ok))

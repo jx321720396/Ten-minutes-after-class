@@ -9,7 +9,7 @@
   3. decay：所有 value ∈ (0,1]；`decay_a_interact` ≥ `decay_a_no_interact`
   4. belief：`prior_*` ∈ (0,100]；`eta0_*` > 0
   5. behavior_thresholds：① 阈值键格式（行为名不得自带轴后缀，否则查表键会重复拼接）
-     ② `join_chat_affinity` 必须 **严格大于** `prior_a`（否则搭话永远通过 → 关系只涨不跌）
+     ② `chat_join_affinity` 必须 **严格大于** `prior_a`（否则搭话永远通过 → 关系只涨不跌）
   6. behavior_probs：概率类 ∈ [0,1]
   7. phases：课间 + 上课 tick 合计 = 480；`player_control` = 1 当且仅当 `kind` = break
   8. status_tags：`days` ≥ 1
@@ -90,9 +90,9 @@ for r in rows:
     bad = [w for w in AXES_WORDS if any(r["behavior"].endswith("_" + w) for w in AXES_WORDS)]
     check("%s: 行为名不得自带轴后缀（会与 metric 重复拼接）" % r["behavior"], not bad, r["behavior"])
 th = {"%s_%s" % (r["behavior"], r["metric"]): float(r["value"]) for r in rows}
-if "join_chat_affinity" in th:
-    check("join_chat 门槛 > prior_a（否则搭话永远通过）", th["join_chat_affinity"] > bp["prior_a"],
-          "门槛 %s vs 先验 %s" % (th["join_chat_affinity"], bp["prior_a"]))
+if "chat_join_affinity" in th:
+    check("加入闲聊门槛 > prior_a（否则永远通过）", th["chat_join_affinity"] > bp["prior_a"],
+          "门槛 %s vs 先验 %s" % (th["chat_join_affinity"], bp["prior_a"]))
 for k in ("tease_laugh_affinity", "tease_taunt_hostility", "tease_stand_affinity", "tease_sneer_hostility"):
     check("阈值键存在：%s" % k, k in th)
 

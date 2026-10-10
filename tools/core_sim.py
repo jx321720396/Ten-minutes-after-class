@@ -118,6 +118,21 @@ class Sim:
             [(float(r["band_upper"]), float(r["ticks_per_point"]))
              for r in load_table("rules/grade_table.csv")],
             key=lambda x: x[0])
+        # 选择侧系数表（§4.5）：(event, option) -> 系数行
+        self.choice = {}
+        for _r in load_table("rules/choice_weights.csv"):
+            self.choice[(_r["event"], _r["option"])] = {
+                "theta": float(_r["theta"]),
+                "scale": float(_r["scale"]),
+                "w_e": float(_r["w_e"]),
+                "w_s": float(_r["w_s"]),
+                "w_f": float(_r["w_f"]),
+                "w_j": float(_r["w_j"]),
+                "w_stress": float(_r.get("w_stress") or 0.0),
+            }
+        # 纸条链状态（§8.6）：活跃纸条列表 + 编号（不消耗 RNG）
+        self.notes = []
+        self.note_next_id = 0
         seeds = load_table("characters/seeds.csv")
 
         # --- 抽角色（简化：随机取 npc_count 个；§11.5 的绑定组/原型去重留待正式版）---
@@ -171,12 +186,13 @@ class Sim:
         # 一天的相位序列（段名, tick 数）。与 GDScript 内核 `_active_phases` 对齐（break/class 交替）。
         self.day_phases = [("break", 100), ("class", 90), ("break", 100), ("class", 90), ("break", 100)]
         self.stats = {"events": 0, "chats": 0, "joins": 0, "reports": 0, "bursts": 0,
+                      "teases": 0, "tease_fail": 0, "excludes": 0,
                       "interrupts": 0,
                       "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0,
-                      "teases": 0, "tease_fail": 0, "rumors": 0, "excludes": 0,
                       "roughhouse": 0, "sleeps": 0,
                       "comforts": 0, "helps": 0, "help_rejects": 0,
-                      "apologizes": 0, "apologize_rejects": 0}
+                      "apologizes": 0, "apologize_rejects": 0,
+                      "notes_written": 0, "notes_read": 0, "notes_destroyed": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
         self.settled = set()
         self.phase_index = 0
@@ -586,13 +602,13 @@ class Sim:
 
         硬门槛曾被写成 `A[i][j] >= 30 and Stress[i] <= 80`，于是「概率低也想试一把」
         的戏剧性被消灭。改为两个 sigmoid 之和再减 1，落在 (−1, +1)：
-        越过门槛给正分、低于门槛给负分，乘以 `join_chat_gate_weight` 后加进 U_b。
+        越过门槛给正分、低于门槛给负分，乘以 `chat_join_gate_weight` 后加进 U_b。
         """
         th = self.thresholds_lookup
-        ga = th.get("join_chat_gate_affinity", 30.0)
-        gs = th.get("join_chat_gate_stress", 80.0)
-        scale = th.get("join_chat_gate_scale", 8.0)
-        w = th.get("join_chat_gate_weight", 4.0)
+        ga = th.get("chat_join_gate_affinity", 30.0)
+        gs = th.get("chat_join_gate_stress", 80.0)
+        scale = th.get("chat_join_gate_scale", 8.0)
+        w = th.get("chat_join_gate_weight", 4.0)
         za = (self.A[i][j] - ga) / scale
         zs = (gs - self.Stress[i]) / scale
         return w * (sigmoid(za) + sigmoid(zs) - 1.0)
@@ -600,7 +616,7 @@ class Sim:
     def free_join(self):
         """**「别人做什么，我也跟着做什么」**（用户设计）—— `join_mode = free` 的活动可自由跟随。
 
-        与 `join_chat`（accept 类，需对方判定）相对：学习 / 睡觉这类活动**不需要谁同意**，
+        与 `chat` 的加入路径（accept 类，需对方判定）相对：学习 / 睡觉这类活动**不需要谁同意**，
         但它同样会「传染」—— 而**传染强度由 `conformity(i)` 决定**（§10.19 从众度：
         高 F 随大流、高 J·高 N 有主见）。于是「从众」第一次从**意愿层**落到**行为层**：
 
@@ -672,19 +688,19 @@ class Sim:
         ⚠️ 这里读 `A[j][i]`（别人对我的态度）**不违反** §18.7 不变式 3 ——
         该不变式禁止的是**决策路径**读它；本方法属**判定路径**，规格要求它读真值。
 
-        压力是程度不是闸门：`hot ∈ [0,1]` 乘上 `join_chat_stress_penalty` 压低 score，
+        压力是程度不是闸门：`hot ∈ [0,1]` 乘上 `chat_join_stress_penalty` 压低 score，
         而不是把 p 归零。
         """
         base = self.A[j][i] + (self.dims[j][0] - 50.0) * 0.3
         hot = max(0.0, self.Stress[j] - 50.0) / 50.0
-        penalty = self.thresholds_lookup.get("join_chat_stress_penalty", 12.0)
+        penalty = self.thresholds_lookup.get("chat_join_stress_penalty", 12.0)
         return base - penalty * hot
 
     def join_probability(self, i, j):
         """判定侧概率：p = σ((score − θ)/scale)，永不为 0/1（§6.4）。"""
         th = self.thresholds_lookup
-        theta = th.get("join_chat_affinity", 45.0)
-        scale = th.get("join_chat_scale", 10.0)
+        theta = th.get("chat_join_affinity", 45.0)
+        scale = th.get("chat_join_scale", 10.0)
         return sigmoid((self.join_score(i, j) - theta) / scale)
 
     def join_feedback(self, i, j):
@@ -699,28 +715,28 @@ class Sim:
         th = self.thresholds_lookup
         hot = max(0.0, self.Stress[j] - 50.0) / 50.0
         score = (self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
-                 - th.get("join_chat_stress_penalty", 12.0) * hot)
-        theta = th.get("join_chat_affinity", 45.0)
-        scale = th.get("join_chat_scale", 10.0)
+                 - th.get("chat_join_stress_penalty", 12.0) * hot)
+        theta = th.get("chat_join_affinity", 45.0)
+        scale = th.get("chat_join_scale", 10.0)
         return {"p": round(sigmoid((score - theta) / scale), 2)}
 
     # ---------- 玩家侧判定展示（NPC 静默，玩家可见过程）----------
-    def verdict(self, i, j, kind="join_chat"):
+    def verdict(self, i, j, kind="join"):
         """**一次判定的展示包**（用户设计）：NPC 之间静默出结果，涉及玩家时展示三拍。
 
         三拍 = ① 当前成功率（由**信念**算）→ ② 掷骰 → ③ 结果。
 
-        与判定本身**完全分离**：判定用 `do_join_chat` / `do_tease` 等照常静默执行，
+        与判定本身**完全分离**：判定用 `do_chat_join` / `do_tease` 等照常静默执行，
         本方法只是**只读地取出「此刻玩家会看到的那个概率与结果」**，不参与结算。
         """
-        if kind == "join_chat":
+        if kind == "join":
             fb = self.join_feedback(i, j)
             roll = self.rng.random()
             return {
                 "kind": kind,
                 "p": fb["p"],                    # ① 成功率（信念算得，不泄露真值）
                 "roll": roll,                    # ② 掷骰
-                "ok": roll < self.join_probability(i, j),   # ③ 结果（与 do_join_chat 同一 p：读真值）
+                "ok": roll < self.join_probability(i, j),   # ③ 结果（与 do_chat_join 同一 p：读真值）
                 "note": "成功率来自「你以为对方怎么看你」，不是事实 —— 把握大也可能被拒。",
             }
         return None
@@ -749,7 +765,7 @@ class Sim:
 
         目击者 = 非睡觉的邻居（看得见才谈得上目击）。被目击一次，
         目击者获得 `report_witness_window` 天内的举报把柄。
-        这是「标签 → 行为痕迹 → 目击」的链路，**不追溯流言源头**。
+        这是「标签 → 行为痕迹 → 目击」的链路。
         """
         p = self.probs.get("phone_expose_p", 0.0)
         if p <= 0:
@@ -810,6 +826,15 @@ class Sim:
                 j = self.pick_target(i)
                 if j is not None:
                     self.do_chat(i, j)
+                    busy.add(i)
+                    busy.add(j)
+                    continue
+            # 环境类：传纸条（§8.6 纸条链）—— 写一张纸条，投给相邻或走近的人
+            # 纸条本身不做判定；接收者的「看不看 / 销毁 / 继传」由 process_notes() 走 §4.5 选择侧公式
+            if self.allowed("pass_note") and self.rng.random() < self.probs.get("pass_note", 0.0):
+                j = self.pick_target(i)
+                if j is not None:
+                    self.do_pass_note(i, j)
                     busy.add(i)
                     busy.add(j)
                     continue
@@ -893,16 +918,6 @@ class Sim:
                         break
                 if done:
                     continue
-            # 附加行为：流言（负面染色，压力来源）；目标同样偏好敌对高者
-            if self.allowed("rumor") and self.rng.random() < self.probs.get("rumor_p", 0.03):
-                c2 = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)]
-                if c2:
-                    w2 = [max(1.0, 20.0 + self.H[i][j] - self.A[i][j] * 0.5) for j in c2]
-                    j = self.rng.choices(c2, weights=w2, k=1)[0]
-                    self.do_rumor(i, j)
-                    busy.add(i)
-                    busy.add(j)
-                    continue
             # ---------- 意向类：三条「主动接近他人」的行为（§10.10 / §10.11 / §10.13）----------
             # 三者都必须排在下面**无门槛的搭话回退块之前**，否则会被它永远抢先。
             # 门槛一律读「我自己的立场」（A[i][j] / H[i][j] / Stress[j]）与信念 B，
@@ -978,7 +993,7 @@ class Sim:
                 if scores:
                     k = softmax(scores, self.tau(i), self.rng)
                     j = cands[k]
-                    self.do_join_chat(i, j)
+                    self.do_chat_join(i, j)
                     busy.add(i)
                     busy.add(j)
 
@@ -1076,16 +1091,16 @@ class Sim:
         self.observe(j, i, "affinity")
         self.stats["chats"] += 1
 
-    @invitation_behavior("join_chat")
-    def do_join_chat(self, i, j, roll=None):
-        """搭话判定侧：**p = σ((score − θ)/scale) 掷骰**（§6.4）。
+    @invitation_behavior("chat")
+    def do_chat_join(self, i, j, roll=None):
+        """加入闲聊判定侧：**p = σ((score − θ)/scale) 掷骰**（§6.4）。
 
         没有硬闸门：概率低也可能被接纳、概率高也可能被拒。
         `roll` 可由调用方（玩家 UI）预先掷好，保证「三拍展示」与实际结算一致。
         """
         self.in_conversation[i] = True
         self.in_conversation[j] = True
-        self.occupy(i, j, "join_chat", quiet=True)   # 同一场对话：只计一个声源
+        self.occupy(i, j, "chat", quiet=True)   # 同一场对话：只计一个声源
         p = self.join_probability(i, j)
         choice = self.player_invitations.choice_for(i)
         if choice is not None:
@@ -1183,24 +1198,6 @@ class Sim:
             if k != i:
                 self.apply_event(k, j, "exclude_affinity")
         self.stats["excludes"] += 1
-
-    def do_rumor(self, i, j):
-        """流言（§10.1）：i 传关于 j 的话 → j 压力变化；旁观者"二手观测"。
-
-        倾向由 i 对 j 的净态度决定：敌对压过好感则传负面（被传者压力↑）。
-        """
-        # 流言的**本性就是负面**：无条件让「被传谣者恨传播者」——不要求"当前已敌对"。
-        # （早期实现用 `H > A` 作前置 → 死循环：H 起不来 → 永不判为负面 → 永不加敌对 → H 更起不来。）
-        # `negative` 只用于调节**强度**（倾向），不决定**有无**。
-        negative = self.H[i][j] > self.A[i][j]
-        self.apply_event(j, i, "rumor_hostility")
-        if negative:
-            self.apply_event(i, j, "rumor_stress")
-            self.apply_event(i, j, "tease_hostility")
-        for k in range(self.N):
-            if k not in (i, j):
-                self.observe(k, j, "hostility")     # 二手观测（会带噪声）
-        self.stats["rumors"] += 1
 
     @invitation_behavior("roughhouse")
     def do_roughhouse(self, i, j, bystanders):
@@ -1333,6 +1330,202 @@ class Sim:
             self.apply_event(i, j, "apologize_no_trust", no_modulation=True)
             self.stats["apologize_rejects"] += 1
 
+    # ------------------------------------------------------------------ 纸条链（§8.6，2026-10-10）
+    def choice_prob(self, event, option, i, extra=0.0):
+        """§4.5 选择侧统一公式：p = sigma((score - theta)/scale)。
+
+        score = Σ w_p·d_p + w_stress·(Stress-50)/50 + extra；未登记的 (event, option) 返回 None。
+        """
+        row = self.choice.get((event, option))
+        if row is None:
+            return None
+        d = [(self.dims[i][k] - 50.0) / 50.0 for k in range(4)]
+        score = (row["w_e"] * d[0] + row["w_s"] * d[1] + row["w_f"] * d[2]
+                 + row["w_j"] * d[3]
+                 + row["w_stress"] * (self.Stress[i] - 50.0) / 50.0 + extra)
+        return sigmoid((score - row["theta"]) / row["scale"])
+
+    def do_pass_note(self, i, j):
+        """写纸条（§8.6 纸条链）：i 写一张纸条投给 j（相邻或走近的人）。
+
+        - 被说者 X：w(X) ∝ 1 + |A - H| / 50（态度越极端越可能被写）
+        - 话术：i 对 X 的净态度决定好话 / 坏话；模板随机（4 类）
+        - 纸条由持有者逐 tick 处理（看 / 不看 → 销毁 / 继续传），见 process_notes()
+        消耗 RNG：choices（挑 X） + random（挑模板） = 2 次。
+        """
+        n = self.N
+        cands = [k for k in range(n) if k != i]
+        wts = [1.0 + abs(self.A[i][k] - self.H[i][k]) / 50.0 for k in cands]
+        x = self.rng.choices(cands, weights=wts, k=1)[0]
+        tone = 1 if self.A[i][x] >= self.H[i][x] else -1
+        tpl = int(self.rng.random() * 4.0)
+        self.note_next_id += 1
+        self.notes.append({
+            "id": self.note_next_id,
+            "author": i,
+            "target": x,
+            "tone": tone,
+            "tpl": tpl,
+            "holder": j,
+            "prev": i,
+            "seen": {i, j},
+            "read": False,
+        })
+        # **纸条到达不占用接收者**（§8.6 硬规则：不打断别人正在做的事）——
+        # 只占写纸条的人自己的时间。否则纸条会卡在徙忙者手里到段末被清空。
+        self.occupy(i, i, "pass_note")
+        self.stats["notes_written"] += 1
+
+    def settle_note(self, holder, note):
+        """读纸条的结算（§8.6）：只改「收件人对被说者 X」的态度。
+
+        方向按收件人对 X 的现有态度分档（净态度 A - H）；每条效果 base = 1，走统一影响公式。不消耗 RNG。
+        """
+        x = note["target"]
+        net = self.A[holder][x] - self.H[holder][x]
+        if net < 0.0:                       # 讨厌 X
+            key = "note_bad_to_hostile" if note["tone"] < 0 else "note_good_to_hostile"
+        else:                               # 喜欢 / 中性
+            key = "note_good_to_friendly" if note["tone"] > 0 else "note_bad_to_friendly"
+        self.apply_event(holder, x, key)
+
+    def pick_note_target(self, holder, note):
+        """挑下一个接收者（§8.6）：优先座位相邻且没拿过这张纸条的人，没有则退化为任意可交互的人。
+
+        无候选返回 None（纸条走到头，销毁）。消耗 RNG：randrange = 1 次。
+        """
+        nb = [k for k in self.neighbor_idx[holder]
+              if k != holder and k not in note["seen"] and self.can_interact_with(k)]
+        pool = nb if nb else [k for k in range(self.N)
+                              if k != holder and k not in note["seen"] and self.can_interact_with(k)]
+        if not pool:
+            return None
+        return pool[self.rng.randrange(len(pool))]
+
+    def process_notes(self):
+        """每 tick 处理一张纸条（按 note_id 升序）：持有者先决定「看不看」，看完再决定去向（§8.6）。
+
+        - 玩家持有 -> 不自动处理（等玩家选，见 note_pending_for_player / respond_note）
+        - 看：占 10 tick 并立即结算；不看：不占时间、不中断行为
+        - 去向一律走 §4.5 的 continue 判定：继续传 / 销毁
+        - 每 tick 最多一张 -- 避免一张纸条在同 tick 内传遍全班
+        消耗 RNG：random（看不看） + random（继不继传） + [继传时] randrange（挑人）。
+        """
+        if not self.notes:
+            return
+        # 按 note_id 升序找第一张**可处理**的纸条：
+        # 持有者忙 / 睡 / 是玩家 → 跳过继续往下看。
+        # （不这么做的话，一张卡在徙忙者手里的纸条会阱塞后面所有纸条：实测 3 天写 46 张却只读了 4 次。）
+        note = None
+        holder = -1
+        for nt in sorted(self.notes, key=lambda x: x["id"]):
+            h = nt["holder"]
+            if h < 0 or h == self.N - 1:         # 玩家：等人选
+                continue
+            if self.sleeping[h] or self.global_tick < self.busy_until[h]:
+                continue                         # 忙 / 睡：纸条留在他手上，等有空
+            note = nt
+            holder = h
+            break
+        if note is None:
+            return
+        p_read = self.choice_prob("pass_note", "read", holder)
+        if self.rng.random() < (0.5 if p_read is None else p_read):
+            self.settle_note(holder, note)
+            self.occupy(holder, holder, "pass_note")     # 看也占 10 tick（会打断当前行为）
+            self.stats["notes_read"] += 1
+        p_cont = self.choice_prob("pass_note", "continue", holder)
+        if self.rng.random() < (0.5 if p_cont is None else p_cont):
+            nxt = self.pick_note_target(holder, note)
+            if nxt is not None:
+                note["prev"] = holder
+                note["holder"] = nxt
+                note["seen"].add(nxt)
+                self.occupy(holder, holder, "pass_note")     # 只占递出的人
+                return
+        self.notes = [nt for nt in self.notes if nt["id"] != note["id"]]   # 销毁
+        self.stats["notes_destroyed"] += 1
+
+    def note_holders(self):
+        """当前手里拿着纸条的节点编号（升序，只读）—— 供表现层 / 报告画「纸条」徽标（§21.2.9）。
+
+        不消耗 RNG，也不改任何状态。
+        """
+        return sorted({nt["holder"] for nt in self.notes if nt["holder"] >= 0})
+
+    def note_pending_for_player(self):
+        """玩家手上是否有待处理的纸条（供玩家侧 / 对拍）。不消耗 RNG。"""
+        me = self.N - 1
+        for nt in sorted(self.notes, key=lambda x: x["id"]):
+            if nt["holder"] == me:
+                return dict(nt)
+        return None
+
+    def _player_note(self):
+        """玩家手上最早的一张纸条（没有返回 None）。"""
+        me = self.N - 1
+        for nt in sorted(self.notes, key=lambda x: x["id"]):
+            if nt["holder"] == me:
+                return nt
+        return None
+
+    def read_note(self):
+        """**只读**（§8.6）：结算一次并占 10 tick 打断当前行为；纸条留在手上等归属决策。
+
+        已读过的不重复结算。消耗 RNG：0 次。返回是否真的读了。
+        """
+        me = self.N - 1
+        note = self._player_note()
+        if note is None or note.get("read"):
+            return False
+        self.settle_note(me, note)
+        self.occupy(me, me, "pass_note")
+        self.stats["notes_read"] += 1
+        note["read"] = True
+        return True
+
+    def finish_note(self, forward=True, report_prev=False):
+        """归属决策（§8.6）：继续传 / 撕掉 / **当场举报**。
+
+        - 举报只能在看之后（`read` 为真）当场做；撕掉后不能再举（纸条已销毁）。
+        - 消耗 RNG：继续传时 1 次（randrange 挑下一个）。
+        """
+        me = self.N - 1
+        note = self._player_note()
+        if note is None:
+            return False
+        if report_prev:
+            if not note.get("read"):
+                return False
+            if note["prev"] >= 0:
+                # 1 级把柄：写入现有举报链的把柄表（被举报者 = 上一个递给我的人）；
+                # 等级在判定里的数值口径待定（§8.2，聊举报那轮定）。
+                self.witness_day[me][note["prev"]] = self.day
+        if forward:
+            nxt = self.pick_note_target(me, note)
+            if nxt is not None:
+                note["prev"] = me
+                note["holder"] = nxt
+                note["seen"].add(nxt)
+                self.occupy(me, me, "pass_note")
+                return True
+        self.notes = [nt for nt in self.notes if nt["id"] != note["id"]]
+        self.stats["notes_destroyed"] += 1
+        return True
+
+    def respond_note(self, read, forward, report_prev=False):
+        """玩家处理手上的纸条（§8.6）。
+
+        - read：是否读（读则立即结算，并占 10 tick）
+        - forward：读完 / 不读后是否继续传；False = 撕掉
+        - report_prev：**当场举报** -- 把把柄写给「上一个递给我的人」（§8.2，1 级把柄）
+        分步版本见 read_note() / finish_note()（UI 是两次决策）。
+        消耗 RNG：仅在 forward 且有候选时 1 次（randrange）。
+        """
+        if read:
+            self.read_note()
+        return self.finish_note(forward=forward, report_prev=report_prev)
+
     def update_environment(self):
         """环境层：由「当前大家在做什么」推出目标音量，再平滑趋近。
 
@@ -1376,7 +1569,7 @@ class Sim:
     def allowed(self, behavior):
         """当前相位是否允许该行为（§3.3：上课段只跑规则子集）。
 
-        `phases.csv` 用 `study_together|rumor|stress_drip|transmission` 描述上课段允许的规则；
+    `phases.csv` 用 `study_together|stress_drip|transmission` 描述上课段允许的规则；
         这里把它翻译成"行为白名单"——**上课时禁用的行为** = 一切主动社交。
         """
         if not hasattr(self, "phase_rules"):
@@ -1385,7 +1578,7 @@ class Sim:
         rules = self.phase_rules.get(pid, ["all"])
         if "all" in rules:
             return True
-        banned = {"chat", "join_chat", "pass_note", "tease", "ask_help", "inform",
+        banned = {"chat", "tease", "ask_help",
                   "comfort", "apologize", "share_secret", "roughhouse", "exclude",
                   "report", "move"}
         return behavior not in banned
@@ -1446,7 +1639,7 @@ class Sim:
         if k <= 0:
             return
         v = self.volume / 100.0
-        loud = ("chat", "join_chat", "tease", "roughhouse")
+        loud = ("chat", "tease", "roughhouse")
         for i in range(self.N):
             act = self.current_act[i] or "study"
             if act in loud and v < 0.4:
@@ -1677,6 +1870,7 @@ class Sim:
         self.global_tick += 1
         self.settle_finished_actions()
         self.decide_and_act()
+        self.process_notes()          # 纸条链（§8.6）：每 tick 处理一张纸条
         self.study_accumulate()
         self.update_environment()
         if self.global_tick % int(self.p["settle_interval"]) == 0:   # 每天 2 次（上午/下午）
@@ -1722,6 +1916,8 @@ class Sim:
             self.current_act[i] = None
             self.busy_act[i] = None
             self.in_conversation[i] = False
+        # 纸条链（§8.6）：**纸条只在当前时间段内存活**，进入下一个时间段即销毁。
+        self.notes = []
 
     def end_phase(self):
         """统一边界协议 ②③④⑤：结束旧段（不推进 tick）。
@@ -1858,11 +2054,20 @@ class Sim:
         print("  接近饱和(>=95)比例：%.1f%%" % (saturated * 100))
         print("  事件 %d 次（闲聊 %d / 搭话 %d / 举报 %d）" % (
             self.stats["events"], self.stats["chats"], self.stats["joins"], self.stats["reports"]))
-        print("  睡着 %d 人次 | 调侃 %d（过火 %d）/ 流言 %d / 排挤 %d / 打闹 %d / 被打断 %d" % (
-            self.stats.get("sleeps", 0),
-            self.stats["teases"], self.stats["tease_fail"], self.stats["rumors"],
-            self.stats.get("excludes", 0), self.stats.get("roughhouse", 0),
-            self.stats.get("interrupts", 0)))
+        print(
+            "  睡着 %d 人次 | 调侃 %d（过火 %d）/ 排挤 %d / 打闹 %d / 被打断 %d"
+            % (
+                self.stats.get("sleeps", 0),
+                self.stats.get("teases", 0),
+                self.stats.get("tease_fail", 0),
+                self.stats.get("excludes", 0),
+                self.stats.get("roughhouse", 0),
+                self.stats.get("interrupts", 0),
+            )
+        )
+        print("  纸条：写 %d / 读 %d / 销毁 %d（活跃 %d）"
+              % (self.stats["notes_written"], self.stats["notes_read"],
+                 self.stats["notes_destroyed"], len(self.notes)))
         print("  去重跳过 %d 次" % self.stats["dedup_skips"])
         print("  传导结算 %d 次 | 压力爆发 %d 次（平均每 %.1f 天一次）" % (
             self.stats["transmission_ticks"], self.stats["bursts"],

@@ -157,3 +157,50 @@ func execute_behavior(kind: StringName, actor: int, target: int, options: Dictio
 		push_warning("BehaviorContext：行为注册表已释放")
 		return false
 	return _registry_ref.get_ref().execute(kind, actor, target, options)
+
+
+# ------------------------------------------------------------------ 纸条链（§8.6）共享服务
+## 加权抽一个元素（转发内核 RNG 的 choices —— 与 Python 参考逐位一致的唯一入口）。
+func weighted_pick(population: Array, weights: Array) -> int:
+	return int(_core_ref.get_ref()._rng.choices(population, weights, 1)[0])
+
+
+## [0, n) 均匀整数（CPython `_randbelow` 语义，与 Python 的 `randrange` 对齐）。
+func rand_below(n: int) -> int:
+	return int(_core_ref.get_ref()._rng.randbelow(n))
+
+
+## 新建一张纸条，返回其编号（**不消耗 RNG**）。
+func note_create(author: int, target: int, tone: int, template: int, holder: int) -> int:
+	return int(_core_ref.get_ref()._note_create(author, target, tone, template, holder))
+
+
+## 某张纸条的只读快照（不存在返回空字典）。
+func note_row(note_id: int) -> Dictionary:
+	return _core_ref.get_ref()._note_row(note_id)
+
+
+## 纸条转手：`prev` 把纸条递给了 `new_holder`。
+func note_pass_on(note_id: int, prev: int, new_holder: int) -> void:
+	_core_ref.get_ref()._note_pass_on(note_id, prev, new_holder)
+
+
+## 销毁一张纸条（看完撕掉 / 不看撕掉 / 走到头）。
+func note_destroy(note_id: int) -> void:
+	_core_ref.get_ref()._note_destroy(note_id)
+
+
+## 座位邻居（§9.1 八邻域），只读。
+func neighbors_of(i: int) -> Array:
+	return _core_ref.get_ref()._neighbor_idx[i]
+
+
+## 该角色此刻是否可被交互（未睡、未被占用）。
+func can_interact_with(j: int) -> bool:
+	return bool(_core_ref.get_ref()._can_interact_with(j))
+
+
+## §4.5 选择侧统一公式：`p = σ((Σ w·d + w_stress·(Stress−50)/50 − θ)/scale)`。
+## 未登记的 (event, option) 退回 0.5（与 Python 参考的兜底一致）。
+func choice_prob(event: String, option: String, i: int) -> float:
+	return float(_core_ref.get_ref()._choice_prob(event, option, i))

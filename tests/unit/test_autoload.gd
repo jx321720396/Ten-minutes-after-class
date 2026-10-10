@@ -20,7 +20,7 @@ func test_event_bus_emit_and_receive() -> void:
 func test_config_get_table_known() -> void:
 	var t := Config.get_table("rules/behaviors")
 	assert_false(t.is_empty(), "Config 应能转发 rules/behaviors")
-	assert_eq(t["rows"].size(), 18, "behaviors 行数")
+	assert_eq(t["rows"].size(), 13, "behaviors 行数")
 
 
 func test_config_get_table_missing() -> void:

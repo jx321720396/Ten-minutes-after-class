@@ -34,20 +34,20 @@ func intercept(kind: String, actor: int, target: int, options: Dictionary) -> bo
 	var me := int(core.node_count()) - 1
 	var sid: int = int(core.session_of(target))
 	var involves_player := target == me
-	if kind in ["chat", "join_chat"] and sid >= 0:
+	if kind == "chat" and sid >= 0:
 		involves_player = involves_player or int(core.session_of(me)) == sid
 	if not involves_player:
 		return false
 	expire()
 	if not _pending.is_empty() or int(core.global_tick()) < int(_next_allowed.get(actor, 0)):
 		return true
-	var invite_kind := "join_chat" if kind in ["chat", "join_chat"] and sid >= 0 else kind
+	var invite_kind := "chat" if kind == "chat" and sid >= 0 else kind
 	var candidate := {
 		"id": _next_id,
 		"kind": invite_kind,
 		"actor": actor,
 		"target": target,
-		"session_id": sid if invite_kind == "join_chat" else -1,
+		"session_id": sid if invite_kind == "chat" else -1,
 		"phase": int(core._phase_index),
 		"expires_tick": int(core.global_tick()) + _timeout,
 		"options": options.duplicate(true),
@@ -88,12 +88,12 @@ func respond(id: int, accepted: bool) -> Dictionary:
 	var core: Variant = _core_ref.get_ref()
 	var kind := str(rec.kind)
 	var options: Dictionary = rec.options.duplicate(true)
-	if kind == "join_chat" and int(rec.session_id) >= 0:
+	if kind == "chat" and int(rec.session_id) >= 0:
 		options["mode"] = "group"
 		options["session_id"] = int(rec.session_id)
 		options["members"] = core._sessions.members_of(int(rec.session_id))
 	_choice = {"actor": int(rec.actor), "accepted": accepted}
-	if accepted or kind in ["ask_help", "apologize", "join_chat"]:
+	if accepted or kind in ["ask_help", "apologize"]:
 		core._behavior_registry.execute(StringName(kind), int(rec.actor), int(rec.target), options)
 	_choice = {}
 	var result := {"ok": true, "id": id, "accepted": accepted, "kind": kind}
@@ -127,7 +127,7 @@ func _valid(rec: Dictionary) -> bool:
 	if int(core.global_tick()) >= int(rec.expires_tick) or int(core._phase_index) != int(rec.phase):
 		return false
 	var kind := str(rec.kind)
-	if not core._allowed("chat" if kind == "join_chat" else kind):
+	if not core._allowed(kind):
 		return false
 	if (
 		core._sleeping[me]

@@ -251,7 +251,6 @@ func _refresh_invitation() -> void:
 	var kind := str(invitation.kind)
 	var names := {
 		"chat": "一起聊天",
-		"join_chat": "加入聊天",
 		"ask_help": "帮个忙",
 		"comfort": "聊聊心事",
 		"apologize": "和解",
