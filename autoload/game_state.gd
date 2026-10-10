@@ -8,6 +8,9 @@ var difficulty: int = 0
 var day: int = 0
 var phase: String = ""
 ## SimCore 实例（D8 落地后赋值）；用 Variant 避免提前锁定类型。
+## 玩家选定的性别（"male" / "female"）；**只在本次游戏内有效**，不写存档。
+var player_gender: String = "male"
+
 var sim_core: Variant = null
 
 
