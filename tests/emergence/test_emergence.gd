@@ -23,24 +23,24 @@ func test_03_wronged_student_bursts_after_pressure_builds() -> void:
 	pending(PENDING_REASON + " —— 现象：受委屈的同学积攒情绪后突然爆发")
 
 
-func test_04_rumor_diverges_per_teller() -> void:
-	pending(PENDING_REASON + " —— 现象：同一条八卦不同人传出不同版本")
+func test_04_note_diverges_per_recipient() -> void:
+	pending(PENDING_REASON + " —— 现象：纸条让人对被说者态度分化（同一条纸条给态度不同的收件人）")
 
 
 func test_05_group_member_leaves_on_internal_conflict() -> void:
 	pending(PENDING_REASON + " —— 现象：小团体内部矛盾成员主动脱离")
 
 
-func test_06_player_is_isolated_by_rumor_backfire() -> void:
-	pending(PENDING_REASON + " —— 现象：玩家被八卦误伤导致被孤立")
+func test_06_player_is_isolated_by_note() -> void:
+	pending(PENDING_REASON + " —— 现象：玩家被纸条误伤导致被孤立")
 
 
 func test_07_introvert_starts_chat_when_stress_low() -> void:
-	pending(PENDING_REASON + " —— 现象：内向学生在压力低时意外主动搭话")
+	pending(PENDING_REASON + " —— 现象：内向学生在压力低时意外主动开口闲聊")
 
 
 func test_08_whistleblower_is_ostracized() -> void:
-	pending(PENDING_REASON + " —— 现象：告密者被全班疏远")
+	pending(PENDING_REASON + " —— 现象：泄密者被全班疏远")
 
 
 func test_09_one_report_splits_the_class() -> void:
