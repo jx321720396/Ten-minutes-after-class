@@ -19,7 +19,7 @@ def load_aliases():
 
 
 def hook_events(sim, event_counts):
-    for name in ("do_report", "do_exclude", "do_tease", "do_rumor", "do_roughhouse", "do_chat"):
+    for name in ("do_report", "do_exclude", "do_tease", "do_roughhouse", "do_chat"):
         original = getattr(sim, name, None)
         if original is None:
             continue
