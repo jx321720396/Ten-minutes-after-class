@@ -4,6 +4,8 @@
 - **「加入闲聊」（原「搭话」）与「闲聊」彻底合并（2026-10-10，实装）**：按 §8.5／§8.7／§8.21 早先的裁决，把当年「暂留作兼容实现」的那套东西清掉 —— 现在全仓库只有一个聊天行为，「加入」是它的**参与方式**。
   - **事件表**：`docs/design/行为事件表.xlsx` 里「搭话／加入闲聊」那张独立分表**合并进 `06_chat` 一张卡**（加入的决策软门槛、判定式、人数与结算次数、占用与结束点、被拒分支、耗时与提示都成为该卡的字段），sheet 数 30 → 29；`tools/事件总表_代码实装.xlsx` 的行为行与阈值前缀同步（`chat.join_*`）。
   - **策划案**：§8.5 的裁决注记、§8.7（标题改为「已彻底合并」、第 3 条重写为「兼容实现已清除」）、§8.21 标题，以及各分册行为清单／术语表／音量表／涌现用例等处的旧词统一为「加入闲聊」；术语表顺手删掉重复的纸条行。
+  - **术语表与百科词条**：`docs/design/术语表.md` 的「加入闲聊」条、`data/localization/encyclopedia.json` 的 `act.chat_join` 词条都不再出现旧名（连检索别名一并清掉）—— 这两处是玩家与协作者查词的第一站，旧词不留痕。
+  - **词条可用性标记校正**：`encyclopedia.json` 里 `act.chat_join` / `act.report` / `act.roughhouse` 的 `player_usable` 由 `false` 改为 `true` —— 这三项都在内核 `PLAYER_KINDS` 里，玩家本来就能用（旧值是第一版可玩流程留下的过期数据）；`act.ask_help` / `act.comfort` / `act.study` / `act.sleep` 保持 `false`（玩家确实不能主动发起）。该字段目前没有代码读取，属数据口径校正。
   - **代码**：`join_chat_behavior.gd` 的加入判定与群聊编排**并入 `chat_behavior.gd`**（`mode = start / join / group` 三条路径，共用同一套事件系数），组件文件与注册项删除；`PLAYER_KINDS` 与 `player_action` 里的 `join_chat` 兼容别名删除（只剩一个聊天入口：`kind=chat` + `mode=start/join`）；`_do_join_chat` → `_do_chat_join`（两套内核同步）；事件出口由 `kind=join_chat` 统一为 `kind=chat` + `mode=join`（与玩家群聊一致）。
   - **配置**：`behaviors.csv` 删 `join_chat` 行（14 → 13）；阈值参数归到 `chat` 名下（`chat.join_affinity` / `join_scale` / `join_stress_penalty` / `join_gate_*`），**加入尝试的 10 tick 以 `chat.join_duration` 保留**（不丢数值）；`player_invitation_kinds.csv` 删 `join_chat`。
   - **数值一律未动**：随机数顺序、耗时、事件系数、阈值取值全部保持原值 —— 硬闸门**同种子 1440 tick 逐 tick 对拍仍全一致**。

@@ -82,9 +82,9 @@
       "term": "加入闲聊",
       "category": "act",
       "short": "插进别人正在聊的圈子里",
-      "aliases": ["加入", "搭话"],
+      "aliases": ["加入", "加入闲聊"],
       "implemented": true,
-      "player_usable": false,
+      "player_usable": true,
       "body": "别人已经聊开了，你走过去加入。\n\n和[t]闲聊[/t]是同一件事：闲聊是你找他，加入是你挤进一群人中间。\n\n[b]他们可以不让你进来[/b]——这不是你决定的。"
     },
     {
@@ -114,7 +114,7 @@
       "short": "攒够了记恨，就会有人去找老师",
       "aliases": ["举报"],
       "implemented": true,
-      "player_usable": false,
+      "player_usable": true,
       "body": "这是班里最重的一件事之一，不会随便发生。\n\n[b]记恨攒到一定份上才会触发[/b]。做这件事的人要专门跑一趟，所以它耗时不短。\n\n一旦发生，牵扯的往往不止两个人。"
     },
     {
@@ -134,7 +134,7 @@
       "short": "热闹，也最容易结仇",
       "aliases": ["追逐打闹", "打闹"],
       "implemented": true,
-      "player_usable": false,
+      "player_usable": true,
       "body": "几个人闹起来，是课间最大的动静来源。\n\n有意思的是它[b]两头都长[/b]：一起闹的人互相更亲近，[b]被闹到、或者看不惯的路人，会对参与者记恨[/b]。\n\n所以它既是热闹，也是结仇的种子。"
     },
     {
