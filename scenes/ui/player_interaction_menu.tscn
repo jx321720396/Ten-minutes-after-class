@@ -3,5 +3,5 @@
 [ext_resource type="Script" path="res://scripts/ui/player_interaction_menu.gd" id="1_menu"]
 
 [node name="PlayerInteractionMenu" type="CanvasLayer"]
-layer = 6
+layer = -1
 script = ExtResource("1_menu")
