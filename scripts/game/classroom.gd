@@ -31,14 +31,17 @@ func _ready() -> void:
 	var core: Variant = _core_from_state()
 	if core == null:
 		push_warning("Classroom：没有本局内核实例 —— 时间与走动都不启动（请从主菜单「新游戏」进教室）。")
+		transition.force_hide()
 		return
 	if not _inject_interaction_geometry(core):
 		push_warning("Classroom：交互几何未就绪（房间范围 / 桌椅矩形读不到）—— 玩家交互会明确失败，不会放行。")
 	if not clock.bind_core(core):
 		push_error("Classroom：时钟绑定失败（时间配置有问题），时间系统未启动。")
+		transition.force_hide()
 		return
 	if not _bind_time_flow(core):
 		clock.hold(&"time_flow_config")
+		transition.force_hide()
 		return
 	time_hud.bind_clock(clock)
 	transition.bind_clock(clock)

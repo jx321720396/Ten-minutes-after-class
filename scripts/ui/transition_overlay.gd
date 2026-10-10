@@ -70,7 +70,8 @@ var _first_day_shown := false
 
 func _ready() -> void:
 	layer = LAYER
-	visible = false
+	# 场景加载即全黑：教室先渲染也不可见，首个黑幕在“已黑”状态上接续（转场黑幕任务）
+	visible = true
 	_build_ui()
 
 
@@ -172,6 +173,14 @@ func _show_overlay(subtitle_text: String, title_text: String, hold_seconds: floa
 	shown.emit(title_text)
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
+	if _root.modulate.a >= 0.999:
+		# 已处于全黑（场景加载即覆盖）：无需淡入，直接停留后退场，避免闪现教室画面
+		_tween = create_tween()
+		_tween.tween_interval(hold_seconds)
+		_tween.tween_callback(_begin_dismiss)
+		_tween.tween_property(_root, "modulate:a", 0.0, FADE_OUT_SECONDS)
+		_tween.tween_callback(_on_fade_out_done)
+		return
 	_root.modulate.a = 0.0
 	_tween = create_tween()
 	_tween.tween_property(_root, "modulate:a", 1.0, FADE_IN_SECONDS)
@@ -186,6 +195,11 @@ func _hide_overlay() -> void:
 		return
 	_begin_dismiss()
 	_play_fade(0.0, FADE_OUT_SECONDS, true)
+
+
+## 场景未接内核（调试直开教室）等异常时强制收起黑幕，避免永远黑屏。
+func force_hide() -> void:
+	_hide_overlay()
 
 
 ## 黑幕开始退场（自动到时或跳过）：先 release 时钟并广播，再淡出 ——
@@ -227,7 +241,7 @@ func _build_ui() -> void:
 	_root.name = "Root"
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP
-	_root.modulate.a = 0.0
+	_root.modulate.a = 1.0
 	add_child(_root)
 
 	var veil := ColorRect.new()
@@ -277,6 +291,8 @@ func _build_ui() -> void:
 	skip.add_theme_font_size_override("font_size", SUB_FONT_SIZE)
 	skip.pressed.connect(_request_skip)
 	_skip_button = skip
+	# 未显示黑幕前不出现（首个黑幕在 _show_overlay 里打开）
+	_skip_button.visible = false
 	corner.add_child(skip)
 
 
