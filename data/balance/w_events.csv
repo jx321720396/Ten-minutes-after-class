@@ -27,8 +27,6 @@ humiliate_hostility,hostility,4,-0.2,0,0.3,0.2,major,B,当众羞辱：被一群�
 leak_hostility,hostility,4,0,0,0.2,0,major,B,秘密被泄露
 tease_laugh_stress,stress,-2,0,0,0.3,0,normal,E,被逗笑（调侃的正面结果）
 tease_success_affinity,affinity,2,0,0,0.3,0,normal,E,当众调侃成功（双方 + 围观者）
-rumor_hostility,hostility,3,0,0,0.2,0.2,normal,B,被传谣后对传播者产生敌对（流言本就该让关系变差）
-rumor_stress,stress,3,0,0,0.4,0.2,normal,B,被流言击中（压力来源）
 topic_trust,trust,3,0,0.3,0.2,0,normal,A,话题共鸣
 topic_affinity,affinity,3,0.2,0.2,0,0,normal,A,话题共鸣
 topic_stress,stress,-2,0.3,0,0.2,0,normal,A,话题共鸣
@@ -54,3 +52,8 @@ apologize_ok_stress,stress,-3,0,0,0.3,0,normal,E,道歉被接受：双方都松�
 apologize_no_hostility,hostility,2,0,0,0.3,0.2,normal,E,道歉被拒：敌对继续累积（表层的，不写深层）
 apologize_no_stress,stress,4,0,0,0.4,0.2,major,E,道歉被拒：主动低头被驳回（重大档）
 apologize_no_trust,trust,-3,0,0,0.2,0,normal,E,道歉被拒：信任受损
+# ---- 传纸条（纸条链）：方向由「收件人对被说者的现有态度」分档，每条 base = 1，走统一影响公式（§8.6）
+note_bad_to_hostile,hostility,1,0,0,0.2,0.2,normal,B,纸条坏话：本就讨厌被说者 → 敌对 +1
+note_good_to_hostile,hostility,-1,0,0,0.2,0,normal,B,纸条好话：讨厌被说者 → 敌对 −1（稍微松动）
+note_good_to_friendly,affinity,1,0,0,0.3,0,normal,A,纸条好话：喜欢被说者 → 好感 +1
+note_bad_to_friendly,affinity,-1,0,0,0.3,0,normal,A,纸条坏话：喜欢被说者 → 好感 −1（开始动摇）
