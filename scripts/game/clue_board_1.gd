@@ -1,5 +1,7 @@
 extends Control
 
+signal close_requested
+
 @onready var drawing_surface: Control = $DrawingSurface
 @onready var chalk: TextureRect = $Chalk
 @onready var eraser: TextureRect = $Eraser
@@ -27,6 +29,9 @@ var drag_press := Vector2.ZERO
 var _rest: Dictionary = {}
 var _pop_lift := 28.0
 var _pop_scale := 1.22
+var _close_button: Button
+## 弹出动画期间先不接收画笔，避免缩放时笔画坐标对不齐。
+var input_enabled := true
 
 
 func _ready():
@@ -48,6 +53,85 @@ func _ready():
 	var first := palette.get_child(0) as Panel
 	if first:
 		_select_chalk_color(_swatch_color(first))
+	_build_close_button()
+
+
+## 清掉黑板上的粉笔和放下的头像。头像栏里的原件不动。
+## 关掉弹窗不要调这个；只在一局结束，或调用方确认是新的一局时调用。
+func clear_contents() -> void:
+	lines.clear()
+	current_line = PackedVector2Array()
+	_drop_transient_edit(false)
+	for child in board_avatars.get_children():
+		child.queue_free()
+	drawing_surface.queue_redraw()
+
+
+## 关掉弹窗时收起还没松手的笔画和拖拽，已经画上的内容留下。
+func release_editing() -> void:
+	_drop_transient_edit(true)
+	drawing_surface.queue_redraw()
+
+
+func _drop_transient_edit(keep_stroke: bool) -> void:
+	if drag_ghost != null and is_instance_valid(drag_ghost):
+		drag_ghost.queue_free()
+	drag_ghost = null
+	drag_source = null
+	dragged_marker = null
+	is_drawing = false
+	is_erasing = false
+	chalk.visible = false
+	eraser.visible = false
+	if keep_stroke and current_line.size() >= 2:
+		lines.append({"points": current_line, "color": current_color})
+	current_line = PackedVector2Array()
+
+
+func _build_close_button() -> void:
+	var btn := Button.new()
+	btn.name = "CloseButton"
+	btn.text = "退出"
+	btn.position = Vector2(16, 8)
+	btn.size = Vector2(88, 32)
+	btn.custom_minimum_size = Vector2(88, 32)
+	btn.z_index = 6
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.add_theme_font_override("font", _ui_font())
+	btn.add_theme_font_size_override("font_size", 18)
+	btn.add_theme_color_override("font_color", Color(0.12, 0.16, 0.14))
+	btn.add_theme_color_override("font_hover_color", Color(0.16, 0.38, 0.26))
+	btn.add_theme_stylebox_override("normal", _close_style())
+	btn.add_theme_stylebox_override("hover", _close_style())
+	btn.add_theme_stylebox_override("pressed", _close_style())
+	btn.pressed.connect(_on_close_pressed)
+	add_child(btn)
+	_close_button = btn
+
+
+func _on_close_pressed() -> void:
+	close_requested.emit()
+
+
+func _close_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.98, 0.96, 0.90, 0.92)
+	style.border_color = Color(0.16, 0.38, 0.26)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 12.0
+	style.content_margin_right = 12.0
+	style.content_margin_top = 4.0
+	style.content_margin_bottom = 4.0
+	return style
+
+
+func _ui_font() -> Font:
+	var font := SystemFont.new()
+	font.font_names = PackedStringArray(
+		["Microsoft YaHei", "微软雅黑", "SimHei", "Noto Sans CJK SC", "PingFang SC", "sans-serif"]
+	)
+	return font
 
 
 func _cache_rest(root_node: Node) -> void:
@@ -177,12 +261,16 @@ func _hits_control(node: Control, pos: Vector2) -> bool:
 func _is_on_ui(pos: Vector2) -> bool:
 	if _hits_control(palette, pos) or _hits_control(tool_tray, pos):
 		return true
+	if _close_button != null and _hits_control(_close_button, pos):
+		return true
 	if avatar_column.get_global_rect().has_point(pos):
 		return true
 	return false
 
 
 func _input(event):
+	if not is_visible_in_tree() or not input_enabled:
+		return
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
@@ -196,17 +284,20 @@ func _input(event):
 					return
 				if _is_on_ui(event.position):
 					return
+				var local := _to_local_point(event.position)
+				if not _contains_local(local):
+					return
 				is_drawing = true
 				if is_eraser_mode:
 					is_erasing = true
 					eraser.visible = true
-					_place_eraser_cursor(event.position)
-					_erase_at(event.position)
+					_place_eraser_cursor(local)
+					_erase_at(local)
 				else:
 					current_line = PackedVector2Array()
-					current_line.append(event.position)
+					current_line.append(local)
 					chalk.visible = true
-					_place_chalk_cursor(event.position)
+					_place_chalk_cursor(local)
 			else:
 				_finish_avatar_drag(event.position)
 				dragged_marker = null
@@ -222,13 +313,14 @@ func _input(event):
 		if dragged_marker:
 			dragged_marker.position = event.position - dragged_marker.size / 2.0
 		elif is_drawing:
+			var local := _to_local_point(event.position)
 			if is_eraser_mode:
-				_place_eraser_cursor(event.position)
+				_place_eraser_cursor(local)
 				if is_erasing:
-					_erase_at(event.position)
+					_erase_at(local)
 			else:
-				current_line.append(event.position)
-				_place_chalk_cursor(event.position)
+				current_line.append(local)
+				_place_chalk_cursor(local)
 			drawing_surface.queue_redraw()
 
 
@@ -274,6 +366,10 @@ func _to_local_point(pos: Vector2) -> Vector2:
 	return get_global_transform_with_canvas().affine_inverse() * pos
 
 
+func _contains_local(pos: Vector2) -> bool:
+	return Rect2(Vector2.ZERO, size).has_point(pos)
+
+
 func _update_avatar_drag(pos: Vector2) -> void:
 	if drag_ghost == null:
 		if pos.distance_to(drag_press) < drag_start_distance:
@@ -287,7 +383,8 @@ func _update_avatar_drag(pos: Vector2) -> void:
 func _finish_avatar_drag(pos: Vector2) -> void:
 	if drag_ghost:
 		var on_column := avatar_column.get_global_rect().has_point(pos)
-		var on_chrome := _hits_control(palette, pos) or _hits_control(tool_tray, pos)
+		var on_close := _close_button != null and _hits_control(_close_button, pos)
+		var on_chrome := _hits_control(palette, pos) or _hits_control(tool_tray, pos) or on_close
 		if on_column or on_chrome:
 			drag_ghost.queue_free()
 		else:
@@ -299,8 +396,7 @@ func _finish_avatar_drag(pos: Vector2) -> void:
 	drag_ghost = null
 
 
-func _erase_at(pos: Vector2) -> void:
-	var local_pos := _to_local_point(pos)
+func _erase_at(local_pos: Vector2) -> void:
 	for child in board_avatars.get_children():
 		var sprite := child as Sprite2D
 		if sprite == null or sprite.texture == null:
@@ -312,10 +408,10 @@ func _erase_at(pos: Vector2) -> void:
 		var pts: PackedVector2Array = line.points
 		var run := PackedVector2Array()
 		for i in pts.size():
-			var inside := pts[i].distance_to(pos) <= eraser_radius
+			var inside := pts[i].distance_to(local_pos) <= eraser_radius
 			var segment_cut := false
 			if i > 0:
-				segment_cut = _segment_hits_circle(pts[i - 1], pts[i], pos, eraser_radius)
+				segment_cut = _segment_hits_circle(pts[i - 1], pts[i], local_pos, eraser_radius)
 			if inside or segment_cut:
 				if run.size() >= 2:
 					kept.append({"points": run, "color": line.color})

@@ -45,6 +45,7 @@ func _ready() -> void:
 		return
 	time_hud.bind_clock(clock)
 	transition.bind_clock(clock)
+	_bind_clue_board()
 	# 黑幕开始退场的瞬间就应用挂起的相位（含每日归位），不等淡出结束
 	transition.dismiss_started.connect(_on_transition_dismiss_started)
 	# ⚠️ 绑定 Roam 之前先等导航就绪：bind_clock 会立刻触发一次相位回调（上课归位），
@@ -55,6 +56,13 @@ func _ready() -> void:
 	_bind_feedback(core)
 	clock.time_updated.connect(_sync_state_mirror)
 	time_hud.continue_requested.connect(_on_continue_requested)
+
+
+## 黑板跟这一局走：学期结束才清板。新开一局会换一间教室，板面本来就是空的。
+func _bind_clue_board() -> void:
+	var entry := get_node_or_null("UI/ClueBoardEntry")
+	if entry != null and entry.has_method("clear_board"):
+		clock.term_finished.connect(entry.clear_board)
 
 
 func _bind_time_flow(core: SimCore) -> bool:
