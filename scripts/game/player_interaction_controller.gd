@@ -34,6 +34,8 @@ const PEN_HOLD := &"player_pen_check"
 const BAR_REFRESH_SECONDS := 0.25
 ## 需要选对象的动作（与右侧行为栏的 target 组一致）
 const PLAYER_TARGET_KINDS := ["chat", "pass_note", "report", "roughhouse", "exclude", "observe"]
+## 自指行为（对自己做的事）：不选对象，点按钮就发起
+const PLAYER_SELF_KINDS := ["study", "sleep"]
 
 var _core: Variant = null
 var _player: PlayerController = null
@@ -195,9 +197,24 @@ func trigger_armed(target: int) -> void:
 
 
 ## 自指行为（对自己做的事）：本批都是占位，明确告知而不是静默。
-func _on_self_behavior(_kind: StringName) -> void:
+func _on_self_behavior(kind: StringName) -> void:
+	var action := str(kind)
+	if _core == null or not PLAYER_SELF_KINDS.has(action):
+		if _hud != null:
+			_hud.show_status("这个动作还没做出来。")
+		return
+	# 自指行为无对象：target 传 -1，内核对它们只看自己的状态
+	var result: Dictionary = _core.player_action(action, -1)
+	if not bool(result.get("ok", false)):
+		if _hud != null:
+			_hud.show_status(_action_reason(str(result.get("error", ""))))
+		return
 	if _hud != null:
-		_hud.show_status("这个动作还没做出来。")
+		if action == "study":
+			_hud.show_status("你回到座位，开始学习。")
+		else:
+			_hud.show_status("你父下睡了。")
+	_refresh_bar()
 
 
 ## 请求一次闲聊（`kind` 固定 chat；`mode` 只在选择时解析一次，之后必须用冻结值提交）。
@@ -388,7 +405,7 @@ func _refresh_bar() -> void:
 ## 行为栏每项的状态：只有本批实做的动作给出状态，其余由栏做「还没做」占位灰置。
 func _bar_states() -> Dictionary:
 	var states := {}
-	for kind in PLAYER_TARGET_KINDS:
+	for kind in PLAYER_TARGET_KINDS + PLAYER_SELF_KINDS:
 		var ok := _can_do(kind)
 		states[StringName(kind)] = {"ok": ok, "reason": "" if ok else _action_reason_of(kind)}
 	return states

@@ -1291,6 +1291,21 @@ class Sim:
                  + row["w_stress"] * (self.Stress[i] - 50.0) / 50.0 + extra)
         return sigmoid((score - row["theta"]) / row["scale"])
 
+    def do_study(self, i):
+        """学习（§8.23）：进入学习态（参考实现）。不占时间槽，靠 current_act 表达；
+        成绩累积在 _study_accumulate，每满一展给成绩 +1 与自身压力 +3。
+        """
+        self.current_act[i] = "study"
+        self.stats["studies"] = self.stats.get("studies", 0) + 1
+
+    def do_sleep(self, i):
+        """睡觉（§8.8）：玩家主动入睡（参考实现）。与 NPC 同规则：
+        占用剩余课间段、段末一次性减压、期间不被任何人交互。
+        """
+        self.sleeping[i] = True
+        self.current_act[i] = "sleep"
+        self.stats["sleeps"] += 1
+
     def do_observe(self, me, j):
         """观察（§10.3.1）：玩家独有的**只读**行为（参考实现）。
 
@@ -1867,7 +1882,12 @@ class Sim:
             if self.Grade[i] >= gmax:
                 self.StudyAcc[i] = 0.0
                 continue
-            if self.current_act[i] is not None or self.global_tick < self.busy_until[i]:
+            if i == self.N - 1:
+                # 玩家（§8.23）：必须**主动进入学习态**才累积成绩
+                # —— 不选任何行为＝什么都没做
+                if self.current_act[i] != "study":
+                    continue
+            elif self.current_act[i] is not None or self.global_tick < self.busy_until[i]:
                 continue
             self.StudyAcc[i] += 1.0
             tpp = self._grade_ticks_per_point(self.Grade[i])
@@ -1876,6 +1896,8 @@ class Sim:
             if self.StudyAcc[i] >= tpp:
                 self.Grade[i] += 1.0
                 self.StudyAcc[i] -= tpp
+                # §8.23 第 3 条：结算成绩的同时给自身压力 +3
+                self.apply_event(i, i, "study_stress")
 
     def _grade_ticks_per_point(self, g):
         """当前成绩档的「每 +1 分所需 tick」（§17.1.2 分段表）；越界返回 0。"""
