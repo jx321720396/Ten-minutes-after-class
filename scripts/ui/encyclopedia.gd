@@ -1,19 +1,35 @@
 extends Control
-## 百科全书（主菜单入口）—— 分章节的玩家手册。
+## 百科全书（词条式）—— 每个机制一条，随时可查。
 ##
 ## 内容来源：`data/localization/encyclopedia.json`
-##   { chapters: [ { title, intro?, sections: [ { heading, body } ] } ] }
-## 该 JSON 由 `docs/localization/百科全书文案.md` 转出；**文案一律不进代码**
-## （`docs/localization/本地化说明.md` §2 禁止硬编码中文字面量）。
+##   { categories: [ { id, title, order, intro? } ],
+##     entries:    [ { id, term, category, short, body, aliases, implemented, player_usable? } ] }
+## 文案一律不进代码（`docs/localization/本地化说明.md` §2 禁止硬编码中文字面量）。
 ##
-## 与其它界面保持同一风格：半透明遮罩 + 米黄 PanelContainer + 标题 44 / 正文 24，
-## 关闭方式与 `about_menu.gd` 一致（`signal closed` + Esc）。
+## 左侧是可折叠的分类树：点分类标题展开 / 收起，点词条看正文。
+## 本页**不做悬停解释** —— 悬停组件是给别处（角色档案、简报）用的，见 scripts/ui/term_tooltip.gd。
+##
+## 信息纪律（§20.0.1 / §7）：词条只解释**机制**，不描述「此刻某人怎样」，
+## 也不写 NPC 的隐藏数值。`implemented=false` 的条目**不列出**。
 
 signal closed
 
 const DATA_PATH := "res://data/localization/encyclopedia.json"
 
-@onready var _toc: ItemList = $CenterContainer/Panel/Margin/VBox/Body/TOC
+## 折叠标记（用符号，不用字母/数字编号）
+const ARROW_COLLAPSED := "▶ "
+const ARROW_EXPANDED := "▼ "
+
+## 正文里的加粗统一提一点亮度。
+##
+## RichTextLabel 没有「加粗专用颜色」这类 theme 项，只能在 BBCode 层面把 `[b]…[/b]`
+## 再包一层颜色；字号与正文一致由场景里的 `bold_font_size` 保证。
+## 注意：必须是 `_plain_refs()` 之后调用（先把跨引用标记清成纯文字，避免颜色包进标记里）。
+const BOLD_COLOR := "5c657e"
+
+static var _all_entries: Array = []
+
+@onready var _toc: VBoxContainer = $CenterContainer/Panel/Margin/VBox/Body/TOCScroll/TOC
 @onready
 var _scroll: ScrollContainer = $CenterContainer/Panel/Margin/VBox/Body/ContentMargin/ContentScroll
 @onready
@@ -22,17 +38,22 @@ var _content: RichTextLabel = $CenterContainer/Panel/Margin/VBox/Body/ContentMar
 @onready var _next: Button = $CenterContainer/Panel/Margin/VBox/Footer/NextBtn
 @onready var _back: Button = $CenterContainer/Panel/Margin/VBox/Footer/BackBtn
 
-var _chapters: Array = []
+## 可见词条（按分类顺序铺平）；目录里的词条按钮与它一一对应
+var _entries: Array = []
+## 每个分类一组：{ title, header: Button, entry_indices: Array[int], rows: Array[Button], expanded: bool }
+var _cats: Array = []
 var _index := 0
+## 词条按钮列表，用于给当前项加高亮
+var _entry_buttons: Array = []
 
 
 func _ready() -> void:
 	_prev.pressed.connect(_on_prev)
 	_next.pressed.connect(_on_next)
 	_back.pressed.connect(_on_back)
-	_toc.item_selected.connect(_on_toc_selected)
 	_load_data()
-	_show_chapter(0)
+	if not _entries.is_empty():
+		_show_entry(0)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -40,21 +61,102 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_back()
 
 
-## 章节数量（供测试与调试）。
+# ------------------------------------------------------------------ 供外部查询
+
+
+## 可见词条数（供测试与调试）。
+func entry_count() -> int:
+	return _entries.size()
+
+
+func current_entry_term() -> String:
+	if _entries.is_empty() or _index < 0 or _index >= _entries.size():
+		return ""
+	return str((_entries[_index] as Dictionary).get("term", ""))
+
+
+## 当前展开的分类数（供测试）。
+func expanded_category_count() -> int:
+	var n := 0
+	for c in _cats:
+		if bool((c as Dictionary).get("expanded", false)):
+			n += 1
+	return n
+
+
+## 兼容旧调用点：语义已由「章节」变为「词条」。
 func chapter_count() -> int:
-	return _chapters.size()
+	return entry_count()
 
 
 func current_chapter_title() -> String:
-	if _chapters.is_empty() or _index < 0 or _index >= _chapters.size():
+	return current_entry_term()
+
+
+## 按 id 取词条（含未实装的）。找不到返回空字典。全局唯一取词入口。
+static func find_entry(entry_id: String) -> Dictionary:
+	if _all_entries.is_empty():
+		_all_entries = _read_entries_from_disk()
+	for e in _all_entries:
+		if str((e as Dictionary).get("id", "")) == entry_id:
+			return e
+	return {}
+
+
+## 按正文里出现的词（词条名或别名）反查词条 id。找不到返回空串。
+static func id_for_term(word: String) -> String:
+	if _all_entries.is_empty():
+		_all_entries = _read_entries_from_disk()
+	var w := word.strip_edges()
+	if w.is_empty():
 		return ""
-	return str((_chapters[_index] as Dictionary).get("title", ""))
+	for e in _all_entries:
+		var d: Dictionary = e
+		if str(d.get("term", "")) == w:
+			return str(d.get("id", ""))
+		for a in d.get("aliases", []) as Array:
+			if str(a) == w:
+				return str(d.get("id", ""))
+	return ""
 
 
-## 读取数据文件并填充目录。
+# ------------------------------------------------------------------ 数据
+
+
+static func _read_entries_from_disk() -> Array:
+	var f := FileAccess.open(DATA_PATH, FileAccess.READ)
+	if f == null:
+		push_error("Encyclopedia：读不到 %s" % DATA_PATH)
+		return []
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	if not parsed is Dictionary:
+		push_error("Encyclopedia：%s 不是合法 JSON" % DATA_PATH)
+		return []
+	var out: Array = []
+	for e in (parsed as Dictionary).get("entries", []):
+		if e is Dictionary:
+			out.append(e)
+	return out
+
+
+static func _brighten_bold(text: String) -> String:
+	var re := RegEx.new()
+	re.compile("\\[b\\]([^\\[\\]]+)\\[/b\\]")
+	var out := text
+	for m in re.search_all(text):
+		out = out.replace(
+			m.get_string(0), "[color=#%s][b]%s[/b][/color]" % [BOLD_COLOR, m.get_string(1)]
+		)
+	return out
+
+
 func _load_data() -> void:
-	_chapters = []
-	_toc.clear()
+	_entries = []
+	_cats = []
+	_entry_buttons = []
+	for child in _toc.get_children():
+		child.queue_free()
+
 	var f := FileAccess.open(DATA_PATH, FileAccess.READ)
 	if f == null:
 		push_error("Encyclopedia：读不到 %s" % DATA_PATH)
@@ -65,53 +167,165 @@ func _load_data() -> void:
 	if not parsed is Dictionary:
 		push_error("Encyclopedia：%s 不是合法 JSON" % DATA_PATH)
 		return
-	for c in (parsed as Dictionary).get("chapters", []):
-		_chapters.append(c)
-		_toc.add_item(str((c as Dictionary).get("title", "")))
-	_update_buttons()
+	var data: Dictionary = parsed
+	_all_entries = _read_entries_from_disk()
+
+	var cats: Array = (data.get("categories", []) as Array).duplicate()
+	cats.sort_custom(func(a, b): return int(a.get("order", 0)) < int(b.get("order", 0)))
+	var all_entries: Array = data.get("entries", [])
+
+	for cat in cats:
+		var cat_id := str((cat as Dictionary).get("id", ""))
+		var rows: Array = []
+		for e in all_entries:
+			var d: Dictionary = e
+			if str(d.get("category", "")) != cat_id:
+				continue
+			if not bool(d.get("implemented", false)):
+				continue  # 未实装的先不上线
+			rows.append(d)
+		if rows.is_empty():
+			continue
+		# _build_category 内部已把自己登记进 _cats，这里**不能再 append**（否则每类重复一次）
+		_build_category(str((cat as Dictionary).get("title", cat_id)), rows)
+
+	# 默认展开哪一类不在这里定：_show_entry(0) → _sync_toc_selection 会展开当前词条所在类
 
 
-## 渲染第 i 章（章标题 + 章首引导语 + 各小节）。
-func _show_chapter(i: int) -> void:
-	if _chapters.is_empty():
+## 建一个分类：可点击的标题行 + 若干词条行（展开时才显示）。
+func _build_category(title: String, rows: Array) -> Dictionary:
+	var header := Button.new()
+	header.name = "Cat_%s" % title
+	header.text = ARROW_COLLAPSED + title
+	header.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	header.focus_mode = Control.FOCUS_NONE
+	header.add_theme_font_size_override("font_size", 24)
+	_toc.add_child(header)
+
+	var buttons: Array = []
+	var indices: Array[int] = []
+	for d in rows:
+		_entries.append(d)
+		var idx := _entries.size() - 1
+		indices.append(idx)
+		var btn := Button.new()
+		btn.name = "Entry_%s" % str(d.get("id", idx)).replace(".", "_")
+		btn.text = "　　%s" % str(d.get("term", ""))  # 全角空格缩进，不用编号
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.add_theme_font_size_override("font_size", 22)
+		btn.visible = false
+		# 当前词条用「按下」态高亮（走 Theme 的 pressed 样式），不再改 modulate 染色
+		btn.toggle_mode = true
+		btn.pressed.connect(_on_entry_pressed.bind(idx))
+		_toc.add_child(btn)
+		buttons.append(btn)
+		_entry_buttons.append(btn)
+
+	var cat := {
+		"title": title,
+		"header": header,
+		"entry_indices": indices,
+		"rows": buttons,
+		"expanded": false
+	}
+	header.pressed.connect(_on_category_pressed.bind(_cats.size()))
+	_cats.append(cat)
+	return cat
+
+
+# ------------------------------------------------------------------ 渲染
+
+
+func _show_entry(i: int) -> void:
+	if _entries.is_empty():
 		return
-	_index = clampi(i, 0, _chapters.size() - 1)
-	var ch: Dictionary = _chapters[_index]
+	_index = clampi(i, 0, _entries.size() - 1)
+	var e: Dictionary = _entries[_index]
 
-	var out := "[font_size=32][b]%s[/b][/font_size]\n\n" % str(ch.get("title", ""))
-	var intro := str(ch.get("intro", ""))
-	if not intro.is_empty():
-		out += intro + "\n\n"
-	for sec in ch.get("sections", []) as Array:
-		var s: Dictionary = sec
-		out += "[font_size=28][b]%s[/b][/font_size]\n\n" % str(s.get("heading", ""))
-		out += str(s.get("body", "")) + "\n\n"
+	var out := "[font_size=32][b]%s[/b][/font_size]\n" % str(e.get("term", ""))
+	var short := str(e.get("short", ""))
+	if not short.is_empty():
+		out += "[color=#6b7a5e][i]%s[/i][/color]\n" % short
+	out += "\n%s\n" % _plain_refs(str(e.get("body", "")))
 
 	_content.clear()
 	_content.append_text(out.strip_edges())
-	_toc.select(_index)
+	_sync_toc_selection()
 	_update_buttons()
-	# 等一帧让新内容完成布局，再回到顶部
 	await get_tree().process_frame
 	if is_instance_valid(_scroll):
 		_scroll.scroll_vertical = 0
 
 
+## 把文案里的 `[t]词条名[/t]` 跨引用标记去掉，只留文字。
+##
+## 百科页**不做悬停**：悬停组件（scripts/ui/term_tooltip.gd）是给**别处**用的 ——
+## 角色档案、每日简报这类「正文里突然冒出一个术语」的地方。
+## 百科本身就是解释术语的去处，再给它套悬停只会自相矛盾。
+static func _plain_refs(body: String) -> String:
+	var re := RegEx.new()
+	re.compile("\\[t\\]([^\\[\\]]+)\\[/t\\]")
+	var out := body
+	for m in re.search_all(body):
+		out = out.replace(m.get_string(0), m.get_string(1))
+	return _brighten_bold(out)
+
+
+# ------------------------------------------------------------------ 目录交互
+
+
+func _on_category_pressed(cat_index: int) -> void:
+	if cat_index < 0 or cat_index >= _cats.size():
+		return
+	var cat: Dictionary = _cats[cat_index]
+	_set_category_expanded(cat_index, not bool(cat.get("expanded", false)))
+
+
+func _set_category_expanded(cat_index: int, expanded: bool) -> void:
+	var cat: Dictionary = _cats[cat_index]
+	cat["expanded"] = expanded
+	(cat["header"] as Button).text = (
+		(ARROW_EXPANDED if expanded else ARROW_COLLAPSED) + str(cat.get("title", ""))
+	)
+	for btn in cat.get("rows", []) as Array:
+		(btn as Button).visible = expanded
+
+
+func _on_entry_pressed(entry_index: int) -> void:
+	_show_entry(entry_index)
+
+
+## 目录高亮当前词条，并保证它所在分类是展开的。
+func _sync_toc_selection() -> void:
+	if _entries.is_empty():
+		return
+	for btn in _entry_buttons:
+		(btn as Button).button_pressed = false
+	if _index < 0 or _index >= _entry_buttons.size():
+		return
+	(_entry_buttons[_index] as Button).button_pressed = true
+	for ci in range(_cats.size()):
+		if (_cats[ci] as Dictionary).get("entry_indices", []).has(_index):
+			if not bool((_cats[ci] as Dictionary).get("expanded", false)):
+				_set_category_expanded(ci, true)
+			return
+
+
 func _update_buttons() -> void:
 	_prev.disabled = _index <= 0
-	_next.disabled = _index >= _chapters.size() - 1
+	_next.disabled = _index >= _entries.size() - 1
 
 
-func _on_toc_selected(i: int) -> void:
-	_show_chapter(i)
+# ------------------------------------------------------------------ 交互
 
 
 func _on_prev() -> void:
-	_show_chapter(_index - 1)
+	_show_entry(_index - 1)
 
 
 func _on_next() -> void:
-	_show_chapter(_index + 1)
+	_show_entry(_index + 1)
 
 
 func _on_back() -> void:
