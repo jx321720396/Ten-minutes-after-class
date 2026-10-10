@@ -29,14 +29,18 @@ const KIND_CHAT := "chat"
 const MODE_START := "start"
 const MODE_JOIN := "join"
 const PEN_HOLD := &"player_pen_check"
-## 菜单刷新频率（世界在推进，状态会变）
-const MENU_REFRESH_SECONDS := 0.25
+## 行为栏刷新频率（世界在推进，状态会变）
+## 需要选对象的动作（与右侧行为栏的 target 组一致）
+const BAR_REFRESH_SECONDS := 0.25
+## 需要选对象的动作（与右侧行为栏的 target 组一致）
+const PLAYER_TARGET_KINDS := ["chat", "pass_note", "report", "roughhouse", "exclude", "observe"]
 
 var _core: Variant = null
 var _player: PlayerController = null
 var _actors: Node3D = null
 var _clock: SimulationClock = null
-var _menu: PlayerInteractionMenu = null
+var _bar: PlayerActionBar = null
+var _armed_kind := StringName("")
 var _hud: ChatFeedbackHUD = null
 var _rings: ActivityRingPresenter = null
 var _bubbles: ChatActivityBubble = null
@@ -52,7 +56,7 @@ var _mode := ""
 var _session_id := -1
 var _packet: Dictionary = {}
 var _pen_hold := false
-var _menu_timer := 0.0
+var _bar_timer := 0.0
 
 
 func _ready() -> void:
@@ -77,14 +81,14 @@ func bind_sources(
 
 ## 反馈组件（可选，缺失也不影响玩法逻辑）。
 func bind_feedback(
-	menu: PlayerInteractionMenu,
+	bar: PlayerActionBar,
 	hud: ChatFeedbackHUD,
 	rings: ActivityRingPresenter,
 	bubbles: ChatActivityBubble,
 	emotion: PlayerEmotionFeedback,
 	note_prompt: NotePrompt
 ) -> void:
-	_menu = menu
+	_bar = bar
 	_hud = hud
 	_rings = rings
 	_bubbles = bubbles
@@ -104,10 +108,10 @@ func _connect_sources() -> void:
 			_player.request_cancelled.connect(_on_request_cancelled)
 		if not _player.request_failed.is_connected(_on_request_failed):
 			_player.request_failed.connect(_on_request_failed)
-	if _menu != null and not _menu.chat_requested.is_connected(request_behavior_chat):
-		_menu.chat_requested.connect(request_behavior_chat)
-	if _menu != null and not _menu.note_requested.is_connected(request_behavior_note):
-		_menu.note_requested.connect(request_behavior_note)
+	if _bar != null and not _bar.behavior_armed.is_connected(arm_behavior):
+		_bar.behavior_armed.connect(arm_behavior)
+	if _bar != null and not _bar.self_behavior_requested.is_connected(_on_self_behavior):
+		_bar.self_behavior_requested.connect(_on_self_behavior)
 	if _note != null and not _note.choice_made.is_connected(_on_note_choice):
 		_note.choice_made.connect(_on_note_choice)
 	if _hud != null and not _hud.result_revealed.is_connected(_on_result_revealed):
@@ -154,7 +158,46 @@ func select_actor(index: int) -> void:
 	cancel_pending(&"new_selection")
 	_selected = index
 	_set_state(STATE_SELECTED)
-	_open_menu()
+	_refresh_bar()
+	# 已经选好动作时，点人就直接触发（两步交互的另一半）
+	if _armed_kind != StringName(""):
+		trigger_armed(index)
+
+
+## 行为栏选中一个动作（§20.1.2 第一步）。如果已经点好了对象，立刻触发。
+func arm_behavior(kind: StringName) -> void:
+	if _is_committed():
+		return
+	_armed_kind = kind
+	if _bar != null:
+		_bar.set_armed(kind)
+	_refresh_bar()
+	if _selected >= 0:
+		trigger_armed(_selected)
+
+
+## 用已选动作对某个对象发起；需要接近的行为（闲聊）先走过去，到位后自动结算。
+func trigger_armed(target: int) -> void:
+	var kind := str(_armed_kind)
+	if kind.is_empty() or not PLAYER_TARGET_KINDS.has(kind):
+		return
+	if kind == KIND_CHAT:
+		request_behavior(KIND_CHAT)
+		return
+	if _core == null:
+		return
+	var result: Dictionary = _core.player_action(kind, target)
+	if not bool(result.get("ok", false)):
+		if _hud != null:
+			_hud.show_status(_action_reason(str(result.get("error", ""))))
+		return
+	_finish_action()
+
+
+## 自指行为（对自己做的事）：本批都是占位，明确告知而不是静默。
+func _on_self_behavior(_kind: StringName) -> void:
+	if _hud != null:
+		_hud.show_status("这个动作还没做出来。")
 
 
 ## 请求一次闲聊（`kind` 固定 chat；`mode` 只在选择时解析一次，之后必须用冻结值提交）。
@@ -165,13 +208,13 @@ func request_behavior(kind: String, mode: String = "auto") -> void:
 		return
 	var preview := _preview()
 	if not bool(preview.get("ok", false)) or not bool(preview.get("eligible", false)):
-		_open_menu()
+		_refresh_bar()
 		return
 	var frozen_mode := str(preview["mode"]) if mode == "auto" else mode
 	var frozen_session := int(preview["session_id"])
 	if frozen_mode != str(preview["mode"]):
 		# 调用方给的 mode 与世界不符：明确拒绝，不静默切换参与方式
-		_open_menu()
+		_refresh_bar()
 		return
 	if bool(preview["in_range"]):
 		_commit(frozen_mode, frozen_session)
@@ -192,13 +235,12 @@ func request_behavior_note() -> void:
 	if not bool(result.get("ok", false)):
 		if _hud != null:
 			_hud.show_status(_note_reason(str(result.get("error", ""))))
-		_open_menu()
+		_refresh_bar()
 		return
 	if _hud != null:
 		_hud.show_status("纸条塞出去了。")
 	_selected = -1
-	if _menu != null:
-		_menu.close()
+	_clear_armed_state()
 	_set_state(STATE_IDLE)
 
 
@@ -298,8 +340,7 @@ func cancel_pending(reason: StringName) -> void:
 	_request_id = -1
 	if _state == STATE_SELECTED or _state == STATE_APPROACHING or _state == STATE_VALIDATING:
 		_selected = -1
-		if _menu != null:
-			_menu.close()
+		_clear_armed_state()
 		_set_state(STATE_IDLE)
 
 
@@ -334,32 +375,75 @@ func _is_committed() -> bool:
 	return _state == STATE_ACTIVE or _state == STATE_PEN
 
 
-func _open_menu() -> void:
-	if _menu == null or _selected < 0 or _is_committed():
+func _refresh_bar() -> void:
+	if _bar == null or _core == null:
 		return
-	_menu.open(_selected, _menu_info(_selected))
+	_bar.refresh(_bar_states())
+	if _selected >= 0:
+		_bar.show_target(_selected, _display_name(_selected), str(_core.activity_of(_selected)))
+	else:
+		_bar.show_hint("先在右边点一个动作")
 
 
-## 菜单要的所有信息：公开状态 + 只读预览 + 用时估计（tick 用时钟换算成秒）。
-func _menu_info(index: int) -> Dictionary:
-	var preview := _preview()
-	var info := {
-		"name": _display_name(index),
-		"activity": str(_core.activity_of(index)),
-		"moving": bool(_core.is_moving(index)),
-		"sleeping": bool(_core._sleeping[index]),
-		"mode": str(preview.get("mode", MODE_START)),
-		"eligible": bool(preview.get("eligible", false)),
-		"in_range": bool(preview.get("in_range", false)),
-		"reason": str(preview.get("reason", "")),
-		"phase_ok": _phase_ok(),
-		"chat_seconds": float(preview.get("duration_ticks", 0)) * _seconds_per_tick(),
-		"travel_seconds": _travel_seconds(index),
-		"remaining_seconds": _remaining_seconds(),
-		"note_ok": _note_ok(index),
-		"note_hint": _note_hint(index),
-	}
-	return info
+## 行为栏每项的状态：只有本批实做的动作给出状态，其余由栏做「还没做」占位灰置。
+func _bar_states() -> Dictionary:
+	var states := {}
+	for kind in PLAYER_TARGET_KINDS:
+		var ok := _can_do(kind)
+		states[StringName(kind)] = {"ok": ok, "reason": "" if ok else _action_reason_of(kind)}
+	return states
+
+
+## 「现在能不能做这个动作」—— 只看玩家自身与相位（不含目标：目标在点人之后才校验）。
+func _can_do(kind: String) -> bool:
+	var me := int(_core.node_count()) - 1
+	if bool(_core._sleeping[me]) or _core.is_moving(me):
+		return false
+	if int(_core._busy_until[me]) > int(_core._global_tick):
+		return false
+	return bool(_core._allowed(kind))
+
+
+func _action_reason_of(kind: String) -> String:
+	var me := int(_core.node_count()) - 1
+	if bool(_core._sleeping[me]):
+		return "你睡着了"
+	if _core.is_moving(me):
+		return "先停下再动手"
+	if int(_core._busy_until[me]) > int(_core._global_tick):
+		return "你正忙着"
+	if not bool(_core._allowed(kind)):
+		return "上课期间不能做这个"
+	return "现在做不了"
+
+
+## 内核错误码 → 一句人话（不暴露任何隐藏数值）。
+func _action_reason(error: String) -> String:
+	match error:
+		"player_busy":
+			return "你正忙着"
+		"phase_not_allowed":
+			return "上课期间不能做这个"
+		"target_unavailable":
+			return "现在没法对他做这个"
+		"invalid_target", "unknown_kind":
+			return "现在做不了"
+	return "现在做不了"
+
+
+## 动作提交成功：清掉已选动作与已选对象，回 Idle。
+func _finish_action() -> void:
+	_clear_armed_state()
+	_selected = -1
+	_set_state(STATE_IDLE)
+	_refresh_bar()
+
+
+## 只清掉「已选动作」（取消 / 打断 / 收尾时用，不动世界状态）。
+func _clear_armed_state() -> void:
+	_armed_kind = StringName("")
+	if _bar != null:
+		_bar.clear_armed()
 
 
 func _preview() -> Dictionary:
@@ -398,8 +482,7 @@ func _approach(mode: String, session_id: int) -> void:
 	_mode = mode
 	_session_id = session_id
 	_set_state(STATE_APPROACHING)
-	if _menu != null:
-		_menu.close()
+	_clear_armed_state()
 	if _hud != null:
 		_hud.show_status("正在走向%s" % _display_name(_selected), 3.0)
 
@@ -446,7 +529,7 @@ func _commit(mode: String, session_id: int, request_id: int = -1) -> void:
 		# 最终校验失败：停在原地，显示原因，不结算、不扣占用
 		_request_id = -1
 		_set_state(STATE_SELECTED)
-		_open_menu()
+		_refresh_bar()
 		if _hud != null:
 			_hud.show_status("对方位置／活动变了，请重新选择")
 		return
@@ -454,8 +537,7 @@ func _commit(mode: String, session_id: int, request_id: int = -1) -> void:
 	_mode = mode
 	_session_id = int(packet.get("session_id", -1))
 	_packet = packet
-	if _menu != null:
-		_menu.close()
+	_clear_armed_state()
 	if mode == MODE_JOIN:
 		_begin_pen()
 	else:
@@ -550,8 +632,7 @@ func _on_ground_clicked(_point: Vector3) -> void:
 	cancel_pending(&"ground_click")
 	_selected = -1
 	_set_state(STATE_IDLE)
-	if _menu != null:
-		_menu.close()
+	_clear_armed_state()
 
 
 func _on_request_arrived(request_id: int) -> void:
@@ -567,8 +648,7 @@ func _on_request_cancelled(request_id: int, reason: StringName) -> void:
 		return
 	_request_id = -1
 	_selected = -1
-	if _menu != null:
-		_menu.close()
+	_clear_armed_state()
 	_set_state(STATE_IDLE)
 	if _hud != null and str(reason) == "lost_control":
 		_hud.show_status("被打断了")
@@ -589,6 +669,11 @@ func _on_request_failed(request_id: int, reason: StringName) -> void:
 ## 只处理带 request_id 的玩家通知；圈 / 气泡 / 线索全部走这一条入口。
 func _on_event_happened(payload: Dictionary) -> void:
 	var kind := str(payload.get("kind", ""))
+	# 观察结果（§10.3.1）：只读信息进情报日志，不提交任何行为
+	if kind == "observe":
+		if _hud != null:
+			_hud.show_intel(payload.get("clues", []))
+		return
 	if not kind.begins_with("player_"):
 		return
 	var request_id: int = int(payload.get("request_id", -1))
@@ -649,8 +734,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Esc：取消**尚未提交**的接近请求；已提交的结果不受影响（暂停菜单由教室打开）
 	if _state == STATE_SELECTED or _state == STATE_APPROACHING:
 		cancel_pending(&"escape")
-		if _menu != null:
-			_menu.close()
+		_clear_armed_state()
 		_selected = -1
 		_set_state(STATE_IDLE)
 
@@ -661,13 +745,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	# 纸条提示优先于菜单刷新：它**不打断**正在做的事，任何时候都可能到手
 	_poll_note()
-	if _state != STATE_SELECTED or _menu == null:
+	if _state != STATE_SELECTED or _bar == null:
 		return
-	_menu_timer += delta
-	if _menu_timer < MENU_REFRESH_SECONDS:
+	_bar_timer += delta
+	if _bar_timer < BAR_REFRESH_SECONDS:
 		return
-	_menu_timer = 0.0
-	_open_menu()
+	_bar_timer = 0.0
+	_refresh_bar()
 
 
 func _seconds_per_tick() -> float:

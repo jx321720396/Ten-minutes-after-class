@@ -79,7 +79,7 @@ class PlayerInvitations:
         core = self._core()
         self.choice = dict(actor=rec["actor"], accepted=bool(accepted))
         try:
-            if accepted or rec["kind"] in ("ask_help", "apologize"):
+            if accepted or rec["kind"] == "apologize":
                 getattr(core, "do_" + rec["kind"])(rec["actor"], rec["target"],
                                                 *rec["args"], **rec["kwargs"])
         finally:

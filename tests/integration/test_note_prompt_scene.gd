@@ -93,7 +93,7 @@ func test_offered_note_shows_prompt_without_interrupting_the_player() -> void:
 	assert_eq(prompt.button_labels(), ["不看，传下去", "不看，撕掉", "看看写的什么"])
 	assert_eq(int(sim._busy_until[me]), busy_before, "纸条到手**不占用**玩家时间")
 	assert_eq(sim._current_act[me], act_before, "纸条到手**不打断**玩家正在做的事")
-	assert_false(interaction._menu.is_open(), "纸条不影响别处的界面状态")
+	assert_eq(interaction._bar.armed_kind(), StringName(""), "纸条不影响行为栏的选中状态")
 
 
 func test_note_leaving_the_hand_closes_the_prompt() -> void:
