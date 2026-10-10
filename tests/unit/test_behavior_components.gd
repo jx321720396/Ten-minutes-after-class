@@ -9,9 +9,9 @@ const EXPECTED := [
 	&"roughhouse",
 	&"exclude",
 	&"comfort",
-	&"ask_help",
 	&"apologize",
-	&"pass_note"
+	&"pass_note",
+	&"observe"
 ]
 
 

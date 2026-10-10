@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://cvvi06b7bmdyn"]
 
+[ext_resource type="PackedScene" path="res://scenes/ui/npc_profile.tscn" id="npc_profile_scene"]
+
 [ext_resource type="PackedScene" path="res://scenes/components/desk_chair.tscn" id="1_desk"]
 [ext_resource type="PackedScene" uid="uid://veknwyi71j7a" path="res://scenes/components/podium.tscn" id="2_podium"]
 [ext_resource type="PackedScene" path="res://scenes/components/window_tall.tscn" id="3_win_tall"]
@@ -11,7 +13,7 @@
 [ext_resource type="Script" uid="uid://cmnryfc43ne1v" path="res://scripts/game/simulation_clock.gd" id="clock_script"]
 [ext_resource type="PackedScene" path="res://scenes/game/time_flow.tscn" id="time_flow_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/player_emotion_feedback.tscn" id="emotion_scene"]
-[ext_resource type="PackedScene" path="res://scenes/ui/player_interaction_menu.tscn" id="interaction_menu_scene"]
+[ext_resource type="PackedScene" path="res://scenes/ui/player_action_bar.tscn" id="action_bar_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/note_prompt.tscn" id="note_prompt_scene"]
 [ext_resource type="PackedScene" path="res://scenes/game/player_interaction_controller.tscn" id="interaction_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/encyclopedia_entry.tscn" id="encyclopedia_entry"]
@@ -265,6 +267,8 @@ visible = false
 [node name="EncyclopediaEntry" parent="UI" instance=ExtResource("encyclopedia_entry")]
 
 [node name="ClueBoardEntry" parent="UI" instance=ExtResource("clue_board_entry")]
+
+[node name="NpcProfile" parent="UI" instance=ExtResource("npc_profile_scene")]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=281153324]
 environment = SubResource("Env_room")
@@ -814,7 +818,7 @@ script = ExtResource("player_script")
 
 [node name="ChatHUD" parent="." unique_id=2020022478 instance=ExtResource("chat_hud_scene")]
 
-[node name="InteractionMenu" parent="." unique_id=1418027662 instance=ExtResource("interaction_menu_scene")]
+[node name="ActionBar" parent="." instance=ExtResource("action_bar_scene")]
 
 [node name="NotePrompt" parent="." instance=ExtResource("note_prompt_scene")]
 

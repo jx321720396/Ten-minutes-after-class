@@ -67,8 +67,6 @@ func _initialize() -> void:
 		"roughhouse",
 		"exclude",
 		"comfort",
-		"help_accept",
-		"help_reject",
 		"apologize_accept",
 		"apologize_reject"
 	]:
@@ -105,11 +103,6 @@ func _initialize() -> void:
 				c._do_exclude(0, 1, [0, 4, 2, 3])
 			"comfort":
 				c._do_comfort(0, 1)
-			"help_accept", "help_reject":
-				c._thresholds_lookup["ask_help_accept_theta"] = (
-					-1000.0 if scenario == "help_accept" else 1000.0
-				)
-				c._do_ask_help(0, 1)
 			"apologize_accept", "apologize_reject":
 				c._h[1] = 50.0
 				c._h[c.node_count()] = 50.0

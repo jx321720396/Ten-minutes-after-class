@@ -93,7 +93,7 @@ func respond(id: int, accepted: bool) -> Dictionary:
 		options["session_id"] = int(rec.session_id)
 		options["members"] = core._sessions.members_of(int(rec.session_id))
 	_choice = {"actor": int(rec.actor), "accepted": accepted}
-	if accepted or kind in ["ask_help", "apologize"]:
+	if accepted or kind in ["apologize"]:
 		core._behavior_registry.execute(StringName(kind), int(rec.actor), int(rec.target), options)
 	_choice = {}
 	var result := {"ok": true, "id": id, "accepted": accepted, "kind": kind}

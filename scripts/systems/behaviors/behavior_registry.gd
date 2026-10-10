@@ -8,9 +8,9 @@ const REPORT = preload("res://scripts/systems/behaviors/report_behavior.gd")
 const ROUGH_HOUSE = preload("res://scripts/systems/behaviors/roughhouse_behavior.gd")
 const EXCLUDE = preload("res://scripts/systems/behaviors/exclude_behavior.gd")
 const COMFORT = preload("res://scripts/systems/behaviors/comfort_behavior.gd")
-const ASK_HELP = preload("res://scripts/systems/behaviors/ask_help_behavior.gd")
 const APOLOGIZE = preload("res://scripts/systems/behaviors/apologize_behavior.gd")
 const PASS_NOTE = preload("res://scripts/systems/behaviors/pass_note_behavior.gd")
+const OBSERVE = preload("res://scripts/systems/behaviors/observe_behavior.gd")
 
 var _context: RefCounted
 var _components: Dictionary
@@ -25,9 +25,9 @@ func _init(context: RefCounted) -> void:
 		&"roughhouse": ROUGH_HOUSE.new(),
 		&"exclude": EXCLUDE.new(),
 		&"comfort": COMFORT.new(),
-		&"ask_help": ASK_HELP.new(),
 		&"apologize": APOLOGIZE.new(),
 		&"pass_note": PASS_NOTE.new(),
+		&"observe": OBSERVE.new(),
 	}
 	_context.bind_registry(self)
 

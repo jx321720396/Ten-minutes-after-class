@@ -19,7 +19,15 @@ extends RefCounted
 const DIMS := ["e", "n", "f", "p"]
 const AXES := ["affinity", "hostility", "trust"]
 ## 玩家可通过 player_action 发起的行为（与 data/rules/behaviors.csv 的行名一致）
-const PLAYER_KINDS := ["chat", "tease", "report", "roughhouse", "exclude", "pass_note"]
+## 观察的固定时长（tick）：对象空闲或做「持续型」活动时用这一档（§10.3.1）
+const OBSERVE_TICKS := 10
+## 超过这个剩余量就视为「持续型 / 整段占用」（学习、睡觉），不跟随其剩余时间
+const OBSERVE_FOLLOW_LIMIT := 120
+## 自指行为（对自己做的事）：不需要对象，玩家直接发起
+const PLAYER_SELF_KINDS := ["study", "sleep"]
+const PLAYER_KINDS := [
+	"chat", "tease", "report", "roughhouse", "exclude", "pass_note", "observe", "study", "sleep"
+]
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
 const OBSERVER_LAYER = preload("res://scripts/systems/observer/observer_layer.gd")
@@ -301,8 +309,6 @@ func _reset_runtime(n: int) -> void:
 		"join_rejects": 0,
 		"humiliations": 0,
 		"comforts": 0,
-		"helps": 0,
-		"help_rejects": 0,
 		"apologizes": 0,
 		"apologize_rejects": 0,
 		"notes_written": 0,
@@ -669,7 +675,11 @@ func _study_accumulate() -> void:
 		if _grade[i] >= gmax:
 			_study_acc[i] = 0.0
 			continue
-		if _current_act[i] != null or _global_tick < _busy_until[i]:
+		if is_player(i):
+			# §8.23：玩家必须**主动进入学习态**才累积成绩 —— 不选任何行为＝什么都没做
+			if _current_act[i] != "study":
+				continue
+		elif _current_act[i] != null or _global_tick < _busy_until[i]:
 			continue
 		_study_acc[i] += 1.0
 		var tpp := _grade_ticks_per_point(_grade[i])
@@ -678,6 +688,8 @@ func _study_accumulate() -> void:
 		if _study_acc[i] >= tpp:
 			_grade[i] += 1.0
 			_study_acc[i] -= tpp
+			# §8.23 第 3 条：结算成绩的同时给自身压力 +3（走统一影响公式）
+			_apply_event(i, i, "study_stress")
 
 
 ## 当前成绩档的「每 +1 分所需 tick」（§17.1.2 分段表）；越界返回 0。
@@ -1690,29 +1702,6 @@ func _decide_and_act() -> void:
 				busy[i] = true
 				busy[j] = true
 				continue
-		# 意向类：求助（§10.10，C 类）—— 我对目标好感够高才敢开口
-		if _allowed("ask_help") and _rng.random() < float(_probs["ask_help_p"]):
-			var base_h := float(_thresholds_lookup["ask_help_affinity"])
-			var intro_h := float(_thresholds_lookup["ask_help_introvert_affinity"])
-			var extro_h := float(_thresholds_lookup["ask_help_extrovert_affinity"])
-			var need_h: float
-			if e_i < 50.0:
-				need_h = base_h + (intro_h - base_h) * (50.0 - e_i) / 50.0
-			else:
-				need_h = base_h + (extro_h - base_h) * (e_i - 50.0) / 50.0
-			var cands_h: Array = []
-			for j in range(n):
-				if j != i and not busy[j] and _can_interact_with(j) and _a[i * n + j] >= need_h:
-					cands_h.append(j)
-			if not cands_h.is_empty():
-				var w_h: Array = []
-				for c in cands_h:
-					w_h.append(maxf(1.0, _b_a[i * n + c] - _b_h[i * n + c]))
-				var j := int(_rng.choices(cands_h, w_h, 1)[0])
-				_do_ask_help(i, j)
-				busy[i] = true
-				busy[j] = true
-				continue
 		# 意向类：道歉 / 和解（§10.11，E 类）—— 僵局够深才有「和解」这件事
 		if _allowed("apologize") and _rng.random() < float(_probs["apologize_p"]):
 			var th_ap := float(_thresholds_lookup["apologize_trigger_hostility"])
@@ -1975,6 +1964,43 @@ func _do_pass_note(i: int, j: int) -> void:
 	_behavior_registry.execute(&"pass_note", i, j)
 
 
+# ------------------------------------------------------------------ 观察（§10.3.1，玩家独有只读行为）
+## 观察：内核只做校验与分发，信息口径在 `observe_behavior.gd`（零副作用）。
+func _do_observe(i: int, j: int) -> void:
+	_behavior_registry.execute(&"observe", i, j)
+
+
+## 学习（§8.23）：进入学习态。**不占时间槽**，靠 `_current_act` 表达；
+## 起身 / 移动 / 相位切换即中断（`_cleanup_phase` 清 `_current_act`）。
+func _do_study(i: int) -> void:
+	_current_act[i] = "study"
+	_stats["studies"] = int(_stats.get("studies", 0)) + 1
+	_emit("event_happened", {"kind": "study", "i": i})
+
+
+## 睡觉（§8.8）：玩家主动入睡 —— 与 NPC 同规则（段末由 `_settle_sleep` 一次性减压、
+## 期间不被任何人交互）。原规格只写了 NPC 的概率触发。
+func _do_sleep(i: int) -> void:
+	_sleeping[i] = true
+	_current_act[i] = "sleep"
+	_stats["sleeps"] = int(_stats["sleeps"]) + 1
+	_emit("event_happened", {"kind": "sleep", "i": i})
+
+
+## 观察的可达性：沿用闲聊那套空间口径（普通 1.2 m / 同列前后邻座 1.8 m）。
+func _observe_reachable(me: int, target: int) -> bool:
+	return chat_pair_in_range(me, target)
+
+
+## 对象在做「有明确结束点」的活动时，剩余必须 ≥ OBSERVE_TICKS 才谈得上观察（§10.3.1）。
+## 空闲与持续型（学习 / 睡觉等整段占用）不受此限。
+func _observe_long_enough(target: int) -> bool:
+	var left := int(_busy_until[target]) - int(_global_tick)
+	if left <= 0 or left >= OBSERVE_FOLLOW_LIMIT:
+		return true
+	return left >= OBSERVE_TICKS
+
+
 ## 每 tick 处理一张纸条：按编号升序找第一张可处理的
 ## （持有者不忙不睡、且不是玩家 —— 玩家持有的纸条等玩家选择）。
 func _process_notes() -> void:
@@ -2138,11 +2164,6 @@ func _do_comfort(i: int, j: int) -> void:
 	_behavior_registry.execute(&"comfort", i, j)
 
 
-## 求助（§10.10，C 类）：判定读真值 A[j][i] + 对方外向度加成；成功/被拒各有独立效果。
-func _do_ask_help(i: int, j: int) -> void:
-	_behavior_registry.execute(&"ask_help", i, j)
-
-
 ## 道歉 / 和解（§10.11，E 类）：i 主动向 j 低头。判定读真值（A[j][i] + F_j 随和 − H[j][i]×惩罚）；
 ## 效果行一律 no_modulation=True（和解与关系调制 M 结构性冲突，否则「越道歉越糟」）。
 func _do_apologize(i: int, j: int) -> void:
@@ -2156,6 +2177,13 @@ func _do_apologize(i: int, j: int) -> void:
 ## 与 NPC 共用同一套「能不能做」门槛（§3.3 相位权限、§10.8 目标睡眠）——
 ## 内核策划符合性审查 P1-02：不能只靠 UI 隐藏按钮，内核入口必须自己拒绝。
 func _player_action_error(kind: String, target: int, me: int) -> String:
+	if kind in PLAYER_SELF_KINDS:
+		# 自指行为（学习 / 睡觉）：不看对象，只看自己能不能做
+		if _sleeping[me] or _global_tick < _busy_until[me] or is_moving(me):
+			return "player_busy"
+		if not _allowed(kind):
+			return "phase_not_allowed"
+		return ""
 	if target < 0 or target >= _n or target == me:
 		return "invalid_target"
 	if not PLAYER_KINDS.has(kind):
@@ -2164,6 +2192,13 @@ func _player_action_error(kind: String, target: int, me: int) -> String:
 		return "player_busy"
 	if not _allowed(kind):
 		return "phase_not_allowed"
+	if kind == "observe":
+		# 观察是**只读**的：睡着的人也能看，也不要求对方空闲（对象不知情、不被打断）
+		if not _observe_reachable(me, target):
+			return "out_of_range"
+		if not _observe_long_enough(target):
+			return "too_little_time"
+		return ""
 	if not _can_interact_with(target):
 		return "target_unavailable"
 	return ""
@@ -2192,6 +2227,12 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 			_do_exclude(me, target, _player_hurters(target))
 		"pass_note":
 			_do_pass_note(me, target)
+		"observe":
+			_do_observe(me, target)
+		"study":
+			_do_study(me)
+		"sleep":
+			_do_sleep(me)
 		_:
 			return {"ok": false, "error": "unknown_kind"}
 	return {
@@ -2430,7 +2471,6 @@ func _allowed(behavior: String) -> bool:
 	var banned := [
 		"chat",
 		"tease",
-		"ask_help",
 		"comfort",
 		"apologize",
 		"share_secret",

@@ -277,7 +277,7 @@ func test_nearby_chat_runs_and_yields_intel_after_natural_completion() -> void:
 	var clock: SimulationClock = scene.get_node("Clock")
 	clock.hold(&"integration_fixture")
 	var interaction: PlayerInteractionController = scene.get_node("Interaction")
-	var menu: PlayerInteractionMenu = scene.get_node("InteractionMenu")
+	var bar: PlayerActionBar = scene.get_node("ActionBar")
 	var hud: ChatFeedbackHUD = scene.get_node("ChatHUD")
 	var rings: ActivityRingPresenter = scene.get_node("Rings")
 	var emotion: PlayerEmotionFeedback = scene.get_node("Emotion")
@@ -289,15 +289,14 @@ func test_nearby_chat_runs_and_yields_intel_after_natural_completion() -> void:
 	_teleport_player(scene, pair[0].x, pair[0].z)
 	assert_true(bool(sim.interaction_space_ready()), "教室几何已注入内核")
 
-	interaction.select_actor(0)
-	assert_eq(str(interaction.current_state()), "selected", "点人只选中，不走动")
-	assert_true(menu.is_open(), "菜单打开")
-	assert_eq(menu.action_text(), "闲聊", "空闲对象只有一个「闲聊」操作")
-	assert_false(menu.button_disabled(), "够得着就能点")
+	# 两步交互（§20.1.2）：先点行为栏的动作，再点人
+	interaction.arm_behavior(&"chat")
+	assert_eq(bar.armed_kind(), &"chat", "行为栏选中了闲聊")
+	assert_false(bar.button_disabled_of(&"chat"), "空闲时闲聊可点")
+	assert_true(bar.button_disabled_of(&"listen_music"), "尚未实装的行为灰置（占位，不隐藏）")
 
-	interaction.request_behavior("chat")
-	assert_eq(str(interaction.current_state()), "active", "已提交 → 进入聊天")
-	assert_false(menu.is_open(), "提交后菜单关闭")
+	interaction.select_actor(0)
+	assert_eq(str(interaction.current_state()), "active", "点人即触发 → 进入聊天")
 	assert_true(str(hud._progress_text.text).begins_with("正在和同学"), "底部显示聊天进度")
 	rings.refresh()
 	assert_true(rings.is_merged(0), "闲聊成立 → 目标进入融合区域")
@@ -328,6 +327,34 @@ func test_nearby_chat_runs_and_yields_intel_after_natural_completion() -> void:
 	)
 	assert_eq(bubbles.has_bubble(me), sim.session_of(me) >= 0, "玩家气泡与真实会话一致")
 	assert_eq(bubbles.has_bubble(0), sim.session_of(0) >= 0, "NPC 气泡与真实会话一致")
+
+
+func test_profile_menu_pause_and_chat_use_existing_controller() -> void:
+	var scene: Node3D = await _open_scene()
+	var sim: Variant = _sim(scene)
+	scene.get_node("Clock").hold(&"integration_fixture")
+	var pair := _free_pair(scene, 0.7, true)
+	assert_eq(pair.size(), 2)
+	_free(scene, 0)
+	_place(scene, 0, pair[1].x, pair[1].z)
+	_teleport_player(scene, pair[0].x, pair[0].z)
+	var interaction: Node = scene.get_node("Interaction")
+	var bar: Node = scene.get_node("ActionBar")
+	var profile: Node = scene.get_node("UI/NpcProfile")
+	interaction.select_actor(0)
+	var button := bar.find_child("ProfileButton", true, false) as Button
+	assert_not_null(button, "选中对象后必须有真实档案按钮")
+	button.pressed.emit()
+	assert_true(profile.is_open())
+	assert_true(get_tree().paused)
+	assert_not_null(profile.get_node("%Portrait").texture, "复用本局人物画像")
+	assert_eq(sim.session_of(_player_index(sim)), -1, "查看档案不能提交行为")
+	assert_false(profile.get_node("%Chat").disabled)
+	profile.get_node("%Chat").pressed.emit()
+	assert_false(profile.is_open())
+	assert_false(get_tree().paused)
+	assert_eq(str(interaction.current_state()), "active", "档案按钮经原控制器开始聊天")
+	assert_gte(sim.session_of(_player_index(sim)), 0)
 
 
 # ------------------------------------------------------------------ ② 远处接近后闲聊

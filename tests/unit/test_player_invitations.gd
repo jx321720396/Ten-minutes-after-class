@@ -34,24 +34,6 @@ func test_npc_chat_waits_for_player_without_effects_or_occupancy() -> void:
 		assert_eq(str(core.get_player_invitation().kind), "chat")
 
 
-func test_accepting_help_is_a_player_choice_even_at_low_npc_probability() -> void:
-	var core := _core()
-	if not _api(core):
-		return
-	var me := core.node_count() - 1
-	core._a[me * core.node_count()] = 0.0
-	core._dims[me] = 0.0
-	core._do_ask_help(0, me)
-	var invitation: Dictionary = core.get_player_invitation()
-	assert_false(core.is_busy(me))
-	var result: Dictionary = core.respond_player_invitation(int(invitation.id), true)
-	assert_true(bool(result.ok))
-	assert_true(bool(result.accepted))
-	assert_eq(int(core._stats.helps), 1, "玩家接受直接进入成功分支")
-	assert_true(core.is_busy(me))
-	assert_true(core.get_player_invitation().is_empty())
-
-
 func test_rejecting_chat_and_replaying_response_does_not_lock_or_settle() -> void:
 	var core := _core()
 	if not _api(core):
@@ -121,7 +103,7 @@ func test_invitation_card_can_reject_without_blocking_player() -> void:
 
 
 func test_all_cooperative_behaviors_wait_for_consent() -> void:
-	for kind in ["chat", "ask_help", "comfort", "apologize", "roughhouse"]:
+	for kind in ["chat", "comfort", "apologize", "roughhouse"]:
 		var core := _core()
 		var me := core.node_count() - 1
 		var before := core.affinity(me, 0)

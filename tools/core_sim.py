@@ -190,7 +190,7 @@ class Sim:
                       "interrupts": 0,
                       "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0,
                       "roughhouse": 0, "sleeps": 0,
-                      "comforts": 0, "helps": 0, "help_rejects": 0,
+                      "comforts": 0,
                       "apologizes": 0, "apologize_rejects": 0,
                       "notes_written": 0, "notes_read": 0, "notes_destroyed": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
@@ -942,24 +942,6 @@ class Sim:
                     busy.add(i)
                     busy.add(j)
                     continue
-            # 意向类：求助（§10.10，C 类）—— 我对目标好感够高才敢开口（内向更高、外向更低）
-            if self.allowed("ask_help") and self.rng.random() < self.probs.get("ask_help_p", 0.0):
-                # 三段锚点：E=50 → 30、E=0 → 50、E=100 → 20（§10.10「≥30；内向 ≥50；外向 ≥20」）
-                base_h = thk.get("ask_help_affinity", 30.0)
-                intro_h = thk.get("ask_help_introvert_affinity", 50.0)
-                extro_h = thk.get("ask_help_extrovert_affinity", 20.0)
-                need_h = (base_h + (intro_h - base_h) * (50.0 - e_i) / 50.0 if e_i < 50.0
-                          else base_h + (extro_h - base_h) * (e_i - 50.0) / 50.0)
-                cands_h = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)
-                           and self.A[i][j] >= need_h]
-                if cands_h:
-                    # 目标选择读**信念**：我以为他越可能帮我，越先去求他（§18.6 意向评分「对方的反应预期」）
-                    w_h = [max(1.0, self.B["affinity"][i][j] - self.B["hostility"][i][j]) for j in cands_h]
-                    j = self.rng.choices(cands_h, weights=w_h, k=1)[0]
-                    self.do_ask_help(i, j)
-                    busy.add(i)
-                    busy.add(j)
-                    continue
             # 意向类：道歉 / 和解（§10.11，E 类）—— 僵局够深才有「和解」这件事
             if self.allowed("apologize") and self.rng.random() < self.probs.get("apologize_p", 0.0):
                 th_ap = thk.get("apologize_trigger_hostility", 30.0)
@@ -1249,42 +1231,6 @@ class Sim:
         self.apply_event(j, i, "comfort_target_trust")     # 目标 → 安慰者：信任 ↑
         self.stats["comforts"] += 1
 
-    @invitation_behavior("ask_help")
-    def do_ask_help(self, i, j):
-        """求助（§10.10，C 类）：**i 开口求 j 帮忙**。
-
-        判定读**真值**：`p = σ((A[j][i] + 对方外向度加成 − θ) / scale)` ——
-        「他会不会帮我」由**他的真实态度**决定，不由我的猜测决定（§6.4）；
-        我的猜测只进决策侧的目标选择（我以为他越可能帮，越先去求他）。
-
-        效果（§10.10）：
-        · 成功 → 求助者 好感↑ / 压力↓；帮忙者 对求助者 好感↑ / 信任↑
-        · 被拒 → 求助者 压力↑ / 敌对↑ / 信任↓
-        发起成本（+2 压力）**不论成败都付** —— 「开口求人」本身就有代价。
-
-        ⚠️ 本轮未实现：「被亏欠」状态（3 天内成功率 +25%）与「被拒压力 ×1.5 / 好斗敌对 ×2」
-        —— 前者需要 `status_tags` 支持「条件修正」语义（现表是「每天施加固定效果」），
-        后者超出 `M_personality` 的 `[0.1,1.2]` 钳位，需另开通道。
-        """
-        thk = self.thresholds_lookup
-        self.occupy(i, j, "ask_help")
-        self.apply_event(i, j, "ask_help_cost_stress")
-        score = self.A[j][i] + self.dims[j][0] / 100.0 * thk.get("ask_help_extrovert_bonus", 10.0)
-        p = sigmoid((score - thk.get("ask_help_accept_theta", 40.0))
-                    / thk.get("ask_help_accept_scale", 12.0))
-        if (self.player_invitations.choice_for(i) if self.player_invitations.choice_for(i) is not None
-                else self.rng.random() < p):
-            self.apply_event(i, j, "ask_help_ok_asker_affinity")
-            self.apply_event(i, j, "ask_help_ok_asker_stress")
-            self.apply_event(j, i, "ask_help_ok_helper_affinity")
-            self.apply_event(j, i, "ask_help_ok_helper_trust")
-            self.stats["helps"] += 1
-        else:
-            self.apply_event(i, j, "ask_help_no_stress")
-            self.apply_event(i, j, "ask_help_no_hostility")
-            self.apply_event(i, j, "ask_help_no_trust")
-            self.stats["help_rejects"] += 1
-
     @invitation_behavior("apologize")
     def do_apologize(self, i, j):
         """道歉 / 和解（§10.11，E 类）：**i 主动向 j 低头**。双方敌对 ≥30 才谈得上和解。
@@ -1344,6 +1290,53 @@ class Sim:
                  + row["w_j"] * d[3]
                  + row["w_stress"] * (self.Stress[i] - 50.0) / 50.0 + extra)
         return sigmoid((score - row["theta"]) / row["scale"])
+
+    def do_study(self, i):
+        """学习（§8.23）：进入学习态（参考实现）。不占时间槽，靠 current_act 表达；
+        成绩累积在 _study_accumulate，每满一展给成绩 +1 与自身压力 +3。
+        """
+        self.current_act[i] = "study"
+        self.stats["studies"] = self.stats.get("studies", 0) + 1
+
+    def do_sleep(self, i):
+        """睡觉（§8.8）：玩家主动入睡（参考实现）。与 NPC 同规则：
+        占用剩余课间段、段末一次性减压、期间不被任何人交互。
+        """
+        self.sleeping[i] = True
+        self.current_act[i] = "sleep"
+        self.stats["sleeps"] += 1
+
+    def do_observe(self, me, j):
+        """观察（§10.3.1）：玩家独有的**只读**行为（参考实现）。
+
+        零副作用：不写任何矩阵、不产生噪音、**不占用也不打断对象**、不进 NPC 决策。
+        信息口径：真实 = 对象对玩家的 A/H（O ≥ 50 再给 T）；信念 = 对象以为玩家怎么看他（可能是错的）。
+        """
+        self.occupy(me, me, "observe")
+        self.stats["observes"] = self.stats.get("observes", 0) + 1
+        day = self.day
+        clues = [
+            {"source": j, "subject": me, "axis": "affinity", "value": self.A[j][me], "day": day, "via": "observe"},
+            {"source": j, "subject": me, "axis": "hostility", "value": self.H[j][me], "day": day, "via": "observe"},
+        ]
+        if self.O[j] >= 50:
+            clues.append(
+                {"source": j, "subject": me, "axis": "trust", "value": self.T[j][me], "day": day, "via": "observe"}
+            )
+        if self.current_act[j] != "sleep":
+            clues.append(
+                {
+                    "source": j,
+                    "subject": j,
+                    "axis": "affinity",
+                    "value": self.B["affinity"][j][me],
+                    "day": day,
+                    "via": "observe",
+                    "belief": True,
+                }
+            )
+        return clues
+
 
     def do_pass_note(self, i, j):
         """写纸条（§8.6 纸条链）：i 写一张纸条投给 j（相邻或走近的人）。
@@ -1578,7 +1571,7 @@ class Sim:
         rules = self.phase_rules.get(pid, ["all"])
         if "all" in rules:
             return True
-        banned = {"chat", "tease", "ask_help",
+        banned = {"chat", "tease",
                   "comfort", "apologize", "share_secret", "roughhouse", "exclude",
                   "report", "move"}
         return behavior not in banned
@@ -1889,7 +1882,12 @@ class Sim:
             if self.Grade[i] >= gmax:
                 self.StudyAcc[i] = 0.0
                 continue
-            if self.current_act[i] is not None or self.global_tick < self.busy_until[i]:
+            if i == self.N - 1:
+                # 玩家（§8.23）：必须**主动进入学习态**才累积成绩
+                # —— 不选任何行为＝什么都没做
+                if self.current_act[i] != "study":
+                    continue
+            elif self.current_act[i] is not None or self.global_tick < self.busy_until[i]:
                 continue
             self.StudyAcc[i] += 1.0
             tpp = self._grade_ticks_per_point(self.Grade[i])
@@ -1898,6 +1896,8 @@ class Sim:
             if self.StudyAcc[i] >= tpp:
                 self.Grade[i] += 1.0
                 self.StudyAcc[i] -= tpp
+                # §8.23 第 3 条：结算成绩的同时给自身压力 +3
+                self.apply_event(i, i, "study_stress")
 
     def _grade_ticks_per_point(self, g):
         """当前成绩档的「每 +1 分所需 tick」（§17.1.2 分段表）；越界返回 0。"""
