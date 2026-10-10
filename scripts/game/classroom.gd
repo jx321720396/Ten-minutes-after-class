@@ -21,10 +21,11 @@ extends Node3D
 @onready var chat_bubble: ChatActivityBubble = $ChatBubble
 @onready var emotion: PlayerEmotionFeedback = $Emotion
 @onready var chat_hud: ChatFeedbackHUD = $ChatHUD
-@onready var interaction_menu: PlayerInteractionMenu = $InteractionMenu
+@onready var action_bar: PlayerActionBar = $ActionBar
 @onready var interaction: PlayerInteractionController = $Interaction
 @onready var note_prompt: NotePrompt = $NotePrompt
 @onready var behavior_badge: BehaviorBadgePresenter = $BehaviorBadge
+@onready var npc_profile: NpcProfile = $UI/NpcProfile
 
 
 func _ready() -> void:
@@ -124,8 +125,10 @@ func _bind_feedback(core: Variant) -> void:
 	# 头顶行为徽标（§20.1.4）：本批只接「手里拿着纸条」（§21.2.9）
 	behavior_badge.bind_core(core)
 	behavior_badge.bind_actors(actors)
-	interaction.bind_feedback(interaction_menu, chat_hud, rings, chat_bubble, emotion, note_prompt)
+	interaction.bind_feedback(action_bar, chat_hud, rings, chat_bubble, emotion, note_prompt)
 	interaction.bind_sources(core, player, actors, clock)
+	npc_profile.bind_sources(core, actors, interaction)
+	action_bar.profile_requested.connect(npc_profile.open_profile)
 
 
 ## 日末简报的「进入第 N 天」：只有在 report 状态才成功；学期结束或依赖缺失时明确报开发状态，

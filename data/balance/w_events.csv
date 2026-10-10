@@ -32,15 +32,6 @@ topic_affinity,affinity,3,0.2,0.2,0,0,normal,A,话题共鸣
 topic_stress,stress,-2,0.3,0,0.2,0,normal,A,话题共鸣
 # ---- 安慰（§10.13，A 类）发起成本（效果行见上方 comfort_target_*）----
 comfort_cost_stress,stress,2,0.2,0,0.3,0,normal,A,安慰发起成本：凑过去关心别人也要花心力（不论结果）
-# ---- 求助（§10.10，C 类：决策读信念、判定读真值）----
-ask_help_cost_stress,stress,2,0.2,0,0.3,0,normal,C,求助发起成本：开口求人本身有压力（不论成败）
-ask_help_ok_asker_affinity,affinity,3,0,0,0.2,0,normal,C,求助成功：求助者对帮忙者好感↑
-ask_help_ok_asker_stress,stress,-2,0.2,0,0.3,0,normal,C,求助成功：求助者压力↓
-ask_help_ok_helper_affinity,affinity,2,0,0,0.3,0,normal,C,求助成功：帮忙者对求助者好感↑
-ask_help_ok_helper_trust,trust,3,0,0,0.2,0,normal,C,求助成功：帮忙者对求助者信任↑
-ask_help_no_stress,stress,3,0.2,0,0.3,0,normal,C,求助被拒：求助者压力↑
-ask_help_no_hostility,hostility,3,0,0,0.2,0.3,normal,C,求助被拒：求助者转而生恨
-ask_help_no_trust,trust,-3,0,0,0.2,0,normal,C,求助被拒：信任受损
 # ---- 道歉 / 和解（§10.11，E 类：混合判定）----
 #   注：本行为的四类效果行由 `do_apologize` 以 `no_modulation=True` 写入
 #   （和解是修复类行为，其门槛保证 H ≥ 30 → M 常为负，关系调制会把「修复」翻成「恶化」）。

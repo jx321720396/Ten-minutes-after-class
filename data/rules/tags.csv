@@ -20,7 +20,6 @@ tag_id,axis,strength,effect,note
 爱学习,behavior,strong,study_bias,+50%,长久影响：总是倾向学习（与低从众度叠加 → 即所谓「学霸」）
 爱聊天,behavior,strong,chat_bias,+50%,长久影响：偏好闲聊
 爱调侃,behavior,weak,tease_bias,+10%,小部分影响：更可能起哄
-爱帮忙,behavior,weak,help_bias,+10%,小部分影响：更可能答应求助
 爱独处,behavior,strong,alone_bias,+50%,长久影响：倾向独处，不主动参与
 爱调和,relation,strong,mediate_bias,+50%,长久影响：倾向化解冲突
 爱八卦,info,strong,spread_bias,+50%,长久影响：信息传播意愿高

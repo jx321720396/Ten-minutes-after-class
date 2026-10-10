@@ -17,7 +17,6 @@ behavior,name,kind,duration,payoff,noise,join_mode,note
 study,学习,default,0,1,1,free,默认行为；占用剩余时间（不占用忙碌期，空闲即在学）
 pass_note,传纸条,intent,10,2,0,none,纸条链：写一张纸条投给相邻或走近的人并逐手传递；被说者 X 与话术随机（§8.6）
 move,走动,env,15,1,1,free,下课瞬间的位置更新（耗时低、收益低，但会发出响动）
-ask_help,求助,intent,20,3,1,accept,对目标好感 ≥30 发起；被拒有代价
 chat,闲聊,env,30,3,2,accept,主行为；话题共鸣（好感/信任/压力三轴）——2 人无事，8 人就吵；**含「加入」路径**（原 join_chat）——决策侧走意向路径、耗时看 chat.join_duration，见 §8.7
 tease,当众调侃,intent,30,3,3,accept,需 ≥3 人围观；方向由绝对阈值判档（§10.16）——哄笑会明显抬高音量
 report,举报,threshold,40,5,1,none,敌对累积到阈值触发；重大事件，要跑一趟（私下进行）
@@ -26,4 +25,5 @@ apologize,道歉和解,intent,50,4,1,none,双方敌对 ≥30 时发起；修复�
 share_secret,秘密交换,intent,60,5,1,accept,双方信任 ≥60；守密成同盟，泄密则信任崩塌（低声）
 roughhouse,追逐打闹,intent,50,-3,5,accept,参与者互相好感↑（A 类），路过的旁观者对参与者敌对↑（B 类）——敌对种子；也是最大的噪音源
 exclude,排挤,intent,40,-4,1,none,群体驱逐：≥3 人对目标敌对 ≥40 时触发；被排挤者压力↑且对参与者好感↓（关系真变差）
+observe,观察,player,10,0,0,none,玩家独有：靠近对象读只读信息（真值＋对方的误判）；零副作用、无声、不打断对象（§10.3.1）
 sleep,睡觉,env,100,4,1,free,占用整个课间段（不参与任何交互，压力大幅消解）——整段占用，是耗时-收益单调性的特例
