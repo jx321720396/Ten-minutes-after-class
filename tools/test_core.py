@@ -136,7 +136,7 @@ check("羞辱：hurt_day 记施害者视角（发起者 → 被调侃者），�
       sim_hum.hurt_day[attacker][victim] == sim_hum.day
       and sim_hum.hurt_day[victim][attacker] == NEG_HURT)
 
-print("\n=== 3.7 主动接近类行为的方向（安慰 / 求助 / 道歉，2026-10-07 新增）===")
+print("\n=== 3.7 主动接近类行为的方向（安慰 / 道歉，2026-10-07 新增）===")
 # 只断言「效果落在谁身上、方向对不对」，不比对数值 ——
 # 方向写反（安慰扣了自己好感 / 道歉反而加深心结）**不会让任何一道门变红**，
 # 所以与 §3.5 / §3.6 同类，必须单列断言。
@@ -156,26 +156,6 @@ check("安慰：目标对安慰者 好感↑ / 信任↑",
 check("安慰：发起者付出压力成本（不论结果）", sim_cf.Stress[helper] > s_hlp)
 check("安慰：发起者自身对目标的好感不变（不是双向增益）", sim_cf.A[helper][sad] == a_hlp2sad)
 
-sim_hp = Sim(seed=17, npc_count=6)
-asker, hlp2 = 1, 3
-sim_hp.dims[asker] = sim_hp.dims[hlp2] = [50.0, 50.0, 50.0, 50.0]
-sim_hp.Stress[asker] = 0.0
-sim_hp.A[asker][hlp2], sim_hp.H[asker][hlp2] = 40.0, 0.0
-sim_hp.A[hlp2][asker], sim_hp.H[hlp2][asker] = 30.0, 0.0   # 判定读真值 → M > 0，正向效果不被反转
-sim_hp.settled.clear()
-_orig_random = sim_hp.rng.random
-sim_hp.rng.random = lambda: 0.999                          # 强制走「被拒」分支
-st_a, h_a, t_a = sim_hp.Stress[asker], sim_hp.H[asker][hlp2], sim_hp.T[asker][hlp2]
-sim_hp.do_ask_help(asker, hlp2)
-check("求助被拒：求助者 压力↑ / 敌对↑ / 信任↓",
-      sim_hp.Stress[asker] > st_a and sim_hp.H[asker][hlp2] > h_a and sim_hp.T[asker][hlp2] < t_a)
-sim_hp.settled.clear()
-sim_hp.rng.random = lambda: 0.0                            # 强制走「成功」分支
-a_h2a, t_h2a = sim_hp.A[hlp2][asker], sim_hp.T[hlp2][asker]
-sim_hp.do_ask_help(asker, hlp2)
-check("求助成功：帮忙者对求助者 好感↑ / 信任↑",
-      sim_hp.A[hlp2][asker] > a_h2a and sim_hp.T[hlp2][asker] > t_h2a)
-sim_hp.rng.random = _orig_random
 
 # 道歉：构造「敌对压过好感」的处境（M < 0）—— 这既是道歉成立的前提，
 # 也正是关系调制会把「修复」翻成「恶化」的地方（故 do_apologize 走 no_modulation）。
@@ -267,15 +247,6 @@ pending = sim_invite.get_player_invitation()
 check("NPC 找玩家聊天先邀请，不占用玩家", bool(pending) and sim_invite.busy_until[-1] == 0)
 sim_invite.respond_player_invitation(pending["id"], False)
 check("玩家拒绝聊天后仍自由", sim_invite.busy_until[-1] == 0 and sim_invite.stats["chats"] == 0)
-sim_help = Sim(seed=12345, npc_count=16)
-sim_help.A[-1][0] = 0.0
-sim_help.dims[-1][0] = 0.0
-sim_help.do_ask_help(0, sim_help.N - 1)
-pending = sim_help.get_player_invitation()
-sim_help.respond_player_invitation(pending["id"], True)
-check("玩家接受求助不掷愿意帮忙的骰子", sim_help.stats["helps"] == 1 and sim_help.busy_until[-1] > 0)
-sim_help.respond_player_invitation(pending["id"], False)
-check("邀请重复回应只结算一次", sim_help.stats["helps"] == 1)
 print("  通过 %d 项，失败 %d 项" % (len(PASSED), len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)

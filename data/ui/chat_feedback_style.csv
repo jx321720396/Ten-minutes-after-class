@@ -10,7 +10,7 @@ pen_spin_seconds,0.65,s,转笔旋转
 pen_settle_seconds,0.20,s,转笔收尾
 pen_result_seconds,0.40,s,揭晓结果
 pen_size_px,180,px,笔贴图的显示边长
-menu_width_px,320,px,底部行为卡片宽度
+menu_width_px,320,px,右侧行为栏宽度
 menu_margin_px,24,px,行为卡片与屏幕边缘的间距
 bubble_follow_height_m,1.5,m,无字气泡在世界里的锚点高度（人物头顶以上）
 bubble_dot_seconds,0.45,s,聊天气泡每个点的淡入淡出周期

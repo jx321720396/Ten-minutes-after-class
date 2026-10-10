@@ -181,7 +181,7 @@ EVENTS = [
     {
         "id": "study",
         "name": "学习",
-        "status": "待重构（现行 = 默认状态；目标 = 主动行为）",
+        "status": "已实装玩家侧（2026-10-10；NPC 侧仍是「空闲即在学」）",
         "table": {
             "kind": "主动行为（主行为）· 目标态（现行 kind=default）",
             "duration": "持续型（到打断／失去座位／相位切换；非固定 tick）",
@@ -487,81 +487,9 @@ EVENTS = [
         ],
     },
     {
-        "id": "ask_help",
-        "name": "求助",
-        "status": "已实现（Python 内核 do_ask_help ＋ Godot 组件）",
-        "ov": {
-            "实现状态": "已实现：ask_help_behavior.gd；未实装「被亏欠」状态与部分性格倍率",
-            "位置姿态（现状）": "走到目标处（接近阶段未强制）；不校验姿态",
-            "时间倍率（现状）": "1×（玩家占用时 3×）",
-            "触发／门槛（现状）": "ask_help_p=0.04；好感门槛三段 30/50/20；判定 p=sigmoid((A[j][i]+E_j/100×10−40)/12)",
-            "主要效果": "成功：求助者 A+3/stress−2、帮忙者 A+2/T+3；被拒：stress+3/H+3/T−3；成本 stress+2",
-        },
-        "f": [
-            F("层级类型", "意向类（kind=intent）", "behaviors.csv"),
-            F("数值分类（A–E）", "C 信念驱动型（决策读信念、判定读真值）", "§8.16"),
-            F("定义版本／状态", "已实现（2026-10-07，Python 内核 `do_ask_help`；Godot 侧 ask_help_behavior.gd）",
-              "§8.10"),
-            F("规则来源", "主文档 §8.10；behaviors.csv ask_help 行；behavior_probs.csv ask_help_p；behavior_thresholds.csv ask_help.*",
-              "docs/gdd/v4/（08 人物行为 / 09 人物设计）"),
-            F("实现位置", "scripts/systems/behaviors/ask_help_behavior.gd；内核入口 `_do_ask_help`",
-              "scripts/core/sim_core.gd"),
-            F("行为用途", "开口求人帮个忙；关系的常规建立方式之一", "§8.10"),
-            F("发起方式", "NPC 自主（概率命中且过门槛）；玩家菜单「求助」", "§10.2.1"),
-            F("允许阶段", "课间", "phases.csv"),
-            F("发起者", "求助者（i）", ""),
-            F("目标", "被求助者（j）", ""),
-            F("人数范围", "2", ""),
-            F("状态条件", "i 空闲、未睡觉、未移动；j 可交互（未睡觉）", "sim_core `_player_action_error`"),
-            F("允许区域／交互点", "现状：未做距离校验（不比照闲聊范围）", "代码现状"),
-            F("姿态要求", "无", ""),
-            F("执行中需持续满足的条件", "占用期内不得另发行为", "context.occupy"),
-            F("条件不满足时", "不执行（玩家侧返回 player_busy / target_unavailable）", "sim_core.gd"),
-            F("决策侧（做不做）", "好感门槛三段插值：E=50→30、E=0→50、E=100→20；p = ask_help_p(0.04) 命中后发起",
-              "behavior_thresholds.csv"),
-            F("判定侧（成不成）", "score = A[j][i] + E_j/100×extrovert_bonus(10)；p = sigmoid((score−40)/12)",
-              "ask_help_behavior.gd"),
-            F("玩家确认", "NPC 向玩家求助时先弹接受／拒绝邀请；玩家接受后不再掷接受骰", "§10.1"),
-            F("判定读值（信念／真值）", "判定读真值 A[j][i]；决策侧目标选择读信念", "§4.4"),
-            F("拒绝／超时分支", "被拒走 ask_help_no_* 三轴；邀请超时 12 tick 不自动接受、无处罚", "player_interaction.csv"),
-            F("duration（tick）", "20（一次动作档）", "behaviors.csv"),
-            F("接近／准备耗时", "现状：无独立接近计时（走动另算）", "§8.4"),
-            F("执行结束条件", "判定完成即结束", "ask_help_behavior.gd"),
-            F("时间不够时", "现状：不截断（行为开始时即设定 busy_until）", "sim_core.gd `_occupy`"),
-            F("时间倍率", "1×（玩家占用期间按全局 3×）", "time_flow.csv"),
-            F("资源／次数／冷却", "无（仅受时间预算约束）", "§10.2"),
-            F("占用对象", "i、j（安静占用 quiet=false）", "ask_help_behavior.gd"),
-            F("允许并发行为", "无", ""),
-            F("噪音 noise", "1", "behaviors.csv"),
-            F("效果清单（w_events）", "ask_help_cost_stress、ask_help_ok_asker_affinity/stress、ask_help_ok_helper_affinity/trust、ask_help_no_stress/hostility/trust",
-              "w_events.csv"),
-            F("方向与对象", "成本：i 自身压力 +2（不论结果）；成功：i→j 好感 +3、i 压力 −2、j→i 好感 +2、j→i 信任 +3；被拒：i 压力 +3、i→j 敌对 +3、i→j 信任 −3",
-              "ask_help_behavior.gd"),
-            F("结算时机", "执行点一次性施加（成本先于判定；结果判定后立即施加）", "ask_help_behavior.gd"),
-            F("结算次数", "每次执行每有向边 1 次", "ask_help_behavior.gd"),
-            F("玩家获得的信息", "玩家展示侧的成功率必须从信念重算（§8.22.3）", "§8.22.3"),
-            F("可见范围", "双方可见，无旁观者信息", "§8.10"),
-            F("提示／日志／动画", "event_happened(kind=ask_help, accepted)", "ask_help_behavior.gd"),
-            F("请求", "玩家点击／NPC 概率命中", "§10.2.1"),
-            F("校验", "公共门槛：相位权限、目标可交互、自己空闲", "sim_core `_player_action_error`"),
-            F("确认／判定", "单次 sigmoid 判定；玩家作为目标时为接受邀请", "ask_help_behavior.gd"),
-            F("执行", "先付成本 → 判定 → 施加成功或拒绝侧效果", "ask_help_behavior.gd"),
-            F("结算与反馈", "同执行阶段（一次性，无 tick 累计）", ""),
-            F("释放占用", "随 busy_until 到期释放", "sim_core.gd"),
-            F("无法开始", "好感未达门槛、概率未命中、相位不允许、目标在睡", "behavior_thresholds.csv"),
-            F("拒绝／超时", "被拒三轴反噬；邀请超时不算拒绝、无处罚", "§8.10、player_interaction.csv"),
-            F("玩家取消", "现状：玩家发起后不提供中途取消（占用至 busy_until）", "sim_core.gd"),
-            F("目标离开", "现状：执行点一次性结算，不重查距离", "ask_help_behavior.gd"),
-            F("外部事件打断", "相位切换按 interrupt 规则结算压力", "behavior_probs.csv interrupted_stress"),
-            F("释放占用／会话", "随 busy_until", "sim_core.gd"),
-            F("正常路径", "过门槛 → 判定通过 → 双向好感/信任上升、求助者减压", "ask_help_behavior.gd"),
-            F("失败与边界路径", "被拒不得漏结算成本；「被亏欠」状态与性格倍率未实装", "§8.10 ⚠️"),
-        ],
-    },
-    {
         "id": "observe",
         "name": "观察",
-        "status": "未开工（2026-10-10 新定；取代已删除的「打听」）",
+        "status": "已实装（2026-10-10：单人对象；群体观察待做）",
         "new": True,
         "table": {
             "kind": "玩家独有（只读信息行为）",
@@ -571,7 +499,7 @@ EVENTS = [
             "join_mode": "不适用（不可加入）",
         },
         "ov": {
-            "实现状态": "未开工：2026-10-10 新定，取代已删除的「打听」（ask_about）",
+            "实现状态": "已实装：observe_behavior.gd + 内核 do_observe；本版只做单人对象，信息在提交时即交付",
             "位置姿态（现状）": "玩家靠近对象；无姿态要求",
             "时间倍率（现状）": "占用型行为 → 三倍速自动生效（10 tick ≈ 3.3 s）",
             "触发／门槛（现状）": "玩家主动；对象活动剩余时间必须 ≥ 10 tick，否则提示「观察时间不足」",
@@ -580,9 +508,9 @@ EVENTS = [
         "f": [
             F("层级类型", "玩家独有行为（信息读取）；NPC 不做", "本次调整；§10.3.1"),
             F("数值分类（A–E）", "不适用：不读也不写 A/H/T，只读取信息", "§10.3.1"),
-            F("定义版本／状态", "未开工：2026-10-10 新定，取代已删除的「打听」", "本次调整"),
+            F("定义版本／状态", "已实装（2026-10-10）：取代已删除的「打听」；本版只做单人对象", "本次调整"),
             F("规则来源", "v4 §10.3.1（新增）、§15.5.5（信息口径）；原「打听」已删除", "docs/gdd/v4/10、15"),
-            F("实现位置", "（无实现）需新增玩家行为 + 只读信息接口", "§14"),
+            F("实现位置", "scripts/systems/behaviors/observe_behavior.gd；内核 `player_action(\"observe\", target)` / `do_observe`", "§14"),
             F("kind", "玩家独有行为（不进 behaviors.csv 的 NPC 概率体系）", "本次调整"),
             F("行为用途", "靠近某人或某个正在进行的活动圈，读取只读信息（真值 ＋ 对方的误判）", "§10.3.1"),
             F("收益档 payoff", "不适用（零副作用、不产生数值）", "§10.3.1"),
@@ -634,7 +562,7 @@ EVENTS = [
             F("无法开始", "不在范围、玩家忙、对象活动剩余 < 10 tick", "§10.3.1"),
             F("拒绝／超时", "不适用", ""),
             F("玩家取消", "玩家移动或发起其他行为即中断（不产生信息）", "§10.3.1"),
-            F("目标离开", "对象离开范围或活动结束 → 观察结束；已读到的信息是否交付**待裁定**", "待裁定"),
+            F("目标离开", "本版：观察在**提交时即交付**信息（散步快照），中途中断不回滚；后续可改为「走完才交付」", "本版"),
             F("外部事件打断", "相位切换（上课铃）即中断", "§10.3.1"),
             F("阶段结束", "课间结束即结束", "§10.3.1"),
             F("释放移动锁", "无移动锁（玩家可随时走开 = 中断）", "§10.3.1"),
@@ -643,7 +571,7 @@ EVENTS = [
             F("倍率覆盖", "无", "time_flow.gd"),
             F("正常路径", "靠近 → 观察（≥ 10 tick）→ 获得 2 真值 + 1 信念（O ≥ 50 再多 1 条）", "§10.3.1"),
             F("失败与边界路径", "对象活动只剩 9 tick → 拒绝并提示；群体对象按每人各自透明度补条数", "§10.3.1"),
-            F("重复请求／通知去重", "同一对象连续观察是否设冷却**待裁定**", "待裁定"),
+            F("重复请求／通知去重", "无冷却（§10.3.1：无次数限制，仅受课间时间预算约束）", "本版"),
             F("验收标准", "零副作用（不写矩阵、不产生噪音、不打断对象）；条数按 O ≥ 50 规则；NPC 侧完全不参与", "§10.3.1"),
         ],
     },
@@ -1181,7 +1109,7 @@ EVENTS = [
     {
         "id": "sleep",
         "name": "睡觉",
-        "status": "已实现（段粒度判定；内核 _roll_sleep / _settle_sleep）",
+        "status": "已实现（NPC 概率触发 + 玩家主动；内核 _roll_sleep / _settle_sleep）",
         "ov": {
             "实现状态": "已实现（2026-10-05）：按段判定，睡着者不被任何人交互",
             "位置姿态（现状）": "不校验座位与姿态（规格建议：自己座位 ＋ 趴桌）",
@@ -1712,9 +1640,9 @@ def write_guide_sheet(wb):
         row += 1
 
     section("怎么用")
-    line("1. 先在「总览」看 21 个事件的清单、现状与分类，确认这次大调整要动哪些事件。", "Sheet：总览")
+    line("1. 先在「总览」看 20 个事件的清单、现状与分类，确认这次大调整要动哪些事件。", "Sheet：总览")
     line("2. 读「学习维度」：成绩轴 grade、学习时长累加器、分段表、P0 新参数；并裁定 ④ 的学习判定口径。", "Sheet：学习维度")
-    line("3. 逐事件到对应 sheet（01_study … 21_leave_class），只在「新值／改动（填写）」列写你的调整。", "Sheet：01_* … 22_*")
+    line("3. 逐事件到对应 sheet（01_study … 20_leave_class），只在「新值／改动（填写）」列写你的调整。", "Sheet：01_* … 22_*")
     line("4. 现状列是只读参考：重跑生成脚本会被覆盖，不要在现状列做长期笔记。", "")
     line("5. 数值类改动同步改「效果表」「概率表」「判定门槛」「位置几何」「时间与相位」，学习维度相关改「学习维度」页。", "")
     line("6. 改完按 AGENTS.md 跑快门禁（check_config / test_core / verify_formula / check_docs），再把方案落回 v4 主文档（§8 / §9 / §10 / §17）与 CHANGELOG。",
@@ -1741,7 +1669,7 @@ def write_guide_sheet(wb):
          "docs/gdd/v4/17-P0功能细分规格.md")
 
     section("标记约定（「定义版本／状态」列）")
-    line("已实现", "内核与组件都已通：chat / tease / report / roughhouse / exclude / comfort / ask_help / apologize / sleep")
+    line("已实现", "内核与组件都已通：chat / tease / report / roughhouse / exclude / comfort / apologize / sleep")
     line("待重构（本次调整）", "study：现行是默认状态 → 本次改为主动行为（自己座位 + 坐姿 / 每 10s 成绩+1、压力+3 / 学习圈每 20s 社交结算 / 打断即重置计时）——见 01_study 卡与「学习维度」页")
     line("部分实现", "配置或即时效果在、结构未落地：move（NPC 耗时）")
     line("未实装", "有规格与配置、无组件：share_secret")
@@ -1992,7 +1920,7 @@ def write_w_events_sheet(wb):
         "comfort": "comfort", "roughhouse": "roughhouse", "conformity": "从众（§9.5）",
         "noise": "音量氛围（§9.2）", "exclude": "exclude", "leak": "share_secret",
         "humiliate": "tease（羞辱档）", "topic": "chat", "rumor": "rumor",
-        "ask_help": "ask_help", "apologize": "apologize",
+        "apologize": "apologize",
         "teacher": "teacher_patrol", "leave": "leave_class",
     }
     enriched = []

@@ -54,15 +54,8 @@ exclude,count,>=,2,排挤：近期对他做过重大敌对行为的人数门槛�
 #   （§10.13「一般 50 / 内向 70」→ E=50 恰为 50、E=0 恰为 70；连续、不跳变，UIF §2.6 边界③）。
 comfort_trigger,affinity,>=,50,安慰：好感门槛默认值（E ≥ 50）
 comfort_trigger,introvert_affinity,>=,70,安慰：好感门槛的内向端（E=0）
-# ---- 求助（§10.10，C 类：决策读信念、判定读真值）----
 #   好感门槛三段锚点：E=50 → 30、E=0 → 50、E=100 → 20（§10.10「≥30；内向 ≥50；外向 ≥20」）。
 #   以 30 为默认值向两侧线性展开。
-ask_help,affinity,>=,30,求助：好感门槛默认值（E = 50）
-ask_help,introvert_affinity,>=,50,求助：好感门槛的内向端（E=0）
-ask_help,extrovert_affinity,>=,20,求助：好感门槛的外向端（E=100）
-ask_help,accept_theta,>=,40,求助判定：被接纳的 sigmoid 拐点（score = A[j][i] + 对方外向度加成）
-ask_help,accept_scale,>=,12,求助判定 sigmoid 坡度（越大越缓）
-ask_help,extrovert_bonus,>=,10,求助判定：被求助者外向度加成上限（E_j/100 × 此值）
 # ---- 道歉 / 和解（§10.11，E 类）----
 #   `apologize_trigger_hostility = 30` 见上。⚠️ §10.11 的「双方敌对 ≥30」在**决策侧**拆成
 #   「我的真值敌对 H[i][j] ≥ 30」+「我以为他也敌对 B_H[i][j] ≥ 30」—— 决策侧不得读 H[j][i]

@@ -52,6 +52,12 @@ ws1.append(headers1)
 style_header(ws1, 1, len(headers1))
 
 data1 = [
+    ["observe", "观察",
+     "玩家主动（无概率；NPC 不做）", "玩家空闲；靠近对象（1.2 m / 同列前后邻座 1.8 m）；对象活动剩余 ≥10 tick",
+     "无判定（只读，不掷骰）", 10, 0,
+     "读对象对玩家的真实态度 A／H（O ≥ 50 再加 T）＋他的误判（B[对象][玩家]）；结果进情报提示",
+     "零副作用：不写矩阵、不发声、不占用也不打断对象", "—"],
+
     ["chat", "闲聊（含加入）",
      "base_p=0.06/tick\n相邻×1.5\n压力≥70时×0.5", "双方空闲、同空间；加入另需 A(i,j)≥30、我压力<80（软门槛）",
      "发起无判定；加入：score=A[j][i]+外向度修正，p=σ((score−43)/10)，对方压力≥12 压制 score；加入尝试 10 tick",
@@ -84,11 +90,6 @@ data1 = [
      "① 发起者付 comfort_cost_stress\n② 目标: stress−5, affinity+4, trust+5",
      "目标: stress−5(major), affinity+4(major), trust+5(major)", "发起者成本: stress+2"],
 
-    ["ask_help", "求助", "base_p=0.04/tick",
-     "好感门槛: E=50→≥30, E=0→≥50, E=100→≥20\n(线性插值)",
-     "score = A[j][i] + E_j/100×10\np = sigmoid((score−40)/12)", 20, 1,
-     "【接受】① 发起者付cost → ② 求助者affinity+3, stress−2 → ③ 帮忙者affinity+2, trust+3\n【拒绝】① 发起者付cost → ② 求助者stress+3, hostility+3, trust−3",
-     "求助者: affinity+3, stress−2\n帮忙者: affinity+2, trust+3", "求助者: stress+3, hostility+3, trust−3\n(发起成本: stress+2)"],
 
     ["apologize", "道歉和解", "base_p=0.05/tick",
      "真值H(i,j)≥30\n信念B_H(i,j)≥30\n(决策侧不得读对方真值)",
@@ -212,14 +213,6 @@ w_events = [
     ["topic_affinity", "affinity", 3, 0.2, 0.2, 0, 0, "normal", "A", "话题共鸣"],
     ["topic_stress", "stress", -2, 0.3, 0, 0.2, 0, "normal", "A", "话题共鸣"],
     ["comfort_cost_stress", "stress", 2, 0.2, 0, 0.3, 0, "normal", "A", "安慰发起成本"],
-    ["ask_help_cost_stress", "stress", 2, 0.2, 0, 0.3, 0, "normal", "C", "求助发起成本"],
-    ["ask_help_ok_asker_affinity", "affinity", 3, 0, 0, 0.2, 0, "normal", "C", "求助成功:求助者好感↑"],
-    ["ask_help_ok_asker_stress", "stress", -2, 0.2, 0, 0.3, 0, "normal", "C", "求助成功:求助者压力↓"],
-    ["ask_help_ok_helper_affinity", "affinity", 2, 0, 0, 0.3, 0, "normal", "C", "求助成功:帮忙者好感↑"],
-    ["ask_help_ok_helper_trust", "trust", 3, 0, 0, 0.2, 0, "normal", "C", "求助成功:帮忙者信任↑"],
-    ["ask_help_no_stress", "stress", 3, 0.2, 0, 0.3, 0, "normal", "C", "求助被拒:压力↑"],
-    ["ask_help_no_hostility", "hostility", 3, 0, 0, 0.2, 0.3, "normal", "C", "求助被拒:敌对↑"],
-    ["ask_help_no_trust", "trust", -3, 0, 0, 0.2, 0, "normal", "C", "求助被拒:信任↓"],
     ["apologize_cost_stress", "stress", 3, 0, 0, 0.3, 0, "normal", "E", "道歉发起成本"],
     ["apologize_ok_hostility", "hostility", -3, 0, 0, 0.3, 0.2, "normal", "E", "道歉被接受:只消表层敌对"],
     ["apologize_ok_affinity", "affinity", 3, 0, 0, 0.3, 0, "normal", "E", "道歉被接受:好感回升(双向)"],
@@ -308,13 +301,6 @@ thresholds = [
     ["exclude", "count", ">=", 2, "集体人数门槛"],
     ["comfort_trigger", "affinity", ">=", 50, "安慰好感门槛(E≥50)"],
     ["comfort_trigger", "introvert_affinity", ">=", 70, "安慰好感门槛(E=0)"],
-    ["ask_help", "affinity", ">=", 30, "求助好感门槛(E=50)"],
-    ["ask_help", "introvert_affinity", ">=", 50, "求助好感门槛(E=0)"],
-    ["ask_help", "extrovert_affinity", ">=", 20, "求助好感门槛(E=100)"],
-    ["ask_help", "accept_theta", ">=", 40, "求助接纳 sigmoid 拐点"],
-    ["ask_help", "accept_scale", ">=", 12, "sigmoid 坡度"],
-    ["ask_help", "extrovert_bonus", ">=", 10, "被求助者外向度加成"],
-    ["apologize", "accept_theta", ">=", 40, "道歉接纳 sigmoid 拐点"],
     ["apologize", "accept_scale", ">=", 12, "sigmoid 坡度"],
     ["apologize", "calm_bonus", ">=", 20, "对方随和系数"],
     ["apologize", "hostility_penalty", ">=", 0.5, "敌对压制系数"],

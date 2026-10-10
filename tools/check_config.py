@@ -126,7 +126,10 @@ print("=== 9. behaviors：耗时与收益的单调性 ===")
 bh = load("rules/behaviors.csv")
 for r in bh:
     check("%s: duration ≥ 0" % r["behavior"], int(float(r["duration"])) >= 0)
-    check("%s: |payoff| ∈ [1,5]（负值 = 损害方向，B 类）" % r["behavior"], 1 <= abs(float(r["payoff"])) <= 5)
+    check(
+        "%s: |payoff| ∈ [0,5]（负值 = 损害方向；**0 = 只读行为**，无数值收益）" % r["behavior"],
+        0 <= abs(float(r["payoff"])) <= 5,
+    )
 # 法则：收益越大耗时越长 —— 这是**趋势**，不是逐档严格单调。
 #   · 排除「整段占用」特例（duration ≥ 100，如睡觉）：它占用整个课间，不参与普通比较
 #   · 允许 20% 波动（设计上同类收益的行为耗时不必相同）
@@ -134,6 +137,9 @@ by_payoff = {}
 for r in bh:
     d = int(float(r["duration"]))
     if d >= 100:
+        continue
+    if abs(float(r["payoff"])) == 0:
+        #   · 排除「只读行为」（payoff = 0，如观察）：它不产生数值收益，谈不上「收益-耗时」
         continue
     by_payoff.setdefault(abs(float(r["payoff"])), []).append(d)
 avgs = [(k, sum(v) / len(v)) for k, v in sorted(by_payoff.items())]

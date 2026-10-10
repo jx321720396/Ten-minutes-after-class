@@ -204,3 +204,26 @@ func can_interact_with(j: int) -> bool:
 ## 未登记的 (event, option) 退回 0.5（与 Python 参考的兜底一致）。
 func choice_prob(event: String, option: String, i: int) -> float:
 	return float(_core_ref.get_ref()._choice_prob(event, option, i))
+
+
+# ------------------------------------------------------------------ 只读读取（观察用，§10.3.1）
+## 当前是第几天（信息里要记「记录于当时」）。
+func day() -> int:
+	return int(_core_ref.get_ref()._day)
+
+
+## 目标自己的透明度 O（§7.2 的分档依据）。
+func opacity(i: int) -> float:
+	return float(_core_ref.get_ref().opacity(i))
+
+
+## 信念：**i 眼中「j 对 i」**的那个轴（可能是错的，§7.4）。
+func belief_axis(i: int, j: int, axis: String) -> float:
+	var core: Variant = _core_ref.get_ref()
+	var n := int(core.node_count())
+	match axis:
+		"hostility":
+			return float(core._b_h[i * n + j])
+		"trust":
+			return float(core._b_t[i * n + j])
+	return float(core._b_a[i * n + j])

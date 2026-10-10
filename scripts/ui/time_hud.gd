@@ -248,8 +248,23 @@ func _build_ui() -> void:
 	box.add_theme_constant_override("separation", 6)
 	_panel.add_child(box)
 
+	# 成绩（§21.2.7）：**独立显示在屏幕右上角**，不与左上角的时间卡片挤在一起
+	var grade_card := PanelContainer.new()
+	grade_card.name = "GradeCard"
+	grade_card.add_theme_stylebox_override("panel", style)
+	grade_card.anchor_left = 1.0
+	grade_card.anchor_right = 1.0
+	grade_card.anchor_top = 0.0
+	grade_card.anchor_bottom = 0.0
+	grade_card.offset_left = -CARD_WIDTH
+	grade_card.offset_right = -CARD_MARGIN.x
+	grade_card.offset_top = CARD_MARGIN.y
+	grade_card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	grade_card.grow_vertical = Control.GROW_DIRECTION_END
+	add_child(grade_card)
 	_grade = _make_label(DETAIL_FONT_SIZE, COLOR_ACCENT)
-	box.add_child(_grade)
+	_grade.name = "GradeLabel"
+	grade_card.add_child(_grade)
 	_title = _make_label(TITLE_FONT_SIZE, COLOR_INK)
 	box.add_child(_title)
 	_detail = _make_label(DETAIL_FONT_SIZE, COLOR_SUB)
