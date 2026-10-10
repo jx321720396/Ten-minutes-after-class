@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/characters/主角女.png" id="1_src"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_src"]
+atlas = ExtResource("1_src")
+
+[node name="Player_female" type="Sprite2D"]
+texture = SubResource("AtlasTexture_src")

@@ -300,6 +300,10 @@ func _build_actor(core: Variant, i: int) -> Node3D:
 	var actor := Node3D.new()
 	if bool(core.is_player(i)):
 		actor.name = "Player"
+		# 玩家立绘按性别取 —— 玩家不是 NPC，不在 appearance.csv 里，走单独一条路。
+		var player_texture := _load_player_texture()
+		if player_texture != null:
+			actor.add_child(_build_sprite(player_texture))
 		actor.add_child(_build_marker(player_marker_color))
 		if show_name_tags:
 			actor.add_child(_build_name_tag(PLAYER_LABEL, player_name_color))
@@ -322,6 +326,16 @@ func _build_actor(core: Variant, i: int) -> Node3D:
 	if show_name_tags:
 		actor.add_child(_build_name_tag(str(core.alias(i)), name_color))
 	return actor
+
+
+## 玩家立绘：按 GameState.player_gender 取主角素材（scenes/characters/player_male|female.tscn）。
+## 取不到就返回 null，此时调用方只留标记环，不报错中断。
+func _load_player_texture() -> Texture2D:
+	var sprite_name := "player_%s" % ("female" if str(GameState.player_gender) == "female" else "male")
+	var texture := _load_texture(sprite_name)
+	if texture == null:
+		push_warning("ClassroomActors：玩家立绘 %s 未命中 —— 只留标记环。" % sprite_name)
+	return texture
 
 
 ## 立绘（纸片人）：高度统一到 character_height，宽度按素材比例。

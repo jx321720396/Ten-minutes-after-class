@@ -5,6 +5,7 @@ const SCENE_ABOUT = preload("res://scenes/ui/about_menu.tscn")
 const SCENE_CONFIRM = preload("res://scenes/ui/confirm_dialog.tscn")
 const SCENE_ENCYCLOPEDIA = preload("res://scenes/ui/encyclopedia.tscn")
 const SCENE_CLASSROOM := "res://scenes/game/classroom3D.tscn"
+const SCENE_GENDER_SELECT = preload("res://scenes/ui/gender_select.tscn")
 
 @onready var continue_btn: Button = $VBoxContainer/ContinueGame
 @onready var new_game_btn: Button = $VBoxContainer/NewGame
@@ -17,6 +18,7 @@ var settings_panel: Control
 var about_panel: Control
 var confirm_dialog: Control
 var encyclopedia_panel: Control
+var gender_select_panel: Control
 
 
 func _ready():
@@ -51,6 +53,12 @@ func _ready():
 	encyclopedia_panel.closed.connect(_on_close_encyclopedia)
 	add_child(encyclopedia_panel)
 
+	gender_select_panel = SCENE_GENDER_SELECT.instantiate()
+	gender_select_panel.visible = false
+	gender_select_panel.chosen.connect(_on_gender_chosen)
+	gender_select_panel.closed.connect(_on_close_gender_select)
+	add_child(gender_select_panel)
+
 
 func _has_save() -> bool:
 	return Save.has_save()
@@ -60,7 +68,22 @@ func _on_new_game():
 	if _has_save():
 		confirm_dialog.visible = true
 	else:
-		_start_new_game()
+		_ask_gender()
+
+
+## 进教室之前先问性别。每次新游戏都问；性别只在本局内有效（写 GameState，不落盘）。
+func _ask_gender() -> void:
+	gender_select_panel.visible = true
+
+
+func _on_gender_chosen(gender: String) -> void:
+	GameState.player_gender = gender
+	gender_select_panel.visible = false
+	_start_new_game()
+
+
+func _on_close_gender_select() -> void:
+	gender_select_panel.visible = false
 
 
 func _start_new_game() -> void:
@@ -116,12 +139,12 @@ func _on_close_about():
 func _on_confirm_clear():
 	confirm_dialog.visible = false
 	Save.delete()
-	_start_new_game()
+	_ask_gender()
 
 
 func _on_confirm_keep():
 	confirm_dialog.visible = false
-	_start_new_game()
+	_ask_gender()
 
 
 func _on_cancel_confirm():
