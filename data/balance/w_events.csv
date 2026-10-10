@@ -48,3 +48,4 @@ note_bad_to_hostile,hostility,1,0,0,0.2,0.2,normal,B,纸条坏话：本就讨厌
 note_good_to_hostile,hostility,-1,0,0,0.2,0,normal,B,纸条好话：讨厌被说者 → 敌对 −1（稍微松动）
 note_good_to_friendly,affinity,1,0,0,0.3,0,normal,A,纸条好话：喜欢被说者 → 好感 +1
 note_bad_to_friendly,affinity,-1,0,0,0.3,0,normal,A,纸条坏话：喜欢被说者 → 好感 −1（开始动摇）
+study_stress,stress,3,0,0,0,0,normal,A,主动学习：每满一档给自身压力 +3（§8.23）
