@@ -519,7 +519,7 @@ func _transition_if_needed() -> void:
 	var row: Dictionary = _active_phases[_phase_index]
 	if _tick_in_phase < int(str(row["tick_count"])):
 		return
-	_end_phase()                                  # ②③④⑤（末段触发 _settle_day）
+	_end_phase()  # ②③④⑤（末段触发 _settle_day）
 	_phase_index = (_phase_index + 1) % _active_phases.size()
 	_phase_setup_done = false
 
