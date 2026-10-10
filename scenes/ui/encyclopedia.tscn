@@ -107,6 +107,57 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toc_normal"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0, 0, 0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toc_hover"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(1, 0.96, 0.86, 0.55)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toc_pressed"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(1, 0.94, 0.8, 1)
+border_width_left = 4
+border_color = Color(0.78, 0.65, 0.42, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_toc_focus"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0, 0, 0, 0)
+
+[sub_resource type="Theme" id="Theme_toc"]
+Button/colors/font_color = Color(0.34, 0.26, 0.16, 1)
+Button/colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
+Button/colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
+Button/colors/font_focus_color = Color(0.2, 0.14, 0.06, 1)
+Button/colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
+Button/font_sizes/font_size = 22
+Button/styles/normal = SubResource("StyleBoxFlat_toc_normal")
+Button/styles/hover = SubResource("StyleBoxFlat_toc_hover")
+Button/styles/pressed = SubResource("StyleBoxFlat_toc_pressed")
+Button/styles/focus = SubResource("StyleBoxFlat_toc_focus")
+Button/styles/disabled = SubResource("StyleBoxFlat_toc_normal")
+
 [node name="Encyclopedia" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -170,16 +221,17 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 0
 
-[node name="TOC" type="ItemList" parent="CenterContainer/Panel/Margin/VBox/Body"]
+[node name="TOCScroll" type="ScrollContainer" parent="CenterContainer/Panel/Margin/VBox/Body"]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
-theme_override_colors/font_selected_color = Color(0.2, 0.14, 0.06, 1)
-theme_override_fonts/font = SubResource("FontVariation_btn")
-theme_override_font_sizes/font_size = 22
+horizontal_scroll_mode = 0
 theme_override_styles/panel = ExtResource("2_panel")
-theme_override_styles/selected = SubResource("StyleBoxFlat_toc_selected")
-theme_override_styles/selected_focus = SubResource("StyleBoxFlat_toc_selected")
+
+[node name="TOC" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Body/TOCScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = SubResource("Theme_toc")
+theme_override_constants/separation = 2
 
 [node name="VSep" type="ColorRect" parent="CenterContainer/Panel/Margin/VBox/Body"]
 custom_minimum_size = Vector2(1, 0)
@@ -207,6 +259,8 @@ fit_content = true
 scroll_active = false
 theme_override_colors/default_color = Color(0.42, 0.44, 0.5, 1)
 theme_override_font_sizes/normal_font_size = 24
+theme_override_font_sizes/bold_font_size = 24
+theme_override_font_sizes/italics_font_size = 24
 
 [node name="Spacer2" type="Control" parent="CenterContainer/Panel/Margin/VBox"]
 custom_minimum_size = Vector2(0, 16)
@@ -229,7 +283,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
-text = "← 上一章"
+text = "← 上一条"
 
 [node name="Mid" type="Control" parent="CenterContainer/Panel/Margin/VBox/Footer"]
 layout_mode = 2
@@ -248,7 +302,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
-text = "下一章 →"
+text = "下一条 →"
 
 [node name="BackBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/Footer"]
 layout_mode = 2
