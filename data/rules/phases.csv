@@ -9,8 +9,8 @@
 #   ⑤ order 连续且不重复
 phase_id,order,kind,tick_count,player_control,active_rules,settle_at_end
 morning_break,1,break,100,1,all,0
-morning_class,2,class,90,0,study_together|rumor|stress_drip|transmission,0
+morning_class,2,class,90,0,study_together|pass_note|stress_drip|transmission,0
 lunch_break,3,break,100,1,all,0
-afternoon_class,4,class,90,0,study_together|rumor|stress_drip|transmission,0
+afternoon_class,4,class,90,0,study_together|pass_note|stress_drip|transmission,0
 afternoon_break,5,break,100,1,all,0
 day_settle,6,settle,0,0,none,1
