@@ -61,7 +61,6 @@ const NAME_FONTS: Array[String] = [
 ## 玩家不是 NPC 角色 / 立绘缺失时的色块标记
 @export var marker_radius: float = 0.13
 @export var marker_height: float = 0.85
-@export var player_marker_color: Color = Color(0.95, 0.72, 0.25)
 ## 立绘缺失时的占位色
 @export var missing_marker_color: Color = Color(0.75, 0.45, 0.85)
 
@@ -301,10 +300,11 @@ func _build_actor(core: Variant, i: int) -> Node3D:
 	if bool(core.is_player(i)):
 		actor.name = "Player"
 		# 玩家立绘按性别取 —— 玩家不是 NPC，不在 appearance.csv 里，走单独一条路。
+		# 这里**不再挂标记球**（原来那个浮空的金色小球）：玩家靠立绘 + 头顶「我」标签辨认。
+		# 注：外观未命中时的占位球（missing_marker_color）仍保留，两者用途不同。
 		var player_texture := _load_player_texture()
 		if player_texture != null:
 			actor.add_child(_build_sprite(player_texture))
-		actor.add_child(_build_marker(player_marker_color))
 		if show_name_tags:
 			actor.add_child(_build_name_tag(PLAYER_LABEL, player_name_color))
 		return actor
