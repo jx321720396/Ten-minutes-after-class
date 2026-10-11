@@ -185,7 +185,7 @@ theme_override_font_sizes/font_size = 26
 text = "背景音乐"
 
 [node name="BGMSlider" type="HSlider" parent="Overlay/CenterContainer/Panel/VBox/BGMRow" unique_id=1977628327]
-custom_minimum_size = Vector2(280, 30)
+custom_minimum_size = Vector2(280, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_slider_fill")
@@ -207,7 +207,7 @@ theme_override_font_sizes/font_size = 26
 text = "音效"
 
 [node name="SFXSlider" type="HSlider" parent="Overlay/CenterContainer/Panel/VBox/SFXRow" unique_id=1200571743]
-custom_minimum_size = Vector2(280, 30)
+custom_minimum_size = Vector2(280, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_styles/grabber_area = SubResource("StyleBoxFlat_slider_fill")

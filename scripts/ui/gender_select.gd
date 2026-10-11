@@ -96,12 +96,15 @@ func _on_card_exit(gender: String) -> void:
 
 
 func _on_card_input(event: InputEvent, gender: String) -> void:
-	if not (event is InputEventMouseButton):
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+			select_gender(gender)
 		return
-	var mb := event as InputEventMouseButton
-	if not mb.pressed or mb.button_index != MOUSE_BUTTON_LEFT:
-		return
-	select_gender(gender)
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		if touch.index == 0 and touch.pressed:
+			select_gender(gender)
 
 
 func _on_start() -> void:

@@ -1,6 +1,7 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/encyclopedia.gd" id="1_enc"]
+[ext_resource type="Script" path="res://scripts/ui/touch_scroll_container.gd" id="3_touch_scroll"]
 [ext_resource type="StyleBox" path="res://resources/new_style_box_flat.tres" id="2_panel"]
 
 [sub_resource type="FontVariation" id="FontVariation_btn"]
@@ -222,6 +223,7 @@ size_flags_vertical = 3
 theme_override_constants/separation = 0
 
 [node name="TOCScroll" type="ScrollContainer" parent="CenterContainer/Panel/Margin/VBox/Body"]
+script = ExtResource("3_touch_scroll")
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 horizontal_scroll_mode = 0
@@ -247,6 +249,7 @@ theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
 [node name="ContentScroll" type="ScrollContainer" parent="CenterContainer/Panel/Margin/VBox/Body/ContentMargin"]
+script = ExtResource("3_touch_scroll")
 layout_mode = 2
 horizontal_scroll_mode = 0
 

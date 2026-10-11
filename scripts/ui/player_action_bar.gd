@@ -75,6 +75,8 @@ const GROUP_TITLES := {"talk": "开口说话", "do": "动手做事", "self": "�
 ## 占位原因（本批未实装的行为）
 const PLACEHOLDER_REASON := "还没做"
 
+const TOUCH_SCROLL_DEADZONE := 12.0
+
 var _panel: PanelContainer = null
 var _rows_box: VBoxContainer = null
 var _inventory_label: Label = null
@@ -86,6 +88,11 @@ var _button_of: Dictionary = {}
 var _armed := StringName("")
 var _width := 168.0
 var _margin := 18.0
+
+var _behavior_scroll: ScrollContainer = null
+var _touch_scroll_active := false
+var _touch_scroll_last := Vector2.ZERO
+var _touch_scroll_distance := 0.0
 
 
 func _ready() -> void:
@@ -99,6 +106,36 @@ func _ready() -> void:
 			child.add_theme_stylebox_override("panel", category_style)
 	_apply_paper_style()
 	_update_highlight()
+
+
+func _input(event: InputEvent) -> void:
+	if _behavior_scroll == null or not is_visible():
+		return
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		if touch.index != 0:
+			return
+		if touch.pressed and _behavior_scroll.get_global_rect().has_point(touch.position):
+			_touch_scroll_active = true
+			_touch_scroll_last = touch.position
+			_touch_scroll_distance = 0.0
+		elif not touch.pressed:
+			_touch_scroll_active = false
+			_touch_scroll_last = Vector2.ZERO
+			_touch_scroll_distance = 0.0
+		return
+	if event is InputEventScreenDrag and _touch_scroll_active:
+		var drag := event as InputEventScreenDrag
+		var delta_y := drag.position.y - _touch_scroll_last.y
+		_touch_scroll_last = drag.position
+		_touch_scroll_distance += absf(delta_y)
+		if _touch_scroll_distance >= TOUCH_SCROLL_DEADZONE:
+			_behavior_scroll.scroll_vertical = clampi(
+				_behavior_scroll.scroll_vertical - int(delta_y),
+				0,
+				int(_behavior_scroll.get_v_scroll_bar().max_value)
+			)
+			get_viewport().set_input_as_handled()
 
 
 # ------------------------------------------------------------------ 对外接口
@@ -301,13 +338,13 @@ func _build_ui() -> void:
 	_rows_box = VBoxContainer.new()
 	_rows_box.name = "Rows"
 	_rows_box.add_theme_constant_override("separation", int(CampusTheme.settings().action_row_gap))
-	var scroll := ScrollContainer.new()
-	scroll.name = "BehaviorScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	column.add_child(scroll)
+	_behavior_scroll = ScrollContainer.new()
+	_behavior_scroll.name = "BehaviorScroll"
+	_behavior_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_behavior_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(_behavior_scroll)
 	_rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(_rows_box)
+	_behavior_scroll.add_child(_rows_box)
 	var heading := Label.new()
 	heading.text = "行动"
 	heading.add_theme_font_override("font", _font())
