@@ -1,0 +1,491 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/npc_profile.gd" id="1"]
+
+[ext_resource type="Shader" path="res://assets/shaders/ui_paper.gdshader" id="2"]
+
+[ext_resource type="Texture2D" path="res://assets/icons/ui_profile_book.svg" id="3"]
+
+[sub_resource type="ShaderMaterial" id="Paper"]
+shader = ExtResource("2")
+
+[node name="NpcProfile" type="CanvasLayer"]
+process_mode = 3
+layer = 5
+script = ExtResource("1")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Shade" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.10, 0.08, 0.48)
+
+[node name="Design" type="Control" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+
+[node name="Frame" type="Panel" parent="Root/Design"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 140.0
+offset_top = 64.0
+offset_right = 1780.0
+offset_bottom = 1016.0
+
+[node name="PaperGrain" type="ColorRect" parent="Root/Design/Frame"]
+material = SubResource("Paper")
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 5.0
+offset_top = 5.0
+offset_right = -5.0
+offset_bottom = -5.0
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="Root/Design/Frame"]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_bottom = 20
+
+[node name="Content" type="VBoxContainer" parent="Root/Design/Frame/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Header" type="HBoxContainer" parent="Root/Design/Frame/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="BookIcon" type="TextureRect" parent="Root/Design/Frame/Margin/Content/Header"]
+layout_mode = 2
+custom_minimum_size = Vector2(52, 52)
+size_flags_vertical = 4
+texture = ExtResource("3")
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Root/Design/Frame/Margin/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 50
+
+
+[node name="Subtitle" type="Label" parent="Root/Design/Frame/Margin/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+size_flags_horizontal = 3
+
+[node name="Previous" type="Button" parent="Root/Design/Frame/Margin/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(56, 56)
+text = "‹"
+theme_override_font_sizes/font_size = 34
+
+[node name="RosterCount" type="Label" parent="Root/Design/Frame/Margin/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
+
+[node name="Next" type="Button" parent="Root/Design/Frame/Margin/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(56, 56)
+text = "›"
+theme_override_font_sizes/font_size = 34
+
+[node name="Close" type="Button" parent="Root/Design/Frame/Margin/Content/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(56, 56)
+text = "×"
+theme_override_font_sizes/font_size = 34
+
+[node name="Separator" type="HSeparator" parent="Root/Design/Frame/Margin/Content"]
+layout_mode = 2
+
+
+[node name="Body" type="HBoxContainer" parent="Root/Design/Frame/Margin/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 30
+
+[node name="Identity" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body"]
+layout_mode = 2
+custom_minimum_size = Vector2(330, 0)
+theme_override_constants/separation = 12
+
+[node name="PortraitFrame" type="PanelContainer" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(330, 252)
+
+[node name="Art" type="Control" parent="Root/Design/Frame/Margin/Content/Body/Identity/PortraitFrame"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 228)
+
+[node name="Portrait" type="TextureRect" parent="Root/Design/Frame/Margin/Content/Body/Identity/PortraitFrame/Art"]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 8.0
+offset_bottom = -8.0
+texture_filter = 1
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="MissingPortrait" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Identity/PortraitFrame/Art"]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PersonName" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 42
+horizontal_alignment = 1
+text_overrun_behavior = 3
+
+[node name="Seat" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+
+[node name="Separator" type="HSeparator" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+layout_mode = 2
+
+
+[node name="EncountersTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+
+
+[node name="EncounterScroll" type="ScrollContainer" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 108)
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Encounters" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Identity/EncounterScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="Chat" type="Button" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 56)
+
+[node name="Separator" type="VSeparator" parent="Root/Design/Frame/Margin/Content/Body"]
+layout_mode = 2
+
+
+[node name="Details" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="KnownHeader" type="HBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Intro" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/KnownHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="KnownTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/KnownHeader/Intro"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+
+
+[node name="KnownNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/KnownHeader/Intro"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+autowrap_mode = 3
+
+[node name="Selector" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/KnownHeader"]
+layout_mode = 2
+custom_minimum_size = Vector2(235, 0)
+
+[node name="TargetHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/KnownHeader/Selector"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+
+
+[node name="Targets" type="OptionButton" parent="Root/Design/Frame/Margin/Content/Body/Details/KnownHeader/Selector"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(235, 48)
+fit_to_longest_item = false
+
+[node name="RelationCard" type="PanelContainer" parent="Root/Design/Frame/Margin/Content/Body/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Contents" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RelationTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 34
+text_overrun_behavior = 3
+
+[node name="Separator" type="HSeparator" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents"]
+layout_mode = 2
+
+
+[node name="Axes" type="HBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Affinity" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+theme_override_constants/separation = 6
+
+[node name="AffinityHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Affinity"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 1
+
+[node name="AffinityValue" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Affinity"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 46
+horizontal_alignment = 1
+
+[node name="AffinityTime" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Affinity"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 21
+horizontal_alignment = 1
+
+[node name="Line1" type="VSeparator" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes"]
+layout_mode = 2
+
+
+[node name="Hostility" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+theme_override_constants/separation = 6
+
+[node name="HostilityHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Hostility"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 1
+
+[node name="HostilityValue" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Hostility"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 46
+horizontal_alignment = 1
+
+[node name="HostilityTime" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Hostility"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 21
+horizontal_alignment = 1
+
+[node name="Line2" type="VSeparator" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes"]
+layout_mode = 2
+
+
+[node name="Trust" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+theme_override_constants/separation = 6
+
+[node name="TrustHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Trust"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 1
+
+[node name="TrustValue" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Trust"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 46
+horizontal_alignment = 1
+
+[node name="TrustTime" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Trust"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 21
+horizontal_alignment = 1
+
+[node name="MetaSeparator" type="HSeparator" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents"]
+layout_mode = 2
+
+
+[node name="Meta" type="HBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="SourceColumn" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SourceHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/SourceColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+
+
+[node name="Source" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/SourceColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text_overrun_behavior = 3
+
+[node name="TimeColumn" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TimeHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/TimeColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+
+
+[node name="RecordTime" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/TimeColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
+
+[node name="AgeColumn" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta"]
+layout_mode = 2
+
+
+[node name="Age" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/AgeColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+
+
+[node name="StaleNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/AgeColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+
+
+[node name="HistoryCard" type="PanelContainer" parent="Root/Design/Frame/Margin/Content/Body/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Contents" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/HistoryCard"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/HistoryCard/Contents"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="HistoryTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/HistoryCard/Contents/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+
+
+[node name="HistoryNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/HistoryCard/Contents/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+size_flags_horizontal = 3
+horizontal_alignment = 2
+
+[node name="HistoryScroll" type="ScrollContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/HistoryCard/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 90)
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="HistoryRows" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/HistoryCard/Contents/HistoryScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="JudgmentCard" type="PanelContainer" parent="Root/Design/Frame/Margin/Content/Body/Details"]
+unique_name_in_owner = true
+layout_mode = 2
+
+
+[node name="Contents" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="JudgmentTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+
+
+[node name="ValueRow" type="HBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents"]
+layout_mode = 2
+
+
+[node name="JudgmentValue" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents/ValueRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+size_flags_horizontal = 3
+
+[node name="UnknownNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents/ValueRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 23
+
+
+[node name="JudgmentNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+
+
+[node name="Footer" type="Label" parent="Root/Design/Frame/Margin/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 2

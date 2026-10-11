@@ -1,0 +1,10 @@
+{
+  "description": "同学档案纯显示档位；只用于已获得的单轴历史快照，不参与任何玩法判定。",
+  "bands": [
+    {"minimum": 0, "label": "band_low"},
+    {"minimum": 25, "label": "band_medium"},
+    {"minimum": 50, "label": "band_high"},
+    {"minimum": 75, "label": "band_very_high"}
+  ],
+  "encounter_limit": 3
+}
