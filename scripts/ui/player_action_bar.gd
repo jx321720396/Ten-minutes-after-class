@@ -114,7 +114,9 @@ func refresh(states: Dictionary) -> void:
 			button.add_theme_color_override("font_color", COLOR_PLACEHOLDER)
 			continue
 		if state.has("label"):
-			button.text = str(state["label"])
+			button.set_meta("action_name", str(state["label"]))
+			var title: Label = button.get_node("Content/Layout/Words/Name")
+			title.text = str(state["label"])
 		var ok := bool(state.get("ok", false))
 		button.disabled = not ok
 		button.tooltip_text = "" if ok else str(state.get("reason", ""))
