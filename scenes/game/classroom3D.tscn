@@ -32,6 +32,7 @@
 [ext_resource type="NavigationMesh" uid="uid://c67yb0pq0a4dj" path="res://resources/navigation/classroom_nav.tres" id="nav_mesh"]
 [ext_resource type="PackedScene" path="res://scenes/ui/note_prompt.tscn" id="note_prompt_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/npc_profile.tscn" id="npc_profile_scene"]
+[ext_resource type="Script" path="res://scripts/ui/study_navigation.gd" id="study_navigation"]
 [ext_resource type="PackedScene" uid="uid://ckhk7pqoo1clw" path="res://scenes/ui/pause_menu.tscn" id="pause_menu"]
 [ext_resource type="Script" uid="uid://dxpho1kag814v" path="res://scripts/game/player_controller.gd" id="player_script"]
 [ext_resource type="PackedScene" path="res://scenes/game/activity_ring_presenter.tscn" id="rings_scene"]
@@ -39,6 +40,7 @@
 [ext_resource type="PackedScene" path="res://scenes/game/time_flow.tscn" id="time_flow_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/time_hud.tscn" id="time_hud_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/transition_overlay.tscn" id="transition_scene"]
+[ext_resource type="Script" path="res://scripts/game/classroom_art.gd" id="classroom_art_script"]
 
 [sub_resource type="Environment" id="Env_room"]
 background_mode = 1
@@ -268,6 +270,10 @@ visible = false
 [node name="ClueBoardEntry" parent="UI" unique_id=614127609 instance=ExtResource("clue_board_entry")]
 
 [node name="NpcProfile" parent="UI" unique_id=920063827 instance=ExtResource("npc_profile_scene")]
+
+[node name="StudyNavigation" type="Node" parent="UI"]
+process_mode = 3
+script = ExtResource("study_navigation")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=281153324]
 environment = SubResource("Env_room")
@@ -752,6 +758,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7680268, 0, -2.2711349)
 
 [node name="Actors" type="Node3D" parent="." unique_id=1369921869]
 script = ExtResource("actors_script")
+
+[node name="ClassroomArt" type="Node3D" parent="."]
+script = ExtResource("classroom_art_script")
 
 [node name="StandPoints" type="Node3D" parent="." unique_id=1528135870]
 

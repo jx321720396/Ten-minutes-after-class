@@ -39,6 +39,9 @@ func _initialize() -> void:
 		_finish()
 		return
 	var room: Node3D = packed.instantiate()
+	# 对照美术开关，验证导航红灯是否来自新增装饰。
+	if "--no-art" in OS.get_cmdline_user_args() and room.has_node("ClassroomArt"):
+		room.get_node("ClassroomArt").enabled = false
 	root.add_child(room)
 	# 先等一帧：add_child 之后立刻读子节点的 global_position 会拿到 (0,0)
 	await process_frame

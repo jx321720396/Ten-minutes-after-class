@@ -31,6 +31,8 @@ func _open_scene() -> Node3D:
 	var packed := load(SCENE_PATH) as PackedScene
 	assert_not_null(packed, "教室场景必须可加载")
 	var scene := packed.instantiate() as Node3D
+	if "--no-art" in OS.get_cmdline_user_args() and scene.has_node("ClassroomArt"):
+		scene.get_node("ClassroomArt").enabled = false
 	var roam: Node = scene.get_node("Roam")
 	roam.enabled = false
 	add_child_autofree(scene)
