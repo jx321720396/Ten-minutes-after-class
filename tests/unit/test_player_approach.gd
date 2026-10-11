@@ -336,6 +336,42 @@ func test_pick_body_is_derived_from_the_sprite_size() -> void:
 	assert_eq(shape.position.y, box.size.y * 0.5, "拾取体底部踩在脚底")
 
 
+## 回归（2026-10-11）：拾取体必须**真的能被射线查到**。
+## 只断言层号不够 —— `monitoring` 与 `monitorable` 全关时 Area3D 不进物理空间，
+## 于是「点人」静默失效（点人变成点地面），这里用真实相机射线验证「点得到」。
+func test_pick_body_is_raycastable() -> void:
+	var stage: Node3D = add_child_autofree(Node3D.new())
+	var camera := Camera3D.new()
+	camera.look_at_from_position(Vector3(0.0, 4.0, 4.0), Vector3(0.0, 0.9, 0.0), Vector3.UP)
+	stage.add_child(camera)
+	camera.current = true
+	var pc: PlayerController = add_child_autofree(PlayerController.new()) as PlayerController
+	await get_tree().process_frame
+	pc._pick_layer = 2
+	pc._blocker_layer = 1
+	var actors: Node3D = autofree(ACTORS_SCRIPT.new())
+	actors.pick_layer = 2
+	var actor := Node3D.new()
+	stage.add_child(actor)
+	var texture := GradientTexture2D.new()
+	texture.width = 200
+	texture.height = 400
+	var sprite := Sprite3D.new()
+	sprite.name = "Sprite"
+	sprite.texture = texture
+	sprite.pixel_size = 0.0032
+	actor.add_child(sprite)
+	actors._attach_pick_body(actor, 5)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var body := actor.get_node_or_null("PickBody") as Area3D
+	assert_not_null(body, "拾取体必须存在")
+	assert_false(body.monitoring, "拾取体不主动检测别人")
+	assert_true(body.monitorable, "拾取体必须留在物理空间里（全关会让点人失效）")
+	var screen := camera.unproject_position(Vector3(0.0, 0.9, 0.0))
+	assert_eq(pc.pick_actor(screen), 5, "真实相机射线必须打中生产代码建的拾取体")
+
+
 func test_pick_body_is_skipped_without_a_layer() -> void:
 	var actors: Node3D = autofree(ACTORS_SCRIPT.new())
 	actors.pick_layer = 0

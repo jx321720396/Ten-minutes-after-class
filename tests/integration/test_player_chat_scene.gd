@@ -357,6 +357,48 @@ func test_profile_menu_pause_and_chat_use_existing_controller() -> void:
 	assert_gte(sim.session_of(_player_index(sim)), 0)
 
 
+# ------------------------------------------------------------------ 两步交互（§20.1.2）
+
+
+## 回归（2026-10-11）：真实教室里的**两步交互**必须真的走通 —— 先在行为栏点动作、再点人。
+## 用户报的路径是「点人点不中 → 什么也不会发生」：当时拾取体（Area3D）把 `monitoring` 与
+## `monitorable` 一起关掉，Area3D 根本不进物理空间，`intersect_ray` 打不中，
+## 点人就退化成点地面（还会顺手清掉已选中的动作）。
+func test_action_bar_then_clicking_actor_starts_chat() -> void:
+	var scene: Node3D = await _open_scene()
+	var sim: Variant = _sim(scene)
+	scene.get_node("Clock").hold(&"integration_fixture")
+	var interaction: PlayerInteractionController = scene.get_node("Interaction")
+	var bar: PlayerActionBar = scene.get_node("ActionBar")
+	var player: PlayerController = scene.get_node("Player")
+	var pair := _free_pair(scene, 0.7, true)
+	assert_eq(pair.size(), 2, "教室场景里必须找得到一对合法的相邻位置")
+	_free(scene, 0)
+	_place(scene, 0, pair[1].x, pair[1].z)
+	_teleport_player(scene, pair[0].x, pair[0].z)
+	# 位置刚写进去，等物理帧把拾取体挪到位再点（点击走的是物理射线）
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+
+	# ① 点行为栏的「闲聊」（此时还没点人）：只选中动作，不进入任何状态
+	var button := bar.find_child("Act_chat", true, false) as Button
+	assert_not_null(button, "行为栏里有闲聊按钮")
+	button.pressed.emit()
+	assert_eq(bar.armed_kind(), &"chat", "点按钮后闲聊被选中")
+	assert_eq(str(interaction.current_state()), "idle", "还没点人 → 不进任何状态")
+
+	# ② 点那个人：相机射线 → 选中 → 触发闲聊
+	var camera := scene.get_viewport().get_camera_3d()
+	assert_not_null(camera, "教室里有相机")
+	var actors: Node3D = scene.get_node("Actors")
+	var screen := camera.unproject_position(
+		actors.actor_for(0).global_position + Vector3(0.0, 0.6, 0.0)
+	)
+	assert_eq(str(player.handle_click(screen)), "actor", "点人必须命中人物，不能退化成点地面")
+	assert_eq(str(interaction.current_state()), "active", "点人即触发 → 进入聊天")
+	assert_true(bool(sim.is_busy(_player_index(sim))), "聊天开始后玩家被占用")
+
+
 # ------------------------------------------------------------------ ② 远处接近后闲聊
 
 
