@@ -1,0 +1,12 @@
+# 周考（§19.1）。期末考日不写在这里，读 time_runtime.csv 的 term_days。
+# 周考日用 exam_day_1 … exam_day_N，按日次递增。考分不写回 grade。
+param,value,note
+exam_day_1,7,第 1 次周考的日次
+exam_day_2,14,第 2 次周考的日次
+exam_day_3,21,第 3 次周考的日次
+exam_day_4,28,第 4 次周考的日次
+exam_noise_sigma,12,考分噪声的标准差
+stress_exam_penalty,15,压力拉满时从考分里扣掉的点数
+progress_prize_delta,50,比上次考分至少高出这么多才发进步奖
+top_prize_rank,3,特等奖：名次小于等于这个数
+top_prize_tokens,1,特等奖发的免罚卷张数（本期只持有，没有可以抵的处罚）

@@ -52,3 +52,5 @@ study_stress,stress,3,0,0,0,0,normal,A,主动学习：每满一档给自身压�
 study_circle_trust,trust,1,0,0,0,0,normal,A,学习圈每 20 tick：双向信任 +1（§8.23 第 4 条）
 study_circle_affinity,affinity,1,0,0,0,0,normal,A,学习圈每 20 tick：双向好感 +1
 study_circle_stress,stress,1,0,0,0,0,normal,A,学习圈每 20 tick：自身压力 +1（每人只算一次）
+ask_question,trust,2,0,0,0.2,0,normal,A,提问：对方对玩家的信任增加（§18.2；坐 P0 时调用方再乘 emperor_bonus）
+teach_lesson,trust,2,0,0,0.2,0,normal,A,讲题：玩家对对方的信任增加（§18.2；坐 P0 时调用方再乘 emperor_bonus）

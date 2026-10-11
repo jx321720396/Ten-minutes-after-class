@@ -1,0 +1,14 @@
+{
+  "event_card_width": 320,
+  "event_card_height": 112,
+  "event_stack_gap": 12,
+  "paper": "faf5e6f0",
+  "ink": "212928",
+  "accent": "296142",
+  "gold": "bf8835",
+  "muted": "57605a",
+  "corner_radius": 8,
+  "border_width": 2,
+  "content_margin": 12,
+  "font_size": 16
+}

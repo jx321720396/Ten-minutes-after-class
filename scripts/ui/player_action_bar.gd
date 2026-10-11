@@ -51,6 +51,8 @@ const COLOR_PLACEHOLDER := Color(0.55, 0.55, 0.52)
 ## 分组只用于排布与标题（§10.2 的三组口径），不改变任何判定。
 const ROWS := [
 	[&"chat", "talk", "闲聊", false],
+	[&"ask_question", "talk", "提问", false],
+	[&"teach_lesson", "talk", "讲题", false],
 	[&"pass_note", "do", "递纸条", false],
 	[&"report", "do", "举报", false],
 	[&"roughhouse", "do", "追逐打闹", false],

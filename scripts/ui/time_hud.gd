@@ -46,6 +46,7 @@ var _grade: Label = null
 ## 上一次显示的成绩（变化时轻微闪一下，§21.2.7）
 var _grade_shown := -1
 var _detail: Label = null
+var _exam: Label = null
 var _bar: ProgressBar = null
 var _toast: Label = null
 var _action: Button = null
@@ -191,6 +192,7 @@ func _refresh(snapshot_data: Dictionary) -> void:
 		_title.text += " · ×%s" % str(speed)
 	_bar.value = float(snapshot_data.get("progress", 0.0)) * 100.0
 
+	_show_exam_line(str(snapshot_data.get("exam_report", snapshot_data.get("exam_banner", ""))))
 	if mode == SimulationClock.MODE_FINISHED:
 		_detail.text = "学期结束 · 共 %d 天" % int(snapshot_data.get("ended_day", 0))
 		_detail.modulate = COLOR_LOCKED
@@ -203,6 +205,7 @@ func _refresh(snapshot_data: Dictionary) -> void:
 		_show_action("进入第 %d 天" % (ended_day + 1))
 		return
 	_action.visible = false
+	_show_exam_line(str(snapshot_data.get("exam_banner", "")))
 
 	var remaining := _seconds_text(float(snapshot_data.get("remaining_seconds", 0.0)))
 	if str(snapshot_data.get("kind", "")) == "class":
@@ -211,6 +214,13 @@ func _refresh(snapshot_data: Dictionary) -> void:
 		return
 	_detail.text = "课间剩余 %s 秒" % remaining
 	_detail.modulate = COLOR_SUB
+
+
+func _show_exam_line(text: String) -> void:
+	if _exam == null:
+		return
+	_exam.text = text
+	_exam.visible = not text.is_empty()
 
 
 ## 日末 / 学期结束的操作按钮文案（计划 §3）。
@@ -282,6 +292,12 @@ func _build_ui() -> void:
 	box.add_child(_title)
 	_detail = _make_label(DETAIL_FONT_SIZE, COLOR_SUB)
 	box.add_child(_detail)
+	_exam = _make_label(DETAIL_FONT_SIZE, COLOR_ACCENT)
+	_exam.name = "ExamLine"
+	_exam.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_exam.custom_minimum_size = Vector2(CARD_WIDTH - 28.0, 0.0)
+	_exam.visible = false
+	box.add_child(_exam)
 
 	_bar = ProgressBar.new()
 	_bar.name = "Remaining"
