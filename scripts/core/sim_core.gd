@@ -40,8 +40,12 @@ const PLAYER_KINDS := [
 	"listen_music",
 	"eat_snack",
 	"read_book",
-	"leave_class"
+	"leave_class",
+	"ask_question",
+	"teach_lesson",
 ]
+## 讲桌旁的皇帝位（§18.3.2）。座位号是座位表的标识，不是角色判断。
+const EMPEROR_SEAT := "P0"
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
 const OBSERVER_LAYER = preload("res://scripts/systems/observer/observer_layer.gd")
@@ -53,6 +57,7 @@ const PLAYER_CHAT_INTEL = preload("res://scripts/core/player_chat_intel.gd")
 const PLAYER_INTERACTIONS = preload("res://scripts/core/player_interactions.gd")
 const PLAYER_INVITATIONS = preload("res://scripts/core/player_invitations.gd")
 const PLAYER_INTERACTION_TABLE := "rules/player_interaction"
+const EXAM_SETTLE := preload("res://scripts/core/exam_settle.gd")
 
 var _behavior_context: RefCounted
 var _behavior_registry: RefCounted
@@ -75,6 +80,7 @@ var _o := PackedFloat64Array()  # 透明度 O  n
 var _stress := PackedFloat64Array()  # 压力 Stress  n
 var _grade := PackedFloat64Array()  # 成绩 grade  n（§17.1）
 var _study_acc := PackedFloat64Array()  # 学习时长累加器 study_acc  n（§17.1.2）
+var _exam: RefCounted  # 周考 / 期末考（§19.1），脚本见 exam_settle.gd
 var _dims := PackedFloat64Array()  # MBTI 四维（dim-major）DIMS.size()*n
 var _b_a := PackedFloat64Array()  # 信念·好感 n*n
 var _b_h := PackedFloat64Array()  # 信念·敌对 n*n
@@ -235,6 +241,9 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 	_build_neighbor_idx()
 	_behavior_context = BEHAVIOR_CONTEXT.new(self)
 	_behavior_registry = BEHAVIOR_REGISTRY.new(_behavior_context)
+	_exam = EXAM_SETTLE.new()
+	_exam.configure(tables, _seed, _n, float(_kp["grade_max"]))
+	_exam.capture_baseline(_grade)
 
 	# 真实共同活动 + 交互几何 + 玩家交互服务 + 线索日志（构造不消费随机数）
 	_sessions = ACTIVITY_SESSIONS.new()
@@ -749,11 +758,30 @@ func _study_accumulate() -> void:
 		var tpp := _grade_ticks_per_point(_grade[i])
 		if tpp <= 0.0:
 			continue
-		if _study_acc[i] >= tpp:
-			_grade[i] += 1.0
-			_study_acc[i] -= tpp
-			# §8.23 第 3 条：结算成绩的同时给自身压力 +3（走统一影响公式）
-			_apply_event(i, i, "study_stress")
+		_fold_study_acc(i)
+
+
+## 把已经灌进 study_acc 的时长折成分数。满档 +1，并给自身压力（§8.23）。
+func _fold_study_acc(i: int) -> void:
+	var gmax := float(_kp["grade_max"])
+	while _grade[i] < gmax:
+		var tpp := _grade_ticks_per_point(_grade[i])
+		if tpp <= 0.0 or _study_acc[i] < tpp:
+			return
+		_study_acc[i] -= tpp
+		_grade[i] += 1.0
+		_apply_event(i, i, "study_stress")
+
+
+## 一次灌进若干等效学习 tick（提问 / 讲题，§18.2）。不直加 grade。
+func _credit_study_ticks(i: int, ticks: float) -> void:
+	if ticks <= 0.0 or i < 0 or i >= _n:
+		return
+	if _grade[i] >= float(_kp["grade_max"]):
+		_study_acc[i] = 0.0
+		return
+	_study_acc[i] += ticks
+	_fold_study_acc(i)
 
 
 ## 当前成绩档的「每 +1 分所需 tick」（§17.1.2 分段表）；越界返回 0。
@@ -875,6 +903,8 @@ func _settle_day() -> void:
 			_t[idx] *= decay_t
 		_stress[i] *= retain_s
 	_day_events.clear()
+	if _exam != null:
+		_exam.settle(_day, _grade, _stress, _alias_list())
 	_day += 1
 	_emit("day_settled", {"day": _day - 1, "stats": _stats.duplicate(true)})
 
@@ -1717,7 +1747,14 @@ func _decide_and_act() -> void:
 		if (
 			_allowed("tease")
 			and cands_t.size() >= 3
-			and _rng.random() < float(_probs["tease_p"]) * _teacher.multiplier("tease") * (1.0 + _tag_bias(i, "tease_bias"))
+			and (
+				_rng.random()
+				< (
+					float(_probs["tease_p"])
+					* _teacher.multiplier("tease")
+					* (1.0 + _tag_bias(i, "tease_bias"))
+				)
+			)
 		):
 			var wts: Array = []
 			for t in cands_t:
@@ -1777,7 +1814,10 @@ func _decide_and_act() -> void:
 					busy[tgt] = true
 					continue
 		# 阈值类：排挤（「大家都讨厌他」→ 集体驱逐；证据在施害者一侧）
-		if _allowed("exclude") and _rng.random() < float(_probs["exclude_p"]) * _teacher.multiplier("exclude"):
+		if (
+			_allowed("exclude")
+			and _rng.random() < float(_probs["exclude_p"]) * _teacher.multiplier("exclude")
+		):
 			var th_n := int(_thresholds_lookup["exclude_count"])
 			var cd_days := float(_thresholds_lookup["exclude_cooldown"])
 			var window := float(_thresholds_lookup["exclude_window"])
@@ -1880,7 +1920,8 @@ func is_present(i: int) -> bool:
 
 func inventory_of(i: int) -> Dictionary:
 	return {
-		"books": int(_book[i]), "snacks": _snacks_remaining if is_player(i) else -1,
+		"books": int(_book[i]),
+		"snacks": _snacks_remaining if is_player(i) else -1,
 		"confiscated_books": int(_teacher.confiscated[i]),
 		"exemption_tokens": int(_teacher.exemption_tokens[i]),
 	}
@@ -2408,9 +2449,61 @@ func _player_action_error(kind: String, target: int, me: int) -> String:
 		if not _observe_long_enough(target):
 			return "too_little_time"
 		return ""
+	if kind == "ask_question" or kind == "teach_lesson":
+		return _lesson_error(kind, me, target)
 	if not _can_interact_with(target):
 		return "target_unavailable"
 	return ""
+
+
+## 提问 / 讲题的门槛（§18.2，界面模糊比较见 §22.2.2）。空串表示可以做。
+func _lesson_error(kind: String, me: int, target: int) -> String:
+	if _phase != "break":
+		return "phase_not_allowed"
+	if not _can_interact_with(target):
+		return "target_unavailable"
+	if not chat_pair_in_range(me, target):
+		return "out_of_range"
+	var gap := _grade[me] - _grade[target]
+	var blur := float(_kp.get("grade_gap_blur", 0.0))
+	if kind == "ask_question" and gap > blur:
+		return "grade_gap"
+	if kind == "teach_lesson" and gap < -blur:
+		return "grade_gap"
+	var affected := target if kind == "ask_question" else me
+	var actor := me if kind == "ask_question" else target
+	var dkey := "%d|%d|%s|%d|%d" % [affected, actor, kind, _day, _phase_index]
+	if _settled.has(dkey):
+		return "already_used"
+	return ""
+
+
+## 只读预览：行为栏用来决定按钮灰不灰，不改任何矩阵。
+func lesson_preview(kind: String, target: int) -> Dictionary:
+	var me := _n - 1
+	var blocked := _player_action_error(kind, target, me)
+	return {"ok": blocked.is_empty(), "error": blocked}
+
+
+func _do_lesson(kind: String, me: int, target: int) -> Dictionary:
+	if _current_act[me] == "study":
+		_current_act[me] = null
+	var receiver := me if kind == "ask_question" else target
+	var affected := target if kind == "ask_question" else me
+	var actor := me if kind == "ask_question" else target
+	var bonus := float(_kp.get("emperor_bonus", 1.0))
+	var at_emperor := seat_of(me) == EMPEROR_SEAT or seat_of(target) == EMPEROR_SEAT
+	var scale := bonus if at_emperor else 1.0
+	if not _apply_event(affected, actor, kind, scale):
+		return {"ok": false, "error": "already_used"}
+	var tick_key := (
+		"ask_question_bonus_ticks" if kind == "ask_question" else "teach_lesson_bonus_ticks"
+	)
+	var ticks := float(_kp.get(tick_key, 0.0))
+	if seat_of(receiver) == EMPEROR_SEAT:
+		ticks *= bonus
+	_credit_study_ticks(receiver, ticks)
+	return {"ok": true, "emperor": at_emperor}
 
 
 func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
@@ -2437,7 +2530,9 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 			_:
 				_start_leisure(me, kind)
 		return {
-			"ok": true, "kind": kind, "accepted": true,
+			"ok": true,
+			"kind": kind,
+			"accepted": true,
 			"confiscated": kind == "read_book" and _busy_act[me] != "read_book",
 			"teacher_feedback": teacher_feedback,
 		}
@@ -2456,6 +2551,20 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 			_do_pass_note(me, target)
 		"observe":
 			_do_observe(me, target)
+		"ask_question", "teach_lesson":
+			var lesson: Dictionary = _do_lesson(kind, me, target)
+			if not bool(lesson.get("ok", false)):
+				return lesson
+			return {
+				"ok": true,
+				"kind": kind,
+				"target": target,
+				"topic": topic,
+				"accepted": true,
+				"emperor": bool(lesson.get("emperor", false)),
+				"affinity_delta": snapped(_a[target * _n + me] - a_before, 0.1),
+				"hostility_delta": snapped(_h[target * _n + me] - h_before, 0.1),
+			}
 		"study":
 			_do_study(me)
 		"sleep":
@@ -2891,6 +3000,32 @@ func alias(i: int) -> String:
 	if i < 0 or i >= _chars.size():
 		return ""
 	return str(_chars[i].get("alias", ""))
+
+
+func exam_banner(day: int) -> String:
+	if _exam == null:
+		return ""
+	return _exam.banner(day)
+
+
+func exam_report(day: int) -> String:
+	if _exam == null:
+		return ""
+	return _exam.report_text(day)
+
+
+func exemption_tokens(i: int) -> int:
+	if _exam == null:
+		return 0
+	return _exam.tokens_of(i)
+
+
+func _alias_list() -> PackedStringArray:
+	var names := PackedStringArray()
+	names.resize(_n)
+	for i in _n:
+		names[i] = alias(i)
+	return names
 
 
 ## i 在种子表里的编号（"01"…"24"）；玩家自身 → 空串。

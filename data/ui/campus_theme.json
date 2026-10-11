@@ -81,5 +81,10 @@
   "utility_gap": 12,
   "utility_margin": 24,
   "utility_font_size": 24,
-  "utility_icon_size": 28
+  "utility_icon_size": 28,
+  "accent": "296142",
+  "muted": "57605a",
+  "corner_radius": 8,
+  "border_width": 2,
+  "content_margin": 12
 }

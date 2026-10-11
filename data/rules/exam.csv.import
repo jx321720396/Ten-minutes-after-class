@@ -1,0 +1,16 @@
+[remap]
+
+importer="keep"
+type=""
+uid="uid://dsyd7k2wqjbls"
+
+[deps]
+
+source_file="res://data/rules/exam.csv"
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true
