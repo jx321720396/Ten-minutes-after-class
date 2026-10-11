@@ -49,3 +49,6 @@ note_good_to_hostile,hostility,-1,0,0,0.2,0,normal,B,纸条好话：讨厌被说
 note_good_to_friendly,affinity,1,0,0,0.3,0,normal,A,纸条好话：喜欢被说者 → 好感 +1
 note_bad_to_friendly,affinity,-1,0,0,0.3,0,normal,A,纸条坏话：喜欢被说者 → 好感 −1（开始动摇）
 study_stress,stress,3,0,0,0,0,normal,A,主动学习：每满一档给自身压力 +3（§8.23）
+study_circle_trust,trust,1,0,0,0,0,normal,A,学习圈每 20 tick：双向信任 +1（§8.23 第 4 条）
+study_circle_affinity,affinity,1,0,0,0,0,normal,A,学习圈每 20 tick：双向好感 +1
+study_circle_stress,stress,1,0,0,0,0,normal,A,学习圈每 20 tick：自身压力 +1（每人只算一次）

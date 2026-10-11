@@ -1313,6 +1313,39 @@ class Sim:
         seat = self.seat_world[i]
         return ((self.pos_x[i] - seat[0]) ** 2 + (self.pos_z[i] - seat[1]) ** 2) ** 0.5 <= self.seat_zone_radius
 
+    def study_circle_settle(self):
+        """学习圈（§8.23 第 4 条）：8 邻域内都在学习的人之间，每 N tick 额外结算一次。不消耗 RNG。"""
+        interval = int(self.kp.get("study_circle_interval_ticks", 20))
+        if interval <= 0 or self.phase != "break" or self.global_tick % interval != 0:
+            return
+        studying = {
+            i
+            for i in range(self.N)
+            if self.current_act[i] == "study" and self.in_own_seat(i)
+        }
+        if len(studying) < 2:
+            return
+        members = sorted(
+            {
+                i
+                for i in studying
+                for j in self.neighbor_idx[i]
+                if j != i and j in studying
+            }
+        )
+        if len(members) < 2:
+            return
+        for i in members:
+            neighbours = [j for j in self.neighbor_idx[i] if j != i and j in studying]
+            for other in neighbours:
+                self.apply_event(i, other, "study_circle_trust")
+                self.apply_event(i, other, "study_circle_affinity")
+                self.apply_event(other, i, "study_circle_trust")
+                self.apply_event(other, i, "study_circle_affinity")
+            if neighbours:
+                self.apply_event(i, i, "study_circle_stress")
+        self.stats["study_circles"] = self.stats.get("study_circles", 0) + 1
+
     def do_study(self, i):
         """学习（§8.23）：进入学习态（参考实现）。不占时间槽，靠 current_act 表达；
         成绩累积在 _study_accumulate，每满一展给成绩 +1 与自身压力 +3。
@@ -1887,6 +1920,7 @@ class Sim:
         self.decide_and_act()
         self.process_notes()          # 纸条链（§8.6）：每 tick 处理一张纸条
         self.study_accumulate()
+        self.study_circle_settle()
         self.update_environment()
         if self.global_tick % int(self.p["settle_interval"]) == 0:   # 每天 2 次（上午/下午）
             self.transmission()

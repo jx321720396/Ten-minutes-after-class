@@ -18,3 +18,4 @@ grade_max,750,成绩上限（grade ∈ [0,750]，主文档 §17.1.1）
 grade_init_player,250,玩家初始成绩（固定）
 grade_init_npc_min,200,NPC 初始成绩下界
 grade_init_npc_max,650,NPC 初始成绩上界
+study_circle_interval_ticks,20,tick,学习圈的结算间隔（§8.23 第 4 条）
