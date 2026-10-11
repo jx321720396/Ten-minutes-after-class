@@ -217,6 +217,13 @@ func _stand_position(seat: Node3D) -> Vector3:
 ## 座位**坐姿锚点**的世界坐标（desk_chair.tscn 的 SitPoint，位于椅子上）。
 ## 供后续接入的"坐下帧动画"使用：走到 StandSpot（可走）→ 坐到 SitPoint（显示）。
 ## 本轮只预留锚点与接口，**不实现任何动画**。
+## 该角色所在的**座位场景节点**（desk_chair 实例）；用于读取桌椅占位矩形。
+func seat_node_of(index: int) -> Node3D:
+	if index < 0 or index >= _seat_of_actor.size():
+		return null
+	return _seat_of_actor[index]
+
+
 func sit_position_of(index: int) -> Vector3:
 	var actor := actor_for(index)
 	if actor == null:

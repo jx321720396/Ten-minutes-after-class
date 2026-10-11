@@ -139,25 +139,35 @@ func _inject_seat_zones(core: Variant) -> void:
 		return
 	var zones := {}
 	for i in range(int(core.node_count())):
-		var p: Vector3 = actors.sit_position_of(i)
-		zones[i] = Vector2(p.x, p.z)
+		var rect := _seat_rect_of(i)
+		if rect.size.x > 0.0 and rect.size.y > 0.0:
+			zones[i] = rect
 	core.set_seat_zones(zones)
-	_build_player_seat_ring(core, zones)
+	_build_player_seat_rect(core, zones)
 
 
-## 玩家座位的地面圈（半径与内核判定同一个口径）。
-func _build_player_seat_ring(core: Variant, zones: Dictionary) -> void:
+## 座位的**桌椅占位矩形**（世界 xz）：直接取该座位 NavBlocker 的形状与位置，
+## 不另立尺寸 —— 判定与可视化因此天然与场景里那张桌椅对齐。
+func _seat_rect_of(i: int) -> Rect2:
+	var seat: Node3D = actors.seat_node_of(i)
+	if seat == null:
+		return Rect2()
+	var blocker := seat.get_node_or_null("NavBlocker/Blocker") as CollisionShape3D
+	if blocker == null or not (blocker.shape is BoxShape3D):
+		return Rect2()
+	var box := blocker.shape as BoxShape3D
+	var origin := blocker.global_transform.origin
+	return Rect2(origin.x - box.size.x * 0.5, origin.z - box.size.z * 0.5, box.size.x, box.size.z)
+
+
+## 玩家座位的地面方框（与上面那个矩形同尺寸）。
+func _build_player_seat_rect(core: Variant, zones: Dictionary) -> void:
 	var me := int(core.node_count()) - 1
 	if not zones.has(me):
 		return
-	var radius := 0.5
-	var params: Array = ConfigLoader.new().get_table("rules/player_interaction").get("rows", [])
-	for row in params:
-		if str(row.get("param", "")) == "seat_zone_half_extent_m":
-			radius = float(str(row.get("value", "0.5")))
-	# 方框而非圆：边长 2×半边长，与地面格线对齐
+	var rect: Rect2 = zones[me]
 	var mesh := BoxMesh.new()
-	mesh.size = Vector3(radius * 2.0, 0.012, radius * 2.0)
+	mesh.size = Vector3(rect.size.x, 0.012, rect.size.y)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(0.85, 0.72, 0.35, 0.22)
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -166,8 +176,9 @@ func _build_player_seat_ring(core: Variant, zones: Dictionary) -> void:
 	var ring := MeshInstance3D.new()
 	ring.name = "PlayerSeatZone"
 	ring.mesh = mesh
-	var seat: Vector2 = zones[me]
-	ring.position = Vector3(seat.x, 0.008, seat.y)
+	ring.position = Vector3(
+		rect.position.x + rect.size.x * 0.5, 0.008, rect.position.y + rect.size.y * 0.5
+	)
 	add_child(ring)
 
 

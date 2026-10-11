@@ -12,7 +12,6 @@ invitation_timeout_ticks,12,tick,邀请等待回应的有效期；超时关闭�
 invitation_cooldown_ticks,20,tick,同一 NPC 再次邀请玩家的最小间隔；避免每 tick 重复弹卡
 chat_range_m,1.2,m,闲聊双方的交互范围（真实地面位置距离上限，§10.5）
 seated_tolerance_m,0.1,m,判定仍在本座位入口的平面距离容差
-seat_zone_half_extent_m,0.5,m,自己座位的**方形**范围半边长（边长 = 2×此值，与地面格线对齐）；只有落在这个方框内才算「在自己的座位上」（§8.23）
 seated_chat_range_m,1.8,m,同列前后紧邻且都在本座位时允许转身聊天的距离上限
 range_step_m,0.1,m,连线阻挡判定采样步长（短连接段不得穿过桌椅）
 clue_opacity_split,50,,透明度分界：闲聊对象 O < 该值透露 1 条，O ≥ 该值透露 2 条（§10.5）

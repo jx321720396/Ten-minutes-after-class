@@ -1,5 +1,15 @@
 # 变更记录
 
+- **座位范围改用课桌的占位矩形（2026-10-10，用户裁定）**
+  - **不再自定尺寸**：删掉 `player_interaction.csv` 的 `seat_zone_half_extent_m` —— 范围直接取场景里那张桌椅
+    的 `NavBlocker` 占位，所以判定与可见范围**永远和桌椅一致**，不会因两处数字脱节。
+  - **内核（两套同步）**：`set_seat_zones()` 改收 **Rect2**（世界 xz）；`in_own_seat()` 改用 `rect.has_point()`
+    （Python 侧为 `(x, z, w, h)` 四元组）。未注入仍保守放行。
+  - **表现**：`classroom` 从座位节点的 `NavBlocker/Blocker`（`BoxShape3D`）取世界矩形注入内核，
+    并按**同一个矩形**给玩家画地面方框（不再是圆柱、也不再是自定方块）。
+  - **测试**：`test_seat_zone.gd` 改为注入矩形（矩形内算内 / 矩形外算外 / **角落方向算内且不是圆**）。
+  - **验证**：GUT 325 通过 / 6 失败（既有）；同种子 1440 tick 对拍全一致；快门禁全绿。
+
 - **座位范围改用「地面格子」而不是圆圈（2026-10-10，用户裁决）**
   - **数据**：`player_interaction.csv` 的 `seat_zone_radius_m`（半径）→ **`seat_zone_half_extent_m`**（方形半边长，0.5 m → 1 m 见方）。
   - **内核（两套同步）**：`in_own_seat()` 由「圆形距离 ≤ 半径」改为「**两个轴都 ≤ 半边长**」
