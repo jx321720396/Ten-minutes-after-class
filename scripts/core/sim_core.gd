@@ -158,6 +158,8 @@ var _note_next_id := 0
 var _leisure: Dictionary = {}
 var _absence: Dictionary = {}
 var _book: Array = []
+var _book_gifted: Array = []
+var _book_gifts_this_break := 0
 var _snacks_remaining := 0
 var _player_absent := false
 var _leave_count := 0
@@ -189,6 +191,8 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 	for ch in _chars:
 		_book.append(int(str(ch["book"])))
 	_book.append(0)
+	_book_gifted.resize(_n)
+	_book_gifted.fill(false)
 	_snacks_remaining = int(_leisure["snack_count_per_run"])
 
 	_alloc(n)
@@ -543,6 +547,8 @@ func _begin_phase() -> void:
 	_phase = str(row["kind"])
 	_tick_in_phase = 0
 	_roll_sleep()
+	if _phase == "break":
+		_book_gifts_this_break = 0
 	_free_join()
 	if _phase == "break":
 		_phone_exposure()
@@ -703,6 +709,8 @@ func _settle_finished_actions() -> void:
 	# ④ 发布通知：完成在前，线索在后
 	for payload in notifications:
 		_emit("event_happened", payload)
+	for gift in LeisureActions.settle_book_gifts(self, due_sessions):
+		_emit("event_happened", gift)
 
 
 func _tick() -> void:

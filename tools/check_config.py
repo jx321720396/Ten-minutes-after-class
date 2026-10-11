@@ -371,6 +371,16 @@ check("玩家邀请：行为存在于 behaviors", all(r["behavior"] in {r["behav
 _invite_params = params("rules/player_interaction.csv")
 check("玩家邀请：有效期与再次邀请间隔为正整数", all(_invite_params.get(k, 0) > 0 and int(_invite_params[k]) == _invite_params[k] for k in ("invitation_timeout_ticks", "invitation_cooldown_ticks")))
 _leisure = params("rules/leisure.csv")
+for key in ("book_gift_affinity_threshold", "book_gift_trust_threshold"):
+    check("P3：赠书门槛在 [0,100]",
+          math.isfinite(_leisure.get(key, -1)) and 0 <= _leisure.get(key, -1) <= 100)
+check("P3：赠书概率在 [0,1]",
+      math.isfinite(_leisure.get("book_gift_probability", -1))
+      and 0 <= _leisure.get("book_gift_probability", -1) <= 1)
+check("P3：课间赠书上限为正整数",
+      math.isfinite(_leisure.get("book_gift_max_per_break", 0))
+      and _leisure.get("book_gift_max_per_break", 0) > 0
+      and _leisure["book_gift_max_per_break"] == int(_leisure["book_gift_max_per_break"]))
 for prefix in ("music", "snack", "book"):
     check("P0-3 %s：减压与时长为正" % prefix,
           all(math.isfinite(_leisure.get(prefix + suffix, 0)) and _leisure.get(prefix + suffix, 0) > 0
