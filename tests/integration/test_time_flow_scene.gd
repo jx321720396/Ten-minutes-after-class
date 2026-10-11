@@ -8,7 +8,10 @@ func test_real_classroom_chat_scales_world_and_normal_event_restores_it() -> voi
 	var scene = load("res://scenes/game/classroom3D.tscn").instantiate()
 	scene.get_node("Roam").enabled = false
 	add_child_autofree(scene)
-	for frame in range(20):
+	# 同上：等接线完成再冻结帧推进（固定帧数在 headless 下会偶发跑在接线之前）。
+	for frame in range(180):
+		if scene.get_node("Interaction")._core != null:
+			break
 		await get_tree().physics_frame
 	scene.process_mode = Node.PROCESS_MODE_DISABLED
 	var core: SimCore = state.sim_core
