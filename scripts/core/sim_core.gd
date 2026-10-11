@@ -2517,7 +2517,7 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 	if not blocked.is_empty():
 		return {"ok": false, "error": blocked}
 	if PLAYER_SELF_KINDS.has(kind):
-		var teacher_feedback := (
+		var teacher_feedback: bool = (
 			kind == "read_book" and _teacher.present and not _teacher.exempt_this_visit[me]
 		)
 		match kind:
