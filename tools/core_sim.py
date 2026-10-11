@@ -37,6 +37,43 @@ def clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
 
+def _u32(x):
+    return x & 0xFFFFFFFF
+
+
+def exam_unit(seed_value, exam_index, node, salt):
+    """与 ExamSettle._unit 逐式对齐的 32 位混合，结果落在 (0, 1)。"""
+    x = _u32(seed_value)
+    x = _u32(x ^ _u32(exam_index * 0x9E3779B1))
+    x = _u32(x ^ _u32(node * 0x85EBCA6B))
+    x = _u32(x ^ _u32(salt))
+    x = _u32(x ^ (x >> 16))
+    x = _u32(x * 0x7FEB352D)
+    x = _u32(x ^ (x >> 15))
+    x = _u32(x * 0x846CA68B)
+    x = _u32(x ^ (x >> 16))
+    return (x + 1) / 4294967297.0
+
+
+def exam_q6(z):
+    scaled = z * 1000000.0
+    if z >= 0.0:
+        return math.floor(scaled + 0.5) / 1000000.0
+    return math.ceil(scaled - 0.5) / 1000000.0
+
+
+def exam_quantized_normal(seed_value, exam_index, node):
+    u1 = exam_unit(seed_value, exam_index, node, 1)
+    u2 = exam_unit(seed_value, exam_index, node, 2)
+    z = math.sqrt(-2.0 * math.log(u1)) * math.cos(math.tau * u2)
+    return exam_q6(z)
+
+
+def exam_rint(v):
+    """对齐 Python round 的半偶，以及 SimCore._rint。"""
+    return int(round(v))
+
+
 def clamp100(v):
     return clamp(v, 0.0, 100.0)
 
@@ -178,6 +215,7 @@ class Sim:
         self._init_relations()
         self._init_grade()
         self._init_belief_bias()   # 按 信念矩阵.md §3：初始值 = 先验 + 性格偏差
+        self._init_exam()
 
         # --- 时间与统计 ---
         self.day = 1
@@ -1941,14 +1979,117 @@ class Sim:
             if self.current_act[i] != "study":
                 continue
             self.StudyAcc[i] += 1.0
+            self._fold_study_acc(i)
+
+    def _fold_study_acc(self, i):
+        """把已经灌进 StudyAcc 的时长折成分数。与 SimCore._fold_study_acc 对齐。"""
+        gmax = self.kp["grade_max"]
+        while self.Grade[i] < gmax:
             tpp = self._grade_ticks_per_point(self.Grade[i])
-            if tpp <= 0.0:
-                continue
-            if self.StudyAcc[i] >= tpp:
-                self.Grade[i] += 1.0
-                self.StudyAcc[i] -= tpp
-                # §8.23 第 3 条：结算成绩的同时给自身压力 +3
-                self.apply_event(i, i, "study_stress")
+            if tpp <= 0.0 or self.StudyAcc[i] < tpp:
+                return
+            self.StudyAcc[i] -= tpp
+            self.Grade[i] += 1.0
+            self.apply_event(i, i, "study_stress")
+
+    def credit_study_ticks(self, i, ticks):
+        if ticks <= 0.0 or i < 0 or i >= self.N:
+            return
+        if self.Grade[i] >= self.kp["grade_max"]:
+            self.StudyAcc[i] = 0.0
+            return
+        self.StudyAcc[i] += ticks
+        self._fold_study_acc(i)
+
+    def lesson(self, kind, target):
+        """玩家提问 / 讲题（§18.2）。返回 {ok, error?, emperor?}。"""
+        me = self.N - 1
+        err = self._lesson_error(kind, me, target)
+        if err:
+            return {"ok": False, "error": err}
+        if self.current_act[me] == "study":
+            self.current_act[me] = None
+        receiver = me if kind == "ask_question" else target
+        affected = target if kind == "ask_question" else me
+        actor = me if kind == "ask_question" else target
+        bonus = float(self.kp.get("emperor_bonus", 1.0))
+        at_emperor = self.seat_of[me] == "P0" or self.seat_of[target] == "P0"
+        scale = bonus if at_emperor else 1.0
+        if not self.apply_event(affected, actor, kind, scale):
+            return {"ok": False, "error": "already_used"}
+        tick_key = "ask_question_bonus_ticks" if kind == "ask_question" else "teach_lesson_bonus_ticks"
+        ticks = float(self.kp.get(tick_key, 0.0))
+        if self.seat_of[receiver] == "P0":
+            ticks *= bonus
+        self.credit_study_ticks(receiver, ticks)
+        return {"ok": True, "emperor": at_emperor}
+
+    def _lesson_error(self, kind, me, target):
+        if self.phase != "break":
+            return "phase_not_allowed"
+        if self.sleeping[me] or self.global_tick < self.busy_until[me]:
+            return "player_busy"
+        if target < 0 or target >= self.N or target == me:
+            return "invalid_target"
+        if self.sleeping[target] or self.global_tick < self.busy_until[target]:
+            return "target_unavailable"
+        gap = self.Grade[me] - self.Grade[target]
+        blur = float(self.kp.get("grade_gap_blur", 0.0))
+        if kind == "ask_question" and gap > blur:
+            return "grade_gap"
+        if kind == "teach_lesson" and gap < -blur:
+            return "grade_gap"
+        affected = target if kind == "ask_question" else me
+        actor = me if kind == "ask_question" else target
+        if (affected, actor, kind, self.day, self.phase_index) in self.settled:
+            return "already_used"
+        return ""
+
+    def _init_exam(self):
+        rows = load_table("rules/exam.csv")
+        self.exam_days = sorted(int(float(r["value"])) for r in rows if r["param"].startswith("exam_day_"))
+        by_key = {r["param"]: float(r["value"]) for r in rows if not r["param"].startswith("exam_day_")}
+        self.exam_sigma = by_key.get("exam_noise_sigma", 12.0)
+        self.exam_penalty = by_key.get("stress_exam_penalty", 15.0)
+        self.exam_progress_delta = by_key.get("progress_prize_delta", 50.0)
+        self.exam_top_rank = int(by_key.get("top_prize_rank", 3))
+        self.exam_top_tokens = int(by_key.get("top_prize_tokens", 1))
+        runtime = {r["key"]: float(r["value"]) for r in load_table("rules/time_runtime.csv")}
+        self.exam_term_days = int(runtime.get("term_days", 30))
+        self.exam_last = list(self.Grade)
+        self.exam_tokens = [0] * self.N
+        self.exam_rank = [0] * self.N
+        self.exam_score = [0.0] * self.N
+
+    def settle_exam(self, day):
+        """周考 / 期末考。不改 Grade，不消耗 self.rng。非考试日直接返回。"""
+        final = day == self.exam_term_days
+        if not final and day not in self.exam_days:
+            return False
+        index = self._exam_index(day)
+        scores = [
+            self._exam_score(self.Grade[i], self.Stress[i], index, i) for i in range(self.N)
+        ]
+        order = sorted(range(self.N), key=lambda i: (-scores[i], i))
+        for place, i in enumerate(order):
+            self.exam_rank[i] = place + 1
+        player = self.N - 1
+        delta = scores[player] - self.exam_last[player]
+        if self.exam_rank[player] <= self.exam_top_rank:
+            self.exam_tokens[player] += self.exam_top_tokens
+        self.exam_score = scores
+        self.exam_last = list(scores)
+        self.exam_gave_progress = (not final) and delta >= self.exam_progress_delta
+        return True
+
+    def _exam_index(self, day):
+        all_days = sorted(self.exam_days + [self.exam_term_days])
+        return all_days.index(day) + 1
+
+    def _exam_score(self, grade, stress, exam_index, node):
+        z = exam_quantized_normal(self.seed, exam_index, node)
+        raw = grade + exam_rint(self.exam_sigma * z - self.exam_penalty * stress / 100.0)
+        return clamp(raw, 0.0, self.kp["grade_max"])
 
     def _grade_ticks_per_point(self, g):
         """当前成绩档的「每 +1 分所需 tick」（§17.1.2 分段表）；越界返回 0。"""
@@ -2086,6 +2227,7 @@ class Sim:
                 self.T[i][j] *= d["decay_t"]
             self.Stress[i] *= d["retain_s"]
         self.day_events.clear()          # 新的一天，重置「有互动」判定
+        self.settle_exam(self.day)
         self.day += 1
 
     # ------------------------------------------------ 报告

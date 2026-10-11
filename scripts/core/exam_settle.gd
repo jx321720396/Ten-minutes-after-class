@@ -1,0 +1,217 @@
+class_name ExamSettle
+extends RefCounted
+## 周考与期末考（§19.1）。挂在跨天结算上，不改平时成绩，不消耗内核主随机数。
+##
+## 考分噪声用独立哈希流（与 tools/core_sim.py 的 exam_unit / exam_score 逐式对齐），
+## 避免 Box-Muller 吃掉主 RNG 后把同种子对拍带偏。
+
+var _days: Array[int] = []
+var _sigma := 12.0
+var _penalty := 15.0
+var _progress_delta := 50.0
+var _top_rank := 3
+var _top_tokens := 1
+var _grade_max := 750.0
+var _term_days := 30
+var _seed := 0
+var _last_score: PackedFloat64Array = PackedFloat64Array()
+var _tokens: PackedInt32Array = PackedInt32Array()
+var _rank: PackedInt32Array = PackedInt32Array()
+var _reports: Dictionary = {}
+
+
+func configure(tables: Dictionary, seed_value: int, count: int, grade_max: float) -> void:
+	_seed = seed_value
+	_grade_max = grade_max
+	_days.clear()
+	for row in tables.get("rules/exam", {}).get("rows", []):
+		var key := str(row.get("param", ""))
+		var raw := str(row.get("value", ""))
+		if key.begins_with("exam_day_"):
+			_days.append(int(float(raw)))
+		elif key == "exam_noise_sigma":
+			_sigma = float(raw)
+		elif key == "stress_exam_penalty":
+			_penalty = float(raw)
+		elif key == "progress_prize_delta":
+			_progress_delta = float(raw)
+		elif key == "top_prize_rank":
+			_top_rank = int(float(raw))
+		elif key == "top_prize_tokens":
+			_top_tokens = int(float(raw))
+	_days.sort()
+	for row in tables.get("rules/time_runtime", {}).get("rows", []):
+		if str(row.get("key", "")) == "term_days":
+			_term_days = int(float(str(row.get("value", "30"))))
+	_last_score.resize(count)
+	_tokens.resize(count)
+	_rank.resize(count)
+	_reports.clear()
+
+
+func capture_baseline(grade: PackedFloat64Array) -> void:
+	for i in grade.size():
+		_last_score[i] = grade[i]
+
+
+func banner(day: int) -> String:
+	if day == _term_days:
+		return "今天期末考"
+	if _days.has(day):
+		return "今天周考"
+	return ""
+
+
+func report_text(day: int) -> String:
+	return str(_reports.get(day, ""))
+
+
+func tokens_of(i: int) -> int:
+	if i < 0 or i >= _tokens.size():
+		return 0
+	return _tokens[i]
+
+
+func rank_of(i: int) -> int:
+	if i < 0 or i >= _rank.size():
+		return 0
+	return _rank[i]
+
+
+func last_score_of(i: int) -> float:
+	if i < 0 or i >= _last_score.size():
+		return 0.0
+	return _last_score[i]
+
+
+## 考试日才结算。返回是否真的考了。grade 只读，不写回。
+func settle(day: int, grade: PackedFloat64Array, stress: PackedFloat64Array, names: PackedStringArray) -> bool:
+	var final_exam := day == _term_days
+	if not final_exam and not _days.has(day):
+		return false
+	var n := grade.size()
+	var scores: PackedFloat64Array = PackedFloat64Array()
+	scores.resize(n)
+	var exam_index := _index_of(day)
+	for i in n:
+		scores[i] = _score(grade[i], stress[i], exam_index, i)
+	var order: Array[int] = []
+	for i in n:
+		order.append(i)
+	order.sort_custom(
+		func(a: int, b: int) -> bool:
+			if scores[a] != scores[b]:
+				return scores[a] > scores[b]
+			return a < b
+	)
+	for place in order.size():
+		_rank[order[place]] = place + 1
+	var player := n - 1
+	var delta := scores[player] - _last_score[player]
+	var progress := (not final_exam) and delta >= _progress_delta
+	var top := _rank[player] <= _top_rank
+	if top:
+		_tokens[player] += _top_tokens
+	for i in n:
+		_last_score[i] = scores[i]
+	_reports[day] = _write_report(final_exam, order, names, player, scores[player], delta, progress, top)
+	return true
+
+
+func _index_of(day: int) -> int:
+	var all: Array[int] = _days.duplicate()
+	all.append(_term_days)
+	all.sort()
+	return all.find(day) + 1
+
+
+func _score(grade_value: float, stress_value: float, exam_index: int, node: int) -> float:
+	var z := _quantized_normal(_seed, exam_index, node)
+	var raw := grade_value + _rint(_sigma * z - _penalty * stress_value / 100.0)
+	return clampf(raw, 0.0, _grade_max)
+
+
+func _write_report(
+	final_exam: bool,
+	order: Array[int],
+	names: PackedStringArray,
+	player: int,
+	player_score: float,
+	delta: float,
+	progress: bool,
+	top: bool
+) -> String:
+	var top_names: PackedStringArray = PackedStringArray()
+	var shown := mini(_top_rank, order.size())
+	for k in shown:
+		top_names.append(_display_name(order[k], names, player))
+	var title := "这次期末考" if final_exam else "这次周考"
+	var move := "和上次一样"
+	if delta > 0.0:
+		move = "比上次高了 %d 分" % int(_rint(delta))
+	elif delta < 0.0:
+		move = "比上次少了 %d 分" % int(_rint(-delta))
+	var text := "%s，前三名是 %s。你考了第 %d 名，分数 %d，%s。" % [
+		title,
+		"、".join(top_names),
+		_rank[player],
+		int(_rint(player_score)),
+		move,
+	]
+	if progress:
+		text += "你这次进步很大，老师当众夸了你。"
+	if top:
+		text += "你考进了前三名，拿到了免罚卷。现在还派不上用场，先收着。"
+	return text
+
+
+func _display_name(index: int, names: PackedStringArray, player: int) -> String:
+	if index == player:
+		return "你"
+	if index >= 0 and index < names.size() and not names[index].is_empty():
+		return names[index]
+	return "某同学"
+
+
+## 与 core_sim.exam_unit 相同的 32 位混合，再做 Box-Muller，最后量化到 1e-6。
+static func _quantized_normal(seed_value: int, exam_index: int, node: int) -> float:
+	var u1 := _unit(seed_value, exam_index, node, 1)
+	var u2 := _unit(seed_value, exam_index, node, 2)
+	var z := sqrt(-2.0 * log(u1)) * cos(TAU * u2)
+	return _q6(z)
+
+
+static func _unit(seed_value: int, exam_index: int, node: int, salt: int) -> float:
+	var x := _u32(seed_value)
+	x = _u32(x ^ _u32(exam_index * 0x9E3779B1))
+	x = _u32(x ^ _u32(node * 0x85EBCA6B))
+	x = _u32(x ^ _u32(salt))
+	x = _u32(x ^ (x >> 16))
+	x = _u32(x * 0x7FEB352D)
+	x = _u32(x ^ (x >> 15))
+	x = _u32(x * 0x846CA68B)
+	x = _u32(x ^ (x >> 16))
+	return float(x + 1) / 4294967297.0
+
+
+static func _u32(x: int) -> int:
+	return x & 0xFFFFFFFF
+
+
+static func _q6(z: float) -> float:
+	var scaled := z * 1000000.0
+	if z >= 0.0:
+		return floor(scaled + 0.5) / 1000000.0
+	return ceil(scaled - 0.5) / 1000000.0
+
+
+static func _rint(v: float) -> int:
+	var flr: float = floor(v)
+	var frac: float = v - flr
+	if frac > 0.5:
+		return int(flr + 1.0)
+	if frac < 0.5:
+		return int(flr)
+	if fmod(flr, 2.0) == 0.0:
+		return int(flr)
+	return int(flr + 1.0)

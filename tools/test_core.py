@@ -247,6 +247,56 @@ pending = sim_invite.get_player_invitation()
 check("NPC 找玩家聊天先邀请，不占用玩家", bool(pending) and sim_invite.busy_until[-1] == 0)
 sim_invite.respond_player_invitation(pending["id"], False)
 check("玩家拒绝聊天后仍自由", sim_invite.busy_until[-1] == 0 and sim_invite.stats["chats"] == 0)
+
+print("=== 6. 提问 / 讲题与周考 ===")
+lesson = Sim(seed=7, npc_count=8)
+me = lesson.N - 1
+other = 0
+lesson.Grade[me] = 200.0
+lesson.Grade[other] = 400.0
+lesson.StudyAcc[me] = 0.0
+trust_before = lesson.T[other][me]
+asked = lesson.lesson("ask_question", other)
+check("提问成功", asked.get("ok") is True, asked)
+check("提问按 15 tick 折进自己的成绩", abs(lesson.Grade[me] - 201.0) < 1e-9 and abs(lesson.StudyAcc[me] - 5.0) < 1e-9,
+      (lesson.Grade[me], lesson.StudyAcc[me]))
+check("提问抬高对方对自己的信任", lesson.T[other][me] > trust_before)
+again = lesson.lesson("ask_question", other)
+check("同一课间不能再问同一个人", again.get("error") == "already_used")
+lesson.Grade[me] = 500.0
+lesson.Grade[other] = 200.0
+lesson.StudyAcc[other] = 0.0
+taught = lesson.lesson("teach_lesson", other)
+check("讲题成功", taught.get("ok") is True, taught)
+check("讲题把等效 tick 灌进对方", abs(lesson.StudyAcc[other] - 5.0) < 1e-9 and abs(lesson.Grade[other] - 201.0) < 1e-9)
+gap = Sim(seed=7, npc_count=8)
+gap.Grade[-1] = 600.0
+gap.Grade[0] = 200.0
+check("成绩高一截不能提问", gap.lesson("ask_question", 0).get("error") == "grade_gap")
+check("成绩高一截可以讲题", gap.lesson("teach_lesson", 0).get("ok") is True)
+throne = Sim(seed=7, npc_count=8)
+throne.Grade[-1] = 200.0
+throne.Grade[0] = 400.0
+throne.StudyAcc[-1] = 0.0
+throne.seat_of[-1] = "P0"
+throne.lesson("ask_question", 0)
+check("坐在 P0 提问时等效 tick 乘 1.5", abs(throne.Grade[-1] - 202.0) < 1e-9 and abs(throne.StudyAcc[-1] - 2.5) < 1e-9,
+      (throne.Grade[-1], throne.StudyAcc[-1]))
+
+exam = Sim(seed=99, npc_count=8)
+for i in range(exam.N - 1):
+    exam.Grade[i] = 100.0
+exam.Grade[-1] = 400.0
+exam.exam_last = [0.0] * exam.N
+check("非考试日不结算", exam.settle_exam(6) is False)
+grade_snapshot = list(exam.Grade)
+check("周考不改平时成绩", exam.settle_exam(7) is True and exam.Grade == grade_snapshot)
+check("玩家高分拿特等奖免罚卷", exam.exam_rank[-1] <= 3 and exam.exam_tokens[-1] == 1)
+check("拉开 50 分以上记进步奖", exam.exam_gave_progress is True)
+exam.settle_exam(30)
+check("期末考不发进步奖", exam.exam_gave_progress is False)
+check("期末考也不改平时成绩", exam.Grade == grade_snapshot)
+
 print("  通过 %d 项，失败 %d 项" % (len(PASSED), len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)

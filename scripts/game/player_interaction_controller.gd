@@ -33,7 +33,9 @@ const PEN_HOLD := &"player_pen_check"
 ## 需要选对象的动作（与右侧行为栏的 target 组一致）
 const BAR_REFRESH_SECONDS := 0.25
 ## 需要选对象的动作（与右侧行为栏的 target 组一致）
-const PLAYER_TARGET_KINDS := ["chat", "pass_note", "report", "roughhouse", "exclude", "observe"]
+const PLAYER_TARGET_KINDS := [
+	"chat", "pass_note", "report", "roughhouse", "exclude", "observe", "ask_question", "teach_lesson"
+]
 ## 自指行为（对自己做的事）：不选对象，点按钮就发起
 const PLAYER_SELF_KINDS := ["study", "sleep"]
 
@@ -191,8 +193,10 @@ func trigger_armed(target: int) -> void:
 	var result: Dictionary = _core.player_action(kind, target)
 	if not bool(result.get("ok", false)):
 		if _hud != null:
-			_hud.show_status(_action_reason(str(result.get("error", ""))))
+			_hud.show_status(_action_reason(str(result.get("error", "")), kind))
 		return
+	if _hud != null and (kind == "ask_question" or kind == "teach_lesson"):
+		_hud.show_status(_lesson_line(kind, bool(result.get("emperor", false))))
 	_finish_action()
 
 
@@ -407,7 +411,12 @@ func _bar_states() -> Dictionary:
 	var states := {}
 	for kind in PLAYER_TARGET_KINDS + PLAYER_SELF_KINDS:
 		var ok := _can_do(kind)
-		states[StringName(kind)] = {"ok": ok, "reason": "" if ok else _action_reason_of(kind)}
+		var reason := "" if ok else _action_reason_of(kind)
+		if ok and _selected >= 0 and (kind == "ask_question" or kind == "teach_lesson"):
+			var preview: Dictionary = _core.lesson_preview(kind, _selected)
+			ok = bool(preview.get("ok", false))
+			reason = "" if ok else _action_reason(str(preview.get("error", "")), kind)
+		states[StringName(kind)] = {"ok": ok, "reason": reason}
 	return states
 
 
@@ -435,7 +444,7 @@ func _action_reason_of(kind: String) -> String:
 
 
 ## 内核错误码 → 一句人话（不暴露任何隐藏数值）。
-func _action_reason(error: String) -> String:
+func _action_reason(error: String, kind: String = "") -> String:
 	match error:
 		"player_busy":
 			return "你正忙着"
@@ -445,9 +454,22 @@ func _action_reason(error: String) -> String:
 			return "回到自己座位上才能学习"
 		"target_unavailable":
 			return "现在没法对他做这个"
+		"out_of_range":
+			return "离得太远了，走近一点再开口。"
+		"grade_gap":
+			return "现在不太适合问这个。" if kind == "ask_question" else "现在不太适合讲这个。"
+		"already_used":
+			return "这节课间问过了。" if kind == "ask_question" else "这节课间讲过了。"
 		"invalid_target", "unknown_kind":
 			return "现在做不了"
 	return "现在做不了"
+
+
+func _lesson_line(kind: String, emperor: bool) -> String:
+	var line := "他把思路说了一遍，你听懂了。" if kind == "ask_question" else "你讲了一遍，他点头了。"
+	if emperor:
+		line += "坐在这儿，你听得更明白。"
+	return line
 
 
 ## 动作提交成功：清掉已选动作与已选对象，回 Idle。

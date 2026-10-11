@@ -362,6 +362,22 @@ check("grade_table：末档上界 = grade_max",
       "末档 %s vs grade_max %s" % (_guppers[-1] if _guppers else "无", _kp.get("grade_max")))
 check("grade_table：上界与 ticks 均为正",
       all(u > 0 and t > 0 for u, t in zip(_guppers, _gtpp)))
+for _lesson_key in ("ask_question_bonus_ticks", "teach_lesson_bonus_ticks", "emperor_bonus", "grade_gap_blur"):
+    check("kernel_params：%s 为正" % _lesson_key, _kp.get(_lesson_key, 0.0) > 0, _kp.get(_lesson_key))
+
+_exam_rows = load("rules/exam.csv")
+_exam = {r["param"]: r["value"] for r in _exam_rows}
+_exam_days = sorted(int(float(v)) for k, v in _exam.items() if k.startswith("exam_day_"))
+_term_days = int(float({r["key"]: r["value"] for r in load("rules/time_runtime.csv")}["term_days"]))
+check("exam：周考日落在学期内且递增无重复",
+      bool(_exam_days) and _exam_days == sorted(set(_exam_days))
+      and _exam_days[0] > 0 and _exam_days[-1] < _term_days
+      and _term_days not in _exam_days,
+      _exam_days)
+check("exam：噪声与扣分非负",
+      float(_exam.get("exam_noise_sigma", -1)) >= 0 and float(_exam.get("stress_exam_penalty", -1)) >= 0)
+check("exam：特等奖名次至少为 1", int(float(_exam.get("top_prize_rank", 0))) >= 1)
+check("exam：进步奖门槛为正", float(_exam.get("progress_prize_delta", 0)) > 0)
 
 print("\n=== 结论 ===")
 _invite_kinds = load("rules/player_invitation_kinds.csv")
