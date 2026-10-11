@@ -14,6 +14,7 @@ extends CanvasLayer
 
 signal result_revealed(request_id: int)
 
+const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
 const STYLE_TABLE := "ui/chat_feedback_style"
 const PEN_TEXTURE := "res://assets/textures/ui/interaction/pen.png"
 const COLOR_PAPER := Color(0.98, 0.96, 0.90, 0.94)
@@ -64,6 +65,11 @@ var _invitation_margin := 0.0
 func _ready() -> void:
 	_load_style()
 	_build_ui()
+	CampusTheme.apply_tree(self)
+	_invitation_card.add_theme_stylebox_override("panel", CampusTheme.paper_card())
+	_invitation_card.custom_minimum_size = Vector2(
+		CampusTheme.settings().event_card_width, CampusTheme.settings().event_card_height
+	)
 	set_process_unhandled_input(true)
 
 
@@ -316,7 +322,19 @@ func _show_current_player_activity() -> void:
 		var seconds := maxf(0.0, float(end_tick - _current_tick()) * _seconds_per_tick())
 		_progress_text.text = "%s · 还剩 %.0f 秒 · 暂时不能移动" % [label, seconds]
 		return
-	_progress_text.text = ("当前：走动中" if bool(_core.is_moving(me)) else "当前：空闲 · 可以移动")
+	# 学习态（§8.23）：不占时间槽，所以不会进 is_busy 分支 —— 必须单独认出来，
+	# 否则学习中也显示「空闲」，玩家看不出自己在不在学。
+	if str(_core.activity_of(me)) == "study":
+		_progress_text.text = "当前：学习中 · 正在累积成绩"
+		return
+	if bool(_core.is_moving(me)):
+		_progress_text.text = "当前：走动中"
+		return
+	if not bool(_core.in_own_seat(me)):
+		# 离座时把原因挂在状态行上：点学习被拒不是「没反应」，而是需要回座位
+		_progress_text.text = "当前：空闲 · 走回自己座位才能学习"
+		return
+	_progress_text.text = "当前：空闲 · 可以移动"
 
 
 # ------------------------------------------------------------------ tick → 秒（只读时钟）
@@ -518,13 +536,18 @@ func _build_invitation_ui() -> void:
 	_invitation_card = PanelContainer.new()
 	_invitation_card.name = "InvitationCard"
 	_invitation_card.add_theme_stylebox_override("panel", _panel_box())
-	_invitation_card.anchor_left = 1.0
-	_invitation_card.anchor_right = 1.0
+	_invitation_card.anchor_left = 0.0
+	_invitation_card.anchor_right = 0.0
 	_invitation_card.anchor_top = 1.0
 	_invitation_card.anchor_bottom = 1.0
-	_invitation_card.offset_right = -_invitation_margin
-	_invitation_card.offset_bottom = -_invitation_margin
-	_invitation_card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_invitation_card.offset_left = _invitation_margin
+	_invitation_card.offset_right = _invitation_margin + CampusTheme.settings().event_card_width
+	_invitation_card.offset_bottom = (
+		-_invitation_margin
+		- CampusTheme.settings().event_card_height
+		- CampusTheme.settings().event_stack_gap
+	)
+	_invitation_card.grow_horizontal = Control.GROW_DIRECTION_END
 	_invitation_card.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	add_child(_invitation_card)
 	var column := VBoxContainer.new()

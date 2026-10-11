@@ -2853,7 +2853,7 @@ func behavior_base_p(behavior: String) -> float:
 	return float(_probs.get(behavior, 0.0))
 
 
-## 某人此刻在做什么（UI 用；空闲/学习 = 空串）。
+## 某人此刻在做什么（UI 用）：真实行为名（如 "study"）；空闲才是空串。
 func activity_of(i: int) -> String:
 	if i < 0 or i >= _n or _current_act[i] == null:
 		return ""
