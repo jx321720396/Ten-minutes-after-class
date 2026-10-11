@@ -212,6 +212,9 @@ func _on_self_behavior(kind: StringName) -> void:
 	if _hud != null:
 		if action == "study":
 			_hud.show_status("你回到座位，开始学习。")
+			# 学习态给一次气泡反馈（§8.23：学习要看得出来）
+			if _emotion != null:
+				_emotion.show_emotion(PlayerEmotionFeedback.EMOTION_STUDYING, 8.0)
 		else:
 			_hud.show_status("你父下睡了。")
 	_refresh_bar()
