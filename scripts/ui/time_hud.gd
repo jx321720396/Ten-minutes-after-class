@@ -55,15 +55,26 @@ var _toast_left := 0.0
 var _toast_count := 0
 var _last: Dictionary = {}
 var _font: Font = null
+var _volume_card: Control
+var _volume_cfg: Dictionary = CampusTheme.settings().volume_card
 
 
 func _ready() -> void:
 	_build_ui()
 	CampusTheme.apply_tree(self)
+	_volume_card = preload("res://scripts/ui/volume_card.gd").new()
+	_volume_card.name = "VolumeCard"
+	add_child(_volume_card)
 	_refresh({})
 
 
 func _process(delta: float) -> void:
+	_volume_card.position = Vector2(
+		_panel.position.x, _panel.position.y + _panel.size.y + _volume_cfg.gap
+	)
+	var footer_y: float = _volume_card.position.y + _volume_card.size.y + _volume_cfg.gap
+	_toast.position.y = footer_y
+	_action.position.y = footer_y + _volume_cfg.footer_gap
 	if _toast_left <= 0.0:
 		return
 	_toast_left = maxf(0.0, _toast_left - delta)
@@ -178,6 +189,7 @@ func _refresh(snapshot_data: Dictionary) -> void:
 	if snapshot_data.is_empty():
 		return
 	_last = snapshot_data
+	_volume_card.refresh(snapshot_data)
 	var day := int(snapshot_data.get("day", 0))
 	var term_days := int(snapshot_data.get("term_days", 0))
 	var player_grade := int(snapshot_data.get("player_grade", 0))
