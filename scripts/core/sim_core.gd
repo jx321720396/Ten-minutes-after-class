@@ -675,11 +675,8 @@ func _study_accumulate() -> void:
 		if _grade[i] >= gmax:
 			_study_acc[i] = 0.0
 			continue
-		if is_player(i):
-			# §8.23：玩家必须**主动进入学习态**才累积成绩 —— 不选任何行为＝什么都没做
-			if _current_act[i] != "study":
-				continue
-		elif _current_act[i] != null or _global_tick < _busy_until[i]:
+		# §8.23：学习是**主动行为** —— 玩家与 NPC 都必须处于学习态才累积成绩
+		if _current_act[i] != "study":
 			continue
 		_study_acc[i] += 1.0
 		var tpp := _grade_ticks_per_point(_grade[i])
@@ -1558,6 +1555,12 @@ func _decide_and_act() -> void:
 		if _player_invitations.is_waiting(i):
 			continue
 		_in_conversation[i] = false
+		# 环境类：学习（§8.23）—— 主动坐下学一整个课间；爱学习的人更常坐下来
+		var study_gain := 1.0 + _tag_bias(i, "study_bias")
+		if _allowed("study") and _rng.random() < float(_probs["study_p"]) * study_gain:
+			_do_study(i)
+			busy[i] = true
+			continue
 		# 环境类：闲聊（标签调制：爱学习更少聊、爱聊天更多聊）
 		var chat_gain := 1.0 + _tag_bias(i, "chat_bias") - _tag_bias(i, "study_bias")
 		chat_gain = maxf(0.1, chat_gain)
