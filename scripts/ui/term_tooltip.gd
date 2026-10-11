@@ -129,7 +129,7 @@ func attach_question(anchor: Control, entry_id: String) -> Button:
 	btn.flat = true
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.tooltip_text = ""
-	btn.custom_minimum_size = Vector2(24, 24)
+	btn.custom_minimum_size = Vector2(44, 44)
 	anchor.add_child(btn)
 	btn.mouse_entered.connect(func(): _show_entry(entry_id, btn.get_global_rect().end))
 	btn.mouse_exited.connect(hide_term)

@@ -13,6 +13,9 @@ const SCENE_GENDER_SELECT = preload("res://scenes/ui/gender_select.tscn")
 @onready var about_btn: Button = $VBoxContainer/About
 @onready var encyclopedia_btn: Button = $VBoxContainer/Encyclopedia
 @onready var exit_btn: Button = $VBoxContainer/Exit
+@onready var title_label: Label = $Label
+@onready var separator: ColorRect = $Separator
+@onready var menu_box: VBoxContainer = $VBoxContainer
 
 var settings_panel: Control
 var about_panel: Control
@@ -59,6 +62,29 @@ func _ready():
 	gender_select_panel.chosen.connect(_on_gender_chosen)
 	gender_select_panel.closed.connect(_on_close_gender_select)
 	add_child(gender_select_panel)
+	_layout_for_viewport()
+	get_viewport().size_changed.connect(_layout_for_viewport)
+
+
+func _layout_for_viewport() -> void:
+	var viewport := get_viewport().get_visible_rect().size
+	if viewport.x <= 0.0 or viewport.y <= 0.0:
+		return
+	var scale := minf(viewport.x / 1920.0, viewport.y / 1080.0)
+	var center := viewport * 0.5
+	var menu_width := clampf(viewport.x * 0.28, 360.0, 520.0)
+	var title_width := minf(viewport.x - 64.0, 900.0)
+	title_label.position = Vector2(
+		center.x - title_width * 0.5, maxf(48.0, center.y - 400.0 * scale)
+	)
+	title_label.size = Vector2(title_width, 150.0 * scale)
+	title_label.add_theme_font_size_override("font_size", maxi(48, int(120.0 * scale)))
+	separator.position = Vector2(center.x - 125.0 * scale, center.y - 202.0 * scale)
+	separator.size = Vector2(250.0 * scale, 4.0)
+	menu_box.position = Vector2(center.x - menu_width * 0.5, center.y - 165.0 * scale)
+	menu_box.size = Vector2(
+		menu_width, minf(viewport.y - menu_box.position.y - 24.0, 553.0 * scale)
+	)
 
 
 func _has_save() -> bool:

@@ -143,12 +143,12 @@ func _cache_rest(root_node: Node) -> void:
 
 
 func _on_chalk_pick_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if _is_primary_press(event):
 		_select_chalk_color(current_color)
 
 
 func _on_eraser_pick_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if _is_primary_press(event):
 		_select_eraser()
 
 
@@ -170,8 +170,18 @@ func _select_eraser() -> void:
 
 
 func _on_swatch_input(event: InputEvent, swatch: Panel) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if _is_primary_press(event):
 		_select_chalk_color(_swatch_color(swatch))
+
+
+func _is_primary_press(event: InputEvent) -> bool:
+	if event is InputEventMouseButton:
+		var button := event as InputEventMouseButton
+		return button.pressed and button.button_index == MOUSE_BUTTON_LEFT
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		return touch.index == 0 and touch.pressed
+	return false
 
 
 func _swatch_color(swatch: Panel) -> Color:
@@ -272,20 +282,25 @@ func _is_on_ui(pos: Vector2) -> bool:
 func _input(event):
 	if not is_visible_in_tree() or not input_enabled:
 		return
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			if event.pressed:
-				var head := _head_in_column(event.position)
+	if event is InputEventMouseButton or event is InputEventScreenTouch:
+		var pos: Vector2 = event.position
+		var pressed: bool = event.pressed
+		if (
+			(event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT)
+			or event is InputEventScreenTouch
+		):
+			if pressed:
+				var head := _head_in_column(pos)
 				if head:
 					drag_source = head
-					drag_press = event.position
+					drag_press = pos
 					return
-				dragged_marker = _get_marker_at(event.position)
+				dragged_marker = _get_marker_at(pos)
 				if dragged_marker:
 					return
-				if _is_on_ui(event.position):
+				if _is_on_ui(pos):
 					return
-				var local := _to_local_point(event.position)
+				var local := _to_local_point(pos)
 				if not _contains_local(local):
 					return
 				is_drawing = true
@@ -300,21 +315,22 @@ func _input(event):
 					chalk.visible = true
 					_place_chalk_cursor(local)
 			else:
-				_finish_avatar_drag(event.position)
+				_finish_avatar_drag(pos)
 				dragged_marker = null
 				is_drawing = false
 				is_erasing = false
 				chalk.visible = false
 				eraser.visible = false
 				drawing_surface.queue_redraw()
-	elif event is InputEventMouseMotion:
+	elif event is InputEventMouseMotion or event is InputEventScreenDrag:
+		var pos: Vector2 = event.position
 		if drag_source:
-			_update_avatar_drag(event.position)
+			_update_avatar_drag(pos)
 			return
 		if dragged_marker:
-			dragged_marker.position = event.position - dragged_marker.size / 2.0
+			dragged_marker.position = pos - dragged_marker.size / 2.0
 		elif is_drawing:
-			var local := _to_local_point(event.position)
+			var local := _to_local_point(pos)
 			if is_eraser_mode:
 				_place_eraser_cursor(local)
 				if is_erasing:

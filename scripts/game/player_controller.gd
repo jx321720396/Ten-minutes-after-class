@@ -603,10 +603,20 @@ func _on_phase_changed(snapshot_data: Dictionary) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not click_to_move or _player_actor == null or not can_control():
 		return
-	var button := event as InputEventMouseButton
-	if button == null or not button.pressed or button.button_index != click_button:
+	var screen_pos := Vector2(-1.0, -1.0)
+	if event is InputEventMouseButton:
+		var button := event as InputEventMouseButton
+		if not button.pressed or button.button_index != click_button:
+			return
+		screen_pos = button.position
+	elif event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		if touch.index != 0 or not touch.pressed:
+			return
+		screen_pos = touch.position
+	else:
 		return
-	if str(handle_click(button.position)) != "ignored":
+	if str(handle_click(screen_pos)) != "ignored":
 		get_viewport().set_input_as_handled()
 
 

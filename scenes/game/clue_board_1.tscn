@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://85tyegdfkhg0"]
 
 [ext_resource type="Script" uid="uid://15g00axq0xxy" path="res://scripts/game/clue_board_1.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/ui/touch_scroll_container.gd" id="3_touch_scroll"]
 [ext_resource type="Texture2D" uid="uid://cti8ayrvx60ru" path="res://assets/textures/clueboard/01.png" id="2_ddmx5"]
 [ext_resource type="PackedScene" path="res://scenes/character_head/blunt_female.tscn" id="4_bf"]
 [ext_resource type="PackedScene" path="res://scenes/character_head/blunt_male.tscn" id="4_bm"]
@@ -162,8 +163,8 @@ grow_vertical = 2
 [node name="Chalk" type="TextureRect" parent="." unique_id=139972788]
 texture_filter = 2
 layout_mode = 0
-offset_right = 48.0
-offset_bottom = 44.0
+offset_right = 64.0
+offset_bottom = 60.0
 mouse_filter = 2
 texture = ExtResource("7_chalk_cursor")
 expand_mode = 1
@@ -172,8 +173,8 @@ stretch_mode = 5
 [node name="Eraser" type="TextureRect" parent="." unique_id=60578797]
 texture_filter = 2
 layout_mode = 0
-offset_right = 44.0
-offset_bottom = 70.0
+offset_right = 64.0
+offset_bottom = 96.0
 mouse_filter = 2
 texture = ExtResource("8_eraser_cursor")
 expand_mode = 1
@@ -181,19 +182,19 @@ stretch_mode = 5
 
 [node name="ToolTray" type="Panel" parent="." unique_id=1653739267]
 layout_mode = 0
-offset_left = 731.0
+offset_left = 711.0
 offset_top = 988.0
-offset_right = 887.0
-offset_bottom = 1066.0
+offset_right = 907.0
+offset_bottom = 1072.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_tray")
 
 [node name="ChalkPick" type="TextureRect" parent="ToolTray" unique_id=1966780685]
 texture_filter = 2
 layout_mode = 0
 offset_left = 16.0
-offset_top = -28.0
-offset_right = 64.0
-offset_bottom = 70.0
+offset_top = -32.0
+offset_right = 80.0
+offset_bottom = 76.0
 mouse_filter = 0
 texture = ExtResource("6_stick_up")
 expand_mode = 1
@@ -201,10 +202,10 @@ stretch_mode = 5
 
 [node name="EraserPick" type="Panel" parent="ToolTray" unique_id=945861605]
 layout_mode = 0
-offset_left = 82.0
-offset_top = -16.0
-offset_right = 140.0
-offset_bottom = 70.0
+offset_left = 94.0
+offset_top = -20.0
+offset_right = 170.0
+offset_bottom = 76.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_eraser_pick")
 
 [node name="Band" type="ColorRect" parent="ToolTray/EraserPick" unique_id=1621591382]
@@ -219,9 +220,9 @@ color = Color(0.96, 0.95, 0.92, 1)
 
 [node name="ColorPalette" type="Panel" parent="." unique_id=591564681]
 layout_mode = 0
-offset_left = 903.0
+offset_left = 923.0
 offset_top = 988.0
-offset_right = 1247.0
+offset_right = 1267.0
 offset_bottom = 1066.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_tray")
 
@@ -268,10 +269,11 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_sw4")
 [node name="BoardAvatars" type="Node2D" parent="." unique_id=317813545]
 
 [node name="AvatarColumn" type="ScrollContainer" parent="." unique_id=665655205]
+script = ExtResource("3_touch_scroll")
 layout_mode = 0
 offset_left = 64.0
 offset_top = 43.0
-offset_right = 208.0
+offset_right = 240.0
 offset_bottom = 997.0
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 2
@@ -281,150 +283,150 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="SlotQuietFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1135635338]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Quiet_female" parent="AvatarColumn/AvatarList/SlotQuietFemale" unique_id=1304210888 instance=ExtResource("4_qf")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotQuietMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1259803862]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Quiet_male" parent="AvatarColumn/AvatarList/SlotQuietMale" unique_id=37284335 instance=ExtResource("4_qm")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotSternFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=251931617]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Stern_female" parent="AvatarColumn/AvatarList/SlotSternFemale" unique_id=838118288 instance=ExtResource("4_sf")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotSternMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1522215030]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Stern_male" parent="AvatarColumn/AvatarList/SlotSternMale" unique_id=1001137291 instance=ExtResource("4_sm")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotTsundereFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1912539885]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Tsundere_female" parent="AvatarColumn/AvatarList/SlotTsundereFemale" unique_id=1489677518 instance=ExtResource("4_tf")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotTsundereMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1607493802]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Tsundere_male" parent="AvatarColumn/AvatarList/SlotTsundereMale" unique_id=787524406 instance=ExtResource("4_tm")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotSensitiveFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1808133948]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Sensitive_female" parent="AvatarColumn/AvatarList/SlotSensitiveFemale" unique_id=214806802 instance=ExtResource("4_sef")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotSensitiveMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=806685314]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Sensitive_male" parent="AvatarColumn/AvatarList/SlotSensitiveMale" unique_id=229570468 instance=ExtResource("4_sem")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotLivelyFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=767528331]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Lively_female" parent="AvatarColumn/AvatarList/SlotLivelyFemale" unique_id=1869552078 instance=ExtResource("4_lf")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotLivelyMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=442465289]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Lively_male" parent="AvatarColumn/AvatarList/SlotLivelyMale" unique_id=1688781278 instance=ExtResource("4_lm")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotWarmFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=2058929090]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Warm_female" parent="AvatarColumn/AvatarList/SlotWarmFemale" unique_id=2010729987 instance=ExtResource("4_wf")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotWarmMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1096985865]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Warm_male" parent="AvatarColumn/AvatarList/SlotWarmMale" unique_id=1424250193 instance=ExtResource("4_wm")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotBluntFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1261570466]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Blunt_female" parent="AvatarColumn/AvatarList/SlotBluntFemale" unique_id=1114294926 instance=ExtResource("4_bf")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotBluntMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=29252337]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Blunt_male" parent="AvatarColumn/AvatarList/SlotBluntMale" unique_id=288820711 instance=ExtResource("4_bm")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotShyFemale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1107070662]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Shy_female" parent="AvatarColumn/AvatarList/SlotShyFemale" unique_id=2133781159 instance=ExtResource("4_shf")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotShyMale" type="Panel" parent="AvatarColumn/AvatarList" unique_id=1021526578]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
 [node name="Shy_male" parent="AvatarColumn/AvatarList/SlotShyMale" unique_id=1345116334 instance=ExtResource("4_shm")]
-position = Vector2(64, 64)
-scale = Vector2(0.5, 0.5)
+position = Vector2(78, 78)
+scale = Vector2(0.68, 0.68)
 
 [node name="SlotEmpty" type="Panel" parent="AvatarColumn/AvatarList" unique_id=177722052]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(156, 156)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
