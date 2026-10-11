@@ -60,6 +60,7 @@ var _packet: Dictionary = {}
 var _pen_hold := false
 var _leave_dialog: ConfirmationDialog = null
 var _book_gift_dialog: AcceptDialog = null
+var _teacher_label: Label = null
 var _bar_timer := 0.0
 
 
@@ -216,7 +217,7 @@ func _on_self_behavior(kind: StringName) -> void:
 		if _hud != null:
 			_hud.show_status(_action_reason(str(result.get("error", ""))))
 		return
-	if _hud != null:
+	if _hud != null and not bool(result.get("teacher_feedback", false)):
 		if action == "study":
 			_hud.show_status("你回到座位，开始学习。")
 			# 学习态给一次气泡反馈（§8.23：学习要看得出来）
@@ -459,9 +460,10 @@ func _bar_states() -> Dictionary:
 				"吃零食（%d）" % int(_core.inventory_of(int(_core.node_count()) - 1)["snacks"])
 			)
 		if kind == "read_book":
-			states[StringName(kind)]["books"] = int(
-				_core.inventory_of(int(_core.node_count()) - 1)["books"]
-			)
+			var inventory: Dictionary = _core.inventory_of(int(_core.node_count()) - 1)
+			states[StringName(kind)]["books"] = int(inventory["books"])
+			states[StringName(kind)]["confiscated_books"] = int(inventory["confiscated_books"])
+			states[StringName(kind)]["exemption_tokens"] = int(inventory["exemption_tokens"])
 	return states
 
 
@@ -499,6 +501,8 @@ func _action_reason(error: String) -> String:
 			return "你正忙着"
 		"phase_not_allowed":
 			return "上课呢，下课再说"
+		"no_book":
+			return "你还没有课外书。"
 		"not_in_seat":
 			return "回到自己座位上才能学习"
 		"target_unavailable":
@@ -746,6 +750,23 @@ func _on_request_failed(request_id: int, reason: StringName) -> void:
 ## 只处理带 request_id 的玩家通知；圈 / 气泡 / 线索全部走这一条入口。
 func _on_event_happened(payload: Dictionary) -> void:
 	var kind := str(payload.get("kind", ""))
+	if kind in ["teacher_arrived", "teacher_left"]:
+		if _hud != null:
+			_hud.show_status("老师进来了。" if kind == "teacher_arrived" else "老师回办公室了。")
+		_refresh_teacher()
+		return
+	if kind in ["book_confiscated", "book_confiscation_exempted", "teacher_caught"]:
+		if _core == null or int(payload.get("i", -1)) != int(_core.node_count()) - 1:
+			return
+		if _hud != null:
+			var message := "老师看了你一眼。"
+			if kind == "book_confiscated":
+				message = "老师把书收走了。"
+			elif kind == "book_confiscation_exempted":
+				message = "用掉一张免罚卷，老师没有收走你的书。"
+			_hud.show_status(message, 5.0)
+		_refresh_bar()
+		return
 	if kind == "player_returned":
 		if _hud != null:
 			_hud.show_status("你回到教室，刚好听见铃声。")
@@ -807,7 +828,7 @@ func _show_book_gift(payload: Dictionary) -> void:
 	var donor := int(payload.get("donor", -1))
 	var message := "%s 塞给你一本课外书：「看这个，别老闷着。」" % _display_name(donor)
 	if bool(payload.get("first", false)):
-		message += "\n现在可以看课外书了。\n后续老师巡查会有没收风险；当前版本尚未接通没收。"
+		message += "\n现在可以看课外书了。\n被老师看到正在看书，书会被收走。"
 	_book_gift_dialog.dialog_text = message
 	_book_gift_dialog.popup_centered()
 
@@ -865,6 +886,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	_refresh_teacher()
 	# 纸条提示优先于菜单刷新：它**不打断**正在做的事，任何时候都可能到手
 	_poll_note()
 	if _bar == null:
@@ -909,3 +931,23 @@ func _phase_ok() -> bool:
 		str(snapshot.get("mode", "")) == SimulationClock.MODE_RUNNING
 		and bool(snapshot.get("player_control", true))
 	)
+
+
+func _refresh_teacher() -> void:
+	if _core == null:
+		return
+	if _teacher_label == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 12
+		add_child(layer)
+		_teacher_label = Label.new()
+		layer.add_child(_teacher_label)
+		_teacher_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		_teacher_label.offset_left = -120
+		_teacher_label.offset_right = 120
+		_teacher_label.offset_top = 12
+		_teacher_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_teacher_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_teacher_label.add_theme_font_size_override("font_size", 24)
+	var state: Dictionary = _core.teacher_state()
+	_teacher_label.text = "老师在教室" if bool(state["present"]) else "老师在办公室"

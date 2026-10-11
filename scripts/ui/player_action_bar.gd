@@ -113,6 +113,13 @@ func refresh(states: Dictionary) -> void:
 			"持有物：%s · 课外书 %d"
 			% [snack_label.replace("吃", ""), int(states.get(&"read_book", {}).get("books", 0))]
 		)
+		var books: Dictionary = states.get(&"read_book", {})
+		var confiscated := int(books.get("confiscated_books", 0))
+		var tokens := int(books.get("exemption_tokens", 0))
+		if confiscated > 0:
+			_inventory_label.text += " · 老师保管 %d 本（暂不能取回）" % confiscated
+		if tokens > 0:
+			_inventory_label.text += " · 免罚卷 %d" % tokens
 	_update_highlight()
 
 

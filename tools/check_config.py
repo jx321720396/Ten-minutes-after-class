@@ -406,6 +406,18 @@ _tparams = params("rules/transmission.csv")
 check("P0-3：上课好感增量为正且有限", math.isfinite(_tparams.get("class_affinity_gain", 0)) and _tparams.get("class_affinity_gain", 0) > 0)
 _lprobs = {r["behavior"]: float(r["base_p"]) for r in load("rules/behavior_probs.csv")}
 check("P0-3：三种行为概率存在且在 [0,1]", all(0 <= _lprobs.get(k, -1) <= 1 for k in ("music_p", "snack_p", "book_p")))
+# P0-2/P3：巡查与没收参数定义；运行该校验仍遵从用户指令。
+_teacher = params("rules/teacher.csv")
+for _key in ("visit_check_first", "visit_check_second", "stay_ticks", "confiscate_books_per_catch"):
+    _value = _teacher.get(_key, 0)
+    check("老师：%s 正整数" % _key, math.isfinite(_value) and _value > 0 and int(_value) == _value)
+for _key in ("visit_p", "suppress_behavior_mult", "volume_target_mult"):
+    _value = _teacher.get(_key, -1)
+    check("老师：%s 在 [0,1]" % _key, math.isfinite(_value) and 0 <= _value <= 1)
+check("老师：巡查点按先后顺序且在课间内", 0 < _teacher["visit_check_first"] < _teacher["visit_check_second"]
+      <= min(int(row["tick_count"]) for row in ph if row["kind"] == "break"))
+check("老师：没收只收正在读的一本", _teacher["confiscate_books_per_catch"] == 1)
+
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)

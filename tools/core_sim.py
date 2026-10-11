@@ -20,6 +20,7 @@ import math
 import os
 import random
 from player_invitations import PlayerInvitations, invitation_behavior
+from teacher_patrol import TeacherPatrol
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -158,6 +159,7 @@ class Sim:
                                         noise=self.leisure[prefix + "_noise"],
                                         kind="env", join_mode="none")
         self.N = npc_count + 1  # 索引 N-1 为玩家
+        self.teacher = TeacherPatrol(load_params("rules/teacher.csv"), self.N)
 
         # --- 状态矩阵 ---
         n = self.N
@@ -903,7 +905,7 @@ class Sim:
                        if j != i and j not in busy and self.can_interact_with(j)
                        and self.are_neighbors(i, j)      # 调侃需物理接近（§10.12 围观前提）
                        and (self.A[i][j] >= 40.0 or self.B["hostility"][i][j] >= 25.0 or self.A[i][j] < 25.0)]
-            if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * (1.0 + self.tag_bias(i, "tease_bias")):
+            if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * self.teacher.multiplier("tease") * (1.0 + self.tag_bias(i, "tease_bias")):
                 wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
                 j = self.rng.choices(cands_t, weights=wts, k=1)[0]
                 # **围观者 = 物理上在场的人（邻居）**，而不是「全班减去两个忙人」。
@@ -927,7 +929,7 @@ class Sim:
             # 意向类：追逐打闹 —— 敌对种子（参与者好感↑ / 旁观者敌对↑）
             th_rh = self.thresholds_lookup.get("roughhouse_affinity", 45.0)
             th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
-            if self.allowed("roughhouse") and self.dims[i][0] >= th_rh and self.rng.random() < self.probs.get("roughhouse_p", 0.05):
+            if self.allowed("roughhouse") and self.dims[i][0] >= th_rh and self.rng.random() < self.probs.get("roughhouse_p", 0.05) * self.teacher.multiplier("roughhouse"):
                 others = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)]
                 if others:
                     # 追跑对象按外向度加权：越外向越可能一起闹（→ 同样的少数人反复搭配）
@@ -952,7 +954,7 @@ class Sim:
             # ⚠️ 原判据是「≥3 人**恨**他 ≥40」，方向反了 —— 欺凌是**多对一**：
             #    施害者多人、受害者一人，**受害者只能单向记恨**，永远凑不出「3 人恨他」。
             #    集体排斥的证据在**施害者一侧**：有多少人**对他做过敌对行为**。
-            if self.allowed("exclude") and self.rng.random() < self.probs.get("exclude_p", 0.04):
+            if self.allowed("exclude") and self.rng.random() < self.probs.get("exclude_p", 0.04) * self.teacher.multiplier("exclude"):
                 th_n = int(self.thresholds_lookup.get("exclude_count", 3))
                 cd_days = self.thresholds_lookup.get("exclude_cooldown", 7.0)
                 window = self.thresholds_lookup.get("exclude_window", 7.0)
@@ -1047,6 +1049,8 @@ class Sim:
             self.snacks_remaining -= 1
         self.occupy(i, i, kind)
         self.stats[kind] = self.stats.get(kind, 0) + 1
+        if kind == "read_book":
+            self.teacher.catch_reader(self, i)
         return True
 
     def leave_class(self):
@@ -1678,6 +1682,8 @@ class Sim:
             if act is None:
                 continue
             target += self.behaviors.get(act, {}).get("noise", 0.0)
+        if self.teacher.present:
+            target *= self.teacher.params["volume_target_mult"]
         target = clamp(target, 0.0, e.get("volume_max", 100.0))
         rate = e.get("adapt_rate", 0.02)
         self.volume = clamp(self.volume + rate * (target - self.volume), 0.0, e.get("volume_max", 100.0))
@@ -2062,6 +2068,7 @@ class Sim:
     def tick(self):
         self.global_tick += 1
         self.settle_finished_actions()
+        self.teacher.step(self)
         self.decide_and_act()
         self.process_notes()          # 纸条链（§8.6）：每 tick 处理一张纸条
         self.study_accumulate()
@@ -2146,6 +2153,7 @@ class Sim:
         """
         self.phase = self.day_phases[self.phase_index][0]
         self.tick_in_phase = 0
+        self.teacher.begin_phase(self)
         if self.phase == "break":
             self.book_gifts_this_break = 0
         self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）

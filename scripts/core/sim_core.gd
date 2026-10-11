@@ -160,6 +160,7 @@ var _absence: Dictionary = {}
 var _book: Array = []
 var _book_gifted: Array = []
 var _book_gifts_this_break := 0
+var _teacher := TeacherPatrol.new()
 var _snacks_remaining := 0
 var _player_absent := false
 var _leave_count := 0
@@ -266,6 +267,7 @@ static func from_npc(seed: int, npc_count: int, tables: Dictionary) -> SimCore:
 
 
 func _load_config(tables: Dictionary) -> void:
+	_teacher.configure(_params(tables, "rules/teacher"), _n)
 	_leisure = _params(tables, "rules/leisure")
 	_absence = _params(tables, "rules/player_absence")
 	_p = _params(tables, "rules/transmission")
@@ -546,6 +548,7 @@ func _begin_phase() -> void:
 	var row: Dictionary = _active_phases[_phase_index]
 	_phase = str(row["kind"])
 	_tick_in_phase = 0
+	_teacher.begin_phase(self)
 	_roll_sleep()
 	if _phase == "break":
 		_book_gifts_this_break = 0
@@ -716,6 +719,7 @@ func _settle_finished_actions() -> void:
 func _tick() -> void:
 	_global_tick += 1
 	_settle_finished_actions()
+	_teacher.step(self)
 	_decide_and_act()
 	_process_notes()  # 纸条链（§8.6）：每 tick 处理一张纸条
 	_study_accumulate()
@@ -1179,6 +1183,8 @@ func _update_environment() -> void:
 		if act == null:
 			continue
 		target += float(_behaviors.get(act, {}).get("noise", 0.0))
+	if _teacher.present:
+		target *= float(_teacher.params["volume_target_mult"])
 	var volume_max := float(_env["volume_max"])
 	target = clampf(target, 0.0, volume_max)
 	var rate := float(_env["adapt_rate"])
@@ -1711,7 +1717,7 @@ func _decide_and_act() -> void:
 		if (
 			_allowed("tease")
 			and cands_t.size() >= 3
-			and _rng.random() < float(_probs["tease_p"]) * (1.0 + _tag_bias(i, "tease_bias"))
+			and _rng.random() < float(_probs["tease_p"]) * _teacher.multiplier("tease") * (1.0 + _tag_bias(i, "tease_bias"))
 		):
 			var wts: Array = []
 			for t in cands_t:
@@ -1738,7 +1744,7 @@ func _decide_and_act() -> void:
 		if (
 			_allowed("roughhouse")
 			and _dims[i] >= th_rh
-			and _rng.random() < float(_probs["roughhouse_p"])
+			and _rng.random() < float(_probs["roughhouse_p"]) * _teacher.multiplier("roughhouse")
 		):
 			var others: Array = []
 			for j in range(n):
@@ -1771,7 +1777,7 @@ func _decide_and_act() -> void:
 					busy[tgt] = true
 					continue
 		# 阈值类：排挤（「大家都讨厌他」→ 集体驱逐；证据在施害者一侧）
-		if _allowed("exclude") and _rng.random() < float(_probs["exclude_p"]):
+		if _allowed("exclude") and _rng.random() < float(_probs["exclude_p"]) * _teacher.multiplier("exclude"):
 			var th_n := int(_thresholds_lookup["exclude_count"])
 			var cd_days := float(_thresholds_lookup["exclude_cooldown"])
 			var window := float(_thresholds_lookup["exclude_window"])
@@ -1873,7 +1879,11 @@ func is_present(i: int) -> bool:
 
 
 func inventory_of(i: int) -> Dictionary:
-	return {"books": int(_book[i]), "snacks": _snacks_remaining if is_player(i) else -1}
+	return {
+		"books": int(_book[i]), "snacks": _snacks_remaining if is_player(i) else -1,
+		"confiscated_books": int(_teacher.confiscated[i]),
+		"exemption_tokens": int(_teacher.exemption_tokens[i]),
+	}
 
 
 func _start_leisure(i: int, kind: String) -> bool:
@@ -2414,6 +2424,9 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 	if not blocked.is_empty():
 		return {"ok": false, "error": blocked}
 	if PLAYER_SELF_KINDS.has(kind):
+		var teacher_feedback := (
+			kind == "read_book" and _teacher.present and not _teacher.exempt_this_visit[me]
+		)
 		match kind:
 			"study":
 				_do_study(me)
@@ -2423,7 +2436,11 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 				_leave_class()
 			_:
 				_start_leisure(me, kind)
-		return {"ok": true, "kind": kind, "accepted": true}
+		return {
+			"ok": true, "kind": kind, "accepted": true,
+			"confiscated": kind == "read_book" and _busy_act[me] != "read_book",
+			"teacher_feedback": teacher_feedback,
+		}
 	var a_before := _a[target * _n + me]  # 目标→玩家的好感（行动前的反应基线）
 	var h_before := _h[target * _n + me]
 	match kind:
@@ -2858,7 +2875,7 @@ func dimension(i: int, dim: int) -> float:
 
 ## 行为基础概率（来自 data/rules/behavior_probs.csv）；未注册返回 0.0。
 func behavior_base_p(behavior: String) -> float:
-	return float(_probs.get(behavior, 0.0))
+	return float(_probs.get(behavior, 0.0)) * _teacher.multiplier(behavior)
 
 
 ## 某人此刻在做什么（UI 用）：真实行为名（如 "study"）；空闲才是空串。
@@ -3005,3 +3022,8 @@ func _float_or(row: Dictionary, key: String, fallback: float) -> float:
 	if s == "":
 		return fallback
 	return float(s)
+
+
+## 老师位置是环境事实，不暴露 NPC 关系数据。
+func teacher_state() -> Dictionary:
+	return _teacher.snapshot()
