@@ -12,6 +12,8 @@ var phase: String = ""
 var player_gender: String = "male"
 
 var sim_core: Variant = null
+## 期末「再玩一局」交回主菜单已有的性别选择流程。
+var new_game_requested := false
 
 
 func start_game(new_seed: int, new_difficulty: int) -> void:
