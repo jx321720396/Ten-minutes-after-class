@@ -203,6 +203,11 @@ class Sim:
         # ⚠️ 本层**只记录**：内核不自己算移动，也不因位置改变任何矩阵 —— 位置只用于
         #    范围判定与展示。真实空间版启用后，交互范围判定会读这里（见 can_interact_with）。
         self.pos_x = [0.0] * n
+        # 座位范围（§8.23）：半径来自几何表；世界坐标由表现层注入
+        self.seat_zone_radius = float(
+            load_params("rules/player_interaction.csv").get("seat_zone_radius_m", 0.5)
+        )
+        self.seat_world = {}
         self.pos_z = [0.0] * n
         self.busy_until = [0] * n        # 忙碌到何时（按行为 duration，替代统一冷却）
         self.busy_phase = [-1] * n       # 行为开始时的相位序号（用于判定「被下课铃打断」）
@@ -1296,6 +1301,17 @@ class Sim:
                  + row["w_j"] * d[3]
                  + row["w_stress"] * (self.Stress[i] - 50.0) / 50.0 + extra)
         return sigmoid((score - row["theta"]) / row["scale"])
+
+    def set_seat_zones(self, positions):
+        """表现层注入座位站位世界坐标：index -> (x, z)。参考只读。"""
+        self.seat_world = dict(positions)
+
+    def in_own_seat(self, i):
+        """是否在自己的座位范围内（§8.23）；未注入时保守返回 True。"""
+        if i not in self.seat_world:
+            return True
+        seat = self.seat_world[i]
+        return ((self.pos_x[i] - seat[0]) ** 2 + (self.pos_z[i] - seat[1]) ** 2) ** 0.5 <= self.seat_zone_radius
 
     def do_study(self, i):
         """学习（§8.23）：进入学习态（参考实现）。不占时间槽，靠 current_act 表达；

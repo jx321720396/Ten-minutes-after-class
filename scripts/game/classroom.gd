@@ -126,9 +126,50 @@ func _bind_feedback(core: Variant) -> void:
 	behavior_badge.bind_core(core)
 	behavior_badge.bind_actors(actors)
 	interaction.bind_feedback(action_bar, chat_hud, rings, chat_bubble, emotion, note_prompt)
+	_inject_seat_zones(core)
 	interaction.bind_sources(core, player, actors, clock)
 	npc_profile.bind_sources(core, actors, interaction)
 	action_bar.profile_requested.connect(npc_profile.open_profile)
+
+
+## 座位范围（§8.23 / §20.1.1）：把每个人的座位世界坐标注入内核（供「是否在自己座位上」判定），
+## 并只给**玩家自己**画一个地面圈 —— 需要在座位上才能做的行为有了可见的边界。
+func _inject_seat_zones(core: Variant) -> void:
+	if actors == null or core == null:
+		return
+	var zones := {}
+	for i in range(int(core.node_count())):
+		var p: Vector3 = actors.sit_position_of(i)
+		zones[i] = Vector2(p.x, p.z)
+	core.set_seat_zones(zones)
+	_build_player_seat_ring(core, zones)
+
+
+## 玩家座位的地面圈（半径与内核判定同一个口径）。
+func _build_player_seat_ring(core: Variant, zones: Dictionary) -> void:
+	var me := int(core.node_count()) - 1
+	if not zones.has(me):
+		return
+	var radius := 0.5
+	var params: Array = ConfigLoader.new().get_table("rules/player_interaction").get("rows", [])
+	for row in params:
+		if str(row.get("param", "")) == "seat_zone_radius_m":
+			radius = float(str(row.get("value", "0.5")))
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = 0.012
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.85, 0.72, 0.35, 0.22)
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mesh.material = material
+	var ring := MeshInstance3D.new()
+	ring.name = "PlayerSeatZone"
+	ring.mesh = mesh
+	var seat: Vector2 = zones[me]
+	ring.position = Vector3(seat.x, 0.008, seat.y)
+	add_child(ring)
 
 
 ## 日末简报的「进入第 N 天」：只有在 report 状态才成功；学期结束或依赖缺失时明确报开发状态，

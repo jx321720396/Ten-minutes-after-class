@@ -14,7 +14,8 @@ max-line-length: 120            # 放宽（100 → 120）：表格 / 常量清�
 
 max-file-lines: 3000            # 放宽（2500 → 3000）：sim_core.gd 是模拟内核本体（现 2519 行）；再涨应优先拆类
 
-max-public-methods: 60          # 放宽（40 → 60）：SimCore 的公开 API 多属结构使然；再涨应优先考虑拆类
+max-public-methods: 65          # 放宽（40 → 60 → 65）：SimCore 的公开 API 多属结构使然；
+                                # 2026-10-10 +2（set_seat_zones / in_own_seat）—— 再涨应优先把空间查询拆出去
 
 max-returns: 15                 # 放宽（默认 6 → 15）：状态机式「逐条件早返回」是正常写法（player_interactions.commit / 菜单文案）；再涨应优先拆函数
 
