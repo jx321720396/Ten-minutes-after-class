@@ -59,6 +59,7 @@ var _session_id := -1
 var _packet: Dictionary = {}
 var _pen_hold := false
 var _leave_dialog: ConfirmationDialog = null
+var _book_gift_dialog: AcceptDialog = null
 var _bar_timer := 0.0
 
 
@@ -749,6 +750,10 @@ func _on_event_happened(payload: Dictionary) -> void:
 		if _hud != null:
 			_hud.show_status("你回到教室，刚好听见铃声。")
 		return
+	if kind == "book_gift":
+		_show_book_gift(payload)
+		_refresh_bar()
+		return
 	if kind in ["leisure_finished", "leisure_interrupted"]:
 		if int(payload.get("i", -1)) != int(_core.node_count()) - 1:
 			return
@@ -791,6 +796,20 @@ func _on_event_happened(payload: Dictionary) -> void:
 			_on_finished(payload)
 		"player_interaction_interrupted":
 			_on_interrupted(payload)
+
+
+func _show_book_gift(payload: Dictionary) -> void:
+	if _book_gift_dialog == null:
+		_book_gift_dialog = AcceptDialog.new()
+		_book_gift_dialog.title = "收到课外书"
+		_book_gift_dialog.ok_button_text = "收下了"
+		add_child(_book_gift_dialog)
+	var donor := int(payload.get("donor", -1))
+	var message := "%s 塞给你一本课外书：「看这个，别老闷着。」" % _display_name(donor)
+	if bool(payload.get("first", false)):
+		message += "\n现在可以看课外书了。\n后续老师巡查会有没收风险；当前版本尚未接通没收。"
+	_book_gift_dialog.dialog_text = message
+	_book_gift_dialog.popup_centered()
 
 
 func _on_finished(payload: Dictionary) -> void:

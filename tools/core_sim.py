@@ -148,6 +148,10 @@ class Sim:
         others = [c for c in pool if c["book"] == "0"][:npc_count - book_count]
         self.chars = [c for c in pool if c in books or c in others]
         self.book = [int(c["book"]) for c in self.chars] + [0]
+        self.book_gifted = [False] * (npc_count + 1)
+        self.book_gifts_this_break = 0
+        self.book_gift_events = []
+        self.book_gift_chats = []
         self.snacks_remaining = int(self.leisure["snack_count_per_run"])
         for kind, prefix in LEISURE_KINDS.items():
             self.behaviors[kind] = dict(duration=int(self.leisure[prefix + "_duration"]),
@@ -1161,6 +1165,7 @@ class Sim:
         self.observe(i, j, "affinity")
         self.observe(j, i, "affinity")
         self.stats["chats"] += 1
+        self._record_book_gift_chat(i, j)
 
     @invitation_behavior("chat")
     def do_chat_join(self, i, j, roll=None):
@@ -1989,6 +1994,46 @@ class Sim:
                 interrupted.append(i)
         return interrupted
 
+    def _record_book_gift_chat(self, i, j):
+        # 合并共享成员的同场闲聊，不以同时到期推断共同活动。
+        members = {i, j}
+        end_tick = max(self.busy_until[i], self.busy_until[j])
+        for chat in self.book_gift_chats:
+            if members.intersection(chat["members"]):
+                chat["members"] = sorted(set(chat["members"]) | members)
+                chat["end_tick"] = max(chat["end_tick"], end_tick)
+                return
+        self.book_gift_chats.append(dict(members=sorted(members), end_tick=end_tick))
+
+    def _settle_book_gifts(self):
+        due = [chat for chat in self.book_gift_chats if chat["end_tick"] <= self.global_tick]
+        self.book_gift_chats = [chat for chat in self.book_gift_chats if chat["end_tick"] > self.global_tick]
+        if self.phase != "break":
+            return
+        player = self.N - 1
+        for chat in due:
+            if player not in chat["members"]:
+                continue
+            for donor in chat["members"]:
+                if self.book_gifts_this_break >= int(self.leisure["book_gift_max_per_break"]):
+                    return
+                if donor == player or self.book[donor] <= 0 or self.book_gifted[donor]:
+                    continue
+                if not all(self.is_present(i) and not self.sleeping[i] for i in (donor, player)):
+                    continue
+                if self.A[donor][player] < self.leisure["book_gift_affinity_threshold"]:
+                    continue
+                if self.T[donor][player] < self.leisure["book_gift_trust_threshold"]:
+                    continue
+                if self.rng.random() >= self.leisure["book_gift_probability"]:
+                    continue
+                self.book[donor] -= 1
+                self.book[player] += 1
+                self.book_gifted[donor] = True
+                self.book_gifts_this_break += 1
+                self.book_gift_events.append(dict(kind="book_gift", donor=donor, recipient=player,
+                                                 books=self.book[player], first=self.book[player] == 1))
+
     def settle_finished_actions(self):
         """行为完成结算：把**已到期**的占用收尾（§10.4 / §12.2 行为耗时契约）。
 
@@ -2011,6 +2056,8 @@ class Sim:
             self.current_act[i] = None
             self.busy_act[i] = None
             self.busy_phase[i] = -1
+
+        self._settle_book_gifts()
 
     def tick(self):
         self.global_tick += 1
@@ -2070,6 +2117,7 @@ class Sim:
             self.in_conversation[i] = False
         # 纸条链（§8.6）：**纸条只在当前时间段内存活**，进入下一个时间段即销毁。
         self.notes = []
+        self.book_gift_chats = []
         if self.player_absent:
             self.player_absent = False
             self.busy_until[self.N - 1] = 0
@@ -2098,6 +2146,8 @@ class Sim:
         """
         self.phase = self.day_phases[self.phase_index][0]
         self.tick_in_phase = 0
+        if self.phase == "break":
+            self.book_gifts_this_break = 0
         self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
         self.free_join()                  # 「别人做什么我也跟着做」（free 类活动，§10.31）
         if self.phase == "break":
