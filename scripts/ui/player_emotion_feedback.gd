@@ -18,11 +18,16 @@ extends CanvasLayer
 ## 全部阈值来自 data/ui/chat_feedback_style.csv。
 
 const STYLE_TABLE := "ui/chat_feedback_style"
+const FACE_TABLE := "ui/emotion_faces"
 const EMOTION_RELAXED := "relaxed"
 const EMOTION_ANGRY := "angry"
 const EMOTION_CRYING := "crying"
 const EMOTION_HAPPY := "happy"
-const BUBBLE_SIZE := Vector2(76.0, 40.0)
+## 学习态（§8.23）：不是情绪，但一样走气泡反馈，让玩家看得出自己在学
+const EMOTION_STUDYING := "studying"
+const BUBBLE_SIZE := Vector2(112.0, 40.0)
+## 气泡里表情图的边长（像素）
+const FACE_SIZE := 28.0
 ## 玩家情绪气泡相对头顶锚点的抬高量（米）：与聊天气泡错开，不叠在一起
 const ANCHOR_LIFT := 0.34
 
@@ -31,12 +36,14 @@ const TEXTS := {
 	EMOTION_ANGRY: "生气",
 	EMOTION_CRYING: "难受",
 	EMOTION_HAPPY: "开心",
+	EMOTION_STUDYING: "学习中",
 }
 const COLORS := {
 	EMOTION_RELAXED: Color(0.28, 0.58, 0.52, 0.95),
 	EMOTION_ANGRY: Color(0.72, 0.30, 0.24, 0.95),
 	EMOTION_CRYING: Color(0.30, 0.42, 0.68, 0.95),
 	EMOTION_HAPPY: Color(0.78, 0.58, 0.20, 0.95),
+	EMOTION_STUDYING: Color(0.20, 0.42, 0.30, 0.95),
 }
 
 var _core: Variant = null
@@ -44,6 +51,9 @@ var _actors: Node3D = null
 var _clock: SimulationClock = null
 var _bubble: PanelContainer = null
 var _label: Label = null
+var _face: TextureRect = null
+## 情绪（含学习态）→ 表情图路径；来自 data/ui/emotion_faces.csv
+var _faces: Dictionary = {}
 var _current := ""
 var _left := 0.0
 ## 映射阈值（全部来自呈现表）
@@ -56,6 +66,7 @@ var _anchor_height := 1.5
 
 func _ready() -> void:
 	_load_style()
+	_load_faces()
 	_build_ui()
 	_bubble.visible = false
 
@@ -116,7 +127,25 @@ func show_emotion(kind: String, seconds: float = 4.0) -> void:
 	_left = maxf(0.5, seconds)
 	_label.text = emotion_text(kind)
 	_label.add_theme_color_override("font_color", COLORS[kind])
+	var face := face_for(kind)
+	if _face != null:
+		_face.texture = face
+		_face.visible = face != null
 	_bubble.visible = true
+
+
+## 该情绪对应的表情图（按玩家性别）；无配图返回 null。
+func face_for(kind: String) -> Texture2D:
+	# 安全读：测试（GUT）里 GameState.player_gender 可能尚未设定，直接取会报错
+	var gs := get_node_or_null("/root/GameState")
+	var gender := "male"
+	var raw_gender: Variant = gs.get("player_gender") if gs != null else null
+	if raw_gender != null and str(raw_gender) == "female":
+		gender = "female"
+	var path := str(_faces.get("face_%s_%s" % [kind, gender], ""))
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	return load(path)
 
 
 func clear() -> void:
@@ -175,13 +204,24 @@ func _build_ui() -> void:
 	box.set_corner_radius_all(12)
 	box.set_content_margin_all(6.0)
 	_bubble.add_theme_stylebox_override("panel", box)
+	# Label 没有 icon 属性（那是 Button 的）—— 图与字并排得用容器。
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	_face = TextureRect.new()
+	_face.name = "Face"
+	_face.custom_minimum_size = Vector2(FACE_SIZE, FACE_SIZE)
+	_face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_face.visible = false
+	row.add_child(_face)
 	_label = Label.new()
 	_label.name = "Text"
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_label.add_theme_font_size_override("font_size", 18)
 	_label.add_theme_font_override("font", _font())
-	_bubble.add_child(_label)
+	row.add_child(_label)
+	_bubble.add_child(row)
 	add_child(_bubble)
 
 
@@ -191,6 +231,12 @@ func _font() -> Font:
 		["Microsoft YaHei", "微软雅黑", "SimHei", "Noto Sans CJK SC", "PingFang SC", "sans-serif"]
 	)
 	return font
+
+
+## 情绪 → 表情图（data/ui/emotion_faces.csv）。
+func _load_faces() -> void:
+	for row in ConfigLoader.new().get_table(FACE_TABLE).get("rows", []):
+		_faces[str(row.get("param", ""))] = str(row.get("value", ""))
 
 
 func _load_style() -> void:
