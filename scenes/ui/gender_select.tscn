@@ -1,0 +1,294 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/gender_select.gd" id="1_sel"]
+[ext_resource type="StyleBox" path="res://resources/new_style_box_flat.tres" id="2_panel"]
+[ext_resource type="Texture2D" path="res://assets/textures/characters/主角男.png" id="3_male"]
+[ext_resource type="Texture2D" path="res://assets/textures/characters/主角女.png" id="4_female"]
+
+[sub_resource type="StyleBoxFlat" id="SB_card_normal"]
+content_margin_left = 14.0
+content_margin_top = 14.0
+content_margin_right = 14.0
+content_margin_bottom = 14.0
+bg_color = Color(1, 0.97, 0.9, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.8, 0.7, 0.5, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.12, 0.08, 0.04, 0.14)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="SB_card_hover"]
+content_margin_left = 14.0
+content_margin_top = 14.0
+content_margin_right = 14.0
+content_margin_bottom = 14.0
+bg_color = Color(1, 0.96, 0.85, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.72, 0.6, 0.38, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.12, 0.08, 0.04, 0.22)
+shadow_size = 9
+
+[sub_resource type="StyleBoxFlat" id="SB_card_selected"]
+content_margin_left = 14.0
+content_margin_top = 14.0
+content_margin_right = 14.0
+content_margin_bottom = 14.0
+bg_color = Color(1, 0.94, 0.8, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.78, 0.65, 0.42, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.12, 0.08, 0.04, 0.26)
+shadow_size = 10
+
+[sub_resource type="StyleBoxFlat" id="SB_btn_normal"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(1, 0.97, 0.9, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0.8, 0.7, 0.5, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.12, 0.08, 0.04, 0.14)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="SB_btn_hover"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(1, 0.94, 0.8, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 3
+border_color = Color(0.72, 0.6, 0.38, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+shadow_color = Color(0.12, 0.08, 0.04, 0.22)
+shadow_size = 9
+
+[sub_resource type="StyleBoxFlat" id="SB_btn_pressed"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(0.94, 0.86, 0.68, 1)
+border_width_left = 2
+border_width_top = 3
+border_width_right = 2
+border_width_bottom = 1
+border_color = Color(0.65, 0.54, 0.34, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="SB_btn_disabled"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(0.9, 0.88, 0.84, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.76, 0.72, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[sub_resource type="StyleBoxFlat" id="SB_btn_focus"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
+bg_color = Color(1, 0.95, 0.83, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 4
+border_color = Color(0.52, 0.42, 0.26, 1)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+
+[node name="GenderSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_sel")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.45)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="CenterContainer"]
+custom_minimum_size = Vector2(720, 700)
+layout_mode = 2
+theme_override_styles/panel = ExtResource("2_panel")
+
+[node name="Margin" type="MarginContainer" parent="CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 34
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 34
+theme_override_constants/margin_bottom = 26
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="Title" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.15, 0.16, 0.22, 1)
+theme_override_font_sizes/font_size = 44
+text = "请选择你的性别"
+horizontal_alignment = 1
+
+[node name="Sep" type="ColorRect" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0.72, 0.7, 0.64, 1)
+
+[node name="Spacer1" type="Control" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+
+[node name="Row" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="MaleCard" type="PanelContainer" parent="CenterContainer/Panel/Margin/VBox/Row"]
+custom_minimum_size = Vector2(240, 480)
+layout_mode = 2
+theme_override_styles/panel = SubResource("SB_card_normal")
+
+[node name="Inner" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Row/MaleCard"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="Portrait" type="TextureRect" parent="CenterContainer/Panel/Margin/VBox/Row/MaleCard/Inner"]
+custom_minimum_size = Vector2(180, 400)
+layout_mode = 2
+size_flags_vertical = 3
+texture = ExtResource("3_male")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="CenterContainer/Panel/Margin/VBox/Row/MaleCard/Inner"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_font_sizes/font_size = 26
+text = "男"
+horizontal_alignment = 1
+
+[node name="FemaleCard" type="PanelContainer" parent="CenterContainer/Panel/Margin/VBox/Row"]
+custom_minimum_size = Vector2(240, 480)
+layout_mode = 2
+theme_override_styles/panel = SubResource("SB_card_normal")
+
+[node name="Inner" type="VBoxContainer" parent="CenterContainer/Panel/Margin/VBox/Row/FemaleCard"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="Portrait" type="TextureRect" parent="CenterContainer/Panel/Margin/VBox/Row/FemaleCard/Inner"]
+custom_minimum_size = Vector2(180, 400)
+layout_mode = 2
+size_flags_vertical = 3
+texture = ExtResource("4_female")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="CenterContainer/Panel/Margin/VBox/Row/FemaleCard/Inner"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_font_sizes/font_size = 26
+text = "女"
+horizontal_alignment = 1
+
+[node name="Spacer2" type="Control" parent="CenterContainer/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+
+[node name="Footer" type="HBoxContainer" parent="CenterContainer/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="BackBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/Footer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("SB_btn_normal")
+theme_override_styles/hover = SubResource("SB_btn_hover")
+theme_override_styles/pressed = SubResource("SB_btn_pressed")
+theme_override_styles/disabled = SubResource("SB_btn_disabled")
+theme_override_styles/focus = SubResource("SB_btn_focus")
+text = "返回"
+
+[node name="StartBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/Footer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("SB_btn_normal")
+theme_override_styles/hover = SubResource("SB_btn_hover")
+theme_override_styles/pressed = SubResource("SB_btn_pressed")
+theme_override_styles/disabled = SubResource("SB_btn_disabled")
+theme_override_styles/focus = SubResource("SB_btn_focus")
+text = "开始游戏"
