@@ -6,7 +6,9 @@ func test_load_all_reads_all_tables() -> void:
 	var loader := ConfigLoader.new()
 	var tables := loader.load_all()
 	# 新增独立世界倍速表与学业成绩分段表；其余既有表继续全部加载。
-	assert_eq(tables.size(), 30, "应读到 30 张表（含玩家邀请类型、世界倍速、学业成绩分段表与选择侧系数表）")
+	assert_eq(tables.size(), 32, "应读到 32 张表（含玩家邀请类型、世界倍速、学业成绩分段表与选择侧系数表）")
+	assert_true(tables.has("rules/leisure"))
+	assert_true(tables.has("rules/player_absence"))
 	assert_true(tables.has("rules/behaviors"), "rules/behaviors 应在")
 	assert_true(tables.has("rules/stand_points"), "rules/stand_points 应在")
 	assert_true(tables.has("rules/time_presentation"), "rules/time_presentation 应在")

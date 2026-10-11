@@ -370,6 +370,32 @@ check("玩家邀请：requires_choice 为 0/1", all(r["requires_choice"] in ("0"
 check("玩家邀请：行为存在于 behaviors", all(r["behavior"] in {r["behavior"] for r in load("rules/behaviors.csv")} for r in _invite_kinds))
 _invite_params = params("rules/player_interaction.csv")
 check("玩家邀请：有效期与再次邀请间隔为正整数", all(_invite_params.get(k, 0) > 0 and int(_invite_params[k]) == _invite_params[k] for k in ("invitation_timeout_ticks", "invitation_cooldown_ticks")))
+_leisure = params("rules/leisure.csv")
+for prefix in ("music", "snack", "book"):
+    check("P0-3 %s：减压与时长为正" % prefix,
+          all(math.isfinite(_leisure.get(prefix + suffix, 0)) and _leisure.get(prefix + suffix, 0) > 0
+              for suffix in ("_relief", "_duration")))
+    check("P0-3 %s：时长为整数、噪声非负" % prefix,
+          _leisure[prefix + "_duration"] == int(_leisure[prefix + "_duration"])
+          and math.isfinite(_leisure.get(prefix + "_noise", -1)) and _leisure.get(prefix + "_noise", -1) >= 0)
+_seed_books = load("characters/seeds.csv")
+check("P0-3：课外书种子仅 0/1", all(r.get("book") in ("0", "1") for r in _seed_books))
+for count in (8, 16, 24):
+    quota = _leisure.get("book_count_%d" % count, -1)
+    available = sum(r.get("book") == "1" for r in _seed_books)
+    check("P0-3 %d 人班：持书配额可抽足" % count,
+          0 <= quota <= count and int(quota) == quota and quota <= available
+          and count - quota <= len(_seed_books) - available)
+check("P0-3：玩家零食为非负整数", _leisure.get("snack_count_per_run", -1) >= 0
+      and _leisure["snack_count_per_run"] == int(_leisure["snack_count_per_run"]))
+check("P0-3：中断压力有限且非负", math.isfinite(_leisure.get("interrupted_stress", -1)) and _leisure.get("interrupted_stress", -1) >= 0)
+_absence = params("rules/player_absence.csv")
+check("P0-3：出门限制为正整数", _absence.get("max_per_break", 0) > 0
+      and _absence["max_per_break"] == int(_absence["max_per_break"]))
+_tparams = params("rules/transmission.csv")
+check("P0-3：上课好感增量为正且有限", math.isfinite(_tparams.get("class_affinity_gain", 0)) and _tparams.get("class_affinity_gain", 0) > 0)
+_lprobs = {r["behavior"]: float(r["base_p"]) for r in load("rules/behavior_probs.csv")}
+check("P0-3：三种行为概率存在且在 [0,1]", all(0 <= _lprobs.get(k, -1) <= 1 for k in ("music_p", "snack_p", "book_p")))
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)

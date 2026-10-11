@@ -78,6 +78,9 @@ def run_one(seed, days, npc):
         "excludes": s.stats.get("excludes", 0),
         "humiliations": s.stats.get("humiliations", 0),
         "bursts": s.stats["bursts"],
+        "listen_music": s.stats.get("listen_music", 0),
+        "eat_snack": s.stats.get("eat_snack", 0),
+        "read_book": s.stats.get("read_book", 0),
         "deep_max": max(s.H_deep[i][j] for i in range(n) for j in range(n) if i != j),
         "sat": 100.0 * sum(1 for x in aff if x >= 95) / len(aff),
         "A": aff,
@@ -133,6 +136,10 @@ def main():
         line(rate >= th * 100, label,
              "%2d/%d 局上场（%.0f%%，共 %d 次）" % (hit, len(rows), rate, sum(r[key] for r in rows)),
              "≥ %.0f%% 的局" % (th * 100))
+
+    for key, label in [("listen_music", "听音乐"), ("eat_snack", "吃零食"), ("read_book", "看课外书")]:
+        hit = sum(r[key] > 0 for r in rows)
+        line(hit > 0, label, "%d/%d 局上场（共 %d 次）" % (hit, len(rows), sum(r[key] for r in rows)), "非零上场")
 
     sil = [r for r in rows if r["reports"] == 0 and r["excludes"] == 0 and r["bursts"] == 0]
     print("     完全静默局（三项全 0）：%d/%d" % (len(sil), len(rows)))

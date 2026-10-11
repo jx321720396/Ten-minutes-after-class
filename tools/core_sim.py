@@ -30,6 +30,7 @@ AXES = ("affinity", "hostility", "trust")
 # ⚠️ 文档未规定，属实现补充；待标定（见 docs/design/NPC行为决策.md 待确认）
 ACTION_COOLDOWN = 20
 DIMS = ("e", "n", "f", "p")
+LEISURE_KINDS = {"listen_music": "music", "eat_snack": "snack", "read_book": "book"}
 
 
 # ---------------------------------------------------------------- 工具
@@ -89,6 +90,10 @@ class Sim:
         self.verbose = verbose
 
         # --- 配置 ---
+        self.leisure = load_params("rules/leisure.csv")
+        self.absence = load_params("rules/player_absence.csv")
+        self.player_absent = False
+        self.leave_count = 0
         self.p = load_params("rules/transmission.csv")
         self.bp = load_params("rules/belief.csv")
         self.probs = {r["behavior"]: float(r["base_p"]) for r in load_table("rules/behavior_probs.csv")}
@@ -138,7 +143,16 @@ class Sim:
         # --- 抽角色（简化：随机取 npc_count 个；§11.5 的绑定组/原型去重留待正式版）---
         pool = seeds[:]
         self.rng.shuffle(pool)
-        self.chars = pool[:npc_count]
+        book_count = int(self.leisure.get("book_count_%d" % npc_count, self.leisure["book_count_24"] * npc_count / len(pool)))
+        books = [c for c in pool if c["book"] == "1"][:book_count]
+        others = [c for c in pool if c["book"] == "0"][:npc_count - book_count]
+        self.chars = [c for c in pool if c in books or c in others]
+        self.book = [int(c["book"]) for c in self.chars] + [0]
+        self.snacks_remaining = int(self.leisure["snack_count_per_run"])
+        for kind, prefix in LEISURE_KINDS.items():
+            self.behaviors[kind] = dict(duration=int(self.leisure[prefix + "_duration"]),
+                                        noise=self.leisure[prefix + "_noise"],
+                                        kind="env", join_mode="none")
         self.N = npc_count + 1  # 索引 N-1 为玩家
 
         # --- 状态矩阵 ---
@@ -412,6 +426,8 @@ class Sim:
         即「越道歉越糟」。修复行为与 `M` 的冲突是结构性的，故整条行为不走调制。
         """
 
+        if not self.is_present(i) or not self.is_present(j):
+            return False
         dkey = (i, j, event_id, self.day, self.phase_index)
         if dkey in self.settled:
             self.stats["dedup_skips"] += 1
@@ -485,13 +501,19 @@ class Sim:
                 for ax in AXES}
 
         for i in range(n):
+            if not self.is_present(i):
+                continue
             A_i = self.A[i]
             for k in range(n):
+                if not self.is_present(k):
+                    continue
                 if i == k:
                     continue
                 w_sum = 0.0
                 num = {"affinity": 0.0, "hostility": 0.0, "trust": 0.0}
                 for j in range(n):
+                    if not self.is_present(j):
+                        continue
                     if j == i or j == k:
                         continue
                     w = A_i[j] / 100.0  # 听从度
@@ -516,7 +538,11 @@ class Sim:
         for ax in AXES:
             target = true[ax]
             for i in range(n):
+                if not self.is_present(i):
+                    continue
                 for k in range(n):
+                    if not self.is_present(k):
+                        continue
                     if i != k:
                         target[i][k] = clamp100(target[i][k] + deltas[ax][i][k])
         self.stats["transmission_ticks"] += 1
@@ -773,12 +799,14 @@ class Sim:
         if p <= 0:
             return
         for j in range(self.N):
+            if not self.is_present(j):
+                continue
             if self.sleeping[j] or "带手机" not in self.character_tags[j]:
                 continue
             if self.rng.random() >= p:
                 continue
             for i in self.neighbor_idx[j]:
-                if i == j or self.sleeping[i]:
+                if i == j or self.sleeping[i] or not self.is_present(i):
                     continue
                 self.witness_day[i][j] = self.day
 
@@ -795,9 +823,13 @@ class Sim:
         w_t = self.thresholds_lookup.get("report_trust_penalty", 2.0)
         p_rep = self.probs.get("report_p", 0.05)
         for i in range(self.N):
+            if not self.is_present(i):
+                continue
             if self.sleeping[i]:
                 continue
             for j in range(self.N):
+                if not self.is_present(j):
+                    continue
                 if i == j or self.sleeping[j] or self.day - self.witness_day[i][j] > win:
                     continue
                 z = (self.H[i][j] - th_rep) / sc_rep - w_a * self.A[i][j] / 100.0 - w_t * self.T[i][j] / 100.0
@@ -820,6 +852,16 @@ class Sim:
             if self.sleeping[i] or i in busy or self.global_tick < self.busy_until[i]:
                 continue
             self.in_conversation[i] = False
+            leisure_started = False
+            for kind, prefix in LEISURE_KINDS.items():
+                if self.allowed(kind) and (kind != "read_book" or self.book[i] > 0):
+                    if self.rng.random() < self.probs[prefix + "_p"]:
+                        self.start_leisure(i, kind)
+                        leisure_started = True
+                        break
+            if leisure_started:
+                busy.add(i)
+                continue
             # 环境类：学习（§8.23）—— 主动坐下学一整个课间；爱学习的人更常坐下来
             study_gain = 1.0 + self.tag_bias(i, "study_bias")
             if self.allowed("study") and self.rng.random() < self.probs.get("study_p", 0.0) * study_gain:
@@ -987,6 +1029,45 @@ class Sim:
                     busy.add(i)
                     busy.add(j)
 
+    def is_present(self, i):
+        return not (i == self.N - 1 and self.player_absent)
+
+    def start_leisure(self, i, kind):
+        if kind not in LEISURE_KINDS or not self.allowed(kind) or not self.can_interact_with(i):
+            return False
+        if kind == "read_book" and self.book[i] <= 0:
+            return False
+        if i == self.N - 1 and kind == "eat_snack":
+            if self.snacks_remaining <= 0:
+                return False
+            self.snacks_remaining -= 1
+        self.occupy(i, i, kind)
+        self.stats[kind] = self.stats.get(kind, 0) + 1
+        return True
+
+    def leave_class(self):
+        me = self.N - 1
+        if not self.allowed("leave_class") or not self.can_interact_with(me):
+            return False
+        if self.leave_count >= self.absence["max_per_break"]:
+            return False
+        for j in self.neighbor_idx[me]:
+            self.apply_event(j, me, "leave_absence")
+        self.leave_count += 1
+        self.player_absent = True
+        self.current_act[me] = "leave_class"
+        self.busy_until[me] = self.global_tick + self.day_phases[self.phase_index][1] - self.tick_in_phase
+        self.player_invitations.expire()
+        return True
+
+    def class_affinity_settle(self):
+        for i in range(self.N):
+            if self.sleeping[i] or not self.is_present(i):
+                continue
+            for j in self.neighbor_idx[i]:
+                if not self.sleeping[j] and self.is_present(j):
+                    self.A[i][j] = clamp100(self.A[i][j] + self.p["class_affinity_gain"])
+
     def is_busy(self, i):
         """节点此刻是否正处在占用型行为中（§10.4 行为耗时）—— 表现层权限判定用（如玩家操控）。"""
         if i < 0 or i >= self.N:
@@ -1014,7 +1095,7 @@ class Sim:
         跨 tick 的占用看 `busy_until` —— 只看本 tick 的局部 `busy` 集合，
         会让「还在做上一个行为」的人被反复拉进新交互（内核策划符合性审查 P1-03）。
         """
-        return (not self.sleeping[j]) and self.global_tick >= self.busy_until[j]
+        return self.is_present(j) and (not self.sleeping[j]) and self.global_tick >= self.busy_until[j]
 
     def pick_target(self, i, neighbors_only=False):
         """选交互目标。**邻居优先**（§10.15 相邻修正）——
@@ -1619,6 +1700,8 @@ class Sim:
     `phases.csv` 用 `study_together|stress_drip|transmission` 描述上课段允许的规则；
         这里把它翻译成"行为白名单"——**上课时禁用的行为** = 一切主动社交。
         """
+        if behavior in LEISURE_KINDS or behavior == "leave_class":
+            return self.phase == "break"
         if not hasattr(self, "phase_rules"):
             return True
         pid = self.phase_order[self.phase_index] if 0 <= self.phase_index < len(self.phase_order) else None
@@ -1688,6 +1771,8 @@ class Sim:
         v = self.volume / 100.0
         loud = ("chat", "tease", "roughhouse")
         for i in range(self.N):
+            if not self.is_present(i):
+                continue
             act = self.current_act[i] or "study"
             if act in loud and v < 0.4:
                 self.Stress[i] = clamp100(self.Stress[i] + k * (0.4 - v) * 10.0)
@@ -1705,6 +1790,8 @@ class Sim:
         k = e.get("stress_k", 0.0)
         fj, fe = e.get("fear_j", 0.0), e.get("fear_e", 0.0)
         for i in range(self.N):
+            if not self.is_present(i):
+                continue
             # J 越高越受不了吵（§10.18 原意）—— 用助手，避免与 P 混淆
             fear = fj * self.arg_j(i) + fe * self.arg_i(i)
             fear = max(0.0, fear)
@@ -1733,10 +1820,14 @@ class Sim:
         see_window = self.thresholds_lookup.get("conformity_see_window", 14.0)
         need = int(self.thresholds_lookup.get("conformity_min", 2.0))
         for i in range(self.N):
+            if not self.is_present(i):
+                continue
             conf = self.conformity(i)
             if conf <= 0.05:
                 continue                    # 有主见的人不被裹挟
             for j in range(self.N):
+                if not self.is_present(j):
+                    continue
                 if i == j:
                     continue
                 # ⚠️ **不读真值敌对**（§7.4 不变式）：从众依循的是「**i 亲眼见过的敌对行为**」。
@@ -1745,7 +1836,7 @@ class Sim:
                 #    现用 `hurt_day[k][j]`（**公开**的 major 负性事件：当众羞辱 / 举报 / 排挤）：
                 #    做过公开行为的人才被看见，藏着的人**不会被跟风**。
                 haters = [k for k in self.neighbor_idx[i]
-                          if k != j and not self.sleeping[k]
+                          if k != j and self.is_present(k) and not self.sleeping[k]
                           and 0 <= self.day - self.hurt_day[k][j] <= see_window]
                 if len(haters) >= need:
                     # 跟着恨：人数越多、从众度越高，跟得越紧（走统一影响公式，scale 传从众度）
@@ -1791,6 +1882,8 @@ class Sim:
         if base <= 0:
             return
         for i in range(self.N):
+            if not self.is_present(i):
+                continue
             fear = self.noise_fear(i)
             if fear <= 0.05:
                 continue                       # 不怕吵的人不会去恨（不对称的另一面）
@@ -1841,6 +1934,8 @@ class Sim:
         self.deviance_pressure()   # 环境层：偏离氛围 → 压力（不是禁止，是代价）
         """涓流：独处恢复 / 学习累积（主文档 §8.4）"""
         for i in range(self.N):
+            if not self.is_present(i):
+                continue
             if self.in_conversation[i]:
                 continue                      # 参与互动者已由 topic_stress 减压
             if self.doing_study(i):
@@ -1887,8 +1982,9 @@ class Sim:
             if self.busy_until[i] > self.global_tick:
                 self.busy_until[i] = 0
                 self.busy_phase[i] = -1
-                if cost > 0:
-                    self.Stress[i] = clamp100(self.Stress[i] + cost)
+                action_cost = self.leisure["interrupted_stress"] if self.busy_act[i] in LEISURE_KINDS else cost
+                if action_cost > 0:
+                    self.Stress[i] = clamp100(self.Stress[i] + action_cost)
                 self.stats["interrupts"] = self.stats.get("interrupts", 0) + 1
                 interrupted.append(i)
         return interrupted
@@ -1909,6 +2005,9 @@ class Sim:
             if self.busy_phase[i] < 0 or self.busy_until[i] > self.global_tick:
                 continue
             self.last_finished[i] = self.busy_act[i]
+            if self.busy_act[i] in LEISURE_KINDS:
+                prefix = LEISURE_KINDS[self.busy_act[i]]
+                self.Stress[i] = clamp100(self.Stress[i] - self.leisure[prefix + "_relief"])
             self.current_act[i] = None
             self.busy_act[i] = None
             self.busy_phase[i] = -1
@@ -1934,6 +2033,8 @@ class Sim:
             return
         gmax = self.kp["grade_max"]
         for i in range(self.N):
+            if not self.is_present(i):
+                continue
             if self.Grade[i] >= gmax:
                 self.StudyAcc[i] = 0.0
                 continue
@@ -1969,6 +2070,11 @@ class Sim:
             self.in_conversation[i] = False
         # 纸条链（§8.6）：**纸条只在当前时间段内存活**，进入下一个时间段即销毁。
         self.notes = []
+        if self.player_absent:
+            self.player_absent = False
+            self.busy_until[self.N - 1] = 0
+            self.current_act[self.N - 1] = None
+        self.leave_count = 0
 
     def end_phase(self):
         """统一边界协议 ②③④⑤：结束旧段（不推进 tick）。
@@ -1977,6 +2083,8 @@ class Sim:
         核心 RNG 只由 `settle_day → try_burst` 消耗一次，其余步骤无核心 RNG。
         """
         self.settle_finished_actions()
+        if self.phase == "class":
+            self.class_affinity_settle()
         self.settle_sleep()
         interrupted = self.check_interrupt()
         self.cleanup_phase(interrupted)

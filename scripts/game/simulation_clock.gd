@@ -203,6 +203,26 @@ func pump(delta_seconds: float) -> void:
 
 
 ## 暂停：按拥有者集合管理，可重入；同名重复添加不累计，最后一个释放才恢复。
+func skip_absent_break() -> bool:
+	if _core == null or _mode != MODE_RUNNING or is_paused() or not _core._player_absent:
+		return false
+	var before := _core.time_snapshot()
+	if str(before["kind"]) != "break":
+		return false
+	var remaining := int(before["tick_count"]) - int(before["tick_in_phase"])
+	for _i in range(remaining):
+		_core.advance_tick()
+	var boundary := _core.finish_time_boundary()
+	_accumulator = 0.0
+	if bool(boundary["changed"]):
+		phase_changed.emit(snapshot())
+		if bool(boundary["day_settled"]):
+			_ended_day = int(boundary["ended_day"])
+			_enter_report()
+	time_updated.emit(snapshot())
+	return true
+
+
 func hold(who: StringName) -> void:
 	_paused_by[who] = true
 

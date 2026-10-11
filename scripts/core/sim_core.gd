@@ -9,7 +9,6 @@ extends RefCounted
 ##   · 所有阈值 / 系数都来自 data/（不落脚本，铁律 3）。
 ##
 ## 索引约定：n = npc_count + 1（末位 n-1 为玩家）；矩阵平铺 A[i][j] → _a[i*n+j]；
-## dims 为 dim-major（d*n+i），DIMS 顺序 e/n/f/p。
 ##
 ## D8 交付：统一影响公式（apply_event）+ 传导（transmission）+ 涓流（stress_drip
 ## 及环境层/社会层）；D9 交付：压力爆发（try_burst/spread_knot）+ 跨天衰减
@@ -24,9 +23,24 @@ const OBSERVE_TICKS := 10
 ## 超过这个剩余量就视为「持续型 / 整段占用」（学习、睡觉），不跟随其剩余时间
 const OBSERVE_FOLLOW_LIMIT := 120
 ## 自指行为（对自己做的事）：不需要对象，玩家直接发起
-const PLAYER_SELF_KINDS := ["study", "sleep"]
+const LEISURE_KINDS := {"listen_music": "music", "eat_snack": "snack", "read_book": "book"}
+const PLAYER_SELF_KINDS := [
+	"study", "sleep", "listen_music", "eat_snack", "read_book", "leave_class"
+]
 const PLAYER_KINDS := [
-	"chat", "tease", "report", "roughhouse", "exclude", "pass_note", "observe", "study", "sleep"
+	"chat",
+	"tease",
+	"report",
+	"roughhouse",
+	"exclude",
+	"pass_note",
+	"observe",
+	"study",
+	"sleep",
+	"listen_music",
+	"eat_snack",
+	"read_book",
+	"leave_class"
 ]
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
@@ -141,6 +155,12 @@ var _study_circle_session := -1
 var _witness_day: Array = []
 var _notes: Array = []  # 活跃纸条（§8.6 纸条链）
 var _note_next_id := 0
+var _leisure: Dictionary = {}
+var _absence: Dictionary = {}
+var _book: Array = []
+var _snacks_remaining := 0
+var _player_absent := false
+var _leave_count := 0
 var _choice: Dictionary = {}  # 选择侧系数表（§4.5）  # 举报把柄：i 最近目击 j 违规的日（§10.2）
 
 
@@ -162,11 +182,14 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 		if str(row["kind"]) != "settle":
 			_active_phases.append(row)
 
-	# 抽角色（简化：随机取 npc_count 个；对齐 main 的 core_sim.py，消费随机数）
 	# ⚠️ 必须 .duplicate()：_rows 返回共享缓存引用，shuffle 原地改写会污染跨实例共享的 tables。
 	var pool: Array = _rows(tables, "characters/seeds").duplicate()
 	_rng.shuffle(pool)
-	_chars = pool.slice(0, npc_count)
+	_chars = LeisureActions.select_roster(pool, npc_count, _leisure)
+	for ch in _chars:
+		_book.append(int(str(ch["book"])))
+	_book.append(0)
+	_snacks_remaining = int(_leisure["snack_count_per_run"])
 
 	_alloc(n)
 
@@ -239,6 +262,8 @@ static func from_npc(seed: int, npc_count: int, tables: Dictionary) -> SimCore:
 
 
 func _load_config(tables: Dictionary) -> void:
+	_leisure = _params(tables, "rules/leisure")
+	_absence = _params(tables, "rules/player_absence")
 	_p = _params(tables, "rules/transmission")
 	_bp = _params(tables, "rules/belief")
 	_kp = _params(tables, "rules/kernel_params")
@@ -247,6 +272,14 @@ func _load_config(tables: Dictionary) -> void:
 	_thresholds_lookup = _build_thresholds(tables)
 	_decay = _params(tables, "rules/decay")
 	_behaviors = _build_behaviors(tables)
+	for kind in LEISURE_KINDS:
+		var prefix: String = LEISURE_KINDS[kind]
+		_behaviors[kind] = {
+			"duration": int(_leisure[prefix + "_duration"]),
+			"noise": float(_leisure[prefix + "_noise"]),
+			"kind": "env",
+			"join_mode": "none"
+		}
 	_env = _params(tables, "rules/environment")
 	_nw = _params(tables, "balance/npc_weights")
 	_event_rows = _rows(tables, "balance/w_events")
@@ -494,6 +527,8 @@ func _end_phase() -> void:
 		return
 	_settled_boundary = key
 	_settle_finished_actions()
+	if _phase == "class":
+		_class_affinity_settle()
 	_settle_sleep()
 	_check_interrupt()
 	_cleanup_phase()
@@ -540,6 +575,7 @@ func _transition_if_needed() -> void:
 	_end_phase()  # ②③④⑤（末段触发 _settle_day）
 	_phase_index = (_phase_index + 1) % _active_phases.size()
 	_phase_setup_done = false
+	_tick_in_phase = 0
 
 
 ## 推进一个段（从当前位置跑到当前段末尾），返回本段跑的 tick 数。
@@ -642,6 +678,18 @@ func _settle_finished_actions() -> void:
 		if _busy_phase[i] < 0 or _busy_until[i] > _global_tick:
 			continue
 		_last_finished[i] = _busy_act[i]
+		if LEISURE_KINDS.has(_busy_act[i]):
+			var prefix: String = LEISURE_KINDS[_busy_act[i]]
+			_stress[i] = _clamp100(_stress[i] - float(_leisure[prefix + "_relief"]))
+			_emit(
+				"event_happened",
+				{
+					"kind": "leisure_finished",
+					"i": i,
+					"activity": _busy_act[i],
+					"snacks_remaining": _snacks_remaining
+				}
+			)
 		_current_act[i] = null
 		_busy_act[i] = null
 		_busy_phase[i] = -1
@@ -677,6 +725,8 @@ func _study_accumulate() -> void:
 		return
 	var gmax := float(_kp["grade_max"])
 	for i in range(_n):
+		if not is_present(i):
+			continue
 		if _grade[i] >= gmax:
 			_study_acc[i] = 0.0
 			continue
@@ -930,6 +980,8 @@ func _sat(u: float, axis: String) -> float:
 func _apply_event(
 	i: int, j: int, event_id: String, scale: float = 1.0, no_modulation: bool = false
 ) -> bool:
+	if not is_present(i) or not is_present(j):
+		return false
 	var dkey := "%d|%d|%s|%d|%d" % [i, j, event_id, _day, _phase_index]
 	if _settled.has(dkey):
 		_stats["dedup_skips"] = int(_stats["dedup_skips"]) + 1
@@ -1015,7 +1067,11 @@ func _transmission() -> void:
 	d_h.resize(n * n)
 	d_t.resize(n * n)
 	for i in range(n):
+		if not is_present(i):
+			continue
 		for k in range(n):
+			if not is_present(k):
+				continue
 			if i == k:
 				continue
 			var w_sum := 0.0
@@ -1023,6 +1079,8 @@ func _transmission() -> void:
 			var num_h := 0.0
 			var num_t := 0.0
 			for j in range(n):
+				if not is_present(j):
+					continue
 				if j == i or j == k:
 					continue
 				var w := _a[i * n + j] / 100.0
@@ -1043,7 +1101,11 @@ func _transmission() -> void:
 			d_h[i * n + k] = _r1(_sat(beta_h * net_h, "hostility"))
 			d_t[i * n + k] = _r1(_sat(beta_t * num_t / denom, "trust"))
 	for i in range(n):
+		if not is_present(i):
+			continue
 		for k in range(n):
+			if not is_present(k):
+				continue
 			if i != k:
 				_a[i * n + k] = _clamp100(_a[i * n + k] + d_a[i * n + k])
 				_h[i * n + k] = _clamp100(_h[i * n + k] + d_h[i * n + k])
@@ -1122,6 +1184,8 @@ func _stress_drip() -> void:
 	_conformity_hostility()
 	_deviance_pressure()
 	for i in range(_n):
+		if not is_present(i):
+			continue
 		if _in_conversation[i]:
 			continue
 		if _doing_study(i):
@@ -1139,6 +1203,8 @@ func _noise_pressure() -> void:
 	var fe := float(_env["fear_e"])
 	var base := float(_env["noise_base_fear"])
 	for i in range(_n):
+		if not is_present(i):
+			continue
 		var fear := base + maxf(0.0, fj * _arg_j(i) + fe * _arg_i(i))
 		_stress[i] = _clamp100(_stress[i] + excess * k * fear)
 
@@ -1152,6 +1218,8 @@ func _noise_hostility() -> void:
 	if base <= 0.0:
 		return
 	for i in range(_n):
+		if not is_present(i):
+			continue
 		var fear := _noise_fear(i)
 		if fear <= 0.05:
 			continue
@@ -1172,15 +1240,19 @@ func _conformity_hostility() -> void:
 	var see_window := float(_thresholds_lookup.get("conformity_see_window", 14.0))
 	var need := int(_thresholds_lookup.get("conformity_min", 2.0))
 	for i in range(_n):
+		if not is_present(i):
+			continue
 		var conf := _conformity(i)
 		if conf <= 0.05:
 			continue
 		for j in range(_n):
+			if not is_present(j):
+				continue
 			if i == j:
 				continue
 			var haters: Array = []
 			for k in _neighbor_idx[i]:
-				if k == j or _sleeping[k]:
+				if k == j or not is_present(k) or _sleeping[k]:
 					continue
 				var span: int = _day - int(_hurt_day[k * _n + j])
 				if span >= 0 and span <= see_window:
@@ -1198,6 +1270,8 @@ func _deviance_pressure() -> void:
 	var v := _volume / 100.0
 	var loud := ["chat", "tease", "roughhouse"]
 	for i in range(_n):
+		if not is_present(i):
+			continue
 		var act = _current_act[i]
 		if act == null:
 			act = "study"
@@ -1249,8 +1323,11 @@ func _check_interrupt() -> void:
 		if _busy_until[i] > _global_tick:
 			_busy_until[i] = 0
 			_busy_phase[i] = -1
-			if cost > 0.0:
-				_stress[i] = _clamp100(_stress[i] + cost)
+			var action_cost := (
+				float(_leisure["interrupted_stress"]) if LEISURE_KINDS.has(_busy_act[i]) else cost
+			)
+			if action_cost > 0.0:
+				_stress[i] = _clamp100(_stress[i] + action_cost)
 			_stats["interrupts"] = int(_stats["interrupts"]) + 1
 			_interrupted_nodes.append(i)
 
@@ -1259,11 +1336,21 @@ func _check_interrupt() -> void:
 ## 不消耗 RNG；抽象内核（无移动输入）下移动锁清理为 no-op。
 func _cleanup_phase() -> void:
 	for i in _interrupted_nodes:
+		if LEISURE_KINDS.has(_busy_act[i]):
+			_emit(
+				"event_happened", {"kind": "leisure_interrupted", "i": i, "activity": _busy_act[i]}
+			)
 		_current_act[i] = null
 		_busy_act[i] = null
 		_in_conversation[i] = false
 	# 纸条链（§8.6）：纸条只在当前时间段内存活，进入下一个时间段即销毁。
 	_notes.clear()
+	if _player_absent:
+		_player_absent = false
+		_busy_until[_n - 1] = 0
+		_current_act[_n - 1] = null
+		_emit("event_happened", {"kind": "player_returned"})
+	_leave_count = 0
 	# 有成员被打断的共同活动整场中断（不留半场会话、不残留融合圈）
 	var unfinished: Array = []
 	if not _interrupted_nodes.is_empty():
@@ -1507,12 +1594,14 @@ func _phone_exposure() -> void:
 	if p <= 0.0:
 		return
 	for j in range(_n):
+		if not is_present(j):
+			continue
 		if _sleeping[j] or not _character_tags[j].has("带手机"):
 			continue
 		if _rng.random() >= p:
 			continue
 		for i in _neighbor_idx[j]:
-			if i == j or _sleeping[i]:
+			if i == j or _sleeping[i] or not is_present(i):
 				continue
 			_witness_day[i * _n + j] = _day
 
@@ -1526,9 +1615,13 @@ func _roll_reports() -> void:
 	var w_t := float(_thresholds_lookup["report_trust_penalty"])
 	var p_rep := float(_probs["report_p"])
 	for i in range(_n):
+		if not is_present(i):
+			continue
 		if _sleeping[i]:
 			continue
 		for j in range(_n):
+			if not is_present(j):
+				continue
 			if i == j or _sleeping[j] or _day - _witness_day[i * _n + j] > win:
 				continue
 			var z := (
@@ -1560,6 +1653,17 @@ func _decide_and_act() -> void:
 		if _player_invitations.is_waiting(i):
 			continue
 		_in_conversation[i] = false
+		var leisure_started := false
+		for kind in LEISURE_KINDS:
+			var prefix: String = LEISURE_KINDS[kind]
+			if _allowed(kind) and (kind != "read_book" or _book[i] > 0):
+				if _rng.random() < float(_probs[prefix + "_p"]):
+					_start_leisure(i, kind)
+					leisure_started = true
+					break
+		if leisure_started:
+			busy[i] = true
+			continue
 		# 环境类：学习（§8.23）—— 主动坐下学一整个课间；爱学习的人更常坐下来
 		var study_gain := 1.0 + _tag_bias(i, "study_bias")
 		if _allowed("study") and _rng.random() < float(_probs["study_p"]) * study_gain:
@@ -1755,8 +1859,27 @@ func _decide_and_act() -> void:
 				busy[tgt] = true
 
 
-## 选交互目标：邻居优先（§10.15 相邻修正）。neighbors_only 时只在邻居里选。
 ## 节点此刻是否正处在占用型行为中（§10.4 行为耗时）—— 表现层权限判定用（如玩家操控）。
+func is_present(i: int) -> bool:
+	return not (i == _n - 1 and _player_absent)
+
+
+func inventory_of(i: int) -> Dictionary:
+	return {"books": int(_book[i]), "snacks": _snacks_remaining if is_player(i) else -1}
+
+
+func _start_leisure(i: int, kind: String) -> bool:
+	return LeisureActions.start_leisure(self, i, kind)
+
+
+func _leave_class() -> void:
+	LeisureActions.leave_class(self)
+
+
+func _class_affinity_settle() -> void:
+	LeisureActions.class_affinity_settle(self)
+
+
 func is_busy(i: int) -> bool:
 	if i < 0 or i >= _n:
 		return false
@@ -1793,7 +1916,9 @@ func distance_between(i: int, j: int) -> float:
 ## **忙碌者仍可被旁观、被议论、被环境影响** —— 本判定只用于「挑交互目标」，
 ## 不用于围观者 / 旁白 / 环境查询。
 func _can_interact_with(j: int) -> bool:
-	return not _sleeping[j] and _global_tick >= _busy_until[j] and not is_moving(j)
+	return (
+		is_present(j) and not _sleeping[j] and _global_tick >= _busy_until[j] and not is_moving(j)
+	)
 
 
 func _pick_target(i: int, neighbors_only: bool = false) -> int:
@@ -2243,20 +2368,13 @@ func _do_apologize(i: int, j: int) -> void:
 
 # ------------------------------------------------------------------ 玩家行动（D11 缺口③）
 ## 玩家显式行动：来源固定玩家（n-1）、目标由玩家指定，走与 NPC 相同的 do_* 统一影响公式，
-## 不做 NPC 自动决策。返回结果字典供表现层渲染反馈；topic 暂作透传记录。
-## 玩家行动的可执行性校验：返回空串表示可以做，否则返回错误码。
 ## 与 NPC 共用同一套「能不能做」门槛（§3.3 相位权限、§10.8 目标睡眠）——
 ## 内核策划符合性审查 P1-02：不能只靠 UI 隐藏按钮，内核入口必须自己拒绝。
 func _player_action_error(kind: String, target: int, me: int) -> String:
+	if not is_present(me):
+		return "player_absent"
 	if kind in PLAYER_SELF_KINDS:
-		# 自指行为（学习 / 睡觉）：不看对象，只看自己能不能做
-		if _sleeping[me] or _global_tick < _busy_until[me] or is_moving(me):
-			return "player_busy"
-		if not _allowed(kind):
-			return "phase_not_allowed"
-		if kind == "study" and not in_own_seat(me):
-			return "not_in_seat"
-		return ""
+		return LeisureActions.action_error(self, kind, me)
 	if target < 0 or target >= _n or target == me:
 		return "invalid_target"
 	if not PLAYER_KINDS.has(kind):
@@ -2287,6 +2405,17 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 	var blocked := _player_action_error(kind, target, me)
 	if not blocked.is_empty():
 		return {"ok": false, "error": blocked}
+	if PLAYER_SELF_KINDS.has(kind):
+		match kind:
+			"study":
+				_do_study(me)
+			"sleep":
+				_do_sleep(me)
+			"leave_class":
+				_leave_class()
+			_:
+				_start_leisure(me, kind)
+		return {"ok": true, "kind": kind, "accepted": true}
 	var a_before := _a[target * _n + me]  # 目标→玩家的好感（行动前的反应基线）
 	var h_before := _h[target * _n + me]
 	match kind:
@@ -2535,6 +2664,8 @@ func _tag_bias(i: int, effect_key: String) -> float:
 
 
 func _allowed(behavior: String) -> bool:
+	if LEISURE_KINDS.has(behavior) or behavior == "leave_class":
+		return str(time_snapshot()["kind"]) == "break"
 	var pid := ""
 	if _phase_index >= 0 and _phase_index < _phase_order.size():
 		pid = str(_phase_order[_phase_index]["phase_id"])
