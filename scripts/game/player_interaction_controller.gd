@@ -441,6 +441,8 @@ func _action_reason(error: String) -> String:
 			return "你正忙着"
 		"phase_not_allowed":
 			return "上课期间不能做这个"
+		"not_in_seat":
+			return "回到自己座位上才能学习"
 		"target_unavailable":
 			return "现在没法对他做这个"
 		"invalid_target", "unknown_kind":

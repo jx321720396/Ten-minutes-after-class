@@ -134,6 +134,10 @@ var _settled: Dictionary = {}
 var _stats: Dictionary = {}
 var _hurt_day: Array = []  # 施害者侧证据：最近一次 i 对 j 做重大敌对行为的日（§8.4）
 var _exclude_last_day: Array = []  # 排挤冷却：同一目标最近被驱逐的日（§10.25）
+## 座位范围半径（§8.23）：只有在这个范围内才算「在自己的座位上」
+var _seat_zone_radius := 0.5
+## 每个节点的座位站位世界坐标（表现层注入；内核只读）
+var _seat_world: Dictionary = {}
 var _witness_day: Array = []
 var _notes: Array = []  # 活跃纸条（§8.6 纸条链）
 var _note_next_id := 0
@@ -259,6 +263,10 @@ func _load_config(tables: Dictionary) -> void:
 	_bindings = _rows(tables, "characters/bindings")
 	_feedback = float(_p.get("feedback", 0.0))
 	_choice = _build_choice_weights(tables)
+	# 座位范围半径（§8.23）：几何口径跟闲聊范围同一张表
+	_seat_zone_radius = float(
+		_params(tables, "rules/player_interaction").get("seat_zone_radius_m", 0.5)
+	)
 
 
 func _alloc(n: int) -> void:
@@ -1990,6 +1998,20 @@ func _do_sleep(i: int) -> void:
 	_emit("event_happened", {"kind": "sleep", "i": i})
 
 
+## 表现层注入座位站位世界坐标：index -> Vector2(x, z)。内核只读。
+func set_seat_zones(positions: Dictionary) -> void:
+	_seat_world = positions.duplicate()
+
+
+## 该节点是否**在自己的座位范围内**（§8.23：学习等「只能在自己座位上做」的行为的硬前置）。
+## 未注入座位坐标时保守返回 true（离线 / 无场景时不该卡住行为）。
+func in_own_seat(i: int) -> bool:
+	if not _seat_world.has(i):
+		return true
+	var seat: Vector2 = _seat_world[i]
+	return Vector2(_pos_x[i], _pos_z[i]).distance_to(seat) <= _seat_zone_radius
+
+
 ## 观察的可达性：沿用闲聊那套空间口径（普通 1.2 m / 同列前后邻座 1.8 m）。
 func _observe_reachable(me: int, target: int) -> bool:
 	return chat_pair_in_range(me, target)
@@ -2186,6 +2208,8 @@ func _player_action_error(kind: String, target: int, me: int) -> String:
 			return "player_busy"
 		if not _allowed(kind):
 			return "phase_not_allowed"
+		if kind == "study" and not in_own_seat(me):
+			return "not_in_seat"
 		return ""
 	if target < 0 or target >= _n or target == me:
 		return "invalid_target"
