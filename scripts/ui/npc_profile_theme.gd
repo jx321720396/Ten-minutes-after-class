@@ -1,4 +1,6 @@
 extends RefCounted
+
+const GameFonts := preload("res://scripts/ui/game_fonts.gd")
 ## 档案专用纸张主题；只设置表现属性，不读取玩法状态。
 
 const INK := Color("284536")
@@ -10,10 +12,8 @@ const LINE := Color("cfc8b0")
 
 static func make_theme() -> Theme:
 	var theme := Theme.new()
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(
-		["Microsoft YaHei", "Noto Sans CJK SC", "PingFang SC", "sans-serif"]
-	)
+	var font := GameFonts.regular()
+
 	theme.default_font = font
 	theme.default_font_size = 28
 	theme.set_color("font_color", "Label", INK)
@@ -87,7 +87,7 @@ static func apply(view: Node) -> void:
 	]:
 		view.get_node("%" + name).add_theme_color_override("font_color", MUTED)
 	view.get_node("%StaleNote").add_theme_color_override("font_color", GOLD)
-	var title_font := SystemFont.new()
-	title_font.font_names = PackedStringArray(["SimSun", "Songti SC", "Noto Serif CJK SC", "serif"])
+	var title_font := GameFonts.regular()
+
 	for name in ["Title", "PersonName", "KnownTitle", "HistoryTitle", "EncountersTitle"]:
 		view.get_node("%" + name).add_theme_font_override("font", title_font)

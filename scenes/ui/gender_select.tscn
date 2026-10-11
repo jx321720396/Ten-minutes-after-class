@@ -1,5 +1,7 @@
 [gd_scene format=3]
 
+[ext_resource type="FontFile" path="res://assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf" id="campus_font"]
+
 [ext_resource type="Script" path="res://scripts/ui/gender_select.gd" id="1_sel"]
 [ext_resource type="StyleBox" path="res://resources/new_style_box_flat.tres" id="2_panel"]
 [ext_resource type="Texture2D" path="res://assets/textures/characters/主角男.png" id="3_male"]
@@ -186,6 +188,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="CenterContainer/Panel/Margin/VBox"]
+theme_override_fonts/font = ExtResource("campus_font")
 layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.16, 0.22, 1)
 theme_override_font_sizes/font_size = 44
@@ -226,6 +229,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Label" type="Label" parent="CenterContainer/Panel/Margin/VBox/Row/MaleCard/Inner"]
+theme_override_fonts/font = ExtResource("campus_font")
 layout_mode = 2
 theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
 theme_override_font_sizes/font_size = 26
@@ -251,6 +255,7 @@ expand_mode = 1
 stretch_mode = 5
 
 [node name="Label" type="Label" parent="CenterContainer/Panel/Margin/VBox/Row/FemaleCard/Inner"]
+theme_override_fonts/font = ExtResource("campus_font")
 layout_mode = 2
 theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
 theme_override_font_sizes/font_size = 26
@@ -267,6 +272,7 @@ theme_override_constants/separation = 16
 alignment = 1
 
 [node name="BackBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/Footer"]
+theme_override_fonts/font = ExtResource("campus_font")
 layout_mode = 2
 theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
 theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
@@ -280,6 +286,7 @@ theme_override_styles/focus = SubResource("SB_btn_focus")
 text = "返回"
 
 [node name="StartBtn" type="Button" parent="CenterContainer/Panel/Margin/VBox/Footer"]
+theme_override_fonts/font = ExtResource("campus_font")
 layout_mode = 2
 theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
 theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)

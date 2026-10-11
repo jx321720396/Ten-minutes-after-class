@@ -1,5 +1,7 @@
 [gd_scene load_steps=5 format=3]
 
+[ext_resource type="FontFile" path="res://assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf" id="campus_font"]
+
 [ext_resource type="Script" path="res://scripts/ui/npc_profile.gd" id="1"]
 
 [ext_resource type="Shader" path="res://assets/shaders/ui_paper.gdshader" id="2"]
@@ -82,18 +84,21 @@ stretch_mode = 5
 mouse_filter = 2
 
 [node name="Title" type="Label" parent="Root/Design/Frame/Margin/Content/Header"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 50
 
 
 [node name="Subtitle" type="Label" parent="Root/Design/Frame/Margin/Content/Header"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 size_flags_horizontal = 3
 
 [node name="Previous" type="Button" parent="Root/Design/Frame/Margin/Content/Header"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(56, 56)
@@ -101,12 +106,14 @@ text = "‹"
 theme_override_font_sizes/font_size = 34
 
 [node name="RosterCount" type="Label" parent="Root/Design/Frame/Margin/Content/Header"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 
 
 [node name="Next" type="Button" parent="Root/Design/Frame/Margin/Content/Header"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(56, 56)
@@ -114,6 +121,7 @@ text = "›"
 theme_override_font_sizes/font_size = 34
 
 [node name="Close" type="Button" parent="Root/Design/Frame/Margin/Content/Header"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(56, 56)
@@ -156,6 +164,7 @@ stretch_mode = 5
 mouse_filter = 2
 
 [node name="MissingPortrait" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Identity/PortraitFrame/Art"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 1
 anchor_right = 1.0
@@ -164,6 +173,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="PersonName" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 42
@@ -171,6 +181,7 @@ horizontal_alignment = 1
 text_overrun_behavior = 3
 
 [node name="Seat" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 26
@@ -181,6 +192,7 @@ layout_mode = 2
 
 
 [node name="EncountersTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
@@ -199,6 +211,7 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 16
 
 [node name="Chat" type="Button" parent="Root/Design/Frame/Margin/Content/Body/Identity"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(0, 56)
@@ -222,12 +235,14 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
 [node name="KnownTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/KnownHeader/Intro"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 
 
 [node name="KnownNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/KnownHeader/Intro"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
@@ -238,12 +253,14 @@ layout_mode = 2
 custom_minimum_size = Vector2(235, 0)
 
 [node name="TargetHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/KnownHeader/Selector"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 
 
 [node name="Targets" type="OptionButton" parent="Root/Design/Frame/Margin/Content/Body/Details/KnownHeader/Selector"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(235, 48)
@@ -259,6 +276,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="RelationTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 34
@@ -279,18 +297,21 @@ size_flags_stretch_ratio = 1.0
 theme_override_constants/separation = 6
 
 [node name="AffinityHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Affinity"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
 
 [node name="AffinityValue" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Affinity"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 46
 horizontal_alignment = 1
 
 [node name="AffinityTime" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Affinity"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 21
@@ -307,18 +328,21 @@ size_flags_stretch_ratio = 1.0
 theme_override_constants/separation = 6
 
 [node name="HostilityHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Hostility"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
 
 [node name="HostilityValue" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Hostility"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 46
 horizontal_alignment = 1
 
 [node name="HostilityTime" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Hostility"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 21
@@ -335,18 +359,21 @@ size_flags_stretch_ratio = 1.0
 theme_override_constants/separation = 6
 
 [node name="TrustHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Trust"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
 
 [node name="TrustValue" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Trust"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 46
 horizontal_alignment = 1
 
 [node name="TrustTime" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Axes/Trust"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 21
@@ -365,12 +392,14 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="SourceHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/SourceColumn"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 
 
 [node name="Source" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/SourceColumn"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
@@ -381,12 +410,14 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="TimeHeading" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/TimeColumn"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 
 
 [node name="RecordTime" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/TimeColumn"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
@@ -397,12 +428,14 @@ layout_mode = 2
 
 
 [node name="Age" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/AgeColumn"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 
 
 [node name="StaleNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/RelationCard/Contents/Meta/AgeColumn"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
@@ -422,12 +455,14 @@ layout_mode = 2
 theme_override_constants/separation = 18
 
 [node name="HistoryTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/HistoryCard/Contents/Header"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 
 
 [node name="HistoryNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/HistoryCard/Contents/Header"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
@@ -457,6 +492,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="JudgmentTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
@@ -467,24 +503,28 @@ layout_mode = 2
 
 
 [node name="JudgmentValue" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents/ValueRow"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 size_flags_horizontal = 3
 
 [node name="UnknownNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents/ValueRow"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 23
 
 
 [node name="JudgmentNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 
 
 [node name="Footer" type="Label" parent="Root/Design/Frame/Margin/Content"]
+theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22

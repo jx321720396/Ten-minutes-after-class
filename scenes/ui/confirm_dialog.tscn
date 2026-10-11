@@ -1,5 +1,7 @@
 [gd_scene format=3 uid="uid://cvxfbvoik66dv"]
 
+[ext_resource type="FontFile" path="res://assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf" id="campus_font"]
+
 [ext_resource type="Script" uid="uid://bojyrsv0ghj7b" path="res://scripts/ui/confirm_dialog.gd" id="1_confirm"]
 [ext_resource type="StyleBox" uid="uid://b8x2ehcxgjtpy" path="res://resources/new_style_box_flat.tres" id="2_0nu4o"]
 
@@ -39,6 +41,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="Title" type="Label" parent="CenterContainer/Panel/VBox" unique_id=1166612560]
+theme_override_fonts/font = ExtResource("campus_font")
 layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.16, 0.22, 1)
 theme_override_font_sizes/font_size = 36
@@ -55,6 +58,7 @@ custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 
 [node name="Msg" type="Label" parent="CenterContainer/Panel/VBox" unique_id=647482841]
+theme_override_fonts/font = ExtResource("campus_font")
 layout_mode = 2
 theme_override_colors/font_color = Color(0.42, 0.44, 0.5, 1)
 theme_override_font_sizes/font_size = 22
@@ -68,6 +72,7 @@ custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 
 [node name="ClearBtn" type="Button" parent="CenterContainer/Panel/VBox" unique_id=1494554258]
+theme_override_fonts/font = ExtResource("campus_font")
 custom_minimum_size = Vector2(300, 48)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -82,6 +87,7 @@ custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
 [node name="KeepBtn" type="Button" parent="CenterContainer/Panel/VBox" unique_id=397438210]
+theme_override_fonts/font = ExtResource("campus_font")
 custom_minimum_size = Vector2(300, 48)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -95,6 +101,7 @@ custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
 [node name="CancelBtn" type="Button" parent="CenterContainer/Panel/VBox" unique_id=1364543469]
+theme_override_fonts/font = ExtResource("campus_font")
 custom_minimum_size = Vector2(300, 48)
 layout_mode = 2
 size_flags_horizontal = 4
