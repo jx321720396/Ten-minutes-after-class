@@ -14,6 +14,8 @@ static func start_leisure(c: SimCore, i: int, kind: String) -> bool:
 		c._snacks_remaining -= 1
 	c._occupy(i, i, kind)
 	c._stats[kind] = int(c._stats.get(kind, 0)) + 1
+	if kind == "read_book":
+		c._teacher.catch_reader(c, i)
 	return true
 
 
@@ -38,6 +40,46 @@ static func class_affinity_settle(c: SimCore) -> void:
 				c._a[i * c._n + j] = c._clamp100(
 					c._a[i * c._n + j] + float(c._p["class_affinity_gain"])
 				)
+
+
+static func settle_book_gifts(c: SimCore, snapshots: Array) -> Array:
+	var out: Array = []
+	if c._phase != "break" or c._book_gifts_this_break >= int(c._leisure["book_gift_max_per_break"]):
+		return out
+	var player := c._n - 1
+	for snap in snapshots:
+		if str(snap.get("kind", "")) != "chat":
+			continue
+		var members: Array = snap.get("members", [])
+		if not members.has(player):
+			continue
+		for member in members:
+			var donor := int(member)
+			if not c.is_present(donor) or not c.is_present(player):
+				continue
+			if c._sleeping[donor] or c._sleeping[player]:
+				continue
+			if donor == player or c._book[donor] <= 0 or c._book_gifted[donor]:
+				continue
+			if c.affinity(donor, player) < float(c._leisure["book_gift_affinity_threshold"]):
+				continue
+			if c.trust(donor, player) < float(c._leisure["book_gift_trust_threshold"]):
+				continue
+			if c._rng.random() >= float(c._leisure["book_gift_probability"]):
+				continue
+			c._book[donor] -= 1
+			c._book[player] += 1
+			c._book_gifted[donor] = true
+			c._book_gifts_this_break += 1
+			out.append(
+				{
+					"kind": "book_gift", "donor": donor, "recipient": player,
+					"books": c._book[player], "first": c._book[player] == 1,
+				}
+			)
+			if c._book_gifts_this_break >= int(c._leisure["book_gift_max_per_break"]):
+				return out
+	return out
 
 
 static func action_error(c: SimCore, kind: String, me: int) -> String:
