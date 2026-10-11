@@ -22,6 +22,7 @@ var gender_select_panel: Control
 
 
 func _ready():
+	preload("res://scripts/ui/campus_theme.gd").main_menu(self)
 	new_game_btn.pressed.connect(_on_new_game)
 	continue_btn.pressed.connect(_on_continue)
 	setting_btn.pressed.connect(_on_settings)

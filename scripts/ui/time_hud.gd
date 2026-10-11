@@ -18,6 +18,7 @@ signal continue_requested
 ## 日末是否等待输入（点按钮 / 空格）才进入次日：
 ##   true = 调试模式（当前）——按钮仅供内部调试，空格为快捷键；
 ##   false = 正式上线用 —— 日末自动进入次日，不显示按钮。
+const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
 const WAIT_INPUT_ON_DAY_END := true
 
 const FONT_FAMILIES: Array[String] = [
@@ -57,6 +58,7 @@ var _font: Font = null
 
 func _ready() -> void:
 	_build_ui()
+	CampusTheme.apply_tree(self)
 	_refresh({})
 
 
@@ -261,23 +263,6 @@ func _build_ui() -> void:
 	box.add_theme_constant_override("separation", 6)
 	_panel.add_child(box)
 
-	# 成绩（§21.2.7）：**独立显示在屏幕右上角**，不与左上角的时间卡片挤在一起
-	var grade_card := PanelContainer.new()
-	grade_card.name = "GradeCard"
-	grade_card.add_theme_stylebox_override("panel", style)
-	grade_card.anchor_left = 1.0
-	grade_card.anchor_right = 1.0
-	grade_card.anchor_top = 0.0
-	grade_card.anchor_bottom = 0.0
-	grade_card.offset_left = -CARD_WIDTH
-	grade_card.offset_right = -CARD_MARGIN.x
-	grade_card.offset_top = CARD_MARGIN.y
-	grade_card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	grade_card.grow_vertical = Control.GROW_DIRECTION_END
-	add_child(grade_card)
-	_grade = _make_label(DETAIL_FONT_SIZE, COLOR_ACCENT)
-	_grade.name = "GradeLabel"
-	grade_card.add_child(_grade)
 	_title = _make_label(TITLE_FONT_SIZE, COLOR_INK)
 	box.add_child(_title)
 	_detail = _make_label(DETAIL_FONT_SIZE, COLOR_SUB)
@@ -290,10 +275,16 @@ func _build_ui() -> void:
 	_bar.max_value = 100.0
 	_bar.value = 0.0
 	box.add_child(_bar)
+	var separator := HSeparator.new()
+	separator.name = "GradeSeparator"
+	box.add_child(separator)
+	_grade = _make_label(DETAIL_FONT_SIZE, COLOR_ACCENT)
+	_grade.name = "GradeLabel"
+	box.add_child(_grade)
 
 	_toast = _make_label(DETAIL_FONT_SIZE, COLOR_ACCENT)
 	_toast.name = "PhaseToast"
-	_toast.position = CARD_MARGIN + Vector2(0.0, 108.0)
+	_toast.position = CARD_MARGIN + Vector2(0.0, CampusTheme.settings().time_card_height)
 	_toast.modulate.a = 0.0
 	add_child(_toast)
 
@@ -303,7 +294,7 @@ func _build_ui() -> void:
 	_action.add_theme_font_override("font", _ui_font())
 	_action.add_theme_font_size_override("font_size", DETAIL_FONT_SIZE)
 	_action.visible = false
-	_action.position = CARD_MARGIN + Vector2(0.0, 116.0)
+	_action.position = CARD_MARGIN + Vector2(0.0, CampusTheme.settings().time_card_height + 28)
 	_action.pressed.connect(func() -> void: continue_requested.emit())
 	add_child(_action)
 

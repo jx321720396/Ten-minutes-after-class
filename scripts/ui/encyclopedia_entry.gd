@@ -63,9 +63,6 @@ func _build_button() -> void:
 	var btn := Button.new()
 	btn.name = "EncyclopediaButton"
 	btn.text = "百科全书"
-	btn.position = BUTTON_POS
-	btn.size = BUTTON_SIZE
-	btn.custom_minimum_size = BUTTON_SIZE
 	btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	btn.add_theme_font_override("font", _ui_font())
 	btn.add_theme_font_size_override("font_size", 18)
@@ -76,6 +73,7 @@ func _build_button() -> void:
 	btn.add_theme_stylebox_override("pressed", _button_style())
 	btn.pressed.connect(_open)
 	add_child(btn)
+	preload("res://scripts/ui/campus_theme.gd").utility_button(btn, 1)
 
 
 func _button_style() -> StyleBoxFlat:

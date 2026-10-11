@@ -416,7 +416,12 @@ func _refresh_bar() -> void:
 		return
 	_bar.refresh(_bar_states())
 	if _selected >= 0:
-		_bar.show_target(_selected, _display_name(_selected), str(_core.activity_of(_selected)))
+		_bar.show_target(
+			_selected,
+			_display_name(_selected),
+			str(_core.activity_of(_selected)),
+			_target_portrait_texture(_selected)
+		)
 	else:
 		_bar.show_hint("先在右边点一个动作")
 
@@ -890,3 +895,22 @@ func _phase_ok() -> bool:
 		str(snapshot.get("mode", "")) == SimulationClock.MODE_RUNNING
 		and bool(snapshot.get("player_control", true))
 	)
+
+
+func _target_portrait_texture(index: int) -> Texture2D:
+	if _actors == null:
+		return null
+	var actor: Node3D = _actors.actor_for(index)
+	if actor == null:
+		return null
+	var sprite := actor.get_node_or_null("Sprite") as Sprite3D
+	if sprite == null or sprite.texture == null:
+		return null
+	for row in ConfigLoader.new().get_table("characters/appearance").get("rows", []):
+		if str(row.get("id", "")) == str(_core.character_id(index)):
+			var head_path := (
+				"res://assets/textures/character_head/%s.png" % str(row.get("sprite", ""))
+			)
+			if ResourceLoader.exists(head_path):
+				return load(head_path)
+	return sprite.texture

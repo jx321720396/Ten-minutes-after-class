@@ -16,6 +16,7 @@
 *.jpg   binary
 *.jpeg  binary
 *.webp  binary
+*.ico   binary
 *.svg   text eol=lf
 *.ogg   binary
 *.wav   binary

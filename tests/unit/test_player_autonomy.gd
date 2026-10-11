@@ -1,4 +1,24 @@
 extends GutTest
+
+
+func test_non_chat_actions_display_progress_from_busy_ticks() -> void:
+	var core := _core()
+	var me := core.node_count() - 1
+	var hud := ChatFeedbackHUD.new()
+	add_child_autofree(hud)
+	hud.bind_core(core)
+	for kind in [
+		"study", "observe", "pass_note", "report", "roughhouse", "exclude", "comfort", "apologize"
+	]:
+		core._busy_act[me] = kind
+		core._busy_until[me] = core.global_tick() + 10
+		core._busy_phase[me] = core._phase_index
+		hud._process(0.0)
+		assert_true(hud._progress_bar.visible, kind)
+		assert_gte(hud.progress_percent(), 0.0)
+		assert_lte(hud.progress_percent(), 100.0)
+
+
 ## 玩家不会被 NPC 决策自动安排睡觉；被动活动必须能在界面看见。
 
 

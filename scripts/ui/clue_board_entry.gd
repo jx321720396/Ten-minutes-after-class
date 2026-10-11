@@ -76,10 +76,7 @@ func clear_board(_ended_day: int = 0) -> void:
 func _build_button() -> void:
 	var btn := Button.new()
 	btn.name = "BoardButton"
-	btn.text = "黑板"
-	btn.position = BUTTON_POS
-	btn.size = BUTTON_SIZE
-	btn.custom_minimum_size = BUTTON_SIZE
+	btn.text = "推理板"
 	btn.process_mode = Node.PROCESS_MODE_ALWAYS
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.add_theme_font_override("font", _ui_font())
@@ -91,6 +88,7 @@ func _build_button() -> void:
 	btn.add_theme_stylebox_override("pressed", _button_style())
 	btn.pressed.connect(_open)
 	add_child(btn)
+	preload("res://scripts/ui/campus_theme.gd").utility_button(btn, 0)
 
 
 func _button_style() -> StyleBoxFlat:

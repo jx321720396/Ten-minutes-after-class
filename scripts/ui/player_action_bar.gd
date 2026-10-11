@@ -41,6 +41,7 @@ const ACTIVITY_NAMES := {
 	"leave_class": "你出去了",
 }
 
+const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
 const STYLE_TABLE := "ui/chat_feedback_style"
 const COLOR_PAPER := Color(0.98, 0.96, 0.90, 0.94)
 const COLOR_INK := Color(0.13, 0.16, 0.14)
@@ -77,6 +78,7 @@ var _rows_box: VBoxContainer = null
 var _inventory_label: Label = null
 var _target_label: Label = null
 var _profile_button: Button = null
+var _target_portrait: TextureRect
 var _target_index := -1
 var _button_of: Dictionary = {}
 var _armed := StringName("")
@@ -87,6 +89,14 @@ var _margin := 18.0
 func _ready() -> void:
 	_load_style()
 	_build_ui()
+	CampusTheme.apply_tree(self)
+	for child in _rows_box.get_children():
+		if child is PanelContainer:
+			var category_style := CampusTheme.box("teal", "teal")
+			category_style.shadow_size = 0
+			child.add_theme_stylebox_override("panel", category_style)
+	_apply_paper_style()
+	_update_highlight()
 
 
 # ------------------------------------------------------------------ 对外接口
@@ -142,14 +152,23 @@ func clear_armed() -> void:
 
 
 ## 底部信息行：没选行为时给提示；选了行为后显示目标或等待提示。
-func show_target(index: int, name_text: String, activity: String) -> void:
+func show_target(
+	index: int, name_text: String, activity: String, portrait: Texture2D = null
+) -> void:
+	_target_portrait.texture = portrait
+	_target_portrait.visible = true
 	_target_index = index
-	_target_label.text = "%s · %s" % [name_text, activity] if name_text != "" else _idle_hint()
+	_target_label.text = (
+		"%s · %s" % [name_text, str(ACTIVITY_NAMES.get(activity, activity))]
+		if name_text != ""
+		else _idle_hint()
+	)
 	if _profile_button != null:
 		_profile_button.disabled = name_text == ""
 
 
 func show_hint(text: String) -> void:
+	_target_portrait.texture = null
 	_target_label.text = text
 	if _profile_button != null:
 		_profile_button.disabled = true
@@ -162,7 +181,7 @@ func target_text() -> String:
 ## 测试与调试：某个 kind 的按钮文案 / 是否灰置。
 func button_text_of(kind: StringName) -> String:
 	var button: Button = _button_of.get(kind, null)
-	return "" if button == null else button.text
+	return "" if button == null else str(button.get_meta("action_name", button.text))
 
 
 func button_disabled_of(kind: StringName) -> bool:
@@ -185,11 +204,44 @@ func _update_highlight() -> void:
 	for kind in _button_of.keys():
 		var button: Button = _button_of[kind]
 		var selected: bool = kind == _armed
+		CampusTheme.button(button, selected)
+		for state_name in ["normal", "hover", "pressed", "disabled"]:
+			var row_style := button.get_theme_stylebox(state_name).duplicate() as StyleBoxFlat
+			row_style.shadow_size = 0
+			row_style.set_content_margin_all(8)
+			button.add_theme_stylebox_override(state_name, row_style)
+		if button.disabled and button.tooltip_text != PLACEHOLDER_REASON:
+			button.add_theme_stylebox_override(
+				"disabled", CampusTheme.box("warning_fill", "warning")
+			)
 		button.add_theme_color_override(
 			"font_color",
-			COLOR_ACCENT if selected else (COLOR_PLACEHOLDER if button.disabled else COLOR_INK)
+			(
+				Color(CampusTheme.settings().paper)
+				if selected
+				else (COLOR_PLACEHOLDER if button.disabled else COLOR_INK)
+			)
 		)
-	_target_label.text = _idle_hint()
+		var description := str(CampusTheme.settings().action_descriptions.get(str(kind), ""))
+		if button.disabled:
+			description = "未开放" if button.tooltip_text == PLACEHOLDER_REASON else "暂不可用"
+		button.text = ""
+		var name_label: Label = button.get_node("Content/Layout/Words/Name")
+		var detail_label: Label = button.get_node("Content/Layout/Words/Description")
+		var ink := Color(CampusTheme.settings().paper) if selected else COLOR_INK
+		if button.disabled:
+			ink = COLOR_PLACEHOLDER if button.tooltip_text == PLACEHOLDER_REASON else COLOR_LOCKED
+		name_label.add_theme_color_override("font_color", ink)
+		detail_label.add_theme_color_override(
+			"font_color", ink if selected or button.disabled else COLOR_SUB
+		)
+		detail_label.text = description
+		button.add_theme_color_override(
+			"font_disabled_color",
+			COLOR_PLACEHOLDER if button.tooltip_text == PLACEHOLDER_REASON else COLOR_LOCKED
+		)
+	if _target_index < 0:
+		_target_label.text = _idle_hint()
 
 
 func _on_pressed(kind: StringName, self_only: bool) -> void:
@@ -227,11 +279,31 @@ func _build_ui() -> void:
 	var column := VBoxContainer.new()
 	column.name = "Column"
 	column.add_theme_constant_override("separation", 4)
-	_panel.add_child(column)
+	var padding := MarginContainer.new()
+	padding.name = "Padding"
+	for edge in ["left", "right", "top", "bottom"]:
+		padding.add_theme_constant_override(
+			"margin_" + edge, int(CampusTheme.settings()["action_content_" + edge])
+		)
+	_panel.add_child(padding)
+	padding.add_child(column)
 	_rows_box = VBoxContainer.new()
 	_rows_box.name = "Rows"
-	_rows_box.add_theme_constant_override("separation", 3)
-	column.add_child(_rows_box)
+	_rows_box.add_theme_constant_override("separation", int(CampusTheme.settings().action_row_gap))
+	var scroll := ScrollContainer.new()
+	scroll.name = "BehaviorScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	column.add_child(scroll)
+	_rows_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(_rows_box)
+	var heading := Label.new()
+	heading.text = "行动"
+	heading.add_theme_font_override("font", _font())
+	heading.add_theme_font_size_override("font_size", int(CampusTheme.settings().action_title_size))
+	heading.add_theme_color_override("font_color", Color(CampusTheme.settings().teal))
+	column.add_child(heading)
+	column.move_child(heading, 0)
 	var last_group := ""
 	for row in ROWS:
 		var kind := StringName(row[0])
@@ -240,14 +312,26 @@ func _build_ui() -> void:
 			var title := Label.new()
 			title.name = "Group_" + group
 			title.text = str(GROUP_TITLES.get(group, group))
-			title.add_theme_font_size_override("font_size", 13)
+			title.add_theme_font_size_override(
+				"font_size", int(CampusTheme.settings().action_group_size)
+			)
 			title.add_theme_color_override("font_color", COLOR_SUB)
 			title.add_theme_font_override("font", _font())
-			_rows_box.add_child(title)
+			var category := PanelContainer.new()
+			category.name = "Category_" + group
+			category.custom_minimum_size.y = CampusTheme.settings().action_group_height
+			category.add_theme_stylebox_override("panel", CampusTheme.box("teal", "teal"))
+			title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			title.add_theme_color_override("font_color", Color(CampusTheme.settings().paper))
+			category.add_child(title)
+			_rows_box.add_child(category)
 			last_group = group
 		var button := Button.new()
 		button.name = "Act_" + str(kind)
-		button.text = str(row[2])
+		button.set_meta("action_name", str(row[2]))
+		button.custom_minimum_size.y = CampusTheme.settings().action_row_height
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_build_action_contents(button, kind, str(row[2]))
 		button.focus_mode = Control.FOCUS_NONE
 		button.add_theme_font_override("font", _font())
 		button.pressed.connect(_on_pressed.bind(kind, bool(row[3])))
@@ -260,17 +344,44 @@ func _build_ui() -> void:
 	_inventory_label.add_theme_color_override("font_color", COLOR_SUB)
 	_inventory_label.add_theme_font_override("font", _font())
 	column.add_child(_inventory_label)
+	var target_heading := Label.new()
+	target_heading.text = "当前对象"
+	target_heading.add_theme_font_size_override(
+		"font_size", int(CampusTheme.settings().action_target_heading_size)
+	)
+	target_heading.add_theme_color_override("font_color", Color(CampusTheme.settings().teal))
+	target_heading.add_theme_font_override("font", _font())
+	column.add_child(HSeparator.new())
+	column.add_child(target_heading)
 	_target_label = Label.new()
 	_target_label.name = "TargetLine"
 	_target_label.text = _idle_hint()
 	_target_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_target_label.add_theme_font_size_override("font_size", 13)
+	_target_label.add_theme_font_size_override(
+		"font_size", int(CampusTheme.settings().action_target_font_size)
+	)
 	_target_label.add_theme_color_override("font_color", COLOR_SUB)
 	_target_label.add_theme_font_override("font", _font())
-	column.add_child(_target_label)
+	var target_row := HBoxContainer.new()
+	target_row.name = "TargetRow"
+	target_row.add_theme_constant_override(
+		"separation", int(CampusTheme.settings().action_row_padding)
+	)
+	column.add_child(target_row)
+	_target_portrait = TextureRect.new()
+	_target_portrait.name = "Portrait"
+	_target_portrait.custom_minimum_size = Vector2.ONE * CampusTheme.settings().action_portrait_size
+	_target_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_target_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	target_row.add_child(_target_portrait)
+	_target_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	target_row.add_child(_target_label)
 	_profile_button = Button.new()
 	_profile_button.name = "ProfileButton"
-	_profile_button.text = "看资料"
+	_profile_button.text = "查看资料"
+	_profile_button.add_theme_font_size_override(
+		"font_size", int(CampusTheme.settings().action_profile_font_size)
+	)
 	_profile_button.focus_mode = Control.FOCUS_NONE
 	_profile_button.disabled = true
 	_profile_button.add_theme_font_override("font", _font())
@@ -294,3 +405,67 @@ func _load_style() -> void:
 				_width = value
 			"menu_margin_px":
 				_margin = value
+
+
+func _apply_paper_style() -> void:
+	var cfg := CampusTheme.settings()
+	var paper := StyleBoxTexture.new()
+	paper.texture = load("res://assets/textures/ui/paper/campus-action-paper-v1.png")
+	paper.content_margin_top = 0
+	paper.content_margin_bottom = 0
+	paper.content_margin_left = 0
+	paper.content_margin_right = 0
+	_panel.add_theme_stylebox_override("panel", paper)
+	_panel.custom_minimum_size = Vector2(cfg.action_width, cfg.action_panel_height)
+	_panel.size = _panel.custom_minimum_size
+	_panel.offset_top = cfg.action_panel_top
+	_panel.offset_bottom = cfg.action_panel_top + cfg.action_panel_height
+	_panel.offset_left = -cfg.action_width - _margin
+	_panel.offset_right = -_margin
+
+
+func _build_action_contents(button: Button, kind: StringName, label: String) -> void:
+	var cfg := CampusTheme.settings()
+	var inset := MarginContainer.new()
+	inset.name = "Content"
+	inset.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(inset)
+	inset.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for edge in ["left", "right", "top", "bottom"]:
+		inset.add_theme_constant_override("margin_" + edge, int(cfg.action_row_padding))
+	var layout := HBoxContainer.new()
+	layout.name = "Layout"
+	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_theme_constant_override("separation", int(cfg.action_row_padding))
+	inset.add_child(layout)
+	var icon := TextureRect.new()
+	icon.custom_minimum_size = Vector2(cfg.action_icon_size, cfg.action_icon_size)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var icon_path := "res://assets/icons/actions/%s.svg" % kind
+	if ResourceLoader.exists(icon_path):
+		icon.texture = load(icon_path)
+	layout.add_child(icon)
+	var words := VBoxContainer.new()
+	words.name = "Words"
+	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	words.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(words)
+	for entry in [
+		["Name", label, cfg.action_name_size],
+		["Description", cfg.action_descriptions.get(str(kind), ""), cfg.action_description_size]
+	]:
+		var text := Label.new()
+		text.name = entry[0]
+		text.text = entry[1]
+		if entry[0] == "Name":
+			var heading_font := SystemFont.new()
+			heading_font.font_names = PackedStringArray(["SimSun", "Noto Serif CJK SC", "serif"])
+			text.add_theme_font_override("font", heading_font)
+		else:
+			text.add_theme_font_override("font", _font())
+		text.add_theme_font_size_override("font_size", int(entry[2]))
+		text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		words.add_child(text)

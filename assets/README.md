@@ -6,7 +6,7 @@
 
 ```
 assets/
-├─ icons/            应用与界面图标（icon.svg 为项目图标）
+├─ icons/            应用与界面图标（项目图标见下）
 ├─ models/           3D 模型（classroom/ 教室场景，第三方，见 CREDITS.md）
 ├─ textures/         贴图
 │   ├─ clueboard/    线索板（推理板）素材：粉笔、板擦、板面
@@ -19,6 +19,20 @@ assets/
 ```
 
 新增子目录需在 PR 中说明；禁止在 `assets/` 根目录散落文件。
+
+## 应用图标
+
+- **项目图标**：`icons/game-icon-social-note-v1.png` —— 由 `project.godot` 的 `config/icon` 指定，决定编辑器 / 窗口 / Godot 默认图标。
+- **导出图标**：在 `export_presets.cfg` 中按平台指定，**全部由主图派生，改主图后必须同步重生成**：
+
+| 用途 | 文件 | 预设字段 |
+|---|---|---|
+| Windows `.exe` | `icons/game-icon-social-note-v1.ico`（16/24/32/48/64/128/256） | `application/icon` |
+| Android 启动图标 | `icons/game-icon-social-note-v1-192.png` | `launcher_icons/main_192x192` |
+| Android 自适应前景 | `icons/game-icon-social-note-v1-foreground-432.png`（内容缩入内 66% 安全区） | `launcher_icons/adaptive_foreground_432x432` |
+| Android 自适应背景 | `icons/game-icon-social-note-v1-background-432.png`（纯色底，取自主图平均色） | `launcher_icons/adaptive_background_432x432` |
+
+- `icons/icon.svg` 为旧版项目图标，保留未用。`adaptive_monochrome_432x432` 留空（单色剪影无法从插画自动派生）。
 
 ## 命名约定
 
