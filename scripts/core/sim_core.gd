@@ -135,7 +135,7 @@ var _stats: Dictionary = {}
 var _hurt_day: Array = []  # 施害者侧证据：最近一次 i 对 j 做重大敌对行为的日（§8.4）
 var _exclude_last_day: Array = []  # 排挤冷却：同一目标最近被驱逐的日（§10.25）
 ## 座位范围半径（§8.23）：只有在这个范围内才算「在自己的座位上」
-var _seat_zone_radius := 0.5
+var _seat_zone_half_extent := 0.5
 ## 每个节点的座位站位世界坐标（表现层注入；内核只读）
 var _seat_world: Dictionary = {}
 ## 学习圈会话编号（每轮重建；只供表现层把这场学习渲染成「学习圈」）
@@ -266,8 +266,8 @@ func _load_config(tables: Dictionary) -> void:
 	_feedback = float(_p.get("feedback", 0.0))
 	_choice = _build_choice_weights(tables)
 	# 座位范围半径（§8.23）：几何口径跟闲聊范围同一张表
-	_seat_zone_radius = float(
-		_params(tables, "rules/player_interaction").get("seat_zone_radius_m", 0.5)
+	_seat_zone_half_extent = float(
+		_params(tables, "rules/player_interaction").get("seat_zone_half_extent_m", 0.5)
 	)
 
 
@@ -2012,7 +2012,11 @@ func in_own_seat(i: int) -> bool:
 	if not _seat_world.has(i):
 		return true
 	var seat: Vector2 = _seat_world[i]
-	return Vector2(_pos_x[i], _pos_z[i]).distance_to(seat) <= _seat_zone_radius
+	# 方形（与地面格线对齐）：边长 = 2×半边长，不是圆
+	return (
+		absf(_pos_x[i] - seat.x) <= _seat_zone_half_extent
+		and absf(_pos_z[i] - seat.y) <= _seat_zone_half_extent
+	)
 
 
 ## 学习圈（§8.23 第 4 条）：8 邻域内**都在学习**的人之间，每 `study_circle_interval_ticks`
