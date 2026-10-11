@@ -818,6 +818,12 @@ class Sim:
             if self.sleeping[i] or i in busy or self.global_tick < self.busy_until[i]:
                 continue
             self.in_conversation[i] = False
+            # 环境类：学习（§8.23）—— 主动坐下学一整个课间；爱学习的人更常坐下来
+            study_gain = 1.0 + self.tag_bias(i, "study_bias")
+            if self.allowed("study") and self.rng.random() < self.probs.get("study_p", 0.0) * study_gain:
+                self.do_study(i)
+                busy.add(i)
+                continue
             # 环境类：闲聊（概率触发）—— 上课段禁用（§3.3）
             # 标签调制（§11、§18.9）：爱学习 → 更少闲聊；爱聊天 → 更多闲聊
             chat_gain = 1.0 + self.tag_bias(i, "chat_bias") - self.tag_bias(i, "study_bias")
@@ -1882,12 +1888,8 @@ class Sim:
             if self.Grade[i] >= gmax:
                 self.StudyAcc[i] = 0.0
                 continue
-            if i == self.N - 1:
-                # 玩家（§8.23）：必须**主动进入学习态**才累积成绩
-                # —— 不选任何行为＝什么都没做
-                if self.current_act[i] != "study":
-                    continue
-            elif self.current_act[i] is not None or self.global_tick < self.busy_until[i]:
+            # §8.23：学习是**主动行为** —— 玩家与 NPC 都必须处于学习态才累积成绩
+            if self.current_act[i] != "study":
                 continue
             self.StudyAcc[i] += 1.0
             tpp = self._grade_ticks_per_point(self.Grade[i])

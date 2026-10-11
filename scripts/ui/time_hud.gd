@@ -43,6 +43,8 @@ var _clock: SimulationClock = null
 var _panel: PanelContainer = null
 var _title: Label = null
 var _grade: Label = null
+## 上一次显示的成绩（变化时轻微闪一下，§21.2.7）
+var _grade_shown := -1
 var _detail: Label = null
 var _bar: ProgressBar = null
 var _toast: Label = null
@@ -157,6 +159,13 @@ func _on_report_ready(ended_day: int) -> void:
 		continue_requested.emit()
 
 
+## 成绩变化时的轻微闪动（§21.2.7：不弹窗、不报数，只让数字自己说话）
+func _flash_grade() -> void:
+	var tween := create_tween()
+	tween.tween_property(_grade, "modulate", Color(1.7, 1.7, 1.7, 1.0), 0.12)
+	tween.tween_property(_grade, "modulate", Color.WHITE, 0.4)
+
+
 func _on_term_finished(ended_day: int) -> void:
 	_refresh(_clock.snapshot() if _clock != null else {})
 	_show_toast("学期结束 · 共 %d 天" % ended_day)
@@ -170,6 +179,10 @@ func _refresh(snapshot_data: Dictionary) -> void:
 	var term_days := int(snapshot_data.get("term_days", 0))
 	var player_grade := int(snapshot_data.get("player_grade", 0))
 	_grade.text = "成绩 %d ｜ 距期末考 %d 天" % [player_grade, maxi(0, term_days - day)]
+	# §21.2.7：**不逐分弹窗**，数字变化时轻微闪一下即可
+	if _grade_shown >= 0 and player_grade != _grade_shown:
+		_flash_grade()
+	_grade_shown = player_grade
 	var mode := str(snapshot_data.get("mode", SimulationClock.MODE_RUNNING))
 	var display_name := str(snapshot_data.get("display_name", ""))
 	_title.text = "第 %d / %d 天 · %s" % [day, term_days, display_name]
