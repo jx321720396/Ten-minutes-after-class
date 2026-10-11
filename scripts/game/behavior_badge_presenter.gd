@@ -25,6 +25,7 @@ const FALLBACK_HEIGHT := 1.5
 
 var _core: Variant = null
 var _actors: Node3D = null
+var _activity_badges: Dictionary = {}
 var _badges: Dictionary = {}
 
 
@@ -58,7 +59,16 @@ func badge_count() -> int:
 
 
 ## 收掉所有徽标（换场景 / 退出时用；不撤销任何内核结算）。
+func activity_badge_text(index: int) -> String:
+	if not _activity_badges.has(index):
+		return ""
+	return str((_activity_badges[index] as Label).text)
+
+
 func clear() -> void:
+	for badge in _activity_badges.values():
+		badge.queue_free()
+	_activity_badges.clear()
 	for index in _badges.keys():
 		var badge: Control = _badges[index]
 		_badges.erase(index)
@@ -73,6 +83,7 @@ func _process(_delta: float) -> void:
 
 ## 徽标集合完全跟随内核的公开状态：多出来的补、走掉的收。
 func _sync() -> void:
+	_sync_activities()
 	var wanted: Array = []
 	if _core != null and is_instance_valid(_core):
 		wanted = _core.note_holders()
@@ -91,10 +102,38 @@ func _sync() -> void:
 
 
 ## 把每张徽标贴到人物头侧（与头顶气泡同一套投影方式）。
+func _sync_activities() -> void:
+	var wanted := {}
+	if _core != null and is_instance_valid(_core):
+		for i in range(int(_core.node_count())):
+			var activity := str(_core.activity_of(i))
+			if activity in ["listen_music", "eat_snack", "read_book"]:
+				wanted[i] = str(PlayerActionBar.ACTIVITY_NAMES[activity])
+	for i in _activity_badges.keys():
+		if not wanted.has(i):
+			(_activity_badges[i] as Label).queue_free()
+			_activity_badges.erase(i)
+	for i in wanted:
+		if not _activity_badges.has(i):
+			var badge := Label.new()
+			badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			badge.add_theme_color_override("font_color", COLOR_PAPER)
+			badge.add_theme_color_override("font_shadow_color", COLOR_EDGE)
+			badge.add_theme_constant_override("shadow_offset_x", 1)
+			badge.add_theme_constant_override("shadow_offset_y", 1)
+			add_child(badge)
+			_activity_badges[i] = badge
+		(_activity_badges[i] as Label).text = str(wanted[i])
+
+
 func _layout() -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
 		return
+	for index in _activity_badges:
+		(_activity_badges[index] as Label).position = (
+			camera.unproject_position(_anchor_of(int(index))) + BADGE_OFFSET - Vector2(0.0, 20.0)
+		)
 	for index in _badges:
 		var badge: Control = _badges[index]
 		var screen := camera.unproject_position(_anchor_of(int(index)))

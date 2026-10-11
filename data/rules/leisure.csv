@@ -1,0 +1,16 @@
+# P0-3：自然完成减压；配置值均来自本表
+param,value,note
+music_relief,2.0,听完音乐减压
+snack_relief,1.5,吃完零食减压
+book_relief,2.5,看完课外书减压
+music_duration,30,音乐占用
+snack_duration,15,零食占用
+book_duration,40,课外书占用
+music_noise,0,耳机无声
+snack_noise,1,零食噪声
+book_noise,0,看书无声
+snack_count_per_run,5,玩家每局份数
+book_count_8,3,8 人班持书 NPC 数
+book_count_16,6,16 人班持书 NPC 数
+book_count_24,10,24 人班持书 NPC 数
+interrupted_stress,0.5,减压动作被铃声打断的压力代价

@@ -1,0 +1,10 @@
+[remap]
+
+importer="keep"
+type=""
+
+[deps]
+
+source_file="res://data/rules/leisure.csv"
+
+[params]

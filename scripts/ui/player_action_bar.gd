@@ -14,7 +14,7 @@ extends CanvasLayer
 ##      隐藏会让玩家以为功能不存在（§20.1.2）；
 ##   ③ 本栏**只发意图、不改世界**：真正的裁决仍在内核（`player_action`）。
 ##
-## 「对自己做的事」点按钮直接执行（不需要选对象）—— 本批这些项都还是灰置占位。
+## 「对自己做的事」点按钮直接执行（不需要选对象）—— 已接通的项由内核决定可用状态。
 
 signal behavior_armed(kind: StringName)
 signal self_behavior_requested(kind: StringName)
@@ -35,6 +35,10 @@ const ACTIVITY_NAMES := {
 	"move": "走动中",
 	"sleep": "睡着了",
 	"study": "在学习",
+	"listen_music": "在听音乐",
+	"eat_snack": "在吃零食",
+	"read_book": "在看课外书",
+	"leave_class": "你出去了",
 }
 
 const STYLE_TABLE := "ui/chat_feedback_style"
@@ -70,6 +74,7 @@ const PLACEHOLDER_REASON := "还没做"
 
 var _panel: PanelContainer = null
 var _rows_box: VBoxContainer = null
+var _inventory_label: Label = null
 var _target_label: Label = null
 var _profile_button: Button = null
 var _target_index := -1
@@ -96,10 +101,18 @@ func refresh(states: Dictionary) -> void:
 			button.tooltip_text = PLACEHOLDER_REASON
 			button.add_theme_color_override("font_color", COLOR_PLACEHOLDER)
 			continue
+		if state.has("label"):
+			button.text = str(state["label"])
 		var ok := bool(state.get("ok", false))
 		button.disabled = not ok
 		button.tooltip_text = "" if ok else str(state.get("reason", ""))
 		button.add_theme_color_override("font_color", COLOR_INK if ok else COLOR_LOCKED)
+	if _inventory_label != null:
+		var snack_label := str(states.get(&"eat_snack", {}).get("label", "吃零食（0）"))
+		_inventory_label.text = (
+			"持有物：%s · 课外书 %d"
+			% [snack_label.replace("吃", ""), int(states.get(&"read_book", {}).get("books", 0))]
+		)
 	_update_highlight()
 
 
@@ -240,6 +253,13 @@ func _build_ui() -> void:
 		button.pressed.connect(_on_pressed.bind(kind, bool(row[3])))
 		_rows_box.add_child(button)
 		_button_of[kind] = button
+	_inventory_label = Label.new()
+	_inventory_label.name = "InventoryLine"
+	_inventory_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_inventory_label.add_theme_font_size_override("font_size", 12)
+	_inventory_label.add_theme_color_override("font_color", COLOR_SUB)
+	_inventory_label.add_theme_font_override("font", _font())
+	column.add_child(_inventory_label)
 	_target_label = Label.new()
 	_target_label.name = "TargetLine"
 	_target_label.text = _idle_hint()

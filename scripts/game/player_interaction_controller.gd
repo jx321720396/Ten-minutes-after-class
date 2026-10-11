@@ -35,7 +35,7 @@ const BAR_REFRESH_SECONDS := 0.25
 ## 需要选对象的动作（与右侧行为栏的 target 组一致）
 const PLAYER_TARGET_KINDS := ["chat", "pass_note", "report", "roughhouse", "exclude", "observe"]
 ## 自指行为（对自己做的事）：不选对象，点按钮就发起
-const PLAYER_SELF_KINDS := ["study", "sleep"]
+const PLAYER_SELF_KINDS := SimCore.PLAYER_SELF_KINDS
 
 var _core: Variant = null
 var _player: PlayerController = null
@@ -58,6 +58,7 @@ var _mode := ""
 var _session_id := -1
 var _packet: Dictionary = {}
 var _pen_hold := false
+var _leave_dialog: ConfirmationDialog = null
 var _bar_timer := 0.0
 
 
@@ -143,6 +144,8 @@ func _exit_tree() -> void:
 	# 退出场景：取消未提交请求、释放**自己**持有的 hold，不撤销已提交的结算
 	cancel_pending(&"scene_exit")
 	_release_pen_hold()
+	if _clock != null:
+		_clock.release(&"leave_confirm")
 	_disconnect_sources()
 	if _hud != null:
 		_hud.clear()
@@ -203,6 +206,9 @@ func _on_self_behavior(kind: StringName) -> void:
 		if _hud != null:
 			_hud.show_status("这个动作还没做出来。")
 		return
+	if action == "leave_class":
+		_confirm_leave()
+		return
 	# 自指行为无对象：target 传 -1，内核对它们只看自己的状态
 	var result: Dictionary = _core.player_action(action, -1)
 	if not bool(result.get("ok", false)):
@@ -212,8 +218,10 @@ func _on_self_behavior(kind: StringName) -> void:
 	if _hud != null:
 		if action == "study":
 			_hud.show_status("你回到座位，开始学习。")
+		elif action == "sleep":
+			_hud.show_status("你趴下睡了。")
 		else:
-			_hud.show_status("你父下睡了。")
+			_hud.show_status(str(PlayerActionBar.ACTIVITY_NAMES.get(action, "")))
 	_refresh_bar()
 
 
@@ -337,8 +345,16 @@ func _note_hint(index: int) -> String:
 ## 内核错误码 → 一句人话（纸条侧；不暴露任何隐藏数值）
 func _note_reason(error: String) -> String:
 	match error:
+		"no_book":
+			return "你还没有课外书。"
+		"no_snacks":
+			return "零食吃完了"
+		"player_absent":
+			return "你出去了。"
+		"absence_limit":
+			return "这节课间已经出去过了"
 		"player_busy":
-			return "你正忙着"
+			return "你正忙着 · 做完再说"
 		"phase_not_allowed":
 			return "现在不能传纸条"
 		"target_unavailable":
@@ -403,17 +419,53 @@ func _refresh_bar() -> void:
 
 
 ## 行为栏每项的状态：只有本批实做的动作给出状态，其余由栏做「还没做」占位灰置。
+func _confirm_leave() -> void:
+	if _clock == null or _clock.is_paused():
+		return
+	if _leave_dialog == null:
+		_leave_dialog = ConfirmationDialog.new()
+		_leave_dialog.title = "出门"
+		_leave_dialog.dialog_text = "出去就赶不上这节课间了，同桌们会有点介意。确定？"
+		_leave_dialog.ok_button_text = "出去"
+		_leave_dialog.cancel_button_text = "算了"
+		add_child(_leave_dialog)
+		_leave_dialog.confirmed.connect(_commit_leave)
+		_leave_dialog.canceled.connect(func() -> void: _clock.release(&"leave_confirm"))
+	_clock.hold(&"leave_confirm")
+	_leave_dialog.popup_centered()
+
+
+func _commit_leave() -> void:
+	_clock.release(&"leave_confirm")
+	var result: Dictionary = _core.player_action("leave_class", -1)
+	if bool(result.get("ok", false)):
+		_clock.skip_absent_break()
+	elif _hud != null:
+		_hud.show_status(_action_reason(str(result.get("error", ""))))
+	_refresh_bar()
+
+
 func _bar_states() -> Dictionary:
 	var states := {}
 	for kind in PLAYER_TARGET_KINDS + PLAYER_SELF_KINDS:
 		var ok := _can_do(kind)
 		states[StringName(kind)] = {"ok": ok, "reason": "" if ok else _action_reason_of(kind)}
+		if kind == "eat_snack":
+			states[StringName(kind)]["label"] = (
+				"吃零食（%d）" % int(_core.inventory_of(int(_core.node_count()) - 1)["snacks"])
+			)
+		if kind == "read_book":
+			states[StringName(kind)]["books"] = int(
+				_core.inventory_of(int(_core.node_count()) - 1)["books"]
+			)
 	return states
 
 
 ## 「现在能不能做这个动作」—— 只看玩家自身与相位（不含目标：目标在点人之后才校验）。
 func _can_do(kind: String) -> bool:
 	var me := int(_core.node_count()) - 1
+	if PLAYER_SELF_KINDS.has(kind):
+		return str(_core._player_action_error(kind, -1, me)).is_empty()
 	if bool(_core._sleeping[me]) or _core.is_moving(me):
 		return false
 	if int(_core._busy_until[me]) > int(_core._global_tick):
@@ -423,6 +475,8 @@ func _can_do(kind: String) -> bool:
 
 func _action_reason_of(kind: String) -> String:
 	var me := int(_core.node_count()) - 1
+	if PLAYER_SELF_KINDS.has(kind):
+		return _action_reason(str(_core._player_action_error(kind, -1, me)))
 	if bool(_core._sleeping[me]):
 		return "你睡着了"
 	if _core.is_moving(me):
@@ -440,7 +494,7 @@ func _action_reason(error: String) -> String:
 		"player_busy":
 			return "你正忙着"
 		"phase_not_allowed":
-			return "上课期间不能做这个"
+			return "上课呢，下课再说"
 		"not_in_seat":
 			return "回到自己座位上才能学习"
 		"target_unavailable":
@@ -688,6 +742,33 @@ func _on_request_failed(request_id: int, reason: StringName) -> void:
 ## 只处理带 request_id 的玩家通知；圈 / 气泡 / 线索全部走这一条入口。
 func _on_event_happened(payload: Dictionary) -> void:
 	var kind := str(payload.get("kind", ""))
+	if kind == "player_returned":
+		if _hud != null:
+			_hud.show_status("你回到教室，刚好听见铃声。")
+		return
+	if kind in ["leisure_finished", "leisure_interrupted"]:
+		if int(payload.get("i", -1)) != int(_core.node_count()) - 1:
+			return
+		if _hud != null:
+			var activity := str(payload.get("activity", ""))
+			var message := "还没做完，铃声就响了。"
+			if kind == "leisure_finished":
+				message = str(
+					(
+						{
+							"listen_music": "听完一首，心里松快了一点。",
+							"eat_snack": "你啃了两口，心情好了点。",
+							"read_book": "看了两页，脑子里的杂事淡了些。"
+						}
+						. get(activity, "")
+					)
+				)
+				if activity == "eat_snack" and int(payload.get("snacks_remaining", 0)) == 0:
+					message = "最后一包了，你把它吃完了。"
+			elif activity == "listen_music":
+				message = "音乐还没听完，铃声就响了。"
+			_hud.show_status(message)
+		return
 	# 观察结果（§10.3.1）：只读信息进情报日志，不提交任何行为
 	if kind == "observe":
 		if _hud != null:
@@ -764,7 +845,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	# 纸条提示优先于菜单刷新：它**不打断**正在做的事，任何时候都可能到手
 	_poll_note()
-	if _state != STATE_SELECTED or _bar == null:
+	if _bar == null:
 		return
 	_bar_timer += delta
 	if _bar_timer < BAR_REFRESH_SECONDS:

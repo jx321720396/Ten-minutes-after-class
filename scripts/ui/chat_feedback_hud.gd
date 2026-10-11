@@ -309,6 +309,8 @@ func _show_current_player_activity() -> void:
 				end_tick = int(session["end_tick"])
 				break
 		var label := str(PlayerActionBar.ACTIVITY_NAMES.get(activity, "正在参与同学的活动"))
+		if activity == "eat_snack":
+			label = "在吃零食（还剩 %d 份）" % int(_core.inventory_of(me)["snacks"])
 		if activity == "chat":
 			label = "正在和同学聊天"
 		var seconds := maxf(0.0, float(end_tick - _current_tick()) * _seconds_per_tick())
