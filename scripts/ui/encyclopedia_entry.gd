@@ -31,6 +31,7 @@ const BUTTON_SIZE := Vector2(140.0, 38.0)
 
 var _panel: Control = null
 var _font_cache: Font = null
+var _owns_pause := false
 
 
 func _ready() -> void:
@@ -91,27 +92,32 @@ func _button_style() -> StyleBoxFlat:
 
 func _ui_font() -> Font:
 	if _font_cache == null:
-		var font := SystemFont.new()
-		font.font_names = PackedStringArray(FONT_FAMILIES)
+		var font := preload("res://scripts/ui/game_fonts.gd").regular()
+
 		_font_cache = font
 	return _font_cache
 
 
 func _open() -> void:
-	if _panel == null:
+	if _panel == null or _panel.visible:
 		return
+	_owns_pause = not get_tree().paused
 	_panel.visible = true
 	get_tree().paused = true  # 看百科全书时，游戏时间停止
 
 
 func _close() -> void:
-	if _panel != null:
-		_panel.visible = false
-	# 黑板还开着时，不要把游戏一起恢复
-	var board := get_node_or_null("../ClueBoardEntry")
-	if board != null and board.has_method("is_open") and board.is_open():
+	if not is_open():
 		return
-	var pause_menu := get_node_or_null("../PauseMenu")
-	if pause_menu != null and pause_menu.visible:
+	_panel.visible = false
+	if not _owns_pause:
 		return
+	_owns_pause = false
+	for sibling in get_parent().get_children():
+		if sibling == self:
+			continue
+		if sibling.has_method("is_open") and sibling.is_open():
+			return
+		if sibling.name == "PauseMenu" and sibling is Control and sibling.visible:
+			return
 	get_tree().paused = false

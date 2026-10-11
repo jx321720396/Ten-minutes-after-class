@@ -128,10 +128,8 @@ func _close_style() -> StyleBoxFlat:
 
 
 func _ui_font() -> Font:
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(
-		["Microsoft YaHei", "微软雅黑", "SimHei", "Noto Sans CJK SC", "PingFang SC", "sans-serif"]
-	)
+	var font := preload("res://scripts/ui/game_fonts.gd").regular()
+
 	return font
 
 
@@ -260,6 +258,9 @@ func _hits_control(node: Control, pos: Vector2) -> bool:
 
 
 func _is_on_ui(pos: Vector2) -> bool:
+	var navigation := get_node_or_null("StudyNavigation") as Control
+	if navigation != null and _hits_control(navigation, pos):
+		return true
 	if _hits_control(palette, pos) or _hits_control(tool_tray, pos):
 		return true
 	if _close_button != null and _hits_control(_close_button, pos):
@@ -384,9 +385,7 @@ func _update_avatar_drag(pos: Vector2) -> void:
 func _finish_avatar_drag(pos: Vector2) -> void:
 	if drag_ghost:
 		var on_column := avatar_column.get_global_rect().has_point(pos)
-		var on_close := _close_button != null and _hits_control(_close_button, pos)
-		var on_chrome := _hits_control(palette, pos) or _hits_control(tool_tray, pos) or on_close
-		if on_column or on_chrome:
+		if on_column or _is_on_ui(pos):
 			drag_ghost.queue_free()
 		else:
 			var drop_at := _to_local_point(pos)
