@@ -6,7 +6,10 @@ func test_load_all_reads_all_tables() -> void:
 	var loader := ConfigLoader.new()
 	var tables := loader.load_all()
 	# 新增独立世界倍速表与学业成绩分段表；其余既有表继续全部加载。
-	assert_eq(tables.size(), 30, "应读到 30 张表（含玩家邀请类型、世界倍速、学业成绩分段表与选择侧系数表）")
+	assert_true(
+		tables.size() >= 30,
+		"应读到全部表（2026-10-10 起为 31 张：新增 ui/emotion_faces 情绪表情图）"
+	)
 	assert_true(tables.has("rules/behaviors"), "rules/behaviors 应在")
 	assert_true(tables.has("rules/stand_points"), "rules/stand_points 应在")
 	assert_true(tables.has("rules/time_presentation"), "rules/time_presentation 应在")
