@@ -14,6 +14,8 @@ static func start_leisure(c: SimCore, i: int, kind: String) -> bool:
 		c._snacks_remaining -= 1
 	c._occupy(i, i, kind)
 	c._stats[kind] = int(c._stats.get(kind, 0)) + 1
+	if kind == "read_book":
+		c._teacher.catch_reader(c, i)
 	return true
 
 

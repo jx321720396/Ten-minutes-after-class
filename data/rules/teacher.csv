@@ -1,0 +1,9 @@
+# P0-2 巡查与 P3 课外书没收；非社交节点
+param,value,note
+visit_check_first,25,课间第一次巡查判定 tick
+visit_check_second,65,课间第二次巡查判定 tick
+visit_p,0.25,每个判定点到场概率
+stay_ticks,30,课间巡查停留 tick
+suppress_behavior_mult,0.3,老师在场时调侃打闹排挤概率倍率
+volume_target_mult,0.5,老师在场时目标音量倍率
+confiscate_books_per_catch,1,一次收走正在看的课外书本数
