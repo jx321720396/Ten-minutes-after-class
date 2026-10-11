@@ -138,6 +138,8 @@ var _exclude_last_day: Array = []  # 排挤冷却：同一目标最近被驱逐�
 var _seat_zone_radius := 0.5
 ## 每个节点的座位站位世界坐标（表现层注入；内核只读）
 var _seat_world: Dictionary = {}
+## 学习圈会话编号（每轮重建；只供表现层把这场学习渲染成「学习圈」）
+var _study_circle_session := -1
 var _witness_day: Array = []
 var _notes: Array = []  # 活跃纸条（§8.6 纸条链）
 var _note_next_id := 0
@@ -667,6 +669,7 @@ func _tick() -> void:
 	_decide_and_act()
 	_process_notes()  # 纸条链（§8.6）：每 tick 处理一张纸条
 	_study_accumulate()
+	_study_circle_settle()  # 学习圈（§8.23 第 4 条）：每 N tick 额外结算一次
 	_update_environment()
 	if _global_tick % int(_p["settle_interval"]) == 0:
 		_transmission()
@@ -2010,6 +2013,54 @@ func in_own_seat(i: int) -> bool:
 		return true
 	var seat: Vector2 = _seat_world[i]
 	return Vector2(_pos_x[i], _pos_z[i]).distance_to(seat) <= _seat_zone_radius
+
+
+## 学习圈（§8.23 第 4 条）：8 邻域内**都在学习**的人之间，每 `study_circle_interval_ticks`
+## 额外结算一次 —— 双向信任 +1、双向好感 +1、自身压力 +1（成绩不额外随机）；没有学习邻居只能单人学习。
+## **每轮重建会话**，邻居一走开就自然退出；不消耗 RNG（纯确定）。
+func _study_circle_settle() -> void:
+	var interval := int(_kp.get("study_circle_interval_ticks", 20))
+	if interval <= 0 or _phase != "break" or _global_tick % interval != 0:
+		return
+	var studying := {}
+	for i in range(_n):
+		if _current_act[i] == "study" and in_own_seat(i):
+			studying[i] = true
+	if studying.size() < 2:
+		return
+	var members: Array = []
+	for i in studying.keys():
+		for j in _neighbor_idx[i]:
+			if int(j) != int(i) and studying.has(int(j)):
+				members.append(int(i))
+				break
+	if members.size() < 2:
+		return
+	members.sort()
+	for i in members:
+		var neighbours: Array = []
+		for j in _neighbor_idx[i]:
+			if int(j) != i and studying.has(int(j)):
+				neighbours.append(int(j))
+		for other in neighbours:
+			_apply_event(i, other, "study_circle_trust")
+			_apply_event(i, other, "study_circle_affinity")
+			_apply_event(other, i, "study_circle_trust")
+			_apply_event(other, i, "study_circle_affinity")
+		if not neighbours.is_empty():
+			# 压力只算一次（不按邻居数重复）
+			_apply_event(i, i, "study_circle_stress")
+	_stats["study_circles"] = int(_stats.get("study_circles", 0)) + 1
+	# 会话登记（仅供渲染）：重建前先结掉上一场
+	if _study_circle_session >= 0:
+		_sessions.end(_study_circle_session)
+		_study_circle_session = -1
+	var free_members: Array = []
+	for i in members:
+		if _sessions.session_of(i) < 0:
+			free_members.append(i)
+	if free_members.size() >= 2:
+		_study_circle_session = _sessions.begin("study", free_members, _global_tick + interval)
 
 
 ## 观察的可达性：沿用闲聊那套空间口径（普通 1.2 m / 同列前后邻座 1.8 m）。
