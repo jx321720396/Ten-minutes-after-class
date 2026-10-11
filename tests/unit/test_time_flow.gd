@@ -201,3 +201,84 @@ func test_class_phase_uses_normal_speed_even_with_old_player_occupancy() -> void
 	core._busy_until[core.node_count() - 1] = 100
 	flow.refresh()
 	assert_eq(flow.multiplier(), 1.0, "课堂按既有呈现时长，不叠加玩家行动倍率")
+
+
+func test_study_survives_ticks_and_increases_grade() -> void:
+	var parts := _stack()
+	var core: SimCore = parts[0]
+	var me := core.node_count() - 1
+	assert_true(bool(core.player_action("study", -1).get("ok", false)))
+	for tick in range(12):
+		core.advance_tick()
+	assert_eq(core.activity_of(me), "study")
+	assert_gt(core.grade(me), 250.0)
+	core.set_moving(me, true)
+	assert_eq(core.activity_of(me), "")
+
+
+func test_study_speed_uses_real_seconds_without_cap_and_resets() -> void:
+	var parts := _stack()
+	var core: SimCore = parts[0]
+	var clock: SimulationClock = parts[1]
+	var flow: TimeFlow = parts[2]
+	var me := core.node_count() - 1
+	core.player_action("study", -1)
+	flow.refresh()
+	assert_eq(flow.multiplier(), 1.0)
+	for stage in range(1, 6):
+		flow._process(10.0)
+		assert_eq(flow.multiplier(), float(stage + 1))
+		assert_almost_eq(flow.scale_delta(10.0), float(stage * 10), 0.001)
+	clock.hold(&"test")
+	flow._process(30.0)
+	assert_eq(flow.multiplier(), 0.0)
+	clock.release(&"test")
+	flow.refresh()
+	assert_eq(flow.multiplier(), 6.0)
+	core.set_moving(me, true)
+	flow.refresh()
+	assert_eq(flow.multiplier(), 1.0)
+	core.set_moving(me, false)
+	core.player_action("study", -1)
+	flow.refresh()
+	assert_eq(flow.multiplier(), 1.0)
+
+
+func test_study_accelerates_clock_and_grade_together() -> void:
+	var parts := _stack()
+	var core: SimCore = parts[0]
+	var clock: SimulationClock = parts[1]
+	var flow: TimeFlow = parts[2]
+	core.player_action("study", -1)
+	for second in range(20):
+		flow._process(1.0)
+		clock.pump(1.0)
+	assert_eq(core.global_tick(), 30)
+	assert_eq(core.grade(core.node_count() - 1), 253.0)
+	assert_eq(flow.multiplier(), 3.0)
+
+
+func test_bell_stops_study_and_speed_without_reverting_grade() -> void:
+	var parts := _stack()
+	var core: SimCore = parts[0]
+	var flow: TimeFlow = parts[2]
+	var me := core.node_count() - 1
+	core.player_action("study", -1)
+	for tick in range(100):
+		core.advance_tick()
+	var earned := core.grade(me)
+	core.finish_time_boundary()
+	flow.refresh()
+	assert_eq(core.activity_of(me), "")
+	assert_eq(core.grade(me), earned)
+	assert_eq(flow.multiplier(), 1.0)
+
+
+func test_large_frame_integrates_each_speed_stage() -> void:
+	var parts := _stack()
+	var core: SimCore = parts[0]
+	var flow: TimeFlow = parts[2]
+	core.player_action("study", -1)
+	flow._process(25.0)
+	assert_almost_eq(flow.scale_delta(25.0), 45.0, 0.001)
+	assert_eq(flow.multiplier(), 3.0)

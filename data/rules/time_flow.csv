@@ -3,3 +3,5 @@
 param,value,note
 normal_scale,1,空闲与事件正常速度锁期间的世界倍率
 player_action_scale,3,玩家占用型行为期间的世界倍率；走路保持正常速度
+study_speed_interval_seconds,10,连续学习每满这些现实秒提升一档；暂停不累计
+study_speed_step,1,每档增加的世界时间倍率；不封顶
