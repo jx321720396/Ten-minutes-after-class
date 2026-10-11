@@ -89,7 +89,7 @@ const NAME_FONTS: Array[String] = [
 @export var demo_seed: int = 20261007
 
 var _appearances: Dictionary = {}
-## 名字牌字体只加载一次（SystemFont 会去查系统字体，逐人新建会拖慢进教室）
+## 名字牌缓存随包发布的霞鹜文楷字体，与 UI 使用同一字体资源。
 var _name_font_cache: Font = null
 ## 索引 → 人物节点（表现层唯一入口：不许按名字找、不许按下标猜）
 var _actor_by_index: Array[Node3D] = []
@@ -264,8 +264,12 @@ func _attach_pick_body(actor: Node3D, index: int) -> void:
 	area.name = "PickBody"
 	area.collision_layer = pick_layer
 	area.collision_mask = 0
+	# ⚠️ 只关 `monitoring`（不主动检测别人），**必须保留 `monitorable`**：
+	#    Godot 的 Area3D 在 monitoring 与 monitorable 全为 false 时根本不进物理空间，
+	#    `intersect_ray` 打不中它 —— 拾取体存在的唯一理由就是「被射线查到」，
+	#    两个都关会让「点人」永远点不中（2026-10-11 修复：点人失效、选中不了对象）。
 	area.monitoring = false
-	area.monitorable = false
+	area.monitorable = true
 	area.set_meta("actor_index", index)
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
@@ -381,8 +385,8 @@ func _build_name_tag(text: String, color: Color) -> Label3D:
 
 func _name_font() -> Font:
 	if _name_font_cache == null:
-		var font := SystemFont.new()
-		font.font_names = PackedStringArray(NAME_FONTS)
+		var font := preload("res://scripts/ui/game_fonts.gd").regular()
+
 		_name_font_cache = font
 	return _name_font_cache
 
