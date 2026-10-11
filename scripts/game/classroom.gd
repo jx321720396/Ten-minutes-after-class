@@ -157,10 +157,18 @@ func _seat_rect_of(i: int) -> Rect2:
 		return Rect2()
 	var box := blocker.shape as BoxShape3D
 	var origin := blocker.global_transform.origin
-	return Rect2(origin.x - box.size.x * 0.5, origin.z - box.size.z * 0.5, box.size.x, box.size.z)
+	var rect := Rect2(
+		origin.x - box.size.x * 0.5, origin.z - box.size.z * 0.5, box.size.x, box.size.z
+	)
+	# 桌椅占位只盖到桌面（desk_chair 的 Blocker z 到 0.23），而考生实际站在
+	# 桌子外侧的 StandSpot（z = -0.80）上 —— 那也是自己座位的一部分，并进去。
+	var stand := seat.get_node_or_null("StandSpot") as Marker3D
+	if stand != null:
+		var spot := stand.global_transform.origin
+		rect = rect.merge(Rect2(spot.x, spot.z, 0.0, 0.0))
+	return rect
 
 
-## 玩家座位的地面方框（与上面那个矩形同尺寸）。
 func _build_player_seat_rect(core: Variant, zones: Dictionary) -> void:
 	var me := int(core.node_count()) - 1
 	if not zones.has(me):
