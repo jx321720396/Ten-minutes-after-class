@@ -42,6 +42,11 @@ func _open_scene() -> Node3D:
 			break
 		await get_tree().physics_frame
 	assert_not_null(scene.get_node("Interaction")._core, "导航及交互接线必须完成")
+	# 转场黑幕（进教室即全黑）会 hold 时钟，并靠**真实秒**的 tween 自动退场；集成测试不等
+	# 真实倒计时，这里直接解绑它（内含 release）—— 否则整个用例里时钟一直暂停：
+	# HUD 显示「已暂停」、闲聊不成立、时钟推进全被 is_paused() 挡掉。
+	# 转场自身的表现不属于本文件契约，另有专门用例覆盖。
+	scene.get_node("TransitionOverlay").bind_clock(null)
 	return scene
 
 
@@ -264,7 +269,9 @@ func _check_incoming_invitation(accept: bool) -> void:
 	if accept:
 		assert_string_contains(hud._progress_text.text, "聊天")
 	else:
-		assert_string_contains(hud._progress_text.text, "可以移动")
+		# 拒绝后玩家未被占用：离座时是「当前：空闲 · 走回自己座位才能学习」，
+		# 坐在自己位上则是「当前：空闲 · 可以移动」—— 两者都算空闲。
+		assert_string_contains(hud._progress_text.text, "空闲")
 	clock.hold(&"invitation_fixture_finished")
 
 
@@ -293,7 +300,7 @@ func test_nearby_chat_runs_and_yields_intel_after_natural_completion() -> void:
 	interaction.arm_behavior(&"chat")
 	assert_eq(bar.armed_kind(), &"chat", "行为栏选中了闲聊")
 	assert_false(bar.button_disabled_of(&"chat"), "空闲时闲聊可点")
-	assert_true(bar.button_disabled_of(&"listen_music"), "尚未实装的行为灰置（占位，不隐藏）")
+	assert_false(bar.button_disabled_of(&"listen_music"), "听音乐已实装，空闲时可点（不再是占位灰置）")
 
 	interaction.select_actor(0)
 	assert_eq(str(interaction.current_state()), "active", "点人即触发 → 进入聊天")

@@ -13,6 +13,16 @@ func test_classroom_chat_and_movement_are_mutually_exclusive() -> void:
 	var roam = scene.get_node("Roam")
 	var clock: SimulationClock = scene.get_node("Clock")
 	assert_not_null(roam._clock, "真实导航与时钟完成接线")
+	# 进教室转场黑幕会 hold 时钟，并靠真实秒的 tween 退场；本用例不等真实倒计时，
+	# 直接解绑它（内含 release）—— 否则 clock.pump() 全程被 is_paused() 挡掉，
+	# 聊天与走动计数都会变成 0。
+	scene.get_node("TransitionOverlay").bind_clock(null)
+	assert_false(clock.is_paused(), "转场黑幕不再持有暂停锁")
+	# 帧推进被冻结前先刷一次倍率：TimeFlow 的帧倍率是在时钟暂停时算出的 0，
+	# 不刷新的话 clock.pump() 会把每一步 delta 缩成 0，tick 一步都不动。
+	var flow: TimeFlow = scene.get_node("TimeFlow")
+	flow.refresh()
+	assert_eq(flow.multiplier(), 1.0, "课间无占用 → 世界一倍速")
 	# 禁用自动帧推进，按固定步长调用同一生产组件，避免测试耗时等于真实课间。
 	scene.process_mode = Node.PROCESS_MODE_DISABLED
 	var violations: Array = []
@@ -36,17 +46,14 @@ func test_classroom_chat_and_movement_are_mutually_exclusive() -> void:
 			for pair in session.links:
 				var a: int = pair[0]
 				var b: int = pair[1]
-				# 独立上限：普通近距离，或原座位前后紧邻的 1.8 米例外。
+				# 独立上限：普通 1.2m 近距离，或原座位**同排前后紧邻**的 1.8m 例外（§10.15）。
+				# 「有没有边走边聊」由上面的成员移动检查负责，这里只判距离口径。
 				if core.distance_between(a, b) > 1.2:
 					var sa: Array = core._seat_pos[core.seat_of(a)]
 					var sb: Array = core._seat_pos[core.seat_of(b)]
-					var ha: Vector3 = roam._point_positions[core.seat_of(a)]
-					var hb: Vector3 = roam._point_positions[core.seat_of(b)]
 					if not (
 						sa[1] == sb[1]
 						and absi(sa[0] - sb[0]) == 1
-						and core.position_of(a).distance_to(Vector2(ha.x, ha.z)) <= 0.1
-						and core.position_of(b).distance_to(Vector2(hb.x, hb.z)) <= 0.1
 						and core.distance_between(a, b) <= 1.8
 					):
 						violations.append("远距离聊天: %s" % [pair])

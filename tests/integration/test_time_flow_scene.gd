@@ -14,6 +14,10 @@ func test_real_classroom_chat_scales_world_and_normal_event_restores_it() -> voi
 	var core: SimCore = state.sim_core
 	var clock: SimulationClock = scene.get_node("Clock")
 	var flow: TimeFlow = scene.get_node("TimeFlow")
+	# 进教室转场黑幕会 hold 时钟，并靠真实秒的 tween 退场；本用例不等真实倒计时，
+	# 直接解绑它（内含 release）—— 否则倍率恒为 0、NPC 不走、HUD 显示「已暂停」。
+	scene.get_node("TransitionOverlay").bind_clock(null)
+	assert_false(clock.is_paused(), "转场黑幕不再持有暂停锁")
 	# 完成段首设置，之后创建真实合法聊天；夹具只挪位置、解除睡眠与占用。
 	clock.pump(1.0)
 	var me := core.node_count() - 1
