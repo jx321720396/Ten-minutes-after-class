@@ -20,6 +20,7 @@ import math
 import os
 import random
 from player_invitations import PlayerInvitations, invitation_behavior
+from teacher_patrol import TeacherPatrol
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -148,12 +149,17 @@ class Sim:
         others = [c for c in pool if c["book"] == "0"][:npc_count - book_count]
         self.chars = [c for c in pool if c in books or c in others]
         self.book = [int(c["book"]) for c in self.chars] + [0]
+        self.book_gifted = [False] * (npc_count + 1)
+        self.book_gifts_this_break = 0
+        self.book_gift_events = []
+        self.book_gift_chats = []
         self.snacks_remaining = int(self.leisure["snack_count_per_run"])
         for kind, prefix in LEISURE_KINDS.items():
             self.behaviors[kind] = dict(duration=int(self.leisure[prefix + "_duration"]),
                                         noise=self.leisure[prefix + "_noise"],
                                         kind="env", join_mode="none")
         self.N = npc_count + 1  # 索引 N-1 为玩家
+        self.teacher = TeacherPatrol(load_params("rules/teacher.csv"), self.N)
 
         # --- 状态矩阵 ---
         n = self.N
@@ -899,7 +905,7 @@ class Sim:
                        if j != i and j not in busy and self.can_interact_with(j)
                        and self.are_neighbors(i, j)      # 调侃需物理接近（§10.12 围观前提）
                        and (self.A[i][j] >= 40.0 or self.B["hostility"][i][j] >= 25.0 or self.A[i][j] < 25.0)]
-            if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * (1.0 + self.tag_bias(i, "tease_bias")):
+            if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * self.teacher.multiplier("tease") * (1.0 + self.tag_bias(i, "tease_bias")):
                 wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
                 j = self.rng.choices(cands_t, weights=wts, k=1)[0]
                 # **围观者 = 物理上在场的人（邻居）**，而不是「全班减去两个忙人」。
@@ -923,7 +929,7 @@ class Sim:
             # 意向类：追逐打闹 —— 敌对种子（参与者好感↑ / 旁观者敌对↑）
             th_rh = self.thresholds_lookup.get("roughhouse_affinity", 45.0)
             th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
-            if self.allowed("roughhouse") and self.dims[i][0] >= th_rh and self.rng.random() < self.probs.get("roughhouse_p", 0.05):
+            if self.allowed("roughhouse") and self.dims[i][0] >= th_rh and self.rng.random() < self.probs.get("roughhouse_p", 0.05) * self.teacher.multiplier("roughhouse"):
                 others = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)]
                 if others:
                     # 追跑对象按外向度加权：越外向越可能一起闹（→ 同样的少数人反复搭配）
@@ -948,7 +954,7 @@ class Sim:
             # ⚠️ 原判据是「≥3 人**恨**他 ≥40」，方向反了 —— 欺凌是**多对一**：
             #    施害者多人、受害者一人，**受害者只能单向记恨**，永远凑不出「3 人恨他」。
             #    集体排斥的证据在**施害者一侧**：有多少人**对他做过敌对行为**。
-            if self.allowed("exclude") and self.rng.random() < self.probs.get("exclude_p", 0.04):
+            if self.allowed("exclude") and self.rng.random() < self.probs.get("exclude_p", 0.04) * self.teacher.multiplier("exclude"):
                 th_n = int(self.thresholds_lookup.get("exclude_count", 3))
                 cd_days = self.thresholds_lookup.get("exclude_cooldown", 7.0)
                 window = self.thresholds_lookup.get("exclude_window", 7.0)
@@ -1043,6 +1049,8 @@ class Sim:
             self.snacks_remaining -= 1
         self.occupy(i, i, kind)
         self.stats[kind] = self.stats.get(kind, 0) + 1
+        if kind == "read_book":
+            self.teacher.catch_reader(self, i)
         return True
 
     def leave_class(self):
@@ -1161,6 +1169,7 @@ class Sim:
         self.observe(i, j, "affinity")
         self.observe(j, i, "affinity")
         self.stats["chats"] += 1
+        self._record_book_gift_chat(i, j)
 
     @invitation_behavior("chat")
     def do_chat_join(self, i, j, roll=None):
@@ -1673,6 +1682,8 @@ class Sim:
             if act is None:
                 continue
             target += self.behaviors.get(act, {}).get("noise", 0.0)
+        if self.teacher.present:
+            target *= self.teacher.params["volume_target_mult"]
         target = clamp(target, 0.0, e.get("volume_max", 100.0))
         rate = e.get("adapt_rate", 0.02)
         self.volume = clamp(self.volume + rate * (target - self.volume), 0.0, e.get("volume_max", 100.0))
@@ -1989,6 +2000,46 @@ class Sim:
                 interrupted.append(i)
         return interrupted
 
+    def _record_book_gift_chat(self, i, j):
+        # 合并共享成员的同场闲聊，不以同时到期推断共同活动。
+        members = {i, j}
+        end_tick = max(self.busy_until[i], self.busy_until[j])
+        for chat in self.book_gift_chats:
+            if members.intersection(chat["members"]):
+                chat["members"] = sorted(set(chat["members"]) | members)
+                chat["end_tick"] = max(chat["end_tick"], end_tick)
+                return
+        self.book_gift_chats.append(dict(members=sorted(members), end_tick=end_tick))
+
+    def _settle_book_gifts(self):
+        due = [chat for chat in self.book_gift_chats if chat["end_tick"] <= self.global_tick]
+        self.book_gift_chats = [chat for chat in self.book_gift_chats if chat["end_tick"] > self.global_tick]
+        if self.phase != "break":
+            return
+        player = self.N - 1
+        for chat in due:
+            if player not in chat["members"]:
+                continue
+            for donor in chat["members"]:
+                if self.book_gifts_this_break >= int(self.leisure["book_gift_max_per_break"]):
+                    return
+                if donor == player or self.book[donor] <= 0 or self.book_gifted[donor]:
+                    continue
+                if not all(self.is_present(i) and not self.sleeping[i] for i in (donor, player)):
+                    continue
+                if self.A[donor][player] < self.leisure["book_gift_affinity_threshold"]:
+                    continue
+                if self.T[donor][player] < self.leisure["book_gift_trust_threshold"]:
+                    continue
+                if self.rng.random() >= self.leisure["book_gift_probability"]:
+                    continue
+                self.book[donor] -= 1
+                self.book[player] += 1
+                self.book_gifted[donor] = True
+                self.book_gifts_this_break += 1
+                self.book_gift_events.append(dict(kind="book_gift", donor=donor, recipient=player,
+                                                 books=self.book[player], first=self.book[player] == 1))
+
     def settle_finished_actions(self):
         """行为完成结算：把**已到期**的占用收尾（§10.4 / §12.2 行为耗时契约）。
 
@@ -2012,9 +2063,12 @@ class Sim:
             self.busy_act[i] = None
             self.busy_phase[i] = -1
 
+        self._settle_book_gifts()
+
     def tick(self):
         self.global_tick += 1
         self.settle_finished_actions()
+        self.teacher.step(self)
         self.decide_and_act()
         self.process_notes()          # 纸条链（§8.6）：每 tick 处理一张纸条
         self.study_accumulate()
@@ -2070,6 +2124,7 @@ class Sim:
             self.in_conversation[i] = False
         # 纸条链（§8.6）：**纸条只在当前时间段内存活**，进入下一个时间段即销毁。
         self.notes = []
+        self.book_gift_chats = []
         if self.player_absent:
             self.player_absent = False
             self.busy_until[self.N - 1] = 0
@@ -2098,6 +2153,9 @@ class Sim:
         """
         self.phase = self.day_phases[self.phase_index][0]
         self.tick_in_phase = 0
+        self.teacher.begin_phase(self)
+        if self.phase == "break":
+            self.book_gifts_this_break = 0
         self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
         self.free_join()                  # 「别人做什么我也跟着做」（free 类活动，§10.31）
         if self.phase == "break":

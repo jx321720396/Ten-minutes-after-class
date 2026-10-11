@@ -53,3 +53,4 @@ study_circle_trust,trust,1,0,0,0,0,normal,A,学习圈每 20 tick：双向信任 
 study_circle_affinity,affinity,1,0,0,0,0,normal,A,学习圈每 20 tick：双向好感 +1
 study_circle_stress,stress,1,0,0,0,0,normal,A,学习圈每 20 tick：自身压力 +1（每人只算一次）
 leave_absence,affinity,-3,0,0,0,0,normal,E,邻居对出门玩家的好感代价
+teacher_visit_stress,stress,3,0,0,0.425,0.425,normal,E,老师到场压力（学习睡觉缺席豁免）

@@ -371,6 +371,16 @@ check("玩家邀请：行为存在于 behaviors", all(r["behavior"] in {r["behav
 _invite_params = params("rules/player_interaction.csv")
 check("玩家邀请：有效期与再次邀请间隔为正整数", all(_invite_params.get(k, 0) > 0 and int(_invite_params[k]) == _invite_params[k] for k in ("invitation_timeout_ticks", "invitation_cooldown_ticks")))
 _leisure = params("rules/leisure.csv")
+for key in ("book_gift_affinity_threshold", "book_gift_trust_threshold"):
+    check("P3：赠书门槛在 [0,100]",
+          math.isfinite(_leisure.get(key, -1)) and 0 <= _leisure.get(key, -1) <= 100)
+check("P3：赠书概率在 [0,1]",
+      math.isfinite(_leisure.get("book_gift_probability", -1))
+      and 0 <= _leisure.get("book_gift_probability", -1) <= 1)
+check("P3：课间赠书上限为正整数",
+      math.isfinite(_leisure.get("book_gift_max_per_break", 0))
+      and _leisure.get("book_gift_max_per_break", 0) > 0
+      and _leisure["book_gift_max_per_break"] == int(_leisure["book_gift_max_per_break"]))
 for prefix in ("music", "snack", "book"):
     check("P0-3 %s：减压与时长为正" % prefix,
           all(math.isfinite(_leisure.get(prefix + suffix, 0)) and _leisure.get(prefix + suffix, 0) > 0
@@ -396,6 +406,18 @@ _tparams = params("rules/transmission.csv")
 check("P0-3：上课好感增量为正且有限", math.isfinite(_tparams.get("class_affinity_gain", 0)) and _tparams.get("class_affinity_gain", 0) > 0)
 _lprobs = {r["behavior"]: float(r["base_p"]) for r in load("rules/behavior_probs.csv")}
 check("P0-3：三种行为概率存在且在 [0,1]", all(0 <= _lprobs.get(k, -1) <= 1 for k in ("music_p", "snack_p", "book_p")))
+# P0-2/P3：巡查与没收参数定义；运行该校验仍遵从用户指令。
+_teacher = params("rules/teacher.csv")
+for _key in ("visit_check_first", "visit_check_second", "stay_ticks", "confiscate_books_per_catch"):
+    _value = _teacher.get(_key, 0)
+    check("老师：%s 正整数" % _key, math.isfinite(_value) and _value > 0 and int(_value) == _value)
+for _key in ("visit_p", "suppress_behavior_mult", "volume_target_mult"):
+    _value = _teacher.get(_key, -1)
+    check("老师：%s 在 [0,1]" % _key, math.isfinite(_value) and 0 <= _value <= 1)
+check("老师：巡查点按先后顺序且在课间内", 0 < _teacher["visit_check_first"] < _teacher["visit_check_second"]
+      <= min(int(row["tick_count"]) for row in ph if row["kind"] == "break"))
+check("老师：没收只收正在读的一本", _teacher["confiscate_books_per_catch"] == 1)
+
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)
