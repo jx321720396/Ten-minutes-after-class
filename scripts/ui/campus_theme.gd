@@ -131,16 +131,49 @@ static func main_menu(view: Control) -> void:
 	var panel := Panel.new()
 	panel.name = "MenuPaper"
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.position = menu.position - Vector2(cfg.margin, cfg.margin)
-	panel.size = Vector2(
-		cfg.menu_width + cfg.margin * 2,
-		cfg.menu_button_height * 6 + cfg.menu_spacing * 5 + cfg.margin * 2
-	)
-	panel.add_theme_stylebox_override("panel", box("paper", "line"))
+	panel.position = Vector2(cfg.menu_paper_x, cfg.menu_paper_y)
+	panel.size = Vector2(cfg.menu_paper_width, cfg.menu_paper_height)
+	var paper := StyleBoxTexture.new()
+	paper.texture = load("res://assets/textures/ui/paper/campus-menu-paper-v1.png")
+	panel.add_theme_stylebox_override("panel", paper)
 	view.add_child(panel)
 	view.move_child(panel, menu.get_index())
+	menu.move_child(menu.get_node("Encyclopedia"), 3)
 	for item in menu.get_children():
 		if item is Button:
 			item.custom_minimum_size.y = cfg.menu_button_height
-			item.add_theme_font_size_override("font_size", int(cfg.font_size) + 8)
+			item.add_theme_font_size_override("font_size", int(cfg.menu_font_size))
 			button(item, item.name == "NewGame")
+			var menu_font := SystemFont.new()
+			menu_font.font_names = PackedStringArray(["SimSun", "Noto Serif CJK SC", "serif"])
+			item.add_theme_font_override("font", menu_font)
+			var normal := box("paper", "line")
+			normal.bg_color.a = 0.2
+			normal.shadow_size = 0
+			item.add_theme_stylebox_override("normal", normal)
+			match str(item.name):
+				"NewGame":
+					item.text = "新游戏　›"
+					item.custom_minimum_size.y = cfg.menu_primary_height
+					var brush := StyleBoxTexture.new()
+					brush.texture = load("res://assets/textures/ui/paper/campus-menu-brush-v1.png")
+					item.add_theme_stylebox_override("normal", brush)
+				"ContinueGame":
+					item.custom_minimum_size.y = cfg.menu_primary_height
+					var disabled_brush := StyleBoxTexture.new()
+					disabled_brush.texture = load(
+						"res://assets/textures/ui/paper/campus-menu-brush-disabled-v1.png"
+					)
+					item.add_theme_stylebox_override("disabled", disabled_brush)
+				"Setting", "Encyclopedia", "About", "Exit":
+					var icon_name: String = {
+						"Setting": "settings",
+						"Encyclopedia": "study",
+						"About": "about",
+						"Exit": "exit"
+					}[str(item.name)]
+					item.icon = load("res://assets/icons/actions/%s.svg" % icon_name)
+					item.add_theme_constant_override("icon_max_width", int(cfg.menu_icon_size))
+					item.text = {"Setting": "设置", "Encyclopedia": "百科", "About": "关于", "Exit": "退出"}[str(
+						item.name
+					)]
