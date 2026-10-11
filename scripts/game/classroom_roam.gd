@@ -55,7 +55,9 @@ const DAY_START_STAY_SECONDS := 0.7
 
 @export_group("站立点标记")
 ## 画一圈可见标记（关掉即只保留逻辑点）
-@export var show_stand_markers: bool = true
+# 站位点地面圆柱：**开发期可视化，正式游玩默认关闭**（2026-10-10 用户要求）。
+# 需要排查落位/站位时在场景里把这个开关打开即可。
+@export var show_stand_markers: bool = false
 @export var marker_radius: float = 0.16
 @export var marker_color: Color = Color(0.35, 0.62, 0.85, 0.45)
 
