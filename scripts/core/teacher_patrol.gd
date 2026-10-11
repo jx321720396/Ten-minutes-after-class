@@ -74,8 +74,13 @@ func catch_reader(c: SimCore, i: int) -> bool:
 	c._stats["book_confiscations"] = int(c._stats.get("book_confiscations", 0)) + amount
 	c._emit(
 		"event_happened",
-		{"kind": "book_confiscated", "i": i, "amount": amount,
-		 "books": c._book[i], "confiscated_books": confiscated[i]}
+		{
+			"kind": "book_confiscated",
+			"i": i,
+			"amount": amount,
+			"books": c._book[i],
+			"confiscated_books": confiscated[i]
+		}
 	)
 	return true
 

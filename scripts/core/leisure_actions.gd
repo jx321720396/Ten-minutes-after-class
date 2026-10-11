@@ -44,7 +44,10 @@ static func class_affinity_settle(c: SimCore) -> void:
 
 static func settle_book_gifts(c: SimCore, snapshots: Array) -> Array:
 	var out: Array = []
-	if c._phase != "break" or c._book_gifts_this_break >= int(c._leisure["book_gift_max_per_break"]):
+	if (
+		c._phase != "break"
+		or c._book_gifts_this_break >= int(c._leisure["book_gift_max_per_break"])
+	):
 		return out
 	var player := c._n - 1
 	for snap in snapshots:
@@ -71,11 +74,17 @@ static func settle_book_gifts(c: SimCore, snapshots: Array) -> Array:
 			c._book[player] += 1
 			c._book_gifted[donor] = true
 			c._book_gifts_this_break += 1
-			out.append(
-				{
-					"kind": "book_gift", "donor": donor, "recipient": player,
-					"books": c._book[player], "first": c._book[player] == 1,
-				}
+			(
+				out
+				. append(
+					{
+						"kind": "book_gift",
+						"donor": donor,
+						"recipient": player,
+						"books": c._book[player],
+						"first": c._book[player] == 1,
+					}
+				)
 			)
 			if c._book_gifts_this_break >= int(c._leisure["book_gift_max_per_break"]):
 				return out

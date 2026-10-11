@@ -273,6 +273,13 @@ func snapshot() -> Dictionary:
 	out["term_days"] = _term_days
 	out["player_grade"] = int(_core.grade(_core.node_count() - 1)) if _core != null else 0
 	out["display_name"] = _display_name_of(str(out.get("phase_id", "")))
+	var day := int(out.get("day", 0))
+	if _core != null and _core.has_method("exam_banner"):
+		out["exam_banner"] = _core.exam_banner(day) if running else ""
+		out["exam_report"] = _core.exam_report(_ended_day) if not running else ""
+	else:
+		out["exam_banner"] = ""
+		out["exam_report"] = ""
 	return out
 
 
