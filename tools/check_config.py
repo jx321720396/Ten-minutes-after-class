@@ -434,6 +434,10 @@ check("老师：巡查点按先后顺序且在课间内", 0 < _teacher["visit_ch
       <= min(int(row["tick_count"]) for row in ph if row["kind"] == "break"))
 check("老师：没收只收正在读的一本", _teacher["confiscate_books_per_catch"] == 1)
 
+
+for key in ("study_speed_interval_seconds", "study_speed_step"):
+    check("时间流速：学习提速参数 " + key + " 为有限正数",
+          math.isfinite(_time_flow.get(key, 0.0)) and _time_flow.get(key, 0.0) > 0.0)
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)

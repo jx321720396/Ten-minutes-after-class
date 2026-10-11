@@ -297,6 +297,21 @@ exam.settle_exam(30)
 check("期末考不发进步奖", exam.exam_gave_progress is False)
 check("期末考也不改平时成绩", exam.Grade == grade_snapshot)
 
+print("=== 7. 持续学习回归 ===")
+study = Sim(seed=12345, npc_count=8)
+me = study.N - 1
+before = study.Grade[me]
+study.do_study(me)
+for _ in range(12):
+    study.study_accumulate()
+    study.update_environment()
+check("学习不会被过期占用清理", study.current_act[me] == "study")
+check("持续学习实际增加成绩", study.Grade[me] > before)
+earned = study.Grade[me]
+study.cleanup_phase([])
+check("铃声退出学习且保留已结算成绩", study.current_act[me] is None and study.Grade[me] == earned)
+check("铃声清除未结算进度", study.StudyAcc[me] == 0.0)
+
 print("  通过 %d 项，失败 %d 项" % (len(PASSED), len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)

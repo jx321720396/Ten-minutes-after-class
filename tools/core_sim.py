@@ -1174,11 +1174,15 @@ class Sim:
 
     def occupy(self, i, j, behavior, quiet=False):
         """按行为耗时把双方置为忙碌（“收益越大耗时越长”，不再一律 20 tick）"""
+        if self.current_act[i] == "study":
+            self.StudyAcc[i] = 0.0
         self.current_act[i] = behavior
         # quiet=True：加入 / 被搭话的一方 —— 同一场对话只算**一个声源**
         # （现实里多一个人加入同一场聊天，音量几乎不变；让教室变吵的是「多摊人各自在聊」）
         occupy_target = j != self.N - 1 or i == self.N - 1 or self.player_invitations.authorizes(i)
         if occupy_target:
+            if self.current_act[j] == "study":
+                self.StudyAcc[j] = 0.0
             self.current_act[j] = None if quiet else behavior
         dur = self.behaviors.get(behavior, {}).get("duration", 0)
         if dur > 0:
@@ -1713,7 +1717,7 @@ class Sim:
         for i in range(self.N):
             # 行为结束后回到"默认（学习，不发声）"——否则 current_act 会永久残留，
             # 全员被当成"一直在聊天"，音量恒满。
-            if self.global_tick >= self.busy_until[i]:
+            if self.global_tick >= self.busy_until[i] and self.current_act[i] != "study":
                 self.current_act[i] = None
             # None = 既没在做事、也没在发声（静默参与者或空闲）→ 不贡献音量
             act = self.current_act[i]
@@ -2164,6 +2168,7 @@ class Sim:
             return {"ok": False, "error": err}
         if self.current_act[me] == "study":
             self.current_act[me] = None
+            self.StudyAcc[me] = 0.0
         receiver = me if kind == "ask_question" else target
         affected = target if kind == "ask_question" else me
         actor = me if kind == "ask_question" else target
@@ -2259,6 +2264,10 @@ class Sim:
         不消耗 RNG。被打断节点的 `busy_until`/`busy_phase` 已由 ③ 清掉，这里清掉仍残留的
         `current_act`/`busy_act`/`in_conversation`，让新段判定看到一致的空闲状态。
         """
+        for i in range(self.N):
+            if self.current_act[i] == "study":
+                self.current_act[i] = None
+                self.StudyAcc[i] = 0.0
         for i in interrupted:
             self.current_act[i] = None
             self.busy_act[i] = None

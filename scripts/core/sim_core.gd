@@ -1207,7 +1207,7 @@ func _perceive(j: int, k: int, axis: String) -> float:
 func _update_environment() -> void:
 	var target := 0.0
 	for i in range(_n):
-		if _global_tick >= _busy_until[i]:
+		if _global_tick >= _busy_until[i] and _current_act[i] != "study":
 			_current_act[i] = null
 		var act = _current_act[i]
 		if act == null:
@@ -1379,6 +1379,10 @@ func _check_interrupt() -> void:
 ## 统一边界协议 ④：清理被打断动作的残余状态（占用 / 会话 / 移动锁）。
 ## 不消耗 RNG；抽象内核（无移动输入）下移动锁清理为 no-op。
 func _cleanup_phase() -> void:
+	for i in range(_n):
+		if _current_act[i] == "study":
+			_current_act[i] = null
+			_study_acc[i] = 0.0
 	for i in _interrupted_nodes:
 		if LEISURE_KINDS.has(_busy_act[i]):
 			_emit(
@@ -2011,9 +2015,13 @@ func _pick_target(i: int, neighbors_only: bool = false) -> int:
 
 ## 按行为耗时把双方置为忙碌（收益越大耗时越长）。
 func _occupy(i: int, j: int, behavior: String, quiet: bool = false) -> void:
+	if _current_act[i] == "study":
+		_study_acc[i] = 0.0
 	_current_act[i] = behavior
 	var occupy_target: bool = not is_player(j) or is_player(i) or _player_invitations.authorizes(i)
 	if occupy_target:
+		if _current_act[j] == "study":
+			_study_acc[j] = 0.0
 		_current_act[j] = null if quiet else behavior
 	var dur := int(_behaviors.get(behavior, {}).get("duration", 0))
 	if dur > 0:
@@ -2488,6 +2496,7 @@ func lesson_preview(kind: String, target: int) -> Dictionary:
 func _do_lesson(kind: String, me: int, target: int) -> Dictionary:
 	if _current_act[me] == "study":
 		_current_act[me] = null
+		_study_acc[me] = 0.0
 	var receiver := me if kind == "ask_question" else target
 	var affected := target if kind == "ask_question" else me
 	var actor := me if kind == "ask_question" else target
@@ -2516,6 +2525,9 @@ func player_action(kind: String, target: int, topic: String = "") -> Dictionary:
 	var blocked := _player_action_error(kind, target, me)
 	if not blocked.is_empty():
 		return {"ok": false, "error": blocked}
+	if kind != "study" and _current_act[me] == "study":
+		_current_act[me] = null
+		_study_acc[me] = 0.0
 	if PLAYER_SELF_KINDS.has(kind):
 		var teacher_feedback: bool = (
 			kind == "read_book" and _teacher.present and not _teacher.exempt_this_visit[me]
@@ -2716,6 +2728,9 @@ func _at_own_seat(i: int) -> bool:
 
 ## 独立移动状态：玩家走动中不被 NPC 拉进新占用交互；**不是**聊天占用。
 func set_moving(i: int, moving: bool) -> void:
+	if moving and _current_act[i] == "study":
+		_current_act[i] = null
+		_study_acc[i] = 0.0
 	_player_interactions.set_moving(i, moving)
 
 

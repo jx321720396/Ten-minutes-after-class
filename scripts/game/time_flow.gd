@@ -15,6 +15,10 @@ var _normal_scale := 1.0
 var _action_scale := 1.0
 var _multiplier := 1.0
 var _normal_owners: Dictionary = {}
+var _study_seconds := 0.0
+var _study_interval := 0.0
+var _study_step := 0.0
+var _frame_scale := 1.0
 
 
 func _ready() -> void:
@@ -28,7 +32,17 @@ func bind_sources(core: SimCore, clock: SimulationClock, tables: Dictionary = {}
 		params[str(row.get("param", ""))] = float(str(row.get("value", "0")))
 	var normal := float(params.get("normal_scale", 0.0))
 	var action := float(params.get("player_action_scale", 0.0))
-	if core == null or clock == null or not _valid_scales(normal, action):
+	_study_interval = float(params.get("study_speed_interval_seconds", 0.0))
+	_study_step = float(params.get("study_speed_step", 0.0))
+	if (
+		core == null
+		or clock == null
+		or not _valid_scales(normal, action)
+		or not is_finite(_study_interval)
+		or _study_interval <= 0.0
+		or not is_finite(_study_step)
+		or _study_step <= 0.0
+	):
 		_core = null
 		_clock = null
 		_set_multiplier(0.0)
@@ -39,6 +53,7 @@ func bind_sources(core: SimCore, clock: SimulationClock, tables: Dictionary = {}
 	_normal_scale = normal
 	_action_scale = action
 	_normal_owners.clear()
+	_study_seconds = 0.0
 	refresh()
 	return true
 
@@ -47,21 +62,52 @@ func _valid_scales(normal: float, action: float) -> bool:
 	return is_finite(normal) and is_finite(action) and normal == 1.0 and action >= normal
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	refresh()
+	if _world_stopped() or not _studying() or delta <= 0.0:
+		return
+	var before := _study_seconds
+	_study_seconds += delta
+	var world_seconds := _study_integral(_study_seconds) - _study_integral(before)
+	refresh()
+	if _normal_owners.is_empty():
+		_frame_scale = world_seconds / delta
+
+
+func _studying() -> bool:
+	return (
+		_core != null
+		and bool(_core.time_snapshot().get("player_control", false))
+		and _core.activity_of(_core.node_count() - 1) == "study"
+	)
+
+
+## 对跨越多个十秒边界的帧按分段倍率积分，避免整帧提前加速。
+func _study_integral(seconds: float) -> float:
+	var stages := floorf(seconds / _study_interval)
+	var remainder := seconds - stages * _study_interval
+	return (
+		_normal_scale * seconds
+		+ _study_step * (_study_interval * stages * (stages - 1.0) / 2.0 + stages * remainder)
+	)
 
 
 ## 外部固定步长驱动也可在每帧开始显式采样；所有消费者随后使用同一倍率。
 func refresh() -> void:
 	var speed := _normal_scale
+	if not _studying():
+		_study_seconds = 0.0
 	if _world_stopped():
 		speed = 0.0
 	elif _normal_owners.is_empty():
 		var me := _core.node_count() - 1
 		if bool(_core.time_snapshot().get("player_control", false)):
-			if _core.is_busy(me):
+			if _studying():
+				speed = _normal_scale + floorf(_study_seconds / _study_interval) * _study_step
+			elif _core.is_busy(me):
 				speed = _action_scale
 	_set_multiplier(speed)
+	_frame_scale = speed
 
 
 func _world_stopped() -> bool:
@@ -89,7 +135,7 @@ func multiplier() -> float:
 func scale_delta(real_delta: float) -> float:
 	if _world_stopped():
 		return 0.0
-	return maxf(real_delta, 0.0) * _multiplier
+	return maxf(real_delta, 0.0) * _frame_scale
 
 
 ## 同 owner 重复请求幂等，多个事件互不解除；正常速度锁不会冻结世界。
