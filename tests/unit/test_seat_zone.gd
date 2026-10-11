@@ -65,3 +65,12 @@ func test_sleep_does_not_require_the_seat() -> void:
 	assert_true(
 		bool(c.player_action("sleep", -1).get("ok", false)), "睡觉不受座位范围限制（§8.8）"
 	)
+
+func test_the_zone_is_a_square_not_a_circle() -> void:
+	var c := _core()
+	var me := _pin_to_own_seat(c)
+	# 对角方向偏移 (0.45, 0.45)：直线距离 0.64 > 0.5 但两个轴都 ≤ 0.5
+	# —— 圆会判「不在」，方会判「在」（与地面格线对齐）
+	c._pos_x[me] += 0.45
+	c._pos_z[me] += 0.45
+	assert_true(c.in_own_seat(me), "范围是按格子的方块，不是圆")

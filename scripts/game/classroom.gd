@@ -153,12 +153,11 @@ func _build_player_seat_ring(core: Variant, zones: Dictionary) -> void:
 	var radius := 0.5
 	var params: Array = ConfigLoader.new().get_table("rules/player_interaction").get("rows", [])
 	for row in params:
-		if str(row.get("param", "")) == "seat_zone_radius_m":
+		if str(row.get("param", "")) == "seat_zone_half_extent_m":
 			radius = float(str(row.get("value", "0.5")))
-	var mesh := CylinderMesh.new()
-	mesh.top_radius = radius
-	mesh.bottom_radius = radius
-	mesh.height = 0.012
+	# 方框而非圆：边长 2×半边长，与地面格线对齐
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(radius * 2.0, 0.012, radius * 2.0)
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(0.85, 0.72, 0.35, 0.22)
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA

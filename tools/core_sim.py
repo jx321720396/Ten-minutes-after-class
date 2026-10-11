@@ -204,8 +204,8 @@ class Sim:
         #    范围判定与展示。真实空间版启用后，交互范围判定会读这里（见 can_interact_with）。
         self.pos_x = [0.0] * n
         # 座位范围（§8.23）：半径来自几何表；世界坐标由表现层注入
-        self.seat_zone_radius = float(
-            load_params("rules/player_interaction.csv").get("seat_zone_radius_m", 0.5)
+        self.seat_zone_half_extent = float(
+            load_params("rules/player_interaction.csv").get("seat_zone_half_extent_m", 0.5)
         )
         self.seat_world = {}
         self.pos_z = [0.0] * n
@@ -1311,7 +1311,11 @@ class Sim:
         if i not in self.seat_world:
             return True
         seat = self.seat_world[i]
-        return ((self.pos_x[i] - seat[0]) ** 2 + (self.pos_z[i] - seat[1]) ** 2) ** 0.5 <= self.seat_zone_radius
+        # 方形（与地面格线对齐）：边长 = 2×半边长，不是圆
+        return (
+            abs(self.pos_x[i] - seat[0]) <= self.seat_zone_half_extent
+            and abs(self.pos_z[i] - seat[1]) <= self.seat_zone_half_extent
+        )
 
     def study_circle_settle(self):
         """学习圈（§8.23 第 4 条）：8 邻域内都在学习的人之间，每 N tick 额外结算一次。不消耗 RNG。"""
