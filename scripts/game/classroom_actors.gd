@@ -338,7 +338,9 @@ func _build_actor(core: Variant, i: int) -> Node3D:
 ## 玩家立绘：按 GameState.player_gender 取主角素材（scenes/characters/player_male|female.tscn）。
 ## 取不到就返回 null，此时调用方只留标记环，不报错中断。
 func _load_player_texture() -> Texture2D:
-	var sprite_name := "player_%s" % ("female" if str(GameState.player_gender) == "female" else "male")
+	var sprite_name := (
+		"player_%s" % ("female" if str(GameState.player_gender) == "female" else "male")
+	)
 	var texture := _load_texture(sprite_name)
 	if texture == null:
 		push_warning("ClassroomActors：玩家立绘 %s 未命中 —— 只留标记环。" % sprite_name)

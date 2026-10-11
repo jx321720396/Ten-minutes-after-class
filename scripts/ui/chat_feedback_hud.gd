@@ -31,6 +31,9 @@ var _pen: TextureRect = null
 var _pen_text: Label = null
 var _progress_card: PanelContainer = null
 var _progress_text: Label = null
+var _progress_portrait: TextureRect
+var _activity_start := -1
+var _activity_key := ""
 var _progress_bar: ProgressBar = null
 var _toast: Label = null
 var _history: PanelContainer = null
@@ -70,6 +73,15 @@ func _ready() -> void:
 	_invitation_card.custom_minimum_size = Vector2(
 		CampusTheme.settings().event_card_width, CampusTheme.settings().event_card_height
 	)
+	var paper := CampusTheme.box("paper", "teal")
+	paper.set_border_width_all(2)
+	paper.set_corner_radius_all(int(CampusTheme.settings().progress_padding))
+	_progress_card.add_theme_stylebox_override("panel", paper)
+	for state in ["background", "fill"]:
+		var bar_style := _progress_bar.get_theme_stylebox(state).duplicate() as StyleBoxFlat
+		bar_style.set_content_margin_all(0)
+		bar_style.shadow_size = 0
+		_progress_bar.add_theme_stylebox_override(state, bar_style)
 	set_process_unhandled_input(true)
 
 
@@ -231,6 +243,7 @@ func clear() -> void:
 
 func _process(delta: float) -> void:
 	_refresh_invitation()
+	_set_activity_portrait()
 	if _toast_left > 0.0:
 		_toast_left = maxf(0.0, _toast_left - delta)
 		_toast.modulate.a = minf(1.0, _toast_left / 0.6)
@@ -305,6 +318,10 @@ func _show_current_player_activity() -> void:
 			return
 	if bool(_core._sleeping[me]):
 		_progress_text.text = "当前：睡觉中 · 本课间无法移动"
+		var phase: Dictionary = _core.time_snapshot()
+		_update_activity_progress(
+			"sleep", _current_tick() + int(phase.tick_count) - int(phase.tick_in_phase)
+		)
 		return
 	if bool(_core.is_busy(me)):
 		var activity := str(_core._busy_act[me])
@@ -321,6 +338,7 @@ func _show_current_player_activity() -> void:
 			label = "正在和同学聊天"
 		var seconds := maxf(0.0, float(end_tick - _current_tick()) * _seconds_per_tick())
 		_progress_text.text = "%s · 还剩 %.0f 秒 · 暂时不能移动" % [label, seconds]
+		_update_activity_progress(activity, end_tick)
 		return
 	# 学习态（§8.23）：不占时间槽，所以不会进 is_busy 分支 —— 必须单独认出来，
 	# 否则学习中也显示「空闲」，玩家看不出自己在不在学。
@@ -374,6 +392,60 @@ func _current_tick() -> int:
 	if _core != null:
 		return int(_core.global_tick())
 	return 0
+
+
+func _update_activity_progress(activity: String, end_tick: int) -> void:
+	var key := activity + str(end_tick)
+	if key != _activity_key:
+		_activity_key = key
+		var duration := int(str(_core._behaviors.get(activity, {}).get("duration", 0)))
+		_activity_start = end_tick - duration if duration > 0 else _current_tick()
+	_progress_bar.visible = true
+	var total := maxi(1, end_tick - _activity_start)
+	_progress_bar.value = clampf(
+		100.0 * float(_current_tick() - _activity_start) / float(total), 0, 100
+	)
+	_set_activity_portrait()
+
+
+func _set_activity_portrait() -> void:
+	if _core == null:
+		return
+	var me := int(_core.node_count()) - 1
+	var subject := me
+	for session in _core.get_active_sessions():
+		if (session.members as Array).has(me):
+			for member in session.members:
+				if int(member) != me:
+					subject = int(member)
+					break
+	_progress_portrait.texture = null
+	if subject == me:
+		var scene := get_tree().current_scene
+		var actors := scene.get_node_or_null("Actors") if scene != null else null
+		if actors != null:
+			var actor: Node3D = actors.actor_for(me)
+			var sprite := actor.get_node_or_null("Sprite") as Sprite3D if actor != null else null
+			if sprite != null and sprite.texture != null:
+				var head := AtlasTexture.new()
+				head.atlas = sprite.texture
+				head.region = Rect2(
+					0,
+					0,
+					sprite.texture.get_width(),
+					(
+						sprite.texture.get_height()
+						* float(CampusTheme.settings().progress_head_fraction)
+					)
+				)
+				_progress_portrait.texture = head
+		return
+	for row in ConfigLoader.new().get_table("characters/appearance").get("rows", []):
+		if str(row.get("id", "")) == str(_core.character_id(subject)):
+			var path := "res://assets/textures/character_head/%s.png" % str(row.get("sprite", ""))
+			if ResourceLoader.exists(path):
+				_progress_portrait.texture = load(path)
+			return
 
 
 # ------------------------------------------------------------------ 内部
@@ -488,12 +560,26 @@ func _build_ui() -> void:
 	_progress_card.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_progress_card.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	add_child(_progress_card)
+	var cfg := CampusTheme.settings()
+	_progress_card.custom_minimum_size = Vector2(cfg.progress_width, cfg.progress_height)
+	_progress_card.offset_left = -cfg.progress_width / 2
+	_progress_card.offset_right = cfg.progress_width / 2
+	var layout := HBoxContainer.new()
+	layout.add_theme_constant_override("separation", int(cfg.progress_padding))
+	_progress_card.add_child(layout)
+	_progress_portrait = TextureRect.new()
+	_progress_portrait.custom_minimum_size = Vector2.ONE * cfg.progress_portrait
+	_progress_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_progress_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	layout.add_child(_progress_portrait)
 	var progress_column := VBoxContainer.new()
 	progress_column.name = "Column"
-	_progress_card.add_child(progress_column)
-	_progress_text = _make_label(18, COLOR_INK)
+	progress_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.add_child(progress_column)
+	_progress_text = _make_label(int(cfg.progress_font_size), COLOR_INK)
+	_progress_text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_progress_bar = ProgressBar.new()
-	_progress_bar.custom_minimum_size = Vector2(280.0, _bar_height)
+	_progress_bar.custom_minimum_size = Vector2(0.0, cfg.progress_bar_height)
 	_progress_bar.show_percentage = false
 	progress_column.add_child(_progress_text)
 	progress_column.add_child(_progress_bar)

@@ -16,6 +16,7 @@ extends CanvasLayer
 
 signal choice_made(action: StringName)
 
+const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
 const STYLE_TABLE := "ui/chat_feedback_style"
 const COLOR_PAPER := Color(0.98, 0.96, 0.90, 0.94)
 const COLOR_INK := Color(0.13, 0.16, 0.14)
@@ -50,6 +51,11 @@ var _step := "idle"
 func _ready() -> void:
 	_load_style()
 	_build_ui()
+	CampusTheme.apply_tree(self)
+	_card.add_theme_stylebox_override("panel", CampusTheme.paper_card())
+	_card.custom_minimum_size = Vector2(
+		CampusTheme.settings().event_card_width, CampusTheme.settings().event_card_height
+	)
 	_card.visible = false
 
 
@@ -115,6 +121,10 @@ func _set_buttons(choices: Array) -> void:
 		button.focus_mode = Control.FOCUS_NONE
 		button.add_theme_font_override("font", _font())
 		button.pressed.connect(_on_choice.bind(StringName(choice[1])))
+		CampusTheme.button(button)
+		if StringName(choice[1]) == &"read":
+			button.add_theme_stylebox_override("normal", CampusTheme.box("gold", "gold"))
+		button.add_theme_font_size_override("font_size", int(CampusTheme.settings().font_size))
 		_buttons.add_child(button)
 
 
@@ -132,14 +142,15 @@ func _build_ui() -> void:
 	box.set_corner_radius_all(8)
 	box.set_content_margin_all(12.0)
 	_card.add_theme_stylebox_override("panel", box)
-	# 右下角、贴边向上长：不遮住讲台与黑板（与邀请框同一角落约定）
-	_card.anchor_left = 1.0
-	_card.anchor_right = 1.0
+	# 左下角纸条询问卡；邀请卡在上方排布，避免同时出现时重叠。
+	_card.anchor_left = 0.0
+	_card.anchor_right = 0.0
 	_card.anchor_top = 1.0
 	_card.anchor_bottom = 1.0
-	_card.offset_right = -_margin
+	_card.offset_left = _margin
+	_card.offset_right = _margin + CampusTheme.settings().event_card_width
 	_card.offset_bottom = -_margin
-	_card.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_card.grow_horizontal = Control.GROW_DIRECTION_END
 	_card.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	add_child(_card)
 	var column := VBoxContainer.new()
@@ -148,7 +159,8 @@ func _build_ui() -> void:
 	_card.add_child(column)
 	_text = Label.new()
 	_text.name = "NoteText"
-	_text.add_theme_font_size_override("font_size", 16)
+	_text.add_theme_font_size_override("font_size", int(CampusTheme.settings().event_font_size))
+	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.add_theme_color_override("font_color", COLOR_INK)
 	_text.add_theme_font_override("font", _font())
 	column.add_child(_text)

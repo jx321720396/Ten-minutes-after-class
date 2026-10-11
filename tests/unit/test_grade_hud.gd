@@ -1,7 +1,7 @@
 extends GutTest
-## 成绩 HUD（§21.2.7）：显示在**屏幕右上角**、格式含期末倒计时、数据来自内核玩家成绩。
+## 成绩 HUD：与时间一起显示在左上角纸卡，数据来自内核。
 ##
-## 2026-10-10 用户指定位置：右上角独立卡片（时间卡片在左上角，两者不挤在一起）。
+## 2026-10-11 用户指定：按概念图并入左上角。
 
 const HUD_SCRIPT := "res://scripts/ui/time_hud.gd"
 
@@ -14,27 +14,18 @@ func _hud() -> CanvasLayer:
 	return hud
 
 
-func test_grade_card_is_anchored_to_the_top_right() -> void:
+func test_grade_is_inside_top_left_time_card() -> void:
 	var hud := _hud()
-	var card := hud.get_node_or_null("GradeCard") as Control
-	assert_not_null(card, "成绩必须有**独立卡片**（§21.2.7）")
-	if card == null:
-		return
-	assert_eq(card.anchor_left, 1.0, "贴右边界")
-	assert_eq(card.anchor_right, 1.0, "贴右边界")
-	assert_eq(card.anchor_top, 0.0, "贴顶边")
-	assert_lt(card.offset_right, 0.0, "向右边界内侧收（负偏移）")
-	assert_gt(card.offset_top, 0.0, "与顶边留出边距")
-	assert_eq(
-		card.grow_horizontal,
-		Control.GROW_DIRECTION_BEGIN,
-		"内容变长时向左生长（不越出屏幕右侧）"
-	)
+	assert_null(hud.get_node_or_null("GradeCard"))
+	var label := hud.get_node_or_null("Card/Rows/GradeLabel") as Label
+	assert_not_null(label)
+	if label != null:
+		assert_eq(label.get_parent().get_child(label.get_index() - 1).name, "GradeSeparator")
 
 
 func test_grade_text_still_uses_the_spec_format() -> void:
 	var hud := _hud()
-	var label := hud.get_node_or_null("GradeCard/GradeLabel") as Label
+	var label := hud.get_node_or_null("Card/Rows/GradeLabel") as Label
 	assert_not_null(label, "卡片里就是成绩文案本身")
 	if label == null:
 		return

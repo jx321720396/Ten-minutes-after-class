@@ -63,6 +63,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # ------------------------------------------------------------------ 对外
 
+
 ## 当前选中的性别（"" = 还没选）。
 func selected_gender() -> String:
 	return _selected
@@ -81,6 +82,7 @@ func can_start() -> bool:
 
 
 # ------------------------------------------------------------------ 交互
+
 
 func _on_card_hover(gender: String) -> void:
 	_hovered = gender
@@ -114,6 +116,7 @@ func _on_back() -> void:
 
 # ------------------------------------------------------------------ 呈现
 
+
 func _refresh() -> void:
 	_start.disabled = _selected.is_empty()
 	for card in [_male, _female] as Array:
@@ -122,8 +125,8 @@ func _refresh() -> void:
 
 func _update_card(card: PanelContainer) -> void:
 	var g := _gender_of(card)
-	var is_selected := (g == _selected)
-	var is_hovered := (g == _hovered)
+	var is_selected := g == _selected
+	var is_hovered := g == _hovered
 
 	var style: StyleBoxFlat = (_base_style[card] as StyleBoxFlat).duplicate()
 	if is_selected:
