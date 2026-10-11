@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="112" viewBox="0 0 640 112">
+ <defs><linearGradient id="body" x2="0" y2="1"><stop stop-color="#fff9e9"/><stop offset=".5" stop-color="#ede4ce"/><stop offset="1" stop-color="#cbbf9f"/></linearGradient></defs>
+ <ellipse cx="320" cy="88" rx="284" ry="12" fill="#284536" opacity=".16"/>
+ <path d="M29 31 Q15 31 15 56 Q15 81 29 81 H593 L626 56 L593 31Z" fill="url(#body)" stroke="#284536" stroke-width="4"/>
+ <path d="M29 31 H127 V81 H29 Q15 81 15 56 Q15 31 29 31Z" fill="#17606a"/>
+ <path d="M508 31 H593 V81 H508Z" fill="#b96448"/>
+ <path d="M593 31 L626 56 L593 81Z" fill="#bf8835" stroke="#284536" stroke-width="3"/>
+ <g stroke="#284536" stroke-width="3" opacity=".45"><path d="M46 33V79 M63 33V79 M80 33V79 M97 33V79 M114 33V79 M525 33V79 M542 33V79 M559 33V79 M576 33V79"/></g>
+ <path d="M137 40 H491" stroke="#fffdf3" stroke-width="5" opacity=".65"/>
+ <path d="M250 50 L270 43 L263 63 L258 54Z" fill="none" stroke="#17606a" stroke-width="3"/>
+ <path d="M381 66V53 M381 58 Q364 44 368 59 Q373 65 381 62 M381 54 Q399 42 393 56 Q388 60 381 58" fill="none" stroke="#17606a" stroke-width="3"/>
+ <circle cx="320" cy="56" r="10" fill="#f5f0df" stroke="#284536" stroke-width="3"/>
+</svg>

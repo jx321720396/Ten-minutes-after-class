@@ -15,6 +15,8 @@ extends CanvasLayer
 signal result_revealed(request_id: int)
 
 const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
+const PenWheel := preload("res://scripts/ui/pen_probability_wheel.gd")
+const RESULT_HOLD := &"pen_result_card"
 const STYLE_TABLE := "ui/chat_feedback_style"
 const PEN_TEXTURE := "res://assets/textures/ui/interaction/pen.png"
 const COLOR_PAPER := Color(0.98, 0.96, 0.90, 0.94)
@@ -29,6 +31,13 @@ const AXIS_NAMES := {"affinity": "好感", "hostility": "敌对", "trust": "信�
 var _pen_card: PanelContainer = null
 var _pen: TextureRect = null
 var _pen_text: Label = null
+var _pen_button: Button
+var _pen_result: Label
+var _pen_hint: Label
+var _pen_wheel: PenWheel
+var _pen_backdrop: ColorRect
+var _pen_state := "ready"
+var _rest_layer := 0
 var _progress_card: PanelContainer = null
 var _progress_text: Label = null
 var _progress_portrait: TextureRect
@@ -66,9 +75,15 @@ var _invitation_margin := 0.0
 
 
 func _ready() -> void:
+	_rest_layer = layer
 	_load_style()
 	_build_ui()
 	CampusTheme.apply_tree(self)
+	var pen_paper := CampusTheme.paper_card()
+	pen_paper.content_margin_top = CampusTheme.settings().pen_check.content_top
+	pen_paper.content_margin_bottom = CampusTheme.settings().pen_check.content_bottom
+	_pen_card.add_theme_stylebox_override("panel", pen_paper)
+	CampusTheme.button(_pen_button, true)
 	_invitation_card.add_theme_stylebox_override("panel", CampusTheme.paper_card())
 	_invitation_card.custom_minimum_size = Vector2(
 		CampusTheme.settings().event_card_width, CampusTheme.settings().event_card_height
@@ -105,35 +120,73 @@ func bind_core(core: Variant) -> void:
 # ------------------------------------------------------------------ 对外接口
 
 
-## 锁定结果并播放转笔：起势 → 旋转 → 收尾 → **揭晓**（此时才发 result_revealed）。
+## 锁定结果，等待点击开始；再次点击收尾揭晓，不自动停止或重新判定。
 ## packet 是内核的提交包（含 accepted / p_belief / mode）。
 func present_locked_result(packet: Dictionary) -> void:
 	if str(packet.get("mode", "")) != "join":
 		# 发起新聊天没有掷骰，不该转笔
 		return
+	if is_presenting():
+		return
+	clear_pen()
 	_pending = packet.duplicate(true)
 	_revealed = -1
+	_pen_state = "ready"
+	layer = int(CampusTheme.settings().pen_check.modal_layer)
+	_pen_backdrop.show()
 	_pen_card.visible = true
 	_pen_card.modulate.a = 1.0
 	_pen_text.text = "我的把握 %d%%\n（根据目前了解估计）" % roundi(float(packet.get("p_belief", 0.0)) * 100.0)
-	_pen.modulate = Color(1, 1, 1, 0)
+	_pen_wheel.set_probability(float(packet.get("p_belief", 0.0)))
+	_pen_button.text = "开始转笔"
+	_pen_button.disabled = false
+	_pen_hint.text = "点击开始，再次点击揭晓"
+	_pen_result.text = ""
+	_pen.modulate = Color.WHITE
 	_pen.rotation = 0.0
 	_pen.scale = Vector2.ONE
-	var size := Vector2(_pen_size, _pen_size * 0.5)
-	_pen.size = size
-	_pen.pivot_offset = size * 0.5
-	_pen.position = Vector2.ZERO
+	_pen_button.grab_focus()
+
+
+func _on_pen_pressed() -> void:
+	match _pen_state:
+		"ready":
+			_pen_state = "spinning"
+			_pen_button.text = "停下揭晓"
+			_pen_hint.text = "再次点击，查看对方的回应"
+		"spinning":
+			_pen_state = "settling"
+			_pen_button.disabled = true
+			var target: float = _pen_wheel.result_angle(bool(_pending.get("accepted", false)))
+			var angle := _pen.rotation + fposmod(target - _pen.rotation, TAU)
+			_pen_tween = create_tween()
+			(
+				_pen_tween
+				. tween_property(_pen, "rotation", angle, _settle)
+				. set_trans(Tween.TRANS_QUAD)
+				. set_ease(Tween.EASE_OUT)
+			)
+			_pen_tween.tween_callback(_reveal_result)
+		"result":
+			clear_pen()
+
+
+func clear_pen() -> void:
 	if _pen_tween != null and _pen_tween.is_valid():
 		_pen_tween.kill()
-	_pen_tween = create_tween()
-	_pen_tween.tween_property(_pen, "modulate:a", 1.0, _windup)
-	_pen_tween.parallel().tween_property(_pen, "rotation", -0.5, _windup)
-	_pen_tween.tween_property(_pen, "rotation", TAU * 2.5, _spin).set_trans(Tween.TRANS_LINEAR)
-	_pen_tween.tween_property(_pen, "rotation", TAU * 3.0, _settle)
-	_pen_tween.tween_callback(_reveal_result)
-	_pen_tween.tween_interval(_result)
-	_pen_tween.tween_property(_pen, "modulate:a", 0.0, 0.15)
-	_pen_tween.tween_callback(func() -> void: _pen_card.visible = false)
+	_pen_state = "ready"
+	layer = _rest_layer
+	_pending = {}
+	if _pen_card != null:
+		_pen_card.hide()
+	if _pen_backdrop != null:
+		_pen_backdrop.hide()
+	if is_instance_valid(_clock):
+		_clock.release(RESULT_HOLD)
+
+
+func _exit_tree() -> void:
+	clear_pen()
 
 
 ## 跳过：提前揭晓**同一个已锁定结果**（不重复 commit、不缩短真实占用）。
@@ -143,7 +196,6 @@ func skip() -> void:
 	if _pen_tween != null and _pen_tween.is_valid():
 		_pen_tween.kill()
 	_reveal_result()
-	_pen_card.visible = false
 
 
 func is_presenting() -> bool:
@@ -229,7 +281,7 @@ func remaining_seconds() -> float:
 
 ## 清屏（切场景 / 退出时调用）：不撤销已经提交的结算，只收掉表现。
 func clear() -> void:
-	_pending = {}
+	clear_pen()
 	_revealed = -1
 	if _pen_tween != null and _pen_tween.is_valid():
 		_pen_tween.kill()
@@ -242,6 +294,14 @@ func clear() -> void:
 
 
 func _process(delta: float) -> void:
+	if _pen_state == "spinning":
+		_pen.rotation = fposmod(
+			(
+				_pen.rotation
+				+ TAU * float(CampusTheme.settings().pen_check.spin_turns_per_second) * delta
+			),
+			TAU
+		)
 	_refresh_invitation()
 	_set_activity_portrait()
 	if _toast_left > 0.0:
@@ -459,8 +519,15 @@ func _reveal_result() -> void:
 		return
 	_revealed = request_id
 	var accepted := bool(_pending.get("accepted", false))
-	_pen_text.text = "加入了聊天" if accepted else "没能加入聊天"
-	_pen_text.add_theme_color_override("font_color", COLOR_ACCEPT if accepted else COLOR_REJECT)
+	_pen_state = "result"
+	_pen_result.text = "✓ 对方答应了" if accepted else "✕ 对方婉拒了"
+	_pen_result.add_theme_color_override("font_color", COLOR_ACCEPT if accepted else COLOR_REJECT)
+	_pen_hint.text = "点击继续，返回教室"
+	_pen_button.text = "继续"
+	_pen_button.disabled = false
+	# 原控制器在 result_revealed 时释放演出锁；结果卡单独持有暂停直至继续。
+	if is_instance_valid(_clock):
+		_clock.hold(RESULT_HOLD)
 	result_revealed.emit(request_id)
 
 
@@ -490,10 +557,8 @@ func _add_history_label(line: String) -> void:
 
 
 func _font() -> Font:
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(
-		["Microsoft YaHei", "微软雅黑", "SimHei", "Noto Sans CJK SC", "PingFang SC", "sans-serif"]
-	)
+	var font := preload("res://scripts/ui/game_fonts.gd").regular()
+
 	return font
 
 
@@ -517,6 +582,14 @@ func _make_label(size: int, color: Color) -> Label:
 
 
 func _build_ui() -> void:
+	var pen_cfg: Dictionary = CampusTheme.settings().pen_check
+	_pen_backdrop = ColorRect.new()
+	_pen_backdrop.name = "PenBackdrop"
+	_pen_backdrop.color = Color(0, 0, 0, float(pen_cfg.backdrop_alpha))
+	_pen_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_pen_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_pen_backdrop)
+	_pen_backdrop.hide()
 	_pen_card = PanelContainer.new()
 	_pen_card.name = "PenCard"
 	_pen_card.add_theme_stylebox_override("panel", _panel_box())
@@ -527,27 +600,39 @@ func _build_ui() -> void:
 	_pen_card.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_pen_card.grow_vertical = Control.GROW_DIRECTION_BOTH
 	add_child(_pen_card)
+	_pen_card.custom_minimum_size = Vector2(pen_cfg.card_width, pen_cfg.card_height)
+	_pen_card.offset_left = -float(pen_cfg.card_width) / 2.0
+	_pen_card.offset_right = float(pen_cfg.card_width) / 2.0
+	_pen_card.offset_top = -float(pen_cfg.card_height) / 2.0
+	_pen_card.offset_bottom = float(pen_cfg.card_height) / 2.0
 	var column := VBoxContainer.new()
 	column.name = "Column"
-	column.add_theme_constant_override("separation", 6)
+	column.add_theme_constant_override("separation", int(pen_cfg.card_gap))
 	_pen_card.add_child(column)
-	var spinner := Control.new()
-	spinner.name = "Spinner"
-	spinner.custom_minimum_size = Vector2(_pen_size, _pen_size * 0.5)
-	spinner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_pen = TextureRect.new()
-	_pen.name = "Pen"
-	_pen.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_pen.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_pen.pivot_offset = Vector2.ZERO
-	_pen.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if ResourceLoader.exists(PEN_TEXTURE):
-		_pen.texture = load(PEN_TEXTURE)
-	spinner.add_child(_pen)
-	_pen_text = _make_label(18, COLOR_INK)
-	column.add_child(spinner)
+	var title := _make_label(int(pen_cfg.heading_font_size), COLOR_INK)
+	title.text = "加入同学的闲聊"
+	column.add_child(title)
+	_pen_wheel = PenWheel.new()
+	_pen_wheel.name = "Spinner"
+	_pen_wheel.configure(pen_cfg)
+	column.add_child(_pen_wheel)
+	_pen = _pen_wheel.pen
+	_pen_result = _make_label(int(pen_cfg.result_font_size), COLOR_ACCEPT)
+	_pen_result.name = "Result"
+	column.add_child(_pen_result)
+	_pen_button = Button.new()
+	_pen_button.name = "PenButton"
+	_pen_button.custom_minimum_size.y = float(pen_cfg.button_height)
+	_pen_button.add_theme_font_size_override("font_size", int(pen_cfg.result_font_size))
+	_pen_button.add_theme_font_override("font", _font())
+	_pen_button.pressed.connect(_on_pen_pressed)
+	column.add_child(_pen_button)
+	_pen_hint = _make_label(int(pen_cfg.hint_font_size), COLOR_SUB)
+	column.add_child(_pen_hint)
+	column.add_child(HSeparator.new())
+	_pen_text = _make_label(int(pen_cfg.belief_font_size), COLOR_INK)
 	column.add_child(_pen_text)
-	_pen_card.visible = false
+	_pen_card.hide()
 
 	_progress_card = PanelContainer.new()
 	_progress_card.name = "ProgressCard"
