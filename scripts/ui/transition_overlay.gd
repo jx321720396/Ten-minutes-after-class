@@ -307,8 +307,7 @@ func _make_label(font_size: int, color: Color) -> Label:
 ## UI 字体：中文字族优先，末位 sans-serif 兜底（与 TimeHUD 同一套族名）。
 func _ui_font() -> Font:
 	if _font == null:
-		var font := SystemFont.new()
-		font.font_names = PackedStringArray(FONT_FAMILIES)
-		font.font_weight = 700
+		var font := preload("res://scripts/ui/game_fonts.gd").regular()
+
 		_font = font
 	return _font

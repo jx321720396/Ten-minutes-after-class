@@ -116,6 +116,9 @@ func _sync_activities() -> void:
 	for i in wanted:
 		if not _activity_badges.has(i):
 			var badge := Label.new()
+			badge.add_theme_font_override(
+				"font", preload("res://scripts/ui/game_fonts.gd").regular()
+			)
 			badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			badge.add_theme_color_override("font_color", COLOR_PAPER)
 			badge.add_theme_color_override("font_shadow_color", COLOR_EDGE)

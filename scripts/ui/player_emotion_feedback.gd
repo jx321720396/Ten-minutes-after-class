@@ -226,10 +226,8 @@ func _build_ui() -> void:
 
 
 func _font() -> Font:
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(
-		["Microsoft YaHei", "微软雅黑", "SimHei", "Noto Sans CJK SC", "PingFang SC", "sans-serif"]
-	)
+	var font := preload("res://scripts/ui/game_fonts.gd").regular()
+
 	return font
 
 

@@ -1,4 +1,5 @@
 class_name PlayerActionBar
+
 extends CanvasLayer
 ## 右侧常驻行为栏（§20.1.2，2026-10-10 定稿）：**先选行为、再点对象**。
 ##
@@ -41,6 +42,7 @@ const ACTIVITY_NAMES := {
 	"leave_class": "你出去了",
 }
 
+const GameFonts := preload("res://scripts/ui/game_fonts.gd")
 const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
 const STYLE_TABLE := "ui/chat_feedback_style"
 const COLOR_PAPER := Color(0.98, 0.96, 0.90, 0.94)
@@ -401,10 +403,8 @@ func _build_ui() -> void:
 
 
 func _font() -> Font:
-	var font := SystemFont.new()
-	font.font_names = PackedStringArray(
-		["Microsoft YaHei", "微软雅黑", "SimHei", "Noto Sans CJK SC", "PingFang SC", "sans-serif"]
-	)
+	var font := GameFonts.regular()
+
 	return font
 
 
@@ -471,8 +471,8 @@ func _build_action_contents(button: Button, kind: StringName, label: String) -> 
 		text.name = entry[0]
 		text.text = entry[1]
 		if entry[0] == "Name":
-			var heading_font := SystemFont.new()
-			heading_font.font_names = PackedStringArray(["SimSun", "Noto Serif CJK SC", "serif"])
+			var heading_font := GameFonts.regular()
+
 			text.add_theme_font_override("font", heading_font)
 		else:
 			text.add_theme_font_override("font", _font())
