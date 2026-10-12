@@ -108,6 +108,29 @@ func _ready() -> void:
 			child.add_theme_stylebox_override("panel", category_style)
 	_apply_paper_style()
 	_update_highlight()
+	get_viewport().size_changed.connect(_layout_for_viewport)
+	_layout_for_viewport()
+
+
+func _layout_for_viewport() -> void:
+	if _panel == null or not is_instance_valid(_panel):
+		return
+	var viewport := get_viewport().get_visible_rect().size
+	if viewport.x <= 0.0 or viewport.y <= 0.0:
+		return
+	var cfg := CampusTheme.settings()
+	var margin := minf(_margin, maxf(8.0, viewport.x * 0.02))
+	var width := minf(float(cfg.action_width), maxf(176.0, viewport.x * 0.30))
+	var available_height := maxf(1.0, viewport.y - margin * 2.0)
+	var height := minf(
+		float(cfg.action_panel_height), maxf(minf(420.0, available_height), available_height)
+	)
+	_panel.custom_minimum_size = Vector2(width, height)
+	_panel.size = Vector2(width, height)
+	_panel.offset_left = -width - margin
+	_panel.offset_right = -margin
+	_panel.offset_top = minf(float(cfg.action_panel_top), margin)
+	_panel.offset_bottom = _panel.offset_top + height
 
 
 func _input(event: InputEvent) -> void:
