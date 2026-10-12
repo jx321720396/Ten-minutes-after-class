@@ -1,5 +1,13 @@
 # 变更记录
 
+- **补修 3 个漏改的 `csv_translation` 导入声明（2026-10-12，从零克隆实测发现）**
+  - 现象：`data/rules/choice_weights.csv`、`data/ui/emotion_faces.csv`、`tests/invariants/fixtures/data/characters/seeds.csv`
+    的 `.import` 仍是 `csv_translation`（2026-10-10 那次修复只覆盖当时存在的 29 个 csv，这三个是之后新增的）。
+    本机因为已有导入缓存所以不报警告，**别人首次克隆 / 导入**会报 `WARNING: CSV file ... does not contain any translation`；
+    导出时 `choice_weights.csv` / `emotion_faces.csv` 这两张运行时表同样会被顶掉（同一个坑）。
+  - 修法：三者的 `importer` 一律改为 `keep`（与其余 33 个 csv 声明一致，uid 与 params 保留）。
+  - 验证：重新从零克隆 + `--headless --import` → 退出码 0，无任何 WARNING / ERROR。
+
 - **docs/ 加 `.gdignore`：文档与 Blender 源工程不再进 Godot（2026-10-12）**
   - 现状问题：Godot 导入 `.blend` 必须本机安装 Blender 并配好路径（官方文档要求「所有团队成员都安装 Blender」），
     docs 下 6 个 `.blend` 源工程会让没装 Blender 的协作者打开项目即报 Blender not found 类错误。
