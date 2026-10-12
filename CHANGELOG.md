@@ -1,5 +1,10 @@
 # 变更记录
 
+- **主菜单恢复封面便签排布（2026-10-12）**
+  - 删除 `scripts/ui/main_menu.gd` 中过期的 `_layout_for_viewport()`：它把菜单容器硬改到屏幕正中 `(700,375)`、宽 `520`，而校园主题按配置把菜单摆在 `(115,385)`、宽 `365`，纸面 `MenuPaper` 在 `(38,290)` —— 按钮整体偏离纸面约 585px，压到背景照片的手持纸条上。
+  - 该函数在 `stretch/mode="viewport"` + 1920×1080 基准下算出的始终是常量，并无响应式效果；它改动的 `Label` 与 `Separator` 也早已被 `campus_theme.main_menu()` 隐藏。删除后主菜单与主干行为一致。
+  - 验证：Godot 4.7.2 无头加载主菜单 180 帧零脚本错误；实机截图确认按钮回到左侧纸面。
+
 - **导出包修复与瘦身（2026-10-11）**
   - 修复两张配置表导出后消失：`data/rules/choice_weights.csv` 与 `data/ui/emotion_faces.csv` 的 `.import` 由 `csv_translation` 改为 `keep`。此前它们被翻译导入器吞掉、源文件不进包，而 `config_loader.gd` 是运行时扫 `res://data/*.csv` 读的 —— 发行版里选择权重与玩家表情两张表直接缺失。
   - 两个导出预设新增 `exclude_filter`，排除 `addons/gut`、`tests`、`tools`、`docs`（此前共约 394 个无关文件混入包内）；Windows 预设补 `product_name="下课十分钟"`。
