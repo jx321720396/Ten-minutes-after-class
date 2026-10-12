@@ -1,5 +1,14 @@
 # 变更记录
 
+- **修复导入声明缺口：`roster.csv` 补 `keep` + 新素材补 `.import`（2026-10-12，上传后自查）**
+  - 新增的 `data/rules/roster.csv` 没有 `.csv.import`，Godot 首次扫描会用 `csv_translation` 认领它并报
+    `WARNING: CSV file 'res://data/rules/roster.csv' does not contain any translation`（`--headless --import` 退出码非 0），
+    导出时该表同样会被顶掉 —— 与 2026-10-10 记录的「导出包丢失 `data/**/*.csv`」同一个坑。
+  - 修法：补 `data/rules/roster.csv.import`，`importer` 置 `keep`（与其余 34 个 `data/**/*.csv` 一致）。
+  - 顺带：本批新入库的 29 张 PNG（`assets/textures/characters/` 下 fullbody_v1 / motion_compare_v1 / simple_samples）缺
+    `.import`，全量导入时 Godot 会在各自目录补生成 —— 一并入库，协作者工作区不会出现未跟踪文件。
+  - 验证：`--headless --path . --import` 从「退出码 -1 + CSV 警告」变为「退出码 0 + 无 CSV 警告」。
+
 - **一局固定 16 人：删除 8 / 24 人局与难度档（2026-10-12，用户裁定）**
   - 玩法口径：**角色池 24 → 16 人，一局全池入局**（+ 玩家 = 17 个节点），与该局 16 张 NPC 立绘**一人一张**（同局撞脸问题随之关闭，见 §25.8）。删除 8 人局 / 24 人局与整个难度档概念。
   - **角色名单（用户确认，编号重排 01–16）**：保留陈阳 / 林晚 / 张渊 / 周敏 / 赵蕊 / 孙悦 / 郑浩 / 许静 / 何川 / 韩雪 / 沈浪 / 顾言 / 叶梓 / 佳豪 / 温雅 / 李峥；**删除 8 人**：吴哲 / 王磊 / 刘畅 / 马强 / 罗杰 / 苏晴 / 唐糖 / 白柔。保留规则：绑定组三人（陈阳 / 林晚 / 佳豪）必留、12 类行为标签全覆盖、MBTI 四维高低两侧都有人、男女各 8 与立绘一一对应。
