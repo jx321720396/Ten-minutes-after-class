@@ -12,7 +12,7 @@ const NPC := 8
 
 
 func _core() -> SimCore:
-	return SimCore.from_npc(SEED, NPC, ConfigLoader.new().load_all())
+	return SimCore.new(SEED, NPC, ConfigLoader.new().load_all())
 
 
 func _advance_to(core: SimCore, tick: int) -> void:
@@ -45,21 +45,23 @@ func _set_busy(core: SimCore, i: int, until: int, phase: int, act: String) -> vo
 
 # ------------------------------------------------------------------ ① 到期结算：完成与中断互斥
 
+
 func test_completion_exactly_at_bell_is_completion_not_interrupt() -> void:
 	var core := _core()
 	_advance_to(core, 99)
-	_set_busy(core, 0, 100, 0, "chat")   # 恰好第 100 tick 到期
-	core.advance_tick()                   # 第 100 tick
+	_set_busy(core, 0, 100, 0, "chat")  # 恰好第 100 tick 到期
+	core.advance_tick()  # 第 100 tick
 	assert_eq(core._last_finished[0], "chat", "到期即完成，有完成记录")
 	assert_eq(int(core._stats["interrupts"]), 0, "完成不计中断代价")
 
 
 # ------------------------------------------------------------------ ③ 中断：未到期且跨段 → 打断一次
 
+
 func test_crossing_bell_interrupts_without_completion() -> void:
 	var core := _core()
 	_advance_to(core, 100)
-	_set_busy(core, 0, 101, 0, "chat")   # 比铃声晚 1 tick
+	_set_busy(core, 0, 101, 0, "chat")  # 比铃声晚 1 tick
 	core.finish_time_boundary()
 	assert_true(core._interrupted_nodes.has(0), "0 号被打断")
 	assert_eq(core._busy_until[0], 0, "占用到期点归零")
@@ -68,6 +70,7 @@ func test_crossing_bell_interrupts_without_completion() -> void:
 
 
 # ------------------------------------------------------------------ ④ 清理：cleanup_phase 清掉 current_act / busy_act / in_conversation
+
 
 func test_cleanup_clears_residual_action_state() -> void:
 	var core := _core()
@@ -81,21 +84,23 @@ func test_cleanup_clears_residual_action_state() -> void:
 
 # ------------------------------------------------------------------ 幂等：_settled_boundary = (天, 旧相位)
 
+
 func test_repeated_end_phase_is_idempotent() -> void:
 	var core := _core()
 	_advance_to(core, 100)
 	_set_busy(core, 0, 105, 0, "chat")
 	var interrupts_before := int(core._stats["interrupts"])
-	core._end_phase()                     # 直接处理边界一次（不切段，_phase_index 仍为 0）
+	core._end_phase()  # 直接处理边界一次（不切段，_phase_index 仍为 0）
 	var interrupts_after := int(core._stats["interrupts"])
 	assert_gt(interrupts_after, interrupts_before, "第一次处理确有中断")
 	var stress_after := float(core._stress[0])
-	core._end_phase()                     # 同一 (day=1, phase_index=0) 边界 → 幂等跳过
+	core._end_phase()  # 同一 (day=1, phase_index=0) 边界 → 幂等跳过
 	assert_eq(int(core._stats["interrupts"]), interrupts_after, "中断计数不翻倍")
 	assert_eq(core._stress[0], stress_after, "压力不再叠加")
 
 
 # ------------------------------------------------------------------ ② 睡眠收尾：跨段唤醒一次
+
 
 func test_sleep_settles_once_across_phase_boundary() -> void:
 	var core := _core()
@@ -114,6 +119,7 @@ func test_sleep_settles_once_across_phase_boundary() -> void:
 
 
 # ------------------------------------------------------------------ 抽象内核：无移动输入，is_moving 恒 false
+
 
 func test_abstract_kernel_has_no_movement_locks() -> void:
 	var core := _core()

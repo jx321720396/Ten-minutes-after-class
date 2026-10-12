@@ -9,17 +9,17 @@ extends CanvasLayer
 ## 显示口径：
 ##   · 课间：`第 6 / 30 天 · 中午午休` + `课间剩余 01:24` + 剩余时间条；
 ##   · 上课：`第 6 / 30 天 · 上午课堂` + `发酵中 · 本阶段约剩余 00:12`（玩家操作被锁）；
-##   · 日末：第二行改为 `第 6 天结束 · 晚自习与夜晚悄然过去……`（简报与「继续」按钮由日报组件接入）；
+##   · 日末：第二行改为 `第 6 天结束 · 晚自习与夜晚悄然过去……`，停留 `report_hold_seconds` 秒后
+##     **自动进入次日**（空格可提前）；第 30 天结束显示「查看学期报告」按钮；
 ##   · 倒计时**向上取整**，边界显示 00:00，不出现负数；阶段名提示在边界只弹一次。
 
-## 日报组件接入用：玩家点「进入第 N 天」
+## 日报组件接入用：日末停留结束（或玩家按空格提前）时发出
 signal continue_requested
 
-## 日末是否等待输入（点按钮 / 空格）才进入次日：
-##   true = 调试模式（当前）——按钮仅供内部调试，空格为快捷键；
-##   false = 正式上线用 —— 日末自动进入次日，不显示按钮。
+## 日末停留时长来自时钟快照（`rules/time_runtime` 的 `report_hold_seconds`）；本组件只倒计时 ——
+## 到时**自动**发出 `continue_requested`（第二章 §2.5「日末停留与自动进入」），不显示确认按钮；
+## 只有学期结束（finished）保留「查看学期报告」按钮。
 const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
-const WAIT_INPUT_ON_DAY_END := true
 
 const FONT_FAMILIES: Array[String] = [
 	"Microsoft YaHei",
@@ -54,6 +54,8 @@ var _action: Button = null
 var _toast_left := 0.0
 var _toast_count := 0
 var _last: Dictionary = {}
+## 日末自动进入倒计时剩余秒数（< 0 = 不在倒计时）
+var _report_hold_left := -1.0
 var _font: Font = null
 var _volume_card: Control
 var _volume_cfg: Dictionary = CampusTheme.settings().volume_card
@@ -75,13 +77,14 @@ func _process(delta: float) -> void:
 	var footer_y: float = _volume_card.position.y + _volume_card.size.y + _volume_cfg.gap
 	_toast.position.y = footer_y
 	_action.position.y = footer_y + _volume_cfg.footer_gap
+	tick_report_hold(delta)
 	if _toast_left <= 0.0:
 		return
 	_toast_left = maxf(0.0, _toast_left - delta)
 	_toast.modulate.a = _toast_left / TOAST_SECONDS
 
 
-## 日末调试快捷键：空格等同点「进入第 N 天」（仅 report 状态生效）。
+## 日末停留期间的「提前进入」键：空格 / 回车（与转场黑幕的跳过键同一动作，仅 report 生效）。
 func _unhandled_input(event: InputEvent) -> void:
 	if _last.is_empty() or str(_last.get("mode", "")) != SimulationClock.MODE_REPORT:
 		return
@@ -153,6 +156,27 @@ func toast_count() -> int:
 	return _toast_count
 
 
+## 日末 / 学期结束按钮当前文案（不可见时为空串）—— 供测试与外部判定。
+func action_line() -> String:
+	if _action == null or not _action.visible:
+		return ""
+	return _action.text
+
+
+# ------------------------------------------------------------------ 日末自动进入
+## 日末停留倒计时（`_process` 只是转调它，测试可直接驱动）：
+## 到时自动发出 `continue_requested`，且**只发一次**；未到停留时长返回 false。
+func tick_report_hold(delta_seconds: float) -> bool:
+	if _report_hold_left < 0.0:
+		return false
+	_report_hold_left = maxf(0.0, _report_hold_left - maxf(delta_seconds, 0.0))
+	if _report_hold_left > 0.0:
+		return false
+	_report_hold_left = -1.0
+	continue_requested.emit()
+	return true
+
+
 # ------------------------------------------------------------------ 刷新
 func _on_time_updated(snapshot_data: Dictionary) -> void:
 	_refresh(snapshot_data)
@@ -166,11 +190,9 @@ func _on_phase_changed(snapshot_data: Dictionary) -> void:
 
 
 func _on_report_ready(ended_day: int) -> void:
+	# 日末不等待确认：_refresh 进入 report 分支时开始停留倒计时（见 tick_report_hold）
 	_refresh(_clock.snapshot() if _clock != null else {})
 	_show_toast("第 %d 天结束" % ended_day)
-	if not WAIT_INPUT_ON_DAY_END:
-		# 正式上线模式：不等待输入，直接进入次日
-		continue_requested.emit()
 
 
 ## 成绩变化时的轻微闪动（§21.2.7：不弹窗、不报数，只让数字自己说话）
@@ -206,6 +228,9 @@ func _refresh(snapshot_data: Dictionary) -> void:
 		_title.text += " · ×%s" % str(speed)
 	_bar.value = float(snapshot_data.get("progress", 0.0)) * 100.0
 
+	# 非日末状态一律清空停留倒计时（进入 report 时再起，见下）
+	if mode != SimulationClock.MODE_REPORT:
+		_report_hold_left = -1.0
 	_show_exam_line(str(snapshot_data.get("exam_report", snapshot_data.get("exam_banner", ""))))
 	if mode == SimulationClock.MODE_FINISHED:
 		_detail.text = "学期结束 · 共 %d 天" % int(snapshot_data.get("ended_day", 0))
@@ -216,7 +241,10 @@ func _refresh(snapshot_data: Dictionary) -> void:
 		var ended_day := int(snapshot_data.get("ended_day", 0))
 		_detail.text = "第 %d 天结束 · 晚自习与夜晚悄然过去……" % ended_day
 		_detail.modulate = COLOR_ACCENT
-		_show_action("进入第 %d 天" % (ended_day + 1))
+		# 不显示确认按钮：停留 report_hold_seconds 后自动进入次日（见 tick_report_hold）
+		if _report_hold_left < 0.0:
+			_report_hold_left = maxf(0.0, float(snapshot_data.get("report_hold_seconds", 0.0)))
+		_action.visible = false
 		return
 	_action.visible = false
 	_show_exam_line(str(snapshot_data.get("exam_banner", "")))
@@ -237,7 +265,7 @@ func _show_exam_line(text: String) -> void:
 	_exam.visible = not text.is_empty()
 
 
-## 日末 / 学期结束的操作按钮文案（计划 §3）。
+## 学期结束的操作按钮文案（日末已改自动进入，不再有按钮）。
 func _show_action(text: String) -> void:
 	if _action == null:
 		return
@@ -316,7 +344,7 @@ func _build_ui() -> void:
 	_toast.modulate.a = 0.0
 	add_child(_toast)
 
-	# 日末 / 学期结束才出现：简报组件的入口（本组件只负责显示与转发）
+	# 学期结束才出现（日末改自动进入、不显示按钮）；简报组件接入后由它接管日末
 	_action = Button.new()
 	_action.name = "NextDayButton"
 	_action.add_theme_font_override("font", _ui_font())

@@ -1,0 +1,1949 @@
+{
+  "version": 1,
+  "quality": {
+    "corner_segments": 6,
+    "tube_segments": 16,
+    "joint_segments": 12,
+    "joint_rings": 6
+  },
+  "materials": {
+    "wood": {
+      "color": "#bd854c",
+      "roughness": 0.8
+    },
+    "back": {
+      "color": "#906440",
+      "roughness": 0.8
+    },
+    "paper": {
+      "color": "#e8ddc3",
+      "roughness": 0.8
+    },
+    "blue": {
+      "color": "#536b80",
+      "roughness": 0.8
+    },
+    "green": {
+      "color": "#6f8372",
+      "roughness": 0.8
+    },
+    "red": {
+      "color": "#b47769",
+      "roughness": 0.8
+    },
+    "yellow": {
+      "color": "#d3ab60",
+      "roughness": 0.8
+    },
+    "ground": {
+      "color": "#bdb6a9",
+      "roughness": 0.8
+    },
+    "pot": {
+      "color": "#d5c8ad",
+      "roughness": 0.8
+    },
+    "soil": {
+      "color": "#594332",
+      "roughness": 0.8
+    },
+    "leaf": {
+      "color": "#76894d",
+      "roughness": 0.8
+    },
+    "wall": {
+      "color": "#ded3bf",
+      "roughness": 0.8
+    },
+    "sage": {
+      "color": "#8caa99",
+      "roughness": 0.8
+    },
+    "seam": {
+      "color": "#baae97",
+      "roughness": 0.8
+    }
+  },
+  "parts": [
+    {
+      "name": "SideLeft",
+      "kind": "panel",
+      "size": [
+        1.55,
+        0.05,
+        0.36
+      ],
+      "position": [
+        -0.475,
+        0.775,
+        0
+      ],
+      "material": "wood",
+      "bevel": 0.004,
+      "corner_radius": 0.012,
+      "rotation": [
+        0,
+        0,
+        90
+      ]
+    },
+    {
+      "name": "SideRight",
+      "kind": "panel",
+      "size": [
+        1.55,
+        0.05,
+        0.36
+      ],
+      "position": [
+        0.475,
+        0.775,
+        0
+      ],
+      "material": "wood",
+      "bevel": 0.004,
+      "corner_radius": 0.012,
+      "rotation": [
+        0,
+        0,
+        90
+      ]
+    },
+    {
+      "name": "Back",
+      "kind": "box",
+      "size": [
+        0.9,
+        1.47,
+        0.025
+      ],
+      "position": [
+        0,
+        0.775,
+        0.163
+      ],
+      "material": "back"
+    },
+    {
+      "name": "Shelf0",
+      "kind": "panel",
+      "size": [
+        0.95,
+        0.05,
+        0.36
+      ],
+      "position": [
+        0,
+        0.075,
+        0
+      ],
+      "material": "wood",
+      "bevel": 0.004,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Shelf1",
+      "kind": "panel",
+      "size": [
+        0.95,
+        0.05,
+        0.36
+      ],
+      "position": [
+        0,
+        0.55,
+        0
+      ],
+      "material": "wood",
+      "bevel": 0.004,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Shelf2",
+      "kind": "panel",
+      "size": [
+        0.95,
+        0.05,
+        0.36
+      ],
+      "position": [
+        0,
+        1.025,
+        0
+      ],
+      "material": "wood",
+      "bevel": 0.004,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Shelf3",
+      "kind": "panel",
+      "size": [
+        0.95,
+        0.05,
+        0.36
+      ],
+      "position": [
+        0,
+        1.525,
+        0
+      ],
+      "material": "wood",
+      "bevel": 0.004,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Book0_0",
+      "kind": "panel",
+      "size": [
+        0.06,
+        0.32,
+        0.245
+      ],
+      "position": [
+        -0.37,
+        0.26,
+        -0.02
+      ],
+      "material": "red",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages0_0",
+      "kind": "box",
+      "size": [
+        0.045,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.37,
+        0.41400000000000003,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel0_0",
+      "kind": "box",
+      "size": [
+        0.033,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.37,
+        0.3304,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "FolderSlot0",
+      "kind": "box",
+      "size": [
+        0.018,
+        0.035,
+        0.003
+      ],
+      "position": [
+        -0.37,
+        0.17,
+        -0.146
+      ],
+      "material": "back"
+    },
+    {
+      "name": "Book0_1",
+      "kind": "panel",
+      "size": [
+        0.065,
+        0.36,
+        0.245
+      ],
+      "position": [
+        -0.2925,
+        0.28,
+        -0.008
+      ],
+      "material": "blue",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages0_1",
+      "kind": "box",
+      "size": [
+        0.04875,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.2925,
+        0.45399999999999996,
+        -0.008
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel0_1",
+      "kind": "box",
+      "size": [
+        0.035750000000000004,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.2925,
+        0.35919999999999996,
+        -0.132
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "FolderSlot1",
+      "kind": "box",
+      "size": [
+        0.018,
+        0.035,
+        0.003
+      ],
+      "position": [
+        -0.2925,
+        0.17,
+        -0.134
+      ],
+      "material": "back"
+    },
+    {
+      "name": "Book0_2",
+      "kind": "panel",
+      "size": [
+        0.073,
+        0.34,
+        0.245
+      ],
+      "position": [
+        -0.2085,
+        0.27,
+        0.004
+      ],
+      "material": "green",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages0_2",
+      "kind": "box",
+      "size": [
+        0.05474999999999999,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.2085,
+        0.43400000000000005,
+        0.004
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel0_2",
+      "kind": "box",
+      "size": [
+        0.04015,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.2085,
+        0.3448,
+        -0.12
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book0_3",
+      "kind": "panel",
+      "size": [
+        0.057,
+        0.38,
+        0.245
+      ],
+      "position": [
+        -0.1285,
+        0.29000000000000004,
+        -0.02
+      ],
+      "material": "yellow",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages0_3",
+      "kind": "box",
+      "size": [
+        0.04275,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.1285,
+        0.474,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel0_3",
+      "kind": "box",
+      "size": [
+        0.03135,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.1285,
+        0.37360000000000004,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book0_4",
+      "kind": "panel",
+      "size": [
+        0.06,
+        0.32,
+        0.245
+      ],
+      "position": [
+        -0.05499999999999999,
+        0.26,
+        -0.008
+      ],
+      "material": "paper",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages0_4",
+      "kind": "box",
+      "size": [
+        0.045,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.05499999999999999,
+        0.41400000000000003,
+        -0.008
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel0_4",
+      "kind": "box",
+      "size": [
+        0.033,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.05499999999999999,
+        0.3304,
+        -0.132
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book0_5",
+      "kind": "panel",
+      "size": [
+        0.065,
+        0.36,
+        0.245
+      ],
+      "position": [
+        0.022500000000000006,
+        0.28,
+        0.004
+      ],
+      "material": "green",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages0_5",
+      "kind": "box",
+      "size": [
+        0.04875,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.022500000000000006,
+        0.45399999999999996,
+        0.004
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel0_5",
+      "kind": "box",
+      "size": [
+        0.035750000000000004,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.022500000000000006,
+        0.35919999999999996,
+        -0.12
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book0_6",
+      "kind": "panel",
+      "size": [
+        0.073,
+        0.34,
+        0.245
+      ],
+      "position": [
+        0.10650000000000001,
+        0.27,
+        -0.02
+      ],
+      "material": "blue",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages0_6",
+      "kind": "box",
+      "size": [
+        0.05474999999999999,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.10650000000000001,
+        0.43400000000000005,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel0_6",
+      "kind": "box",
+      "size": [
+        0.04015,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.10650000000000001,
+        0.3448,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book0_7",
+      "kind": "panel",
+      "size": [
+        0.057,
+        0.38,
+        0.245
+      ],
+      "position": [
+        0.1865,
+        0.29000000000000004,
+        -0.008
+      ],
+      "material": "red",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages0_7",
+      "kind": "box",
+      "size": [
+        0.04275,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.1865,
+        0.474,
+        -0.008
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel0_7",
+      "kind": "box",
+      "size": [
+        0.03135,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.1865,
+        0.37360000000000004,
+        -0.132
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book0_8",
+      "kind": "panel",
+      "size": [
+        0.06,
+        0.32,
+        0.245
+      ],
+      "position": [
+        0.26,
+        0.26,
+        0.004
+      ],
+      "material": "green",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages0_8",
+      "kind": "box",
+      "size": [
+        0.045,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.26,
+        0.41400000000000003,
+        0.004
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel0_8",
+      "kind": "box",
+      "size": [
+        0.033,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.26,
+        0.3304,
+        -0.12
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book0_9",
+      "kind": "panel",
+      "size": [
+        0.065,
+        0.36,
+        0.245
+      ],
+      "position": [
+        0.3375,
+        0.28,
+        -0.02
+      ],
+      "material": "blue",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages0_9",
+      "kind": "box",
+      "size": [
+        0.04875,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.3375,
+        0.45399999999999996,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel0_9",
+      "kind": "box",
+      "size": [
+        0.035750000000000004,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.3375,
+        0.35919999999999996,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book1_0",
+      "kind": "panel",
+      "size": [
+        0.065,
+        0.34,
+        0.245
+      ],
+      "position": [
+        -0.36750000000000005,
+        0.745,
+        -0.02
+      ],
+      "material": "green",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages1_0",
+      "kind": "box",
+      "size": [
+        0.04875,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.36750000000000005,
+        0.909,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel1_0",
+      "kind": "box",
+      "size": [
+        0.035750000000000004,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.36750000000000005,
+        0.8198,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book1_1",
+      "kind": "panel",
+      "size": [
+        0.073,
+        0.38,
+        0.245
+      ],
+      "position": [
+        -0.28350000000000003,
+        0.7649999999999999,
+        -0.008
+      ],
+      "material": "yellow",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages1_1",
+      "kind": "box",
+      "size": [
+        0.05474999999999999,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.28350000000000003,
+        0.949,
+        -0.008
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel1_1",
+      "kind": "box",
+      "size": [
+        0.04015,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.28350000000000003,
+        0.8486,
+        -0.132
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book1_2",
+      "kind": "panel",
+      "size": [
+        0.057,
+        0.32,
+        0.245
+      ],
+      "position": [
+        -0.20350000000000001,
+        0.735,
+        0.004
+      ],
+      "material": "paper",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages1_2",
+      "kind": "box",
+      "size": [
+        0.04275,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.20350000000000001,
+        0.889,
+        0.004
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel1_2",
+      "kind": "box",
+      "size": [
+        0.03135,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.20350000000000001,
+        0.8053999999999999,
+        -0.12
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book1_3",
+      "kind": "panel",
+      "size": [
+        0.06,
+        0.36,
+        0.245
+      ],
+      "position": [
+        -0.13,
+        0.7549999999999999,
+        -0.02
+      ],
+      "material": "green",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages1_3",
+      "kind": "box",
+      "size": [
+        0.045,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.13,
+        0.9289999999999999,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel1_3",
+      "kind": "box",
+      "size": [
+        0.033,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.13,
+        0.8341999999999999,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book1_4",
+      "kind": "panel",
+      "size": [
+        0.065,
+        0.34,
+        0.245
+      ],
+      "position": [
+        -0.052500000000000005,
+        0.745,
+        -0.008
+      ],
+      "material": "blue",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages1_4",
+      "kind": "box",
+      "size": [
+        0.04875,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.052500000000000005,
+        0.909,
+        -0.008
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel1_4",
+      "kind": "box",
+      "size": [
+        0.035750000000000004,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.052500000000000005,
+        0.8198,
+        -0.132
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book1_5",
+      "kind": "panel",
+      "size": [
+        0.073,
+        0.38,
+        0.245
+      ],
+      "position": [
+        0.03149999999999999,
+        0.7649999999999999,
+        0.004
+      ],
+      "material": "red",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages1_5",
+      "kind": "box",
+      "size": [
+        0.05474999999999999,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.03149999999999999,
+        0.949,
+        0.004
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel1_5",
+      "kind": "box",
+      "size": [
+        0.04015,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.03149999999999999,
+        0.8486,
+        -0.12
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book1_6",
+      "kind": "panel",
+      "size": [
+        0.057,
+        0.32,
+        0.245
+      ],
+      "position": [
+        0.11149999999999999,
+        0.735,
+        -0.02
+      ],
+      "material": "green",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages1_6",
+      "kind": "box",
+      "size": [
+        0.04275,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.11149999999999999,
+        0.889,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel1_6",
+      "kind": "box",
+      "size": [
+        0.03135,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.11149999999999999,
+        0.8053999999999999,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book1_7",
+      "kind": "panel",
+      "size": [
+        0.06,
+        0.36,
+        0.245
+      ],
+      "position": [
+        0.185,
+        0.7549999999999999,
+        -0.008
+      ],
+      "material": "blue",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages1_7",
+      "kind": "box",
+      "size": [
+        0.045,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.185,
+        0.9289999999999999,
+        -0.008
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel1_7",
+      "kind": "box",
+      "size": [
+        0.033,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.185,
+        0.8341999999999999,
+        -0.132
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book1_8",
+      "kind": "panel",
+      "size": [
+        0.065,
+        0.34,
+        0.245
+      ],
+      "position": [
+        0.26249999999999996,
+        0.745,
+        0.004
+      ],
+      "material": "red",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages1_8",
+      "kind": "box",
+      "size": [
+        0.04875,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.26249999999999996,
+        0.909,
+        0.004
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel1_8",
+      "kind": "box",
+      "size": [
+        0.035750000000000004,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.26249999999999996,
+        0.8198,
+        -0.12
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book1_9",
+      "kind": "panel",
+      "size": [
+        0.073,
+        0.38,
+        0.245
+      ],
+      "position": [
+        0.3465,
+        0.7649999999999999,
+        -0.02
+      ],
+      "material": "blue",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages1_9",
+      "kind": "box",
+      "size": [
+        0.05474999999999999,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.3465,
+        0.949,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel1_9",
+      "kind": "box",
+      "size": [
+        0.04015,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.3465,
+        0.8486,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book2_0",
+      "kind": "panel",
+      "size": [
+        0.073,
+        0.32,
+        0.245
+      ],
+      "position": [
+        -0.36350000000000005,
+        1.21,
+        -0.02
+      ],
+      "material": "paper",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages2_0",
+      "kind": "box",
+      "size": [
+        0.05474999999999999,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.36350000000000005,
+        1.364,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel2_0",
+      "kind": "box",
+      "size": [
+        0.04015,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.36350000000000005,
+        1.2804,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book2_1",
+      "kind": "panel",
+      "size": [
+        0.057,
+        0.36,
+        0.245
+      ],
+      "position": [
+        -0.28350000000000003,
+        1.23,
+        -0.008
+      ],
+      "material": "green",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages2_1",
+      "kind": "box",
+      "size": [
+        0.04275,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.28350000000000003,
+        1.4040000000000001,
+        -0.008
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel2_1",
+      "kind": "box",
+      "size": [
+        0.03135,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.28350000000000003,
+        1.3092000000000001,
+        -0.132
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book2_2",
+      "kind": "panel",
+      "size": [
+        0.06,
+        0.34,
+        0.245
+      ],
+      "position": [
+        -0.21000000000000005,
+        1.22,
+        0.004
+      ],
+      "material": "blue",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages2_2",
+      "kind": "box",
+      "size": [
+        0.045,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.21000000000000005,
+        1.3840000000000001,
+        0.004
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel2_2",
+      "kind": "box",
+      "size": [
+        0.033,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.21000000000000005,
+        1.2948,
+        -0.12
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book2_3",
+      "kind": "panel",
+      "size": [
+        0.065,
+        0.38,
+        0.245
+      ],
+      "position": [
+        -0.13250000000000003,
+        1.24,
+        -0.02
+      ],
+      "material": "red",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages2_3",
+      "kind": "box",
+      "size": [
+        0.04875,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.13250000000000003,
+        1.4240000000000002,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel2_3",
+      "kind": "box",
+      "size": [
+        0.035750000000000004,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.13250000000000003,
+        1.3236,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book2_4",
+      "kind": "panel",
+      "size": [
+        0.073,
+        0.32,
+        0.245
+      ],
+      "position": [
+        -0.048500000000000036,
+        1.21,
+        -0.008
+      ],
+      "material": "green",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages2_4",
+      "kind": "box",
+      "size": [
+        0.05474999999999999,
+        0.008,
+        0.215
+      ],
+      "position": [
+        -0.048500000000000036,
+        1.364,
+        -0.008
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel2_4",
+      "kind": "box",
+      "size": [
+        0.04015,
+        0.045,
+        0.002
+      ],
+      "position": [
+        -0.048500000000000036,
+        1.2804,
+        -0.132
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book2_5",
+      "kind": "panel",
+      "size": [
+        0.057,
+        0.36,
+        0.245
+      ],
+      "position": [
+        0.03149999999999996,
+        1.23,
+        0.004
+      ],
+      "material": "blue",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages2_5",
+      "kind": "box",
+      "size": [
+        0.04275,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.03149999999999996,
+        1.4040000000000001,
+        0.004
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel2_5",
+      "kind": "box",
+      "size": [
+        0.03135,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.03149999999999996,
+        1.3092000000000001,
+        -0.12
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book2_6",
+      "kind": "panel",
+      "size": [
+        0.06,
+        0.34,
+        0.245
+      ],
+      "position": [
+        0.10499999999999997,
+        1.22,
+        -0.02
+      ],
+      "material": "red",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages2_6",
+      "kind": "box",
+      "size": [
+        0.045,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.10499999999999997,
+        1.3840000000000001,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel2_6",
+      "kind": "box",
+      "size": [
+        0.033,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.10499999999999997,
+        1.2948,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book2_7",
+      "kind": "panel",
+      "size": [
+        0.065,
+        0.38,
+        0.245
+      ],
+      "position": [
+        0.18249999999999997,
+        1.24,
+        -0.008
+      ],
+      "material": "blue",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages2_7",
+      "kind": "box",
+      "size": [
+        0.04875,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.18249999999999997,
+        1.4240000000000002,
+        -0.008
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel2_7",
+      "kind": "box",
+      "size": [
+        0.035750000000000004,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.18249999999999997,
+        1.3236,
+        -0.132
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book2_8",
+      "kind": "panel",
+      "size": [
+        0.073,
+        0.32,
+        0.245
+      ],
+      "position": [
+        0.26649999999999996,
+        1.21,
+        0.004
+      ],
+      "material": "green",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages2_8",
+      "kind": "box",
+      "size": [
+        0.05474999999999999,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.26649999999999996,
+        1.364,
+        0.004
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel2_8",
+      "kind": "box",
+      "size": [
+        0.04015,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.26649999999999996,
+        1.2804,
+        -0.12
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "Book2_9",
+      "kind": "panel",
+      "size": [
+        0.057,
+        0.36,
+        0.245
+      ],
+      "position": [
+        0.3465,
+        1.23,
+        -0.02
+      ],
+      "material": "yellow",
+      "bevel": 0.002,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pages2_9",
+      "kind": "box",
+      "size": [
+        0.04275,
+        0.008,
+        0.215
+      ],
+      "position": [
+        0.3465,
+        1.4040000000000001,
+        -0.02
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "SpineLabel2_9",
+      "kind": "box",
+      "size": [
+        0.03135,
+        0.045,
+        0.002
+      ],
+      "position": [
+        0.3465,
+        1.3092000000000001,
+        -0.144
+      ],
+      "material": "paper"
+    },
+    {
+      "name": "TopBook0",
+      "kind": "panel",
+      "size": [
+        0.29,
+        0.045,
+        0.22
+      ],
+      "position": [
+        0.2,
+        1.572,
+        0.0
+      ],
+      "material": "paper",
+      "bevel": 0.004,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "TopBook1",
+      "kind": "panel",
+      "size": [
+        0.29,
+        0.045,
+        0.22
+      ],
+      "position": [
+        0.2,
+        1.624,
+        0.0
+      ],
+      "material": "blue",
+      "bevel": 0.004,
+      "corner_radius": 0.012
+    },
+    {
+      "name": "Pot",
+      "kind": "cylinder",
+      "radius": 0.105,
+      "height": 0.17,
+      "position": [
+        -0.27,
+        1.635,
+        0
+      ],
+      "material": "pot"
+    },
+    {
+      "name": "Soil",
+      "kind": "cylinder",
+      "radius": 0.092,
+      "height": 0.01,
+      "position": [
+        -0.27,
+        1.723,
+        0
+      ],
+      "material": "soil"
+    },
+    {
+      "name": "Leaf0",
+      "kind": "leaf",
+      "size": [
+        0.105,
+        0.022,
+        0.18
+      ],
+      "position": [
+        -0.17,
+        1.76,
+        0.0
+      ],
+      "material": "leaf",
+      "bevel": 0.002,
+      "corner_radius": 0.012,
+      "rotation": [
+        -25,
+        0,
+        20
+      ]
+    },
+    {
+      "name": "Leaf1",
+      "kind": "leaf",
+      "size": [
+        0.105,
+        0.022,
+        0.18
+      ],
+      "position": [
+        -0.3437393715541246,
+        1.825,
+        0.06416900215235934
+      ],
+      "material": "leaf",
+      "bevel": 0.002,
+      "corner_radius": 0.012,
+      "rotation": [
+        -5,
+        137,
+        20
+      ]
+    },
+    {
+      "name": "Leaf2",
+      "kind": "leaf",
+      "size": [
+        0.105,
+        0.022,
+        0.18
+      ],
+      "position": [
+        -0.2612501016560554,
+        1.8900000000000001,
+        -0.09463563783940486
+      ],
+      "material": "leaf",
+      "bevel": 0.002,
+      "corner_radius": 0.012,
+      "rotation": [
+        15,
+        274,
+        20
+      ]
+    },
+    {
+      "name": "Leaf3",
+      "kind": "leaf",
+      "size": [
+        0.105,
+        0.022,
+        0.18
+      ],
+      "position": [
+        -0.2091648685467745,
+        1.76,
+        0.0753984470656695
+      ],
+      "material": "leaf",
+      "bevel": 0.002,
+      "corner_radius": 0.012,
+      "rotation": [
+        -25,
+        411,
+        20
+      ]
+    },
+    {
+      "name": "Leaf4",
+      "kind": "leaf",
+      "size": [
+        0.105,
+        0.022,
+        0.18
+      ],
+      "position": [
+        -0.3684687855794127,
+        1.825,
+        -0.01656104421618307
+      ],
+      "material": "leaf",
+      "bevel": 0.002,
+      "corner_radius": 0.012,
+      "rotation": [
+        -5,
+        548,
+        20
+      ]
+    },
+    {
+      "name": "Leaf5",
+      "kind": "leaf",
+      "size": [
+        0.105,
+        0.022,
+        0.18
+      ],
+      "position": [
+        -0.1856146041267508,
+        1.8900000000000001,
+        -0.05097442721004132
+      ],
+      "material": "leaf",
+      "bevel": 0.002,
+      "corner_radius": 0.012,
+      "rotation": [
+        15,
+        685,
+        20
+      ]
+    },
+    {
+      "name": "Leaf6",
+      "kind": "leaf",
+      "size": [
+        0.105,
+        0.022,
+        0.18
+      ],
+      "position": [
+        -0.2959817356213754,
+        1.76,
+        0.09173748877218141
+      ],
+      "material": "leaf",
+      "bevel": 0.002,
+      "corner_radius": 0.012,
+      "rotation": [
+        -25,
+        822,
+        20
+      ]
+    },
+    {
+      "name": "Leaf7",
+      "kind": "leaf",
+      "size": [
+        0.105,
+        0.022,
+        0.18
+      ],
+      "position": [
+        -0.3160678587411363,
+        1.825,
+        -0.08431886819024294
+      ],
+      "material": "leaf",
+      "bevel": 0.002,
+      "corner_radius": 0.012,
+      "rotation": [
+        -5,
+        959,
+        20
+      ]
+    },
+    {
+      "name": "Leaf8",
+      "kind": "leaf",
+      "size": [
+        0.105,
+        0.022,
+        0.18
+      ],
+      "position": [
+        -0.17607796533031295,
+        1.8900000000000001,
+        0.03261491823789006
+      ],
+      "material": "leaf",
+      "bevel": 0.002,
+      "corner_radius": 0.012,
+      "rotation": [
+        15,
+        1096,
+        20
+      ]
+    }
+  ],
+  "showroom": {
+    "camera_size": 2.65,
+    "camera_position": [
+      2.5,
+      2.35,
+      -3.4
+    ],
+    "camera_target": [
+      0,
+      0.9,
+      0
+    ],
+    "background": "#dfd6c4",
+    "ambient_color": "#f0f1ea",
+    "ambient_energy": 0.4,
+    "ground_size": 200,
+    "lights": [
+      {
+        "name": "WindowKey",
+        "rotation": [
+          -50,
+          -35,
+          0
+        ],
+        "color": "#fff0da",
+        "energy": 1.0,
+        "shadows": true
+      },
+      {
+        "name": "SoftFill",
+        "rotation": [
+          -25,
+          125,
+          0
+        ],
+        "color": "#d9e7ee",
+        "energy": 0.35,
+        "shadows": false
+      }
+    ],
+    "models": [
+      {
+        "name": "Sample",
+        "scene": "res://scenes/components/school_bookshelf_sample.tscn",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  }
+}

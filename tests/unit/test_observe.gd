@@ -1,11 +1,11 @@
 extends GutTest
 ## 观察（§10.3.1）：玩家独有的**只读**行为 —— 零副作用是硬约束，必须逐条钉住。
 
-const NODES := 8
+const NODES := 16
 
 
 func _core(seed_num: int = 12345) -> SimCore:
-	return SimCore.from_npc(seed_num, NODES, ConfigLoader.new().load_all())
+	return SimCore.new(seed_num, NODES, ConfigLoader.new().load_all())
 
 
 func test_observe_is_registered_and_player_only() -> void:
@@ -33,7 +33,8 @@ func test_observe_emits_truth_plus_belief_clues() -> void:
 			belief += 1
 		else:
 			truth += 1
-	assert_eq(truth, 2, "真实信息 2 条（O < 50 时不加 T）")
+	# 真实信息条数随对象透明度：O ≥ 50 时多一条信任轴信息（O < 50 只有好感 / 敌对两条）
+	assert_eq(truth, 3 if c.opacity(0) >= 50.0 else 2, "真实信息条数 = f(对象透明度)")
 	assert_eq(belief, 1, "信念信息 1 条（他以为你怎么看他）")
 
 

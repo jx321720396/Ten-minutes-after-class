@@ -8,7 +8,7 @@ const NODES := 16
 
 
 func _core(seed_num: int = 12345) -> SimCore:
-	return SimCore.from_npc(seed_num, NODES, ConfigLoader.new().load_all())
+	return SimCore.new(seed_num, NODES, ConfigLoader.new().load_all())
 
 
 ## 玩家是最后一个节点（NPC 数另计：16 NPC -> 17 个节点）

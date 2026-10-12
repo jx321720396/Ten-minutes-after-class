@@ -1,5 +1,7 @@
 # 变更记录
 
+- **主干同步与书包触屏适配（2026-10-12）**：main-mobile 合入 origin/main 的 b716010，保留行为栏响应式布局和触摸滚动，接入主干书包与固定 16 名 NPC 改动。书包入口、物品、纸签、拿取及关闭按钮支持直接触摸；拖动、取消与禁用状态不提交行为。保留 P0–P2 清单整合，迁移新增书包说明并修正已删除章节引用。Android 真机验收待做。
+
 - **移动端适配同步（2026-10-12）**：main-mobile 接入行为栏视口尺寸布局，移除工程层屏幕方向覆盖并忽略 APK 签名伴随文件；导出预设恢复有效 UTF-8 内容，排除误写的本机桌面路径与本地 debug.keystore 配置。行为栏单文件格式和 lint 检查通过，真机未验收。
 
 - **P0–P2 策划案收口（2026-10-12）**：废弃原 P0/P1/P2 功能与行为 UI 六份拆分策划案，合并为 `docs/gdd/v4/P0-P2玩法未完成清单.md` 与 `docs/gdd/v4/P0-P2_UI未完成清单.md`；现行文档引用已同步，历史条目保留为变更记录。
@@ -13,6 +15,162 @@
   - 修复两张配置表导出后消失：`data/rules/choice_weights.csv` 与 `data/ui/emotion_faces.csv` 的 `.import` 由 `csv_translation` 改为 `keep`。此前它们被翻译导入器吞掉、源文件不进包，而 `config_loader.gd` 是运行时扫 `res://data/*.csv` 读的 —— 发行版里选择权重与玩家表情两张表直接缺失。
   - 两个导出预设新增 `exclude_filter`，排除 `addons/gut`、`tests`、`tools`、`docs`（此前共约 394 个无关文件混入包内）；Windows 预设补 `product_name="下课十分钟"`。
   - 验证：Godot 4.7.2 实跑导出并逐条核对包内清单（35 个 csv、7 个 json 齐全，四个排除目录清零，Windows 包 145.7 MB → 124.7 MB、803 个文件）；导出 pck 无头运行 150 帧零错误，两张表的表头内容确认写入 PCK。
+
+- **补修 3 个漏改的 `csv_translation` 导入声明（2026-10-12，从零克隆实测发现）**
+  - 现象：`data/rules/choice_weights.csv`、`data/ui/emotion_faces.csv`、`tests/invariants/fixtures/data/characters/seeds.csv`
+    的 `.import` 仍是 `csv_translation`（2026-10-10 那次修复只覆盖当时存在的 29 个 csv，这三个是之后新增的）。
+    本机因为已有导入缓存所以不报警告，**别人首次克隆 / 导入**会报 `WARNING: CSV file ... does not contain any translation`；
+    导出时 `choice_weights.csv` / `emotion_faces.csv` 这两张运行时表同样会被顶掉（同一个坑）。
+  - 修法：三者的 `importer` 一律改为 `keep`（与其余 33 个 csv 声明一致，uid 与 params 保留）。
+  - 验证：重新从零克隆 + `--headless --import` → 退出码 0，无任何 WARNING / ERROR。
+
+- **docs/ 加 `.gdignore`：文档与 Blender 源工程不再进 Godot（2026-10-12）**
+  - 现状问题：Godot 导入 `.blend` 必须本机安装 Blender 并配好路径（官方文档要求「所有团队成员都安装 Blender」），
+    docs 下 6 个 `.blend` 源工程会让没装 Blender 的协作者打开项目即报 Blender not found 类错误。
+  - 处理：新增 `docs/.gdignore`（Godot 见文件即忽略整个目录），并移除 docs 下 69 个已无用的 `.import`。
+    docs 下的一切（策划文档 / 概念图 / 试片 GIF / Blender 源工程 / QA 报告）都不是运行时资源。
+  - 影响面（已核）：全仓对 `res://docs/` 的引用只剩 3 个离线截图工具的 OUTPUT 路径（只写不读）；游戏与导出只用
+    `assets/` 下的 `.glb` / `.png`，**效果与使用不受影响**；导出包不再打包 docs 下的 PNG / GIF / `.blend` 产物。
+  - 验证：`--headless --path . --import` 退出码 0，导入日志里连既有 `docs/qa` 的 UID 冲突警告也一并消失。
+  - 顺带：`.gitignore` 忽略 Blender 自动备份 `*.blend1`（5 个已从索引移除、本地文件保留）；`.gitattributes`
+    显式声明 `*.glb` / `*.gltf` / `*.blend` / `*.blend1` / `*.gif` 为 binary。
+
+- **修复导入声明缺口：`roster.csv` 补 `keep` + 新素材补 `.import`（2026-10-12，上传后自查）**
+  - 新增的 `data/rules/roster.csv` 没有 `.csv.import`，Godot 首次扫描会用 `csv_translation` 认领它并报
+    `WARNING: CSV file 'res://data/rules/roster.csv' does not contain any translation`（`--headless --import` 退出码非 0），
+    导出时该表同样会被顶掉 —— 与 2026-10-10 记录的「导出包丢失 `data/**/*.csv`」同一个坑。
+  - 修法：补 `data/rules/roster.csv.import`，`importer` 置 `keep`（与其余 34 个 `data/**/*.csv` 一致）。
+  - 顺带：本批新入库的 29 张 PNG（`assets/textures/characters/` 下 fullbody_v1 / motion_compare_v1 / simple_samples）缺
+    `.import`，全量导入时 Godot 会在各自目录补生成 —— 一并入库，协作者工作区不会出现未跟踪文件。
+  - 验证：`--headless --path . --import` 从「退出码 -1 + CSV 警告」变为「退出码 0 + 无 CSV 警告」。
+
+- **一局固定 16 人：删除 8 / 24 人局与难度档（2026-10-12，用户裁定）**
+  - 玩法口径：**角色池 24 → 16 人，一局全池入局**（+ 玩家 = 17 个节点），与该局 16 张 NPC 立绘**一人一张**（同局撞脸问题随之关闭，见 §25.8）。删除 8 人局 / 24 人局与整个难度档概念。
+  - **角色名单（用户确认，编号重排 01–16）**：保留陈阳 / 林晚 / 张渊 / 周敏 / 赵蕊 / 孙悦 / 郑浩 / 许静 / 何川 / 韩雪 / 沈浪 / 顾言 / 叶梓 / 佳豪 / 温雅 / 李峥；**删除 8 人**：吴哲 / 王磊 / 刘畅 / 马强 / 罗杰 / 苏晴 / 唐糖 / 白柔。保留规则：绑定组三人（陈阳 / 林晚 / 佳豪）必留、12 类行为标签全覆盖、MBTI 四维高低两侧都有人、男女各 8 与立绘一一对应。
+  - **数据**：`characters/seeds.csv` 16 行（重编号）、`characters/appearance.csv` 16 行一人一立绘、新增 `rules/roster.csv`（`npc_count = 16`）、删除 `rules/difficulty.csv`、`rules/leisure.csv` 的 `book_count_8/16/24` 合并为单值 `book_count = 5`；`bindings.csv` 按别名引用，未改。
+  - **内核**：删除难度映射 —— `SimCore.new(seed, npc_count)`（原 `(seed, difficulty)` 与 `from_npc` 兼容入口一并移除），人数超过角色池时夹到池人数并告警；`GameState.start_game(seed, npc_count)`、`Config.default_npc_count()`（读 `roster.csv`）、`main_menu` / `classroom_actors` 同步；侧向修复 `LeisureActions.select_roster` 的持书配额口径（单值 + 不超过本局人数）。
+  - **Python 侧**：`Sim(seed, npc_count=None)` 默认人数改读 `rules/roster.csv`、`N` 以实际入池人数为准、`book_count` 单值；`check_config` 新增「人数 = 角色池行数」「持书配额可抽足」两条校验（原 8/16/24 三档校验删除）；导出与对拍脚本 `--npc` 默认值 8 → 16。
+  - **测试**：全部单测与集成测试的 8 / 24 人样本与旧难度语义（`SimCore.new(seed, 1|2|3)`、`start_game(seed, 1|2|3)`）统一为 16 人；节点数断言 9 → 17、矩阵单元数 72 → 272、活动圈 12 组用例收敛为 8 组（不再补 25 座）、`test_roster_selector` 目标人数 8 → 16（池 = 局）。
+  - **检验一**：本条改的是**人数与阵容配置**，不是行为规则 —— 行为逻辑仍是 `f(四维, 透明度, 当前状态)` 的纯函数，不含角色名 / ID 判断；同一内核换脚本跑，同种子逐 tick 结果一致（Python ↔ GDScript 两侧的配额读取与默认人数已同步改口径）。
+  - **标定影响（须知道）**：池收敛会改变分布 —— 第六道门复测：好感均值 30.0、爆发均值 2.4、爆发覆盖 78%，仍为 **P0 大调整期的既有红灯**（未做任何参数标定，属预期）；机制仍在场（排挤 46% 局、当众羞辱 96% 局、深层锁死率 0%）。
+  - **文档同步**：主文档 §1/§5/§10.20/§11.4/§18.2/§18.9、v4 分册 01/03/09/13/14/17/25/26、`docs/design/` 的数据模型 / 术语表 / 规则引擎设计、`data/README.md`、`README.md`、`AGENTS.md`、`CLAUDE.md`、production 的路线图 / 冲刺计划 / 团队分工任务单；旧版合并策划案加归档注记。
+  - **验证**：GUT `tests/unit` **374 项全绿**、`tests/integration` **25 项全绿**；快门禁 `check_config` 313 项 / `test_core` 61 项 / `verify_formula` 11 项通过；`check_docs` 仅既有「待标定」表述红灯；铁律 2/3 全绿（魔法数字门仅既有 13 项）；`gdformat --check scripts/` 通过、`gdlint scripts/` 仅 `sim_core.gd` 两项既有超限。
+
+- **符号光圈下线（2026-10-12，用户裁定）**
+  - 用户反馈「气泡还有一个光圈，不需要这个，只要有本身的形状」：每个符号背后原本画一个 32 边形圆盘光晕（`halo_alpha 0.09`），现**不再创建**该节点。
+  - `data/ui/behavior_particles.json` 新增 `halo_enabled`（`false`）；`halo_alpha` / `halo_radius_pixels` / `halo_segments` 保留备用，**置 `halo_enabled = true` 即完全恢复**（唯一开关，可撤回）。
+  - 六个行为族（闲聊 / 学习 / 听音乐 / 吃零食 / 看课外书 / 安慰）一起生效；位图字形与字体字形都不再带光圈。
+  - 检验一：纯表现层，不涉及判定与数值；全量 GUT **374 项 / 4299 断言**全过，`gdformat` / `gdlint` 通过，实机截图确认光圈消失。
+
+- **符号粒子运动曲线柔化（2026-10-12）**
+  - 针对「粒子看着生硬」：缩放由线性改为幂曲线（`scale_ease_power`）、横向漂移改为减速（`drift_ease_power`）、新增**弹入**（`appear_span` / `appear_scale`，不再凭空突现）、每个粒子单独扰动速度与大小（`speed_variation` / `size_variation`，同批不再像复制粘贴）。**落下曲线未动**——那是设计要的行为特征。
+  - 全部系数落 `data/ui/behavior_particles.json`；把 `scale_ease_power` / `drift_ease_power` 置 1.0、`appear_scale` 置 1.0、两个 variation 置 0 即**完全回到旧曲线**（撤回开关）。
+  - 实测（探针逐点采样 t=0→1）：缩放 t=0.2 由 0.81 → 0.93、t=0.8 由 0.25 → 0.34（前期保持大小、末段快速收敛）；横移 t=0.5 由 0.59 m → 0.88 m（前快后慢）；高度逐点一致。
+  - 检验一：纯表现层，粒子仍只反映真实会话与公开行为；扰动只用独立种子 RNG，不消费模拟随机流，判定与非事件状态不变（全量 GUT **374 项 / 4299 断言**全过，`gdformat` / `gdlint` 通过，实机截图正常）。
+
+- **同局立绘复用立案（2026-10-12，用户裁定暂不改）**
+  - 用户反馈「人物有重复人像」。实测确认**不是重复摆放**（`seat_of(i)` 每人一席、座位冲突 0），而是素材复用：`data/characters/appearance.csv` 把 24 个角色映射到 16 张 NPC 立绘，其中**只有 12 张在用**（`blunt_female` / `sensitive_male` / `shy_male` / `warm_female` 无人使用），最挤的 `quiet_male` 由 4 个角色共用；`RosterSelector` 只做「绑定组 + MBTI 极性覆盖」，**不检查立绘重复** —— 故 8 NPC 局 2 组撞脸、16 NPC 局 5 组（seed 20261007 实测：陈阳/佳豪同为热情男、赵蕊/孙悦同为活泼女、林晚/白柔、周敏/韩雪、苏晴/唐糖）。
+  - **决策（用户裁定）**：暂不改 —— 维持 24 角色复用 16 张立绘，同脸靠名字牌区分，等美术补立绘再收口。立案（含复核触发条件）见 `docs/gdd/v4/25-角色立绘与动作系统.md` §25.8，`appearance.csv` 头部注释同步更新为已复核。
+  - 顺带记录：24 人难度（25 节点）在 17 座教室里摆不出全部人（`SimCore._assign_seats` 越界、后 8 人无座位）——与 §17.2 既有记载「24 人整局布局尚未接入」一致，本轮不处理。
+  - 本批**只改文档与数据表注释，无代码改动**：`check_config` 314 项通过；`check_docs` 仅剩既有「待标定」表述红灯；调查用临时探针跑完即删，未入库。
+
+- **闲聊符号位图字形 + 可撤回接入（2026-10-12）**
+  - 新增 [`tools/build_symbol_bitmaps_blender.py`](tools/build_symbol_bitmaps_blender.py) + [`data/ui/behavior_particles_blender.json`](data/ui/behavior_particles_blender.json)：用项目字体（LXGW 文楷）烘焙 `?` `!` `★` `~` 的**立体白字形**（extrude + bevel）到 [`assets/textures/ui/behavior_particles/`](assets/textures/ui/behavior_particles/)，另出拼版预览、字号对照图与报告到 [`docs/art/concepts/behavior_particles/`](docs/art/concepts/behavior_particles/)。
+  - 接入是**纯增量分支**：[`data/ui/behavior_particles.json`](data/ui/behavior_particles.json) 新增 `bitmaps` 字段；`chat_activity_bubble.gd` 的 `_make_symbol()` 优先用位图，缺失则按原逻辑回退字体 / SVG，`_load_style()` 多一个加载循环——**原字体路径一行未改**。
+  - 检验一：纯表现层，粒子仍只反映真实会话与公开行为，不改矩阵、概率、判定与模拟随机序列（`test_symbol_bubbles.gd` 5 项 / 238 断言全过，`gdformat` / `gdlint` 通过，实机截图无回退告警）。
+  - **实测：默认 `font_size 34` 下立体感不可见**，放大到 54 才可见（对照图 `bitmaps_size_compare.png`）；「生硬」的主因是运动曲线而非字形，曲线本次未改。
+  - **撤回**：清空 `bitmaps` 字段即回退字体字形；删除工具、配置、4 张贴图与本条记录即完全还原。
+
+- **书包独立入口与统一纸签按钮（2026-10-12）**
+  - 按确认的概念图将「书包」移到右下角，与百科全书、推理板并排；移除行动栏顶部重复入口。
+  - 三个入口共享米色纸纹、青绿描边、线条图标、统一字体与金色悬停下缘；再次点击或 Esc 收起书包，打开其他资料入口时关闭书包。
+  - 复用已有书包物品面板、库存与行为请求，不修改模拟数值、剧情或教室墙面。
+  - Godot 相关回归 22 项 / 330 断言通过，变更脚本格式与静态检查通过，配置 314 项、内核 61 项、公式对拍 11 项通过；文档门仍报既有待标定记录。实机入口截图为 `docs/art/concepts/backpack/in-game-entry.png`。
+
+- **可撤回的小幅跟随镜头试验（2026-10-12）**
+  - 玩家向右走时相机平滑小幅右移，带死区与最大偏移；按 F8 切换，关闭立即恢复原固定镜头。参数与默认启用开关集中在 `data/ui/classroom_art.json` 的 `camera.follow`。
+  - 原镜头取景参数与移动、碰撞、模拟规则保持原值；试用与撤回说明见 `docs/art/concepts/classroom_camera/follow_trial.md`。
+
+- **实物书包界面（2026-10-12）**
+  - 按概念图添加透明书包与独立物品层、物品纸签、说明卡及拿取按钮；右侧行为栏支持打开书包与对应物品快捷入口。
+  - 库存、门禁与老师保管提示复用现有状态，拿取复用原行为执行；Esc 收起不暂停，世界继续运行。无书与零食耗尽时物品留空，保留入口与原因。
+  - 纯表现层接线，不改变减压数值、随机序列或事件规则；检验一仍由原模拟规则成立，不依赖日期或角色脚本。
+  - Godot 针对性回归 34 项 / 377 断言通过，静态检查、配置 314 项、内核 61 项与公式对拍 11 项通过；文档门仍因既有待标定记录失败。实机预览见 `docs/art/concepts/backpack/`。
+
+- **暖色教室物件细化第一批（2026-10-12）**
+  - 后墙接入五组 Blender 米白矮柜、复用阅读书架和盆栽，补文件盒、书本、作业托盘、粉笔槽与板擦；17 个座位接入共享桌侧书包，物件配置集中在 `data/ui/`。
+  - 书架按材质合并到 12 个网格；修正装饰组装器的非均匀缩放顺序，恢复竖直挂钟轮廓。源工程、实机图与验证见 `docs/art/concepts/classroom_furnishings/README.md`。
+  - 教室回归 8 项、137 个断言通过，配置校验、内核单测与公式对拍通过。纯表现层改动，不改变模拟规则、随机序列、席位或通道。
+
+- **日末自动进入次日（2026-10-12）**
+  - 用户反馈：日末进第二天还要手动点。改为按主文档第二章 §2.5「日末停留与自动进入」：放学结算结束时钟进入 `report`（世界冻结、不计时），日末提示停留 **1.5 秒** 后**自动进入次日**，不再显示「进入第 N 天」按钮；停留期间空格 / 回车可提前进入，第 30 天结束仍显示「查看学期报告」。
+  - 停留时长进配置：`data/rules/time_runtime.csv` 新增 `report_hold_seconds`（0 = 立刻进入）。时钟只把该值放进快照（`SimulationClock.snapshot()`），倒计时留在表现层 HUD（`time_hud.gd` 的 `tick_report_hold()`，`_process` 只是转调它）；删除原调试开关 `WAIT_INPUT_ON_DAY_END`。
+  - **检验一**：只改表现层节奏与一个按钮的显隐，不改矩阵、概率、判定与随机消费序 —— 换成脚本跑同一内核，逐 tick 结果不变。`check_config` 新增该键的数值域校验（非负有限数）。
+  - **文档同步**：`docs/gdd/v4/02-时间与节奏系统.md` §2.5、`docs/gdd/v4/20-UI交互总则与共享组件.md` §20.1.7。
+  - **验证**：GUT `tests/unit` 366 项全绿；`test_time_term` 5 项 + `test_time_scene` 6 项（含新增「停留 `report_hold_seconds` 后自动进入、只发一次」用例）通过；快门禁 `check_config` 314 项 / `test_core` 61 项 / `verify_formula` 11 项通过；`check_docs` 仅既有「待标定」表述失败，`gdformat --check scripts/` 通过，`gdlint scripts/` 仅 `sim_core.gd` 两项既有结构上限。
+
+- **教室镜头改为室内取景（2026-10-12）**
+  - 按概念图降低默认相机高度、调整目标点和视野，画面上沿由教室墙面填满，减少墙顶外空白；相机参数集中在 `data/ui/classroom_art.json`。
+  - 隐藏前景矮墙表现，保留原墙体碰撞。实机前后对比与带界面截图见 `docs/art/concepts/classroom_camera/`。
+  - 教室回归 6 项、75 个断言通过，脚本格式与静态检查通过。纯表现调整，不改变内核、席位、通道或随机序列。
+
+- **对话气泡小样入库（2026-10-12）**
+  - 新增 Blender 工具 [`tools/build_chat_bubble_blender.py`](tools/build_chat_bubble_blender.py) + 配置 [`data/ui/chat_bubble_blender.json`](data/ui/chat_bubble_blender.json)：以**尾巴尖为支点**渲染 pop（10 帧）/ idle（9 帧，循环）/ fade（5 帧）序列帧与 512² 静帧到 [`assets/textures/ui/speech_bubble/`](assets/textures/ui/speech_bubble/)；拼版预览、可编辑 `.blend` 与 `build_report.json` 落 [`docs/art/concepts/chat_bubble/`](docs/art/concepts/chat_bubble/)。
+  - 针对「气泡生硬」：轮廓改为圆角矩形 + **两段贝塞尔弯刀尾**（原为纯代码硬边圆角矩形），弹入改为**等比长大 + easeOutBack 过冲**（原为缩放到 0），淡出以缩小上浮为主并规避「主体半透明时墨线外壳透出显灰」的坑；`view_transform` 改 `Standard`（默认 AgX 会把白压成灰）。
+  - 检验一：纯表现层美术，只读内核；替换这些贴图不改变任何矩阵、概率、判定与随机消费序。
+  - **未接线**（用户裁定）：`scripts/ui/speech_bubble.gd` 是 `Node2D`，接进 3D 教室需先决定载体（`Sprite3D` billboard 或 `CanvasLayer` 投影），详见小样说明。
+  - 环境事实记录：本机 Blender 5.2.2 **只启用 `BLENDER_EEVEE`（无 Cycles）**，而既有 `tools/build_*_blender.py` 均写死 `CYCLES` —— 本脚本按配置选引擎、不可用时回退并在 `build_report.json` 标记。
+
+- **行为符号气泡改为现实时间（2026-10-12）**
+  - 用户反馈加速时气泡卡顿：生成间隔、飘落、缩小、淡出与寿命改为现实秒，不随世界倍速变化；TimeFlow 只提供冻结门禁，暂停 / hold / 简报与结束仍冻结。
+  - 回归测试覆盖 1× / 3× / 30× 的动画与生成间隔一致、hold 冻结和恢复。检验一：仅调整表现层时钟，不改变行为耗时、判定、关系或内核随机序列。
+
+- **内容与话题系统规格（2026-10-12）**
+  - 新增 [`docs/gdd/v4/27-内容与话题系统.md`](docs/gdd/v4/27-内容与话题系统.md)（第二十七章），把全仓挂账的「待聊天内容系统重建」立成规格：事件记忆层、话题生成、真假与信息博弈、玩家表达（选话题 / 纸条话术接池）、上课段只读内容化、课外活动的「事件生成器」口径、玩家自身状态可见化、空闲的定义。
+  - 确立一条取舍尺子：课外活动值不值得做，看它 ① 是否改变教室里人与人的关系、② 这件事能不能被别人**说起**；据此建议 §24.2.2 / §24.3 的棋类放弃棋盘弹层（只产出可传播的事实），避免寄生于另一个游戏。
+  - 全章为内容层口径：不新增第二套数值公式、不判断角色名 / ID、阈值与上限全部落在拟新增的 `data/` 表，观察层只读与呈现三级层级沿用第二十章。
+  - 检验一：内容层只把「已结算的事实」映射成文案，换成脚本跑同一内核，矩阵、概率、判定与随机消费序逐位不变。
+  - 本批**只新增规格与索引**（27 分册 + `00-总览与目录.md` + `docs/gdd/README.md`），不改任何玩法数值、配置表或代码；本章不进 10/14 冻结前批次。
+  - 顺手修正 `docs/gdd/v4/26-完整存档机制.md` 的内部小节号笔误：原写作 `§25.x`，与第二十五章撞号（全仓引用方均按「第二十六章」指称，无按旧号引用该章者），统一改为 `§26.x`；纯编号更正，正文内容未动。
+
+- **共同活动圈层群体异色（2026-10-12）**
+  - 按新版概念图为不同真实活动会话分配薄荷绿、淡紫、浅橙等低饱和颜色；同组同色，个人圈统一灰蓝。会话存续期间颜色稳定，结束后复用空闲色槽并回收网格。
+  - 12 色集中在 `data/ui/activity_ring_palette.json`，填充透明度由 0.75 调为 0.32；保留圆润融合、无内部边框与加入揭晓隐藏。
+  - 新增群体异色／颜色稳定／色槽复用／最大 12 组与内核随机隔离测试。检验一：配色只读真实会话，不改关系矩阵、行为判定或模拟随机序列，班级格局仍由内核涌现。
+  - Godot 4.7.2 实际教室截图确认；全量单测 361 项、聊天场景集成 9 项通过，配置门 313 项／内核 61 项／公式 11 项通过，修改脚本格式与静态检查通过。文档门仍仅有既有陈旧「待标定」表述失败。
+
+- **六种行为符号气泡（2026-10-12）**
+  - 将三点聊天气泡升级为头顶生成、轻微上扬后飘落缩小、近地淡出的彩色符号；接入闲聊、学习、听音乐、吃零食、看课外书、安慰，玩家与 NPC 共用。
+  - 参数、配色、符号池与书页／零食 SVG 图标集中在 `data/ui/behavior_particles.json`；保留真实聊天成员与加入揭晓隐藏、TimeFlow 和暂停契约，行为结束立即清理，容量有界。
+  - 检验一：仅呈现真实行为，不编排事件、不修改矩阵；粒子使用独立带种子随机源，模拟结果与随机消费序列不变。
+  - 移除废弃 `bubble_dot_seconds`，更新配置门；新增粒子状态／生命周期／暂停与模拟 RNG 隔离测试、真实教室截图工具。
+
+- **高中男生站姿小样（2026-10-12）**
+  - 生成蓝白校服的精细插画人物，保存透明原图及无损 WebP 游戏贴图；独立 Sprite3D 组件按 1.65 米身高校准，加入桌椅同框展示与脚底接触阴影。
+  - Godot 4.7.2 / D3D12 Mobile 实际渲染检查完成，PNG／WebP alpha 与可见像素一致。小样只验证站姿外观，尚未加入行走、坐姿或朝向动画，不替换现有角色。
+  - 资产、同框截图与提示词见 `docs/art/concepts/school_student_sample/README.md`。
+  - 后续新增独立移动与坐下动作试片：真实世界移动、屈膝落座与稳定坐姿，Godot 实录 GIF 及提示词见 `docs/art/concepts/school_student_motion_sample/README.md`。座位锚点、可见身高下降与坐姿稳定检查通过；步态重复帧和外观跳变仍需精修，未接入主教室。
+
+- **中国高中桌椅结构小样（2026-10-12）**
+  - 新增独立、已烘焙的桌椅组件及对照展示场景：圆角倒角木板、层压封边、弧形后倾椅背、圆管架、开放桌斗、连接螺丝与脚套；复用现有木板贴图。
+  - 几何与材质参数集中于 `data/ui/school_desk_sample.json`；保留原站位锚点和导航占位，未替换主教室或修改模拟规则。
+  - Godot 4.7.2 / D3D12 Mobile 三视角渲染检查完成；GUT 2 项、1880 个断言及新增工具格式／静态检查通过。图片与交付说明见 `docs/art/concepts/school_desk_sample/README.md`。
+
+- **上课归位改黑幕内瞬移 + 走动速度上调 + 删除老师位置字段（2026-10-12）**
+  - **修复「进入上课后全员还在慢慢走」**：上课相位的归位由「时限内走回座位」改为**转场黑幕内瞬间贴座**（复用 `snap_to_seats()`）—— 黑幕开始退场时全员已就位，上课倒计时开跑后不再有人走动；日末结算相位同样改为瞬间贴座（该段世界时间冻结，玩家看到的仍是静坐）。随之删除表现层的归位时限链（`_home_limit` / `_home_seconds()` / `_load_home_limit()` / `_break_seconds_per_tick()` / `home_limit_seconds()`）：`behaviors.csv` 的 `move.duration` 目前没有消费者，`ActorWalker.walk_to_navigated_in()` 保留给组件单测与将来需要限时的调用方。
+  - **走动速度（用户裁定）**：`data/rules/movement.csv` 的 `meters_per_tick` 由 **0.8 上调到 1.6 米 / 秒**（玩家点击寻路 / WASD 与 NPC 共用同一参数）；新值下跨一排约 1 秒、横穿教室 9.4 米约 6 秒（原值约 12 秒）。
+  - **删除界面字段（用户裁定）**：移除教室界面顶部「老师在教室 / 办公室」位置文字（`player_interaction_controller.gd` 的 `_teacher_label` 成员、`_refresh_teacher()` 与其两处调用）；老师在场改由到场 / 离场短句与压场效果表达，老师位置仍是只读环境事实、不进 UI 字段。
+  - **检验一**：三处都只改**表现层**（归位方式、速度常量、一个 UI 文字字段），不改任何矩阵、概率、判定与随机数消费序 —— 换成脚本跑同一内核，结果逐位不变。
+  - **文档同步**：`docs/gdd/v4/08` §8.4（归位口径与 `move.duration` 注记）、`17-P0` / `20-UI` / `21-P0` / `24-P3`（老师位置字段）、`docs/design/NPC移动决策.md` §7 与 §11.1、`docs/design/架构总览.md`、`tools/export_event_cards.py` 与产物 `docs/design/行为事件表.xlsx`。
+  - **验证**：全量 `tests/unit`（GUT）**352 项全部通过**；相关单测 `test_actor_walker` / `test_player_autonomy` / `test_social_movement` / `test_player_controller` / `test_player_control` 42 项、真实教室集成 `test_social_movement_scene` + `test_time_scene` 6 项通过。另用临时探针实测「上课 / 结算相位 → 全员瞬间贴座且无人走动、内核位置与移动状态同步；课间相位不贴座」3 项通过（探针跑完即删，未入库）。快门禁 `check_config` 306 项 / `test_core` 61 项 / `verify_formula` 11 项通过；`check_docs` 仅第 ⑤ 项（既有「待标定」表述）为既有红灯，未新增失败；`gdformat --check scripts/` 73 文件不变、`gdlint scripts/` 仅 `sim_core.gd` 两项既有结构上限告警。
+
+- **新手引导计划方案（2026-10-12，待评审）**
+  - 新增 `docs/design/新手引导计划方案.md`：开场三行、同局操作教学、首次情境提示、失败与相位分支、暂停边界、任务估算和验收标准。
+  - 仅新增计划文档；不变更玩法规则或实现状态，不生成固定社交剧情，不修改模拟代码。
+
+- **恢复教室木板材质（2026-10-12）**
+  - 按视觉反馈移除课桌木材与通用木材的淡纹理覆盖，恢复原有木板贴图、粗糙度、三平面映射和过滤设置；保留新增桌面物品与其它教室美术。
+  - 只调整表现层配置，不修改原材质资源、座位、导航或模拟规则。Godot 4.7.2 默认 D3D12 / Mobile 实际渲染检查完成，教室专项 GUT 3 项、59 个断言通过。
 
 - **环境音量 HUD（2026-10-11）**
   - 按概念图在时间卡下新增纸面数字卡、声波图标、音量条与阈值刻线；实时读取内核音量及配置，超阈显示影响提示。

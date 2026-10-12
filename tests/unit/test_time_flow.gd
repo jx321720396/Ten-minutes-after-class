@@ -3,7 +3,7 @@ extends GutTest
 
 
 func _stack() -> Array:
-	var core := SimCore.from_npc(12345, 8, ConfigLoader.new().load_all())
+	var core := SimCore.new(12345, 16, ConfigLoader.new().load_all())
 	var clock := SimulationClock.new()
 	add_child_autofree(clock)
 	clock.bind_core(core)
@@ -156,7 +156,7 @@ func test_hold_also_freezes_actor_motion() -> void:
 
 
 func test_invalid_speed_config_is_rejected() -> void:
-	var core := SimCore.from_npc(12345, 8, ConfigLoader.new().load_all())
+	var core := SimCore.new(12345, 16, ConfigLoader.new().load_all())
 	var clock := SimulationClock.new()
 	add_child_autofree(clock)
 	clock.bind_core(core)

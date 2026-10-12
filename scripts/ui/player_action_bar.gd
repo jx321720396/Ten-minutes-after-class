@@ -43,6 +43,7 @@ const ACTIVITY_NAMES := {
 }
 
 const GameFonts := preload("res://scripts/ui/game_fonts.gd")
+const BACKPACK_SCENE := preload("res://scenes/ui/backpack_panel.tscn")
 const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
 const STYLE_TABLE := "ui/chat_feedback_style"
 const COLOR_PAPER := Color(0.98, 0.96, 0.90, 0.94)
@@ -79,6 +80,7 @@ const PLACEHOLDER_REASON := "还没做"
 
 const TOUCH_SCROLL_DEADZONE := 12.0
 
+var backpack: CanvasLayer
 var _panel: PanelContainer = null
 var _rows_box: VBoxContainer = null
 var _inventory_label: Label = null
@@ -108,6 +110,7 @@ func _ready() -> void:
 			child.add_theme_stylebox_override("panel", category_style)
 	_apply_paper_style()
 	_update_highlight()
+	_build_backpack()
 	get_viewport().size_changed.connect(_layout_for_viewport)
 	_layout_for_viewport()
 
@@ -134,7 +137,7 @@ func _layout_for_viewport() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if _behavior_scroll == null or not is_visible():
+	if _behavior_scroll == null or not is_visible() or not _panel.visible:
 		return
 	if event is InputEventScreenTouch:
 		var touch := event as InputEventScreenTouch
@@ -167,6 +170,8 @@ func _input(event: InputEvent) -> void:
 ## 刷新整栏：`states` 是 kind -> {"ok": bool, "reason": String}；`self_labels` 可覆盖自指项文案。
 ## 未给出的 kind 视为「占位」（灰置 + `还没做`）。
 func refresh(states: Dictionary) -> void:
+	if backpack != null:
+		backpack.refresh(states)
 	for kind in _button_of.keys():
 		var button: Button = _button_of[kind]
 		var state: Dictionary = states.get(kind, {})
@@ -322,9 +327,46 @@ func _on_pressed(kind: StringName, self_only: bool) -> void:
 	if button.disabled:
 		return
 	if self_only:
+		if kind in [&"eat_snack", &"read_book", &"listen_music"]:
+			open_backpack(kind)
+			return
 		self_behavior_requested.emit(kind)
 		return
 	arm(kind)
+
+
+func open_backpack(kind: StringName = &"eat_snack") -> void:
+	clear_armed()
+	cancel_requested.emit()
+	_panel.hide()
+	backpack.open_item(kind)
+
+
+func _build_backpack() -> void:
+	backpack = BACKPACK_SCENE.instantiate()
+	add_child(backpack)
+	backpack.action_requested.connect(
+		func(kind: StringName) -> void: self_behavior_requested.emit(kind)
+	)
+	backpack.closed.connect(func() -> void: _panel.show())
+	var entry := CanvasLayer.new()
+	entry.name = "BackpackEntry"
+	entry.layer = int(CampusTheme.settings().utility_style.layer)
+	add_child(entry)
+	var launch := Button.new()
+	launch.name = "BackpackButton"
+	backpack.bind_touch(launch)
+	launch.text = "书包"
+	entry.add_child(launch)
+	CampusTheme.utility_button(launch, 2)
+	launch.pressed.connect(_toggle_backpack)
+
+
+func _toggle_backpack() -> void:
+	if backpack.is_open():
+		backpack.close()
+	else:
+		open_backpack()
 
 
 func _build_ui() -> void:

@@ -9,7 +9,7 @@ func _initialize() -> void:
 func _capture() -> void:
 	root.size = Vector2i(1920, 1080)
 	var state: Node = root.get_node("GameState")
-	state.start_game(20261011, 2)
+	state.start_game(20261011, 16)
 	var core: Variant = state.sim_core
 	var term_days := 0
 	for row in ConfigLoader.new().load_all()["rules/time_runtime"].rows:

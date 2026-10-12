@@ -33,7 +33,7 @@ func _add_part(anchor: Node3D, part: Dictionary) -> void:
 	if not _batches.has(key):
 		_batches[key] = {"kind": kind, "material": material, "transforms": []}
 	var rotation := vector(part.get("rotation", [0, 0, 0])) * PI / 180.0
-	var basis := Basis.from_euler(rotation).scaled(vector(part["size"]))
+	var basis := Basis.from_euler(rotation) * Basis.from_scale(vector(part["size"]))
 	var transform := Transform3D(basis, vector(part["position"]))
 	_batches[key]["transforms"].append(anchor.global_transform * transform)
 

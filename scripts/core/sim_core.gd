@@ -8,7 +8,8 @@ extends RefCounted
 ##   · 状态一律 `PackedFloat64Array`（float64），与 Python 的 double 逐位一致；
 ##   · 所有阈值 / 系数都来自 data/（不落脚本，铁律 3）。
 ##
-## 索引约定：n = npc_count + 1（末位 n-1 为玩家）；矩阵平铺 A[i][j] → _a[i*n+j]；
+## 索引约定：n = 本局入局 NPC 数 + 1（末位 n-1 为玩家；人数由调用方直接给出，
+## 正式玩法取 `data/rules/roster.csv` 的 16，角色池见 `characters/seeds.csv`）；矩阵平铺 A[i][j] → _a[i*n+j]；
 ##
 ## D8 交付：统一影响公式（apply_event）+ 传导（transmission）+ 涓流（stress_drip
 ## 及环境层/社会层）；D9 交付：压力爆发（try_burst/spread_knot）+ 跨天衰减
@@ -176,14 +177,21 @@ var _leave_count := 0
 var _choice: Dictionary = {}  # 选择侧系数表（§4.5）  # 举报把柄：i 最近目击 j 违规的日（§10.2）
 
 
-func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
-	# §4.1 契约：SimCore.new(seed, difficulty)。tables 为空时内核内部自取（ConfigLoader 非 autoload，不违反反向依赖铁律）。
+func _init(seed: int, npc_count: int, tables: Dictionary = {}) -> void:
+	# §4.1 契约：SimCore.new(seed, npc_count)。tables 为空时内核内部自取（ConfigLoader 非 autoload，不违反反向依赖铁律）。
+	# 2026-10-12：删除难度档概念 —— 人数由调用方直接给出（正式玩法取 data/rules/roster.csv 的 16）。
 	if tables.is_empty():
 		tables = ConfigLoader.new().load_all()
 	_seed = seed
 	_rng = MtRandom.new(seed)
-	var npc_count := _difficulty_npc_count(difficulty, tables)
-	_n = npc_count + 1
+	# 本局阵容人数：不得超过角色池人数（池里没有的人不会凭空入局；多传的人数被忽略并明确告警）
+	var pool: Array = _rows(tables, "characters/seeds").duplicate()
+	var want := clampi(npc_count, 1, pool.size())
+	if npc_count != want:
+		push_warning(
+			"SimCore：npc_count=%d 超出 1..%d（角色池），本局按 %d 人开局。" % [npc_count, pool.size(), want]
+		)
+	_n = want + 1
 	var n := _n
 
 	_load_config(tables)
@@ -195,9 +203,15 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 			_active_phases.append(row)
 
 	# ⚠️ 必须 .duplicate()：_rows 返回共享缓存引用，shuffle 原地改写会污染跨实例共享的 tables。
-	var pool: Array = _rows(tables, "characters/seeds").duplicate()
 	_rng.shuffle(pool)
-	_chars = LeisureActions.select_roster(pool, npc_count, _leisure)
+	_chars = LeisureActions.select_roster(pool, want, _leisure)
+	if _chars.size() != want:
+		push_error(
+			(
+				"SimCore：角色装配 %d 人 ≠ 目标 %d 人（characters/seeds.csv 与 rules/leisure 的持书配额不匹配）。"
+				% [_chars.size(), want]
+			)
+		)
 	for ch in _chars:
 		_book.append(int(str(ch["book"])))
 	_book.append(0)
@@ -259,25 +273,6 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 	_player_invitations = PLAYER_INVITATIONS.new(self, tables, pi_params)
 	_term_record = TERM_RECORD.new()
 	_term_record.configure(self, tables)
-
-
-## difficulty（1/2/3）→ npc_count（8/16/24），映射表 data/rules/difficulty.csv（铁律 3：数值不落脚本）。
-func _difficulty_npc_count(difficulty: int, tables: Dictionary) -> int:
-	for row in _rows(tables, "rules/difficulty"):
-		if int(str(row["difficulty"])) == difficulty:
-			return int(str(row["npc_count"]))
-	push_warning("SimCore: rules/difficulty 未命中 difficulty=%d，回退默认 8 NPC" % difficulty)
-	return 8
-
-
-## 测试/对拍专用入口：直接指定 npc_count，绕过 difficulty 映射。
-## 经 data/rules/difficulty 反查 difficulty 后走同一构造，避免数值落脚本。
-static func from_npc(seed: int, npc_count: int, tables: Dictionary) -> SimCore:
-	for row in tables.get("rules/difficulty", {}).get("rows", []):
-		if int(str(row["npc_count"])) == npc_count:
-			return SimCore.new(seed, int(str(row["difficulty"])), tables)
-	push_warning("SimCore.from_npc: npc_count=%d 不在 difficulty 映射，回退难度 1" % npc_count)
-	return SimCore.new(seed, 1, tables)
 
 
 func _load_config(tables: Dictionary) -> void:

@@ -132,7 +132,8 @@ func walk_to_navigated(
 
 
 ## 按**时限**沿导航折线走（速度 = 折线长度 / seconds）。
-## 用于上课归位：§10.4 第 6 条要求相位切换后回到座位，不能让人走到上课段结束还在路上。
+## 通用限时行走接口；上课归位自 2026-10-12 起改为「黑幕内瞬移贴座」（不走动），
+## 本接口保留给需要限时的调用方与组件单测。
 func walk_to_navigated_in(target: Vector3, seconds: float) -> bool:
 	if _body == null or seconds <= 0.0:
 		return false

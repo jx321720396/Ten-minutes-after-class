@@ -1,0 +1,46 @@
+{
+  "blender": "5.2.2 LTS",
+  "engine": "BLENDER_EEVEE",
+  "engine_fallback": false,
+  "seed": 20261012,
+  "frames": {
+    "pop": 10,
+    "idle": 9,
+    "fade": 5
+  },
+  "frame_resolution": 256,
+  "still_resolution": 512,
+  "anchor_tail_tip_normalized": [
+    0.2872,
+    0.1426
+  ],
+  "assets": [
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\pop_00.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\pop_01.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\pop_02.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\pop_03.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\pop_04.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\pop_05.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\pop_06.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\pop_07.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\pop_08.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\pop_09.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\idle_00.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\idle_01.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\idle_02.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\idle_03.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\idle_04.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\idle_05.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\idle_06.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\idle_07.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\idle_08.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\fade_00.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\fade_01.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\fade_02.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\fade_03.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\fade_04.png",
+    "D:\\下课十分钟\\assets\\textures\\ui\\speech_bubble\\static.png"
+  ],
+  "preview": "D:\\下课十分钟\\docs\\art\\concepts\\chat_bubble\\blender_preview.png",
+  "blend": "D:\\下课十分钟\\docs\\art\\concepts\\chat_bubble\\chat_bubble_blender_v1.blend"
+}

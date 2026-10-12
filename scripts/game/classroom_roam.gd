@@ -8,28 +8,28 @@ extends Node3D
 ## 做什么：
 ##   · **课间段**：段首与配置的间隔之后各判定一次离座，目标按 §10.4 的权重式挑
 ##     （`1 + Σ_j A[i][j]/100 − Σ_j H[i][j]/200`，目标点附近有活动圈则 ×1.5，下限 0.1）；
-##   · **上课段**：进入上课时全体走回自己座位，整段不动（§10.4 第 6 条归位）；
+##   · **上课段**：进入上课时在黑幕遮挡期间**瞬间贴回自己的座位**（2026-10-12 裁定），
+##     整段不动（§10.4 第 6 条归位）；
 ##   · **占用**：每个站立点同时只容纳一个人（含玩家），先到者锁定（NPC移动决策 §2.2）；
 ##   · **玩家**：点击地面任意位置走过去（快照 `player_control` 为假时直接拒绝点击）。
 ##
 ## 数值口径：
 ##   · **课间离座**：速度统一取 `data/rules/movement.csv` 的 `meters_per_tick`（米 / 秒），
 ##     耗时随**导航路径长度**变化（§10.4 第 4 条，放弃固定 15 tick）；
-##   · **上课归位**：用时限走（`move.duration` tick × 每 tick 真实秒数），
-##     保证 §10.4 第 6 条「相位切换后回座位」在段内完成；
+##   · **上课归位**：在黑幕遮挡期间**瞬间贴座**（`snap_to_seats`，2026-10-12 用户裁定）——
+##     黑幕开始退场时全员已就位，上课倒计时开跑后不再有人走动，因此归位不再读
+##     `move.duration`（该值目前没有表现层消费者）；
 ##   · 路线一律来自**导航网格**（`scenes/game/classroom3D.tscn` 的 NavigationRegion3D）：
 ##     取不到路线就留在原地并计数，**不用直线兜底**（直线会穿桌椅）；
 ##   · **离座概率走统一公式**：`p = base_p × 外向修正(E)`，
 ##     `base_p` 来自 `data/rules/behavior_probs.csv` 的 `move`（当前 0.20），
 ##     外向修正（§10.4）：E≥50 → ×(1+(E−50)/100)，E<50 → ×(1−(50−E)/200)，下限 0.1；
 
-const BEHAVIORS_TABLE := "rules/behaviors"
-const PHASES_TABLE := "rules/phases"
-const PRESENTATION_TABLE := "rules/time_presentation"
 const MOVEMENT_TABLE := "rules/movement"
-const MOVE_BEHAVIOR := "move"
 const SPEED_PARAM := "meters_per_tick"
 const KIND_BREAK := "break"
+## 上课相位（黑幕遮挡期间瞬间贴座，不走动）
+const KIND_CLASS := "class"
 ## 座位可走站位名（desk_chair.tscn 的 Marker3D）：落位、站位、玩家路径共用这一个来源
 const STAND_SPOT_NAME := "StandSpot"
 ## 旧落位偏移（米）：StandSpot 缺失时的兜底，保证老场景仍能跑
@@ -83,10 +83,8 @@ var _occupant: Dictionary = {}
 var _point_of_actor: Dictionary = {}
 var _actor_count := 0
 var _player_index := -1
-## 归位时限上限（秒）：由 move.duration（tick）× 每 tick 真实秒数推导
-var _home_limit := 1.0
 ## 课间走动速度（米 / 秒）—— data/rules/movement.csv 的 meters_per_tick
-var _speed := 0.8
+var _speed := 1.6
 ## 取不到导航路线而放弃走动的次数：持续增长说明烘焙产物或几何出了问题（诊断用）
 var _missed_walks := 0
 var _snapshot: Dictionary = {}
@@ -115,7 +113,6 @@ func _ready() -> void:
 		return
 	_actor_count = int(_core.node_count())
 	_player_index = _actor_count - 1
-	_home_limit = _load_home_limit()
 	_speed = _load_speed()
 	decide_interval = _load_decide_interval()
 	_collect_points()
@@ -170,8 +167,9 @@ func _process(delta: float) -> void:
 	_decide_batch()
 
 
-## 转场黑幕任务：全员（含玩家）瞬间贴回自己的座位（不走路），并终止在途行走。
-## 触发时机：「第 N 天」黑幕结束 / 点「进入第 N 天」或按空格确认进入次日。
+## 全员（含玩家）瞬间贴回自己的座位（不走路），并终止在途行走。
+## 触发时机：① 「第 N 天」黑幕结束（点按钮 / 空格确认进入次日）；② **进入非课间相位**
+## （上课黑幕退场瞬间、日末结算）—— 见 `_apply_phase()`（2026-10-12 用户裁定）。
 ## 归位后全员在座位上停留 stay_seconds 秒，再按原逻辑开始活动。
 func snap_to_seats(stay_seconds: float = SNAP_STAY_SECONDS) -> void:
 	for i in range(_actor_count):
@@ -200,7 +198,7 @@ func flush_pending_phase() -> void:
 	_apply_phase(pending)
 
 
-## 相位切换（由时钟驱动）：进课间 → 可以离座；进上课 → 全体归位（§10.4 第 6 条）。
+## 相位切换（由时钟驱动）：进课间 → 可以离座；进上课 / 结算 → 瞬间贴座（§10.4 第 6 条）。
 ## ⚠️ 转场黑幕期间（时钟被 hold）先存快照不执行，退场后由 _process 补跑 ——
 ## 保证倒计时与 NPC 走动都从黑幕结束后才开始（转场黑幕任务接入点）。
 func _on_phase_changed(snapshot_data: Dictionary) -> void:
@@ -227,22 +225,19 @@ func _apply_phase(snapshot_data: Dictionary) -> void:
 		_decide_batch()
 		return
 	_decides_remaining = 0
-	var seconds := _home_seconds()
-	for i in range(_actor_count):
-		var seat_id := str(_core.seat_of(i))
-		var target: Vector3 = _point_positions.get(seat_id, _point_positions.values()[0])
-		_send_to_point(i, target, seconds)
+	# 非课间相位（上课 / 日末结算）：全员**瞬间贴座**，不再走回座位（2026-10-12 用户裁定）。
+	# 上课的黑幕正遮着画面，黑幕开始退场时大家已经坐好；日末结算段世界时间冻结，
+	# 玩家看到的同样是归位后的静坐状态（真正可见的归位时机由黑幕决定）。
+	snap_to_seats(SNAP_STAY_SECONDS)
 	if log_roam:
-		print("[roam] 进入上课：全体归位（本段共 %d 批离座）" % _batch_count)
+		var kind := str(snapshot_data.get("kind", ""))
+		print(
+			(
+				"[roam] 进入%s：瞬间全体归位（本段共 %d 批离座）"
+				% ["上课" if kind == KIND_CLASS else "结算相位", _batch_count]
+			)
+		)
 	_batch_count = 0
-
-
-## 归位时限：不超过上课段剩余时间的 80%，保证铃响后尽快坐好。
-func _home_seconds() -> float:
-	var remaining := float(_snapshot.get("remaining_seconds", 0.0))
-	if remaining <= 0.0:
-		return _home_limit
-	return minf(_home_limit, maxf(remaining * 0.8, 0.5))
 
 
 ## ⚠️ 玩家输入**已移交** PlayerController（scripts/game/player_controller.gd）：
@@ -284,11 +279,6 @@ func point_ids() -> Array:
 ## 某点当前被谁占用；-1 = 没人。越界返回 -1。
 func occupant_of(point_id: String) -> int:
 	return int(_occupant.get(point_id, -1))
-
-
-## 归位时限上限（秒，由 move.duration × 每 tick 秒数换算）。
-func home_limit_seconds() -> float:
-	return _home_limit
 
 
 ## 课间走动速度（米 / 秒，来自 data/rules/movement.csv）。
@@ -392,29 +382,6 @@ func _build_markers() -> void:
 		add_child(marker)
 
 
-## 归位时限：真读 data（move.duration × 每 tick 真实秒数）。
-## 课间：15 tick × (100 秒 / 100 tick) = 15 秒 —— 数值全部来自 data，本组件不留常数。
-func _load_home_limit() -> float:
-	var loader := ConfigLoader.new()
-	var duration_ticks := 0.0
-	var rows: Array = loader.get_table(BEHAVIORS_TABLE).get("rows", [])
-	for row in rows:
-		if str(row.get("behavior", "")) == MOVE_BEHAVIOR:
-			duration_ticks = float(str(row.get("duration", "0")))
-			break
-	var presentation_rows: Array = loader.get_table(PRESENTATION_TABLE).get("rows", [])
-	var phase_rows: Array = loader.get_table(PHASES_TABLE).get("rows", [])
-	var seconds_per_tick := 0.0
-	for row in phase_rows:
-		if str(row.get("kind", "")) == KIND_BREAK:
-			seconds_per_tick = _break_seconds_per_tick(row, presentation_rows)
-			break
-	if duration_ticks <= 0.0 or seconds_per_tick <= 0.0:
-		push_warning("ClassroomRoam：读不到 move.duration / 课间 tick 间隔，归位时限回退 1 秒。")
-		return 1.0
-	return duration_ticks * seconds_per_tick
-
-
 ## 课间走动速度（米 / 秒）：真读 data（movement.csv 的 meters_per_tick）。
 ## 1 个课间 tick = 1 真实秒，所以 meters_per_tick 同时就是「米 / 秒」（§10.4 第 4 条）。
 func _load_speed() -> float:
@@ -423,8 +390,8 @@ func _load_speed() -> float:
 			var value := float(str(row.get("value", "0")))
 			if value > 0.0:
 				return value
-	push_warning("ClassroomRoam：读不到 movement.meters_per_tick —— 走动速度回退 0.8 米 / 秒。")
-	return 0.8
+	push_warning("ClassroomRoam：读不到 movement.meters_per_tick —— 走动速度回退 1.6 米 / 秒。")
+	return 1.6
 
 
 ## 第二次判定的间隔只读配置；缺失时禁用第二批，避免两批挤在段首。
@@ -435,17 +402,6 @@ func _load_decide_interval() -> float:
 			if value > 0.0:
 				return value
 	push_warning("ClassroomRoam：缺少有效的 leave_decide_interval_seconds，第二批离座关闭。")
-	return 0.0
-
-
-func _break_seconds_per_tick(phase_row: Dictionary, presentation_rows: Array) -> float:
-	var ticks := float(str(phase_row.get("tick_count", "0")))
-	var phase_id := str(phase_row.get("phase_id", ""))
-	if ticks <= 0.0:
-		return 0.0
-	for row in presentation_rows:
-		if str(row.get("phase_id", "")) == phase_id:
-			return float(str(row.get("real_duration_seconds", "0"))) / ticks
 	return 0.0
 
 
@@ -561,20 +517,17 @@ func _move_actor_to(i: int, pos: Vector3, keep_occupancy: bool) -> void:
 		var nearest := _nearest_point(pos)
 		if not nearest.is_empty():
 			_occupy(nearest, i)
-	_send_to_point(i, pos, -1.0)
+	_send_to_point(i, pos)
 
 
-## 让人物走到目标点（**导航折线**）。seconds > 0 = 按该时限走（归位）；否则按统一速度走（课间离座）。
+## 让人物走到目标点（**导航折线**），速度 = `movement.csv` 的 `meters_per_tick`。
+## 上课归位不走这里（改用 `snap_to_seats`，2026-10-12 裁定）：本函数只服务课间离座 / 会面。
 ## 取不到路线 = 留在原地 + 记一次失败 —— 不直线兜底（直线会穿桌椅，§10.4）。
-func _send_to_point(i: int, target: Vector3, seconds: float) -> bool:
+func _send_to_point(i: int, target: Vector3) -> bool:
 	var walker: ActorWalker = _walkers[i]
 	if walker == null:
 		return false
-	var ok := false
-	if seconds > 0.0:
-		ok = walker.walk_to_navigated_in(target, seconds)
-	else:
-		ok = walker.walk_to_navigated(target, _speed)
+	var ok := walker.walk_to_navigated(target, _speed)
 	if not ok:
 		_missed_walks += 1
 		if log_roam:

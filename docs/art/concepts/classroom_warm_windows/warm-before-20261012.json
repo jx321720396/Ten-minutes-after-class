@@ -1,0 +1,15 @@
+{
+  "actors": 17,
+  "art_enabled": true,
+  "clean": true,
+  "difficulty": 2,
+  "draw_calls": 463.0,
+  "engine": "4.7.2-stable (official)",
+  "frame_ms_mean": 1.59834275053305,
+  "frame_ms_median": 1.145,
+  "label": "warm-before-20261012",
+  "objects": 463.0,
+  "samples": 1876,
+  "screenshot_error": 0,
+  "seed": 20261011
+}
