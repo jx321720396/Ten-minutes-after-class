@@ -53,9 +53,7 @@ func test_plan_approach_stops_inside_range_and_avoids_the_desk() -> void:
 	assert_true(pc.is_walkable(destination), "终点必须站得住")
 	assert_gt(float(plan["length_m"]), 0.0, "路径长度为正")
 	assert_gt(
-		_length(plan["path"]),
-		Vector2(-3.0, 0.0).distance_to(Vector2(2.0, 0.0)),
-		"绕开桌子 → 路径比直线更长"
+		_length(plan["path"]), Vector2(-3.0, 0.0).distance_to(Vector2(2.0, 0.0)), "绕开桌子 → 路径比直线更长"
 	)
 	for point in plan["path"]:
 		assert_true(pc.is_walkable(point), "路径点都必须可行走：%s" % str(point))
@@ -95,7 +93,9 @@ func test_plan_approach_prefers_the_shortest_path() -> void:
 	var plan := pc.plan_approach([Vector3(2.0, 0.0, 0.0)], RANGE)
 	assert_true(bool(plan["ok"]), str(plan))
 	var first: Vector3 = plan["path"][0]
-	assert_almost_eq(first.x, pc._cell_center(pc._cell_id(Vector3(-3.0, 0.2, 0.0))).x, 0.001, "起点是玩家所在格")
+	assert_almost_eq(
+		first.x, pc._cell_center(pc._cell_id(Vector3(-3.0, 0.2, 0.0))).x, 0.001, "起点是玩家所在格"
+	)
 
 
 func test_plan_approach_uses_the_actual_path_end() -> void:
@@ -224,6 +224,7 @@ func test_pick_layer_comes_from_config() -> void:
 
 
 # ------------------------------------------------------------------ 点击分派（真实物理射线）
+
 
 ## 造一个俯视镜头 + 可选人物拾取体 / 遮挡体，用**真实射线**验证点击分派。
 ## 控制器必须**进树**（射线与 get_viewport 都要求）；夹具在 `_ready` 之后再注入，

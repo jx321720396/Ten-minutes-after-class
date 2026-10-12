@@ -52,7 +52,9 @@ func _room(core: SimCore, with_target: bool = true) -> int:
 
 func _digest(core: SimCore) -> PackedByteArray:
 	var values: Array = []
-	for field in ["_a", "_h", "_t", "_stress", "_current_act", "_busy_until", "_busy_phase", "_stats"]:
+	for field in [
+		"_a", "_h", "_t", "_stress", "_current_act", "_busy_until", "_busy_phase", "_stats"
+	]:
 		values.append(core.get(field))
 	values.append(core._rng._mt)
 	values.append(core._rng._mti)
@@ -216,12 +218,16 @@ func test_caller_cannot_fake_mode_to_bypass_session_checks() -> void:
 	var core := _core()
 	var me := _room(core)
 	# 目标空闲却硬报 join：不能靠伪造 mode 绕过会话校验
-	var packet := core.commit_player_interaction(core.next_player_request_id(), "chat", 0, "join", -1)
+	var packet := core.commit_player_interaction(
+		core.next_player_request_id(), "chat", 0, "join", -1
+	)
 	assert_false(bool(packet["ok"]))
 	assert_eq(str(packet["error"]), "mode_changed")
 	# 冻结的是另一场会话的编号：同样拒绝
 	var sid := _npc_chat(core)
-	var wrong := core.commit_player_interaction(core.next_player_request_id(), "chat", 0, "join", sid + 99)
+	var wrong := core.commit_player_interaction(
+		core.next_player_request_id(), "chat", 0, "join", sid + 99
+	)
 	assert_false(bool(wrong["ok"]))
 	assert_eq(str(wrong["error"]), "session_changed")
 	assert_eq(str(core.get_player_interaction(1)["error"]), "unknown_request", "失败的提交不留下记录")
@@ -318,9 +324,7 @@ func test_accept_settles_new_edges_once_and_aligns_end_tick() -> void:
 	assert_eq(float(core._h[0 * n + 1]), old_h_before, "原成员之间的旧边不重算（敌对）")
 	assert_lt(float(core.stress(me)), stress_before, "玩家减压只执行一次")
 	assert_gte(core.session_end_tick(sid), session_end_before, "结束点只后延，不提前")
-	assert_eq(
-		int(core._busy_until[me]), core.session_end_tick(sid), "玩家占用与共同结束点对齐"
-	)
+	assert_eq(int(core._busy_until[me]), core.session_end_tick(sid), "玩家占用与共同结束点对齐")
 	assert_eq(int(core._busy_until[0]), core.session_end_tick(sid), "原成员占用同样被对齐")
 	assert_eq(int(core._stats["join_accepts"]), 1, "接受统计一次")
 	assert_eq(int(core._stats["joins"]), 1, "加入请求统计一次")
