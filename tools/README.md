@@ -72,6 +72,32 @@ bash tools/run_tests.sh --no-godot                           # 只跑离线部�
 
 ## 约定
 
+书包界面截图：`godot --path . --script tools/capture_backpack.gd` 使用真实教室与生产面板，输出 `tools/out/backpack/actual-inventory.png`（真实开局库存）和 `owned-book.png`（仅 UI 预览一本书）。素材与接线说明见 [书包界面说明](../docs/art/concepts/backpack/README.md)。
+
+群体圈层截图：`godot --path . --script tools/capture_activity_rings.gd` 在独立截图实例注入三组真实会话（薄荷绿／淡紫／浅橙）与两个独立人物，使用生产圈层组件与真实教室输出 `tools/out/activity_rings/classroom.png`。需要图形渲染，用于检查融合边界、地砖透出与分组异色。
+
+行为符号气泡截图：`godot --path . --script tools/capture_behavior_particles.gd` 使用实际教室、人物与生产气泡组件，在独立截图实例注入六类公开行为，输出 `tools/out/behavior_particles/classroom.png`。需要图形渲染，不能用 `--headless` 代替视觉检查。
+
+桌椅结构小样：`build_school_desk_sample.gd` 从 `data/ui/school_desk_sample.json` 烘焙独立组件和展示场景；`capture_school_desk_sample.gd` 输出三视角引擎截图到 `tools/out/school_desk_sample/`。运行方式与验收记录见 [小样说明](../docs/art/concepts/school_desk_sample/README.md)。这两个工具不修改主教室或原材质资源。
+
 - 脚本**只读** `data/`，不得写回；
 - 输出统计必须包含随机种子，保证他人可复现；
 - 新增脚本在本文件登记。
+
+书架 3D 小样：`build_school_bookshelf_sample.gd` 从 `data/ui/school_bookshelf_sample.json` 烘焙组件和展示场景；`capture_school_bookshelf_sample.gd` 渲染两视角并导出 GLB。见 [小样说明](../docs/art/concepts/school_bookshelf_sample/README.md)。
+
+人物移动／坐下试片：godot --path . --script tools/capture_school_student_motion_sample.gd 输出真实引擎帧；py tools/package_school_student_motion_preview.py 封装 GIF；godot --headless --path . --script tools/verify_school_student_motion_sample.gd 校验移动、实际座位锚点与坐姿稳定。场景：scenes/game/school_student_motion_sample_showroom.tscn。
+
+纯2D固定俯视试片：godot --path . --script tools/capture_classroom_2d_motion_sample.gd；py tools/package_classroom_2d_motion_preview.py 封装实录GIF；godot --headless --path . --script tools/verify_classroom_2d_motion_sample.gd 校验纯2D节点、固定视野与落座保持。
+
+Blender 书架小样 v2：`build_school_bookshelf_blender.py` 由独立 JSON 配置生成可编辑 `.blend`、木纹贴图、GLB 与 Cycles 预览；`capture_school_bookshelf_blender.gd` 直接读取 GLB 进行尺寸检查和实机截图。见 [Blender 小样说明](../docs/art/concepts/school_bookshelf_blender/README.md)。
+
+教室逐件优化首件课桌：`build_school_desk_blender.py` 生成可编辑源工程和按材质合为 4 网格的 GLB；`capture_school_desk_blender.gd` 验证独立小样与临时教室替换，保留座位标记和碰撞。[分件队列](../docs/art/concepts/classroom_blender_rollout/README.md) / [课桌验收](../docs/art/concepts/classroom_blender_rollout/01_desk/README.md)。
+
+人物 3D 基础小样：`build_school_student_blender.py` 生成可编辑人物与 18 骨蒙皮 GLB，并进行上臂变形检查；`capture_school_student_blender.gd` 校验引擎骨架和身高，渲染正侧面与课桌同框。[人物说明](../docs/art/concepts/school_student_blender/README.md)。
+
+暖色教室与窗户：build_classroom_window_blender.py 生成窗户与复用盆栽 GLB；bake_classroom_window_assets.gd 烘焙为原生共享场景；当前教室美术配置直接使用组件。capture_classroom_art.gd 新增 --view=window 近景截图选项。[验收说明](../docs/art/concepts/classroom_warm_windows/README.md)。
+
+对话气泡：`build_chat_bubble_blender.py` 从 `data/ui/chat_bubble_blender.json` 渲染头顶气泡的 pop（10）/ idle（9，循环）/ fade（5）序列帧与 512² 静帧到 `assets/textures/ui/speech_bubble/`；拼版预览、可编辑 `.blend` 与 `build_report.json` 写在本目录同级的小样目录。[小样说明](../docs/art/concepts/chat_bubble/README.md)。无描边版本在浅背景上不可辨，故资产统一带墨线；**本机 Blender 只启用 EEVEE（无 Cycles）**，脚本按配置选引擎、不可用时回退并在报告里标记，既有 `build_*_blender.py` 写死的 CYCLES 在本机跑不了。
+
+行为符号位图字形：`build_symbol_bitmaps_blender.py` 从 `data/ui/behavior_particles_blender.json` 把闲聊符号（`?` `!` `★` `~`）烘焙成立体白字形贴图到 `assets/textures/ui/behavior_particles/`；运行时经 `data/ui/behavior_particles.json` 的 `bitmaps` 字段按各自 style 配色 modulate，**字段为空或贴图缺失即回退字体字形**（可撤回开关）。实测在默认 `font_size 34` 下立体感不可见，见 [符号气泡说明](../docs/art/concepts/behavior_particles/README.md)。
