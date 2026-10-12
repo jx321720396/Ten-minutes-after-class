@@ -11,7 +11,7 @@ func before_each() -> void:
 
 
 func _core() -> SimCore:
-	return SimCore.from_npc(12345, 8, _tables)
+	return SimCore.new(12345, 16, _tables)
 
 
 func _n(core: SimCore) -> int:

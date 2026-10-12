@@ -10,9 +10,7 @@ music_noise,0,耳机无声
 snack_noise,1,零食噪声
 book_noise,0,看书无声
 snack_count_per_run,5,玩家每局份数
-book_count_8,3,8 人班持书 NPC 数
-book_count_16,6,16 人班持书 NPC 数
-book_count_24,10,24 人班持书 NPC 数
+book_count,5,本局持书 NPC 数（= 池内 book=1 的角色数：陈阳 / 张渊 / 孙悦 / 许静 / 顾言）
 interrupted_stress,0.5,减压动作被铃声打断的压力代价
 book_gift_affinity_threshold,60,闲聊完成时赠书所需对玩家好感
 book_gift_trust_threshold,40,闲聊完成时赠书所需对玩家信任

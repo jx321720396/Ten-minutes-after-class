@@ -121,8 +121,18 @@ def load_table(rel):
 
 
 # ---------------------------------------------------------------- 内核
+def default_npc_count():
+    """一局 NPC 数：读 data/rules/roster.csv（数值集中 data/，与 GDScript 侧同一个来源）。"""
+    for row in load_table("rules/roster.csv"):
+        if row.get("key") == "npc_count":
+            return int(float(row["value"]))
+    return len(load_table("characters/seeds.csv"))
+
+
 class Sim:
-    def __init__(self, seed=12345, npc_count=16, verbose=False):
+    def __init__(self, seed=12345, npc_count=None, verbose=False):
+        if npc_count is None:
+            npc_count = default_npc_count()
         self.rng = random.Random(seed)
         self.seed = seed
         self.verbose = verbose
@@ -178,10 +188,11 @@ class Sim:
         self.note_next_id = 0
         seeds = load_table("characters/seeds.csv")
 
-        # --- 抽角色（简化：随机取 npc_count 个；§11.5 的绑定组/原型去重留待正式版）---
+        # --- 装配本局阵容（池 = 一局人数；洗牌只决定顺序，§11.5 的绑定组/原型去重仍未接入）---
         pool = seeds[:]
         self.rng.shuffle(pool)
-        book_count = int(self.leisure.get("book_count_%d" % npc_count, self.leisure["book_count_24"] * npc_count / len(pool)))
+        # 持书配额单值（rules/leisure.csv 的 book_count）；不得超过本局人数
+        book_count = min(int(self.leisure["book_count"]), npc_count)
         books = [c for c in pool if c["book"] == "1"][:book_count]
         others = [c for c in pool if c["book"] == "0"][:npc_count - book_count]
         self.chars = [c for c in pool if c in books or c in others]
@@ -195,7 +206,7 @@ class Sim:
             self.behaviors[kind] = dict(duration=int(self.leisure[prefix + "_duration"]),
                                         noise=self.leisure[prefix + "_noise"],
                                         kind="env", join_mode="none")
-        self.N = npc_count + 1  # 索引 N-1 为玩家
+        self.N = len(self.chars) + 1  # 索引 N-1 为玩家；实际人数以入池者为准（请求数超过池人数时自动夹紧）
         self.teacher = TeacherPatrol(load_params("rules/teacher.csv"), self.N)
 
         # --- 状态矩阵 ---

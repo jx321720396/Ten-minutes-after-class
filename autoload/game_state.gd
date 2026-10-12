@@ -4,7 +4,8 @@ extends Node
 ## 只持有会话标识与内核实例槽，不承载玩法规则；推进逻辑在 SimCore（D8 落地）。
 
 var seed: int = 0
-var difficulty: int = 0
+## 本局入局 NPC 数（玩家另算）；2026-10-12 起由 data/rules/roster.csv 给定（一局 16）
+var npc_count: int = 0
 var day: int = 0
 var phase: String = ""
 ## SimCore 实例（D8 落地后赋值）；用 Variant 避免提前锁定类型。
@@ -16,13 +17,13 @@ var sim_core: Variant = null
 var new_game_requested := false
 
 
-func start_game(new_seed: int, new_difficulty: int) -> void:
+func start_game(new_seed: int, new_npc_count: int) -> void:
 	seed = new_seed
-	difficulty = new_difficulty
+	npc_count = new_npc_count
 	day = 0
 	phase = ""
-	# §4.1 契约：SimCore.new(seed, difficulty)，内核内部读表 + difficulty→npc_count（D11 缺口①）。
-	sim_core = SimCore.new(seed, difficulty)
+	# §4.1 契约：SimCore.new(seed, npc_count)（2026-10-12 起不再有难度档映射）。
+	sim_core = SimCore.new(seed, npc_count)
 	if sim_core != null:
 		wire_events(sim_core)
 

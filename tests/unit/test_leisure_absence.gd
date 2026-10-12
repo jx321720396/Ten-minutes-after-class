@@ -1,16 +1,9 @@
 extends GutTest
 
 
-func _core(npc: int = 8) -> SimCore:
+func _core(npc: int = 16) -> SimCore:
 	var tables := ConfigLoader.new().load_all()
-	# 生产布局仅 17 座；为 24 人物品配额测试单独补足空间输入。
-	if npc == 24:
-		var seats: Array = tables["rules/seats"]["rows"].duplicate(true)
-		for i in range(17, 25):
-			var sid := "P%d" % i
-			seats.append({"seat_id": sid, "row": str(5 + (i - 17) / 4), "col": str((i - 17) % 4)})
-		tables["rules/seats"]["rows"] = seats
-	return SimCore.from_npc(12345, npc, tables)
+	return SimCore.new(12345, npc, tables)
 
 
 func test_start_does_not_relieve_stress_and_completion_only_once() -> void:
@@ -66,13 +59,13 @@ func test_inventory_gates_and_npc_snacks_unlimited() -> void:
 
 
 func test_book_roster_quotas_and_seed_facts() -> void:
-	for pair in [[8, 3], [16, 6], [24, 10]]:
-		var c := _core(int(pair[0]))
-		var count := 0
-		for i in range(c.node_count() - 1):
-			count += int(c.inventory_of(i)["books"])
-			assert_eq(int(c.inventory_of(i)["books"]), int(str(c._chars[i]["book"])))
-		assert_eq(count, int(pair[1]))
+	# 一局固定 16 名 NPC：持书 NPC 数 = rules/leisure.csv 的 book_count（5 = 池内 book=1 的人）
+	var c := _core()
+	var count := 0
+	for i in range(c.node_count() - 1):
+		count += int(c.inventory_of(i)["books"])
+		assert_eq(int(c.inventory_of(i)["books"]), int(str(c._chars[i]["book"])))
+	assert_eq(count, 5, "持书 NPC 数 = book_count")
 
 
 func test_class_rejects_all_four_actions() -> void:
