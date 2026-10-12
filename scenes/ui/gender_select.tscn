@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="FontFile" path="res://assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf" id="campus_font"]
+[ext_resource type="FontFile" uid="uid://charthemonyossans01" path="res://assets/fonts/harmonyos-sans/HarmonyOS_Sans_SC.ttf" id="campus_font"]
 
 [ext_resource type="Script" path="res://scripts/ui/gender_select.gd" id="1_sel"]
 [ext_resource type="StyleBox" path="res://resources/new_style_box_flat.tres" id="2_panel"]
