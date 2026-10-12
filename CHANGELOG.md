@@ -1,4 +1,10 @@
 # 变更记录
+- **Android 导出打通：本机 SDK / 模板 / 签名就位，能打出可安装的 APK（2026-10-12，构建）**：此前 `export_presets.cfg` 里 Android 预设 `package/signed=true` 却**没有 keystore 键**，导出必然失败；本机也没有 Android SDK 与 Godot 导出模板。
+  - **预设**：补 debug keystore 三个键（keystore 在仓库外的 `~/.android/debug.keystore`，不进库）、输出路径（Windows `build/windows/`、Android `build/android/`）、`include_filter` 追加新字体的 LICENSE。注意 **`use_gradle_build=false` 时 `min_sdk` / `target_sdk` 必须留空**，填了会直接报「只有在启用『使用 Gradle 构建』时才能覆盖」。
+  - **本机环境**（不进仓库）：`tools/setup_android_sdk.ps1` 一键装 Android SDK（下载官方 command line tools → 装 platform-tools / platforms;android-34 / build-tools;34.0.0）；Godot 导出模板（1.19 GB）手动放到 `%APPDATA%/Godot/export_templates/4.7.2.stable/`；编辑器设置里 `java_sdk_path` / `android_sdk_path` / `debug_keystore` 三个值。
+  - **产物**：`build/android/下课十分钟.apk`（约 268 MB，arm64-v8a、debug 签名）。`build/` 已在 `.gitignore` 中。
+  - **遗留**：包体偏大 —— 当前 `export_filter="all_resources"` 把整个 `assets/`（含 Blender 源文件、概念图）都打进包了，可用 `exclude_filter` 瘦身。
+
 - **移动端字体适配：全局字体换为 HarmonyOS Sans SC + 建立项目级主题（2026-10-12，UI）**：此前字体**散在两处**且没有项目级出口 —— 9 个 UI 场景各自 `preload` 霞鹜文楷，动态创建的 UI 则走 `scripts/ui/game_fonts.gd`；`project.godot` 里既没有 `[gui]` 主题段，也没有默认字体。
   - **字体**：引入 **HarmonyOS Sans SC**（`assets/fonts/harmonyos-sans/`，随包 `LICENSE-update.txt`，许可可核验），登记进 `assets/CREDITS.md`。
   - **统一出口**：新建 `resources/ui/game_theme.tres`（default_font = HarmonyOS Sans SC / default_font_size = 24），并在 `project.godot` 加 `[gui] theme/custom` 指向它；`game_fonts.gd` 的 `REGULAR` 同步换成它，`demibold()` 用 FontVariation 加重（该字体只发一个中文字重文件）。9 个场景里写死的字体引用一并改指新字体（`pause_menu` 标题的描边/阴影设置保留）。
