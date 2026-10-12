@@ -61,7 +61,7 @@ func test_event_sink_day_settled_and_behavior() -> void:
 	var core := _core()
 	var events: Array = []
 	core.event_sink = func(e: Dictionary) -> void: events.append(e)
-	core._do_chat(0, 1)   # 第一条事件：手动触发的闲聊
+	core._do_chat(0, 1)  # 第一条事件：手动触发的闲聊
 	core.run_day()
 	assert_true(events.size() > 0, "应派发事件")
 	assert_eq(events[0]["type"], "event_happened", "首条为 event_happened")
@@ -77,7 +77,7 @@ func test_player_action_chat_and_validation() -> void:
 	# 计划 §3.1：玩家交互必须过**真实空间判定**，先注入一间合法房间作为夹具。
 	var core := _core()
 	core.set_interaction_geometry([], Rect2(-4.0, -4.0, 8.0, 8.0))
-	var me := 16   # 玩家 = n-1（17 个节点：16 NPC + 玩家）
+	var me := 16  # 玩家 = n-1（17 个节点：16 NPC + 玩家）
 	assert_false(core.player_action("chat", me)["ok"], "目标=玩家应拒绝")
 	assert_false(core.player_action("chat", -1)["ok"], "目标 OOB 应拒绝")
 	assert_false(core.player_action("bogus", 0)["ok"], "未知 kind 应拒绝")
