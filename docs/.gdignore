@@ -1,0 +1,9 @@
+# Godot 忽略本目录（.gdignore = 存在即忽略，内容不参与解析）
+#
+# 原因：docs/ 下是策划文档、美术概念图、Blender 源工程（.blend）与 QA 报告，不是游戏运行时资源。
+#   - 游戏与导出只使用 assets/ 下的 .glb / .png；全仓对 res://docs/ 的引用仅剩 3 个离线截图工具的输出路径。
+#   - .blend 会被 Godot 交给 Blender 导入，官方要求「所有团队成员都安装 Blender」——本目录被忽略后，协作者无需 Blender。
+#   - 顺带不再导入 docs 下的 PNG / GIF / .blend，省导入时间与 .godot 缓存，导出包也不会带上这些产物。
+#
+# 2026-10-12 起：docs/ 下的 *.import 已从仓库移除；若将来需要让 Godot 处理 docs 下资源，
+# 删除本文件并重新导入即可（Godot 会自动重建 .import）。

@@ -42,6 +42,8 @@ addons/godot-mcp/
 *.tmp
 *.bak
 *.orig
+# Blender 自动保存的上一版备份（真正源工程是 *.blend）
+*.blend1
 # 仓库根的本地临时目录：抓取脚本 / API 快照 / 一次性探针（不入库）
 /tmp/
 
