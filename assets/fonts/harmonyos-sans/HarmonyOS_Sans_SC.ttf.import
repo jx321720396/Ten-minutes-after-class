@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://dy12oh0srw742"
-path="res://.godot/imported/MiSans-Demibold.ttf-b349f4d126222ae0d23172a581fe4037.fontdata"
+uid="uid://l8d1u77nwens"
+path="res://.godot/imported/HarmonyOS_Sans_SC.ttf-8205eeb5f906b5188dfb8ca830265b03.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/misans/MiSans-Demibold.ttf"
-dest_files=["res://.godot/imported/MiSans-Demibold.ttf-b349f4d126222ae0d23172a581fe4037.fontdata"]
+source_file="res://assets/fonts/harmonyos-sans/HarmonyOS_Sans_SC.ttf"
+dest_files=["res://.godot/imported/HarmonyOS_Sans_SC.ttf-8205eeb5f906b5188dfb8ca830265b03.fontdata"]
 
 [params]
 
