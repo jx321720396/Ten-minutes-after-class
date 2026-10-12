@@ -2,7 +2,7 @@ extends GutTest
 
 
 func test_live_volume_and_threshold_are_read_only() -> void:
-	var core := SimCore.from_npc(20261011, 16, ConfigLoader.new().load_all())
+	var core := SimCore.new(20261011, 16, ConfigLoader.new().load_all())
 	var clock := SimulationClock.new()
 	add_child_autofree(clock)
 	clock.set_process(false)

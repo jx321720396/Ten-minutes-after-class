@@ -1,39 +1,23 @@
 class_name ChatActivityBubble
 extends CanvasLayer
-## 头顶**无字**聊天气泡（表现层，只读）：一次真实闲聊的成员各挂一个三点气泡。
-##
-## 依据：docs/superpowers/plans/2026-10-07-chat-playable-loop.md §8.1。
-##
-## 用意：不写对白也能看出「这两个人正在说话」 —— 三点依次淡入淡出即可，
-## 不需要任何台词素材，也不给每个关系边各生成一个进度条。
-##
-## 约束：
-##   · 只读真实会话（`get_active_sessions()`），不按行为名猜；
-##   · 未揭晓的加入者在揭晓前**不出现气泡**（防止提前泄露结果）；
-##   · 世界被 hold（转笔演出 / 暂停）时**停掉点动画**，恢复后接着来；
-##   · 会话结束 / 中断 / 切场景都不残留（`_sync` 收掉多余节点）。
+## 公开行为符号粒子：只读会话 / activity_of，独立 RNG，不参与内核结算。
+## 保留聊天加入揭晓的 hide_member / show_member 接口；双方独立发射。
 
-const BUBBLE_SIZE := Vector2(54.0, 26.0)
-const DOT_SIZE := 8.0
-const DOT_SPACING := 6.0
-const STYLE_TABLE := "ui/chat_feedback_style"
-const COLOR_PAPER := Color(0.99, 0.98, 0.94, 0.95)
-const COLOR_DOT := Color(0.25, 0.30, 0.28)
-## 气泡锚点相对人物锚点再抬高的量（米），避免压住名字牌
-const ANCHOR_LIFT := 0.18
+const STYLE_PATH := "res://data/ui/behavior_particles.json"
+const Fonts = preload("res://scripts/ui/game_fonts.gd")
 
 var _core: Variant = null
 var _actors: Node3D = null
 var _clock: SimulationClock = null
 var _time_flow: TimeFlow = null
-## 索引 → 气泡节点
 var _bubbles: Dictionary = {}
 var _hidden: Dictionary = {}
-## 每个点的动画相位（三个点依次亮）
-var _phase := 0.0
-var _dot_seconds := 0.45
-## 没有人物节点时的兜底锚点高度（米；来自 ui/chat_feedback_style.csv）
-var _anchor_height := 1.5
+var _settings: Dictionary = {}
+var _styles: Dictionary = {}
+var _icons: Dictionary = {}
+## 位图字形（白色贴图，运行时按 style 配色 modulate）；缺失或未导入时静默回退字体字形。
+var _bitmaps: Dictionary = {}
+var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -43,11 +27,14 @@ func _ready() -> void:
 func bind_core(core: Variant) -> void:
 	if _core == core:
 		return
+	clear()
 	_core = core
+	_load_style()
+	if is_instance_valid(_core):
+		_rng.seed = int(_core.seed()) + int(_settings["seed_offset"])
 	_sync()
 
 
-## 人物容器（取每个索引的反馈锚点；缺失时退化成内核坐标）。
 func bind_actors(actors: Node3D) -> void:
 	_actors = actors
 
@@ -75,141 +62,281 @@ func clear_hidden() -> void:
 	_sync()
 
 
+func clear() -> void:
+	for emitter in _bubbles.values():
+		(emitter["root"] as Control).queue_free()
+	_bubbles.clear()
+	_hidden.clear()
+
+
 func bubble_count() -> int:
 	var count := 0
 	for index in _bubbles:
-		if (_bubbles[index] as Control).visible:
+		if has_bubble(int(index)):
 			count += 1
 	return count
 
 
-## 这个人此刻有没有无字气泡（会话结束 / 未揭晓 / 越界都应返回 false）。
 func has_bubble(index: int) -> bool:
-	if not _bubbles.has(index):
-		return false
-	return (_bubbles[index] as Control).visible
+	return emitter_kind(index) == "chat"
+
+
+func emitter_kind(index: int) -> String:
+	return str(_bubbles.get(index, {}).get("kind", ""))
+
+
+func particle_snapshot(index: int) -> Array:
+	var out: Array = []
+	for particle in _bubbles.get(index, {}).get("particles", []):
+		out.append(_sample(particle))
+	return out
 
 
 func _process(delta: float) -> void:
-	if _core == null:
-		return
-	var paused := _clock != null and is_instance_valid(_clock) and _clock.is_paused()
-	if not paused:
-		var world_delta := _time_flow.scale_delta(delta) if is_instance_valid(_time_flow) else delta
-		_phase += world_delta / maxf(_dot_seconds, 0.01)
 	_sync()
+	if not is_instance_valid(_core):
+		return
+	var stopped := is_instance_valid(_clock) and _clock.is_paused()
+	if is_instance_valid(_time_flow):
+		# TimeFlow 仅提供冻结门禁，不把世界倍速乘入粒子动画。
+		stopped = stopped or _time_flow.scale_delta(delta) <= 0.0
+	var visual_delta := 0.0 if stopped else maxf(delta, 0.0)
+	if visual_delta > 0.0:
+		_advance(visual_delta)
 	_layout()
 
 
-## 哪些人应该出现气泡：在真实会话里、且未被隐藏。
 func _sync() -> void:
-	if _core == null:
-		return
 	var wanted := {}
-	for session in _core.get_active_sessions():
-		if str(session["kind"]) != "chat":
-			continue
-		for member in session["members"]:
-			var index := int(member)
-			if _hidden.has(index):
+	if is_instance_valid(_core):
+		for i in range(int(_core.node_count())):
+			var kind := str(_core.activity_of(i))
+			if kind != "chat" and _styles.has(kind):
+				wanted[i] = kind
+		for session in _core.get_active_sessions():
+			if str(session["kind"]) != "chat":
 				continue
-			wanted[index] = true
+			for member in session["members"]:
+				if not _hidden.has(int(member)):
+					wanted[int(member)] = "chat"
+	for index in _bubbles.keys():
+		if not wanted.has(index) or wanted[index] != emitter_kind(index):
+			(_bubbles[index]["root"] as Control).queue_free()
+			_bubbles.erase(index)
 	for index in wanted:
-		_bubble(index).visible = true
+		if _bubbles.has(index):
+			continue
+		var root := Control.new()
+		root.name = "Symbols_%d" % index
+		root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(root)
+		_bubbles[index] = {"root": root, "kind": wanted[index], "timer": 0.0, "particles": []}
+
+
+func _advance(delta: float) -> void:
 	for index in _bubbles:
-		if not wanted.has(index):
-			(_bubbles[index] as Control).visible = false
+		var emitter: Dictionary = _bubbles[index]
+		var particles: Array = emitter["particles"]
+		for k in range(particles.size() - 1, -1, -1):
+			var particle: Dictionary = particles[k]
+			particle["age"] = float(particle["age"]) + delta
+			if float(particle["age"]) >= float(_settings["lifetime_seconds"]):
+				(particle["node"] as Control).queue_free()
+				particles.remove_at(k)
+		emitter["timer"] = float(emitter["timer"]) - delta
+		# 大倍率不补喷积压粒子，保持画面稀疏与节点数有界。
+		if float(emitter["timer"]) <= 0.0:
+			emitter["timer"] = float(_settings["interval_seconds"])
+			if particles.size() < int(_settings["max_per_actor"]):
+				_spawn(int(index), emitter)
 
 
-## 每帧把气泡贴到人物头顶（相机投影），并推进三点动画。
+func _spawn(index: int, emitter: Dictionary) -> void:
+	var style: Dictionary = _styles[str(emitter["kind"])]
+	var symbols: Array = style["symbols"]
+	var colors: Array = style["colors"]
+	var symbol := str(symbols[_rng.randi_range(0, symbols.size() - 1)])
+	var color := Color(str(colors[_rng.randi_range(0, colors.size() - 1)]))
+	var side := -1.0 if _rng.randi_range(0, 1) == 0 else 1.0
+	# 每个粒子单独扰动速度与大小：同批粒子不再像复制粘贴（只用独立 RNG，不碰模拟随机流）
+	var speed_scale := (
+		1.0
+		+ _rng.randf_range(
+			-float(_settings["speed_variation"]), float(_settings["speed_variation"])
+		)
+	)
+	var size_scale := (
+		1.0
+		+ _rng.randf_range(-float(_settings["size_variation"]), float(_settings["size_variation"]))
+	)
+	var visual := _make_symbol(symbol, color)
+	(emitter["root"] as Control).add_child(visual)
+	var origin := _anchor_of(index)
+	origin.x += side * float(_settings["spread_m"])
+	(emitter["particles"] as Array).append(
+		{
+			"node": visual,
+			"age": 0.0,
+			"origin": origin,
+			"side": side,
+			"speed_scale": speed_scale,
+			"size_scale": size_scale,
+			"rotation":
+			_rng.randf_range(
+				-float(_settings["rotation_radians"]), float(_settings["rotation_radians"])
+			)
+		}
+	)
+
+
+func _make_symbol(symbol: String, color: Color) -> Control:
+	var root := Control.new()
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 光圈默认关闭：2026-10-12 用户裁定「只要符号本身的形状」；halo_enabled 置 true 即恢复
+	if bool(_settings.get("halo_enabled", false)):
+		var halo := Polygon2D.new()
+		var radius := float(_settings["halo_radius_pixels"])
+		var points := PackedVector2Array()
+		var segments := int(_settings["halo_segments"])
+		for k in range(segments):
+			points.append(Vector2.from_angle(TAU * float(k) / float(segments)) * radius)
+		halo.polygon = points
+		halo.color = Color(color, float(_settings["halo_alpha"]))
+		root.add_child(halo)
+	if _bitmaps.has(symbol):
+		var glyph := TextureRect.new()
+		glyph.texture = _bitmaps[symbol]
+		glyph.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		glyph.size = Vector2.ONE * float(_settings["font_size"])
+		glyph.position = -glyph.size * 0.5
+		glyph.modulate = color
+		glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(glyph)
+	elif _icons.has(symbol):
+		var sprite := TextureRect.new()
+		sprite.texture = _icons[symbol]
+		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sprite.size = Vector2.ONE * float(_settings["font_size"])
+		sprite.position = -sprite.size * 0.5
+		sprite.modulate = color
+		sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(sprite)
+	else:
+		var label := Label.new()
+		label.text = symbol
+		label.add_theme_font_override("font", Fonts.regular())
+		label.add_theme_font_size_override("font_size", int(_settings["font_size"]))
+		label.add_theme_color_override("font_color", color)
+		label.add_theme_color_override("font_outline_color", Color(str(_settings["outline_color"])))
+		label.add_theme_constant_override("outline_size", int(_settings["outline_size"]))
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(label)
+		label.position = -label.get_minimum_size() * 0.5
+	return root
+
+
+## 缓出曲线：power = 1 即线性（与旧行为一致），越大越"先快后慢"。
+static func _ease_out(t: float, power: float) -> float:
+	return 1.0 - pow(1.0 - t, power)
+
+
+func _sample(particle: Dictionary) -> Dictionary:
+	var age := float(particle["age"])
+	var lifetime := float(_settings["lifetime_seconds"])
+	var t := clampf(age / lifetime, 0.0, 1.0)
+	var origin: Vector3 = particle["origin"]
+	var speed := float(particle.get("speed_scale", 1.0))
+	var height := maxf(
+		float(_settings["floor_height_m"]),
+		(
+			origin.y
+			+ float(_settings["rise_speed_m"]) * speed * age
+			- float(_settings["gravity_m"]) * speed * age * age * 0.5
+		)
+	)
+	# 弹入：刚出现的一小段由小到大，避免"凭空突然出现"
+	var appear := clampf(t / float(_settings["appear_span"]), 0.0, 1.0)
+	var appear_factor := lerpf(float(_settings["appear_scale"]), 1.0, _ease_out(appear, 2.0))
+	# 缩小改用幂曲线（1.0 = 旧的线性）：前期保持大小，末段才快速收敛
+	var shrink := pow(t, float(_settings["scale_ease_power"]))
+	# 横向漂移改为减速（1.0 = 旧的匀速）
+	var drift := _ease_out(t, float(_settings["drift_ease_power"]))
+	return {
+		"height": height,
+		"scale":
+		(
+			(
+				lerpf(1.0, float(_settings["minimum_scale"]), shrink)
+				* float(particle.get("size_scale", 1.0))
+			)
+			* appear_factor
+		),
+		"alpha": 1.0 - smoothstep(float(_settings["fade_start"]), 1.0, t),
+		"position":
+		Vector3(
+			(
+				origin.x
+				+ (
+					float(particle["side"])
+					* float(_settings["side_speed_m"])
+					* speed
+					* lifetime
+					* drift
+				)
+			),
+			height,
+			origin.z
+		)
+	}
+
+
 func _layout() -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
 		return
-	for index in _bubbles:
-		var bubble: Control = _bubbles[index]
-		if not bubble.visible:
-			continue
-		var world := _anchor_of(int(index))
-		if camera.is_position_behind(world):
-			bubble.visible = false
-			continue
-		var screen := camera.unproject_position(world)
-		bubble.position = screen - BUBBLE_SIZE * 0.5
-		_animate(bubble)
+	var view_scale := clampf(
+		get_viewport().get_visible_rect().size.y / float(_settings["reference_height_pixels"]),
+		float(_settings["minimum_view_scale"]),
+		float(_settings["maximum_view_scale"])
+	)
+	for emitter in _bubbles.values():
+		for particle in emitter["particles"]:
+			var sample := _sample(particle)
+			var node: Control = particle["node"]
+			var world: Vector3 = sample["position"]
+			node.visible = not camera.is_position_behind(world)
+			node.position = camera.unproject_position(world)
+			node.scale = Vector2.ONE * float(sample["scale"]) * view_scale
+			node.modulate.a = float(sample["alpha"])
+			node.rotation = float(particle["rotation"])
 
 
 func _anchor_of(index: int) -> Vector3:
-	if _actors != null and _actors.has_method("feedback_anchor_of"):
+	if is_instance_valid(_actors):
 		var anchor: Node3D = _actors.feedback_anchor_of(index)
-		if anchor != null:
-			return anchor.global_position + Vector3(0.0, ANCHOR_LIFT, 0.0)
+		if is_instance_valid(anchor):
+			return anchor.global_position + Vector3.UP * float(_settings["head_lift_m"])
 	var position: Vector2 = _core.position_of(index)
-	return Vector3(position.x, _anchor_height + ANCHOR_LIFT, position.y)
-
-
-func _animate(bubble: Control) -> void:
-	var dots := bubble.get_node_or_null("Dots")
-	if dots == null:
-		return
-	var count := dots.get_child_count()
-	for k in range(count):
-		var dot := dots.get_child(k) as Control
-		# 三个点依次亮：相位差 1/3 圈
-		var t := fmod(_phase - float(k) / float(maxi(count, 1)), 1.0)
-		dot.modulate.a = 0.35 + 0.65 * (0.5 + 0.5 * sin(t * TAU))
-
-
-func _bubble(index: int) -> Control:
-	if _bubbles.has(index):
-		return _bubbles[index]
-	var root := Control.new()
-	root.name = "Bubble_%d" % index
-	root.position = Vector2.ZERO
-	root.custom_minimum_size = BUBBLE_SIZE
-	root.size = BUBBLE_SIZE
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var body := Panel.new()
-	body.name = "Body"
-	body.size = BUBBLE_SIZE
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.add_theme_stylebox_override("panel", _round_box(COLOR_PAPER, 12.0))
-	root.add_child(body)
-	var dots := HBoxContainer.new()
-	dots.name = "Dots"
-	dots.add_theme_constant_override("separation", int(DOT_SPACING))
-	dots.position = Vector2(
-		BUBBLE_SIZE.x * 0.5 - (DOT_SIZE * 3.0 + DOT_SPACING * 2.0) * 0.5,
-		BUBBLE_SIZE.y * 0.5 - DOT_SIZE * 0.5
+	return Vector3(
+		position.x,
+		float(_settings["fallback_height_m"]) + float(_settings["head_lift_m"]),
+		position.y
 	)
-	dots.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(dots)
-	for _k in range(3):
-		var dot := Panel.new()
-		dot.custom_minimum_size = Vector2(DOT_SIZE, DOT_SIZE)
-		dot.size = Vector2(DOT_SIZE, DOT_SIZE)
-		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		dot.add_theme_stylebox_override("panel", _round_box(COLOR_DOT, DOT_SIZE * 0.5))
-		dots.add_child(dot)
-	add_child(root)
-	_bubbles[index] = root
-	return root
-
-
-func _round_box(color: Color, radius: float) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = color
-	box.set_corner_radius_all(int(radius))
-	box.content_margin_left = 0.0
-	box.content_margin_right = 0.0
-	return box
 
 
 func _load_style() -> void:
-	for row in ConfigLoader.new().get_table(STYLE_TABLE).get("rows", []):
-		var value := float(str(row.get("value", "0")))
-		match str(row.get("param", "")):
-			"bubble_dot_seconds":
-				_dot_seconds = maxf(0.05, value)
-			"bubble_follow_height_m":
-				_anchor_height = maxf(0.2, value)
+	if not _settings.is_empty():
+		return
+	var config: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(STYLE_PATH))
+	_settings = config["settings"]
+	_styles = config["styles"]
+	for key in config["icons"]:
+		var image := Image.new()
+		if image.load_svg_from_string(str(config["icons"][key])) == OK:
+			_icons[key] = ImageTexture.create_from_image(image)
+	for key in config.get("bitmaps", {}):
+		var path := str(config["bitmaps"][key])
+		if ResourceLoader.exists(path):
+			_bitmaps[key] = load(path)
+		else:
+			push_warning("符号贴图缺失，回退字体字形：%s" % path)

@@ -8,7 +8,7 @@ func _initialize() -> void:
 
 func _capture() -> void:
 	root.size = Vector2i(1920, 1080)
-	root.get_node("GameState").start_game(20261011, 2)
+	root.get_node("GameState").start_game(20261011, 16)
 	var scene: Node = load("res://scenes/game/classroom3D.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
