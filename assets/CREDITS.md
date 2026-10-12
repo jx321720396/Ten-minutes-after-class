@@ -59,3 +59,5 @@ assets/models/classroom_window/ 与 scenes/components/school_window_warm.tscn �
 assets/textures/characters/fullbody_v1/ 共 26 张，由内置 imagegen 根据本聊天原创纸张推理板概念图的校园插画方向生成，包含 24 名 NPC 和男女主角。来源、角色映射及使用边界见同目录 README.md、manifest.json。尚未接入游戏。
 
 人物简化小样：assets/textures/characters/simple_samples/char_01_body_simple_v1.png，2026-10-12 内置 imagegen 根据本项目陈阳全身稿进行风格转换生成。说明见同目录 README.md，尚未接入游戏。
+
+人物方向动作对比：assets/textures/characters/motion_compare_v1/ 的 Q 版与正常比例陈阳图集，2026-10-12 内置 imagegen 以本项目原创人物稿生成。每套 32 帧，方向索引、动作预览及生成局限见同目录 README.md、frames.json、index.html。尚未接入游戏。
