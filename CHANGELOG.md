@@ -1,5 +1,17 @@
 # 变更记录
 
+- **一局固定 16 人：删除 8 / 24 人局与难度档（2026-10-12，用户裁定）**
+  - 玩法口径：**角色池 24 → 16 人，一局全池入局**（+ 玩家 = 17 个节点），与该局 16 张 NPC 立绘**一人一张**（同局撞脸问题随之关闭，见 §25.8）。删除 8 人局 / 24 人局与整个难度档概念。
+  - **角色名单（用户确认，编号重排 01–16）**：保留陈阳 / 林晚 / 张渊 / 周敏 / 赵蕊 / 孙悦 / 郑浩 / 许静 / 何川 / 韩雪 / 沈浪 / 顾言 / 叶梓 / 佳豪 / 温雅 / 李峥；**删除 8 人**：吴哲 / 王磊 / 刘畅 / 马强 / 罗杰 / 苏晴 / 唐糖 / 白柔。保留规则：绑定组三人（陈阳 / 林晚 / 佳豪）必留、12 类行为标签全覆盖、MBTI 四维高低两侧都有人、男女各 8 与立绘一一对应。
+  - **数据**：`characters/seeds.csv` 16 行（重编号）、`characters/appearance.csv` 16 行一人一立绘、新增 `rules/roster.csv`（`npc_count = 16`）、删除 `rules/difficulty.csv`、`rules/leisure.csv` 的 `book_count_8/16/24` 合并为单值 `book_count = 5`；`bindings.csv` 按别名引用，未改。
+  - **内核**：删除难度映射 —— `SimCore.new(seed, npc_count)`（原 `(seed, difficulty)` 与 `from_npc` 兼容入口一并移除），人数超过角色池时夹到池人数并告警；`GameState.start_game(seed, npc_count)`、`Config.default_npc_count()`（读 `roster.csv`）、`main_menu` / `classroom_actors` 同步；侧向修复 `LeisureActions.select_roster` 的持书配额口径（单值 + 不超过本局人数）。
+  - **Python 侧**：`Sim(seed, npc_count=None)` 默认人数改读 `rules/roster.csv`、`N` 以实际入池人数为准、`book_count` 单值；`check_config` 新增「人数 = 角色池行数」「持书配额可抽足」两条校验（原 8/16/24 三档校验删除）；导出与对拍脚本 `--npc` 默认值 8 → 16。
+  - **测试**：全部单测与集成测试的 8 / 24 人样本与旧难度语义（`SimCore.new(seed, 1|2|3)`、`start_game(seed, 1|2|3)`）统一为 16 人；节点数断言 9 → 17、矩阵单元数 72 → 272、活动圈 12 组用例收敛为 8 组（不再补 25 座）、`test_roster_selector` 目标人数 8 → 16（池 = 局）。
+  - **检验一**：本条改的是**人数与阵容配置**，不是行为规则 —— 行为逻辑仍是 `f(四维, 透明度, 当前状态)` 的纯函数，不含角色名 / ID 判断；同一内核换脚本跑，同种子逐 tick 结果一致（Python ↔ GDScript 两侧的配额读取与默认人数已同步改口径）。
+  - **标定影响（须知道）**：池收敛会改变分布 —— 第六道门复测：好感均值 30.0、爆发均值 2.4、爆发覆盖 78%，仍为 **P0 大调整期的既有红灯**（未做任何参数标定，属预期）；机制仍在场（排挤 46% 局、当众羞辱 96% 局、深层锁死率 0%）。
+  - **文档同步**：主文档 §1/§5/§10.20/§11.4/§18.2/§18.9、v4 分册 01/03/09/13/14/17/25/26、`docs/design/` 的数据模型 / 术语表 / 规则引擎设计、`data/README.md`、`README.md`、`AGENTS.md`、`CLAUDE.md`、production 的路线图 / 冲刺计划 / 团队分工任务单；旧版合并策划案加归档注记。
+  - **验证**：GUT `tests/unit` **374 项全绿**、`tests/integration` **25 项全绿**；快门禁 `check_config` 313 项 / `test_core` 61 项 / `verify_formula` 11 项通过；`check_docs` 仅既有「待标定」表述红灯；铁律 2/3 全绿（魔法数字门仅既有 13 项）；`gdformat --check scripts/` 通过、`gdlint scripts/` 仅 `sim_core.gd` 两项既有超限。
+
 - **符号光圈下线（2026-10-12，用户裁定）**
   - 用户反馈「气泡还有一个光圈，不需要这个，只要有本身的形状」：每个符号背后原本画一个 32 边形圆盘光晕（`halo_alpha 0.09`），现**不再创建**该节点。
   - `data/ui/behavior_particles.json` 新增 `halo_enabled`（`false`）；`halo_alpha` / `halo_radius_pixels` / `halo_segments` 保留备用，**置 `halo_enabled = true` 即完全恢复**（唯一开关，可撤回）。

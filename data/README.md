@@ -25,7 +25,7 @@ data/
 │   ├─ time_runtime.csv       学期长度 term_days + 每帧 tick 预算（时间组件）✓
 │   ├─ seats.csv              座位表（seat_id / row / col / kind；决定相邻关系）✓
 │   ├─ stand_points.csv       站立点表（课间走动目标；世界坐标在场景 StandPoints/*）✓
-│   ├─ difficulty.csv         难度档 → NPC 数量（+ `default` 列 = 新游戏默认档）✓
+│   ├─ roster.csv             本局人数（`npc_count` = 16；一局全池入局）✓
 │   ├─ player_interaction.csv 玩家交互几何与线索参数（闲聊范围 / 连线步长 / 拾取层 / 线索条数）✓
 │   ├─ player_invitation_kinds.csv 需要玩家自主接受／拒绝的行为类型（邀请等待不占用）✓
 │   ├─ social_events.csv      社会事件状态机（多阶段跨相位）✓
@@ -56,7 +56,7 @@ data/
 | `rules/time_presentation.csv` | `phase_id`、`display_name`、`real_duration_seconds`、`game_duration_seconds` |
 | `rules/time_runtime.csv` | `key`、`value`、`note`（`term_days` / `max_ticks_per_frame`） |
 | `rules/time_flow.csv` | `param`、`value`、`note`（`normal_scale` / `player_action_scale`；世界播放倍率，事件可持有正常速度） |
-| `rules/difficulty.csv` | `difficulty`、`npc_count`、`default`（新游戏默认档） |
+| `rules/roster.csv` | `key`、`value`、`note`（`npc_count` = 一局 NPC 数 = 16） |
 | `rules/transmission.csv` | `theta_a`、`theta_h`、`sigma`、`beta_affinity`、`beta_hostility`、`epsilon` |
 | `rules/decay.csv` | `axis`、`no_interaction`、`interacted`、`note` |
 | `rules/phases.csv` | `phase_id`、`tick_count`、`active_rules`、`player_controllable` |
