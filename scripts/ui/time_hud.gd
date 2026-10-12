@@ -9,7 +9,7 @@ extends CanvasLayer
 ## 显示口径：
 ##   · 课间：`第 6 / 30 天 · 中午午休` + `课间剩余 01:24` + 剩余时间条；
 ##   · 上课：`第 6 / 30 天 · 上午课堂` + `发酵中 · 本阶段约剩余 00:12`（玩家操作被锁）；
-##   · 日末：第二行改为 `第 6 天结束`（简报与「继续」按钮由日报组件接入）；
+##   · 日末：第二行改为 `第 6 天结束 · 晚自习与夜晚悄然过去……`（简报与「继续」按钮由日报组件接入）；
 ##   · 倒计时**向上取整**，边界显示 00:00，不出现负数；阶段名提示在边界只弹一次。
 
 ## 日报组件接入用：玩家点「进入第 N 天」
@@ -55,15 +55,26 @@ var _toast_left := 0.0
 var _toast_count := 0
 var _last: Dictionary = {}
 var _font: Font = null
+var _volume_card: Control
+var _volume_cfg: Dictionary = CampusTheme.settings().volume_card
 
 
 func _ready() -> void:
 	_build_ui()
 	CampusTheme.apply_tree(self)
+	_volume_card = preload("res://scripts/ui/volume_card.gd").new()
+	_volume_card.name = "VolumeCard"
+	add_child(_volume_card)
 	_refresh({})
 
 
 func _process(delta: float) -> void:
+	_volume_card.position = Vector2(
+		_panel.position.x, _panel.position.y + _panel.size.y + _volume_cfg.gap
+	)
+	var footer_y: float = _volume_card.position.y + _volume_card.size.y + _volume_cfg.gap
+	_toast.position.y = footer_y
+	_action.position.y = footer_y + _volume_cfg.footer_gap
 	if _toast_left <= 0.0:
 		return
 	_toast_left = maxf(0.0, _toast_left - delta)
@@ -178,6 +189,7 @@ func _refresh(snapshot_data: Dictionary) -> void:
 	if snapshot_data.is_empty():
 		return
 	_last = snapshot_data
+	_volume_card.refresh(snapshot_data)
 	var day := int(snapshot_data.get("day", 0))
 	var term_days := int(snapshot_data.get("term_days", 0))
 	var player_grade := int(snapshot_data.get("player_grade", 0))
@@ -326,7 +338,7 @@ func _make_label(font_size: int, color: Color) -> Label:
 ## UI 字体：中文字族优先，末位 sans-serif 兜底（与 ActorWalker 同一套族名）。
 func _ui_font() -> Font:
 	if _font == null:
-		var font := SystemFont.new()
-		font.font_names = PackedStringArray(FONT_FAMILIES)
+		var font := preload("res://scripts/ui/game_fonts.gd").regular()
+
 		_font = font
 	return _font

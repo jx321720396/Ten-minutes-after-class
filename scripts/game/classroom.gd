@@ -1,4 +1,6 @@
 extends Node3D
+const TERM_REPORT_SCENE := preload("res://scenes/ui/term_report.tscn")
+
 ## 教室场景导航 + 时间接线；模拟逻辑由内核独立负责。
 ##
 ## 只有**一处**绑定内核（避免重复连接）：Actors 在自己的 _ready 里准备内核（必要时
@@ -27,6 +29,8 @@ extends Node3D
 @onready var behavior_badge: BehaviorBadgePresenter = $BehaviorBadge
 @onready var npc_profile: NpcProfile = $UI/NpcProfile
 
+var _term_report: CanvasLayer
+
 
 func _ready() -> void:
 	# 人物由 Actors 在自己的 _ready 里生成，等一帧再接线（确定性 > 巧合）
@@ -47,6 +51,9 @@ func _ready() -> void:
 		transition.force_hide()
 		return
 	time_hud.bind_clock(clock)
+	_term_report = TERM_REPORT_SCENE.instantiate()
+	add_child(_term_report)
+	_term_report.bind_sources(core, clock, actors)
 	transition.bind_clock(clock)
 	_bind_clue_board()
 	# 黑幕开始退场的瞬间就应用挂起的相位（含每日归位），不等淡出结束
@@ -63,9 +70,8 @@ func _ready() -> void:
 
 ## 黑板跟这一局走：学期结束才清板。新开一局会换一间教室，板面本来就是空的。
 func _bind_clue_board() -> void:
-	var entry := get_node_or_null("UI/ClueBoardEntry")
-	if entry != null and entry.has_method("clear_board"):
-		clock.term_finished.connect(entry.clear_board)
+	# 期末保留本局推理板供回顾；新局换场景时自然得到空板。
+	pass
 
 
 func _bind_time_flow(core: SimCore) -> bool:
@@ -129,6 +135,7 @@ func _bind_feedback(core: Variant) -> void:
 	_inject_seat_zones(core)
 	interaction.bind_sources(core, player, actors, clock)
 	npc_profile.bind_sources(core, actors, interaction)
+	$UI/StudyNavigation.bind_sources(core)
 	action_bar.profile_requested.connect(npc_profile.open_profile)
 
 
@@ -193,6 +200,9 @@ func _build_player_seat_rect(core: Variant, zones: Dictionary) -> void:
 ## 日末简报的「进入第 N 天」：只有在 report 状态才成功；学期结束或依赖缺失时明确报开发状态，
 ## 不假装成功（计划 §6：不提供虚假的成功恢复）。
 func _on_continue_requested() -> void:
+	if str(clock.snapshot().mode) == SimulationClock.MODE_FINISHED:
+		_term_report.open_record(_core_from_state().term_record())
+		return
 	if clock.continue_after_report():
 		# 转场黑幕任务：确认进入次日 → 显示「第 N 天」黑幕；
 		# 黑幕结束后的归位停留（0.7 秒）由走动组件在退场补跑时接管

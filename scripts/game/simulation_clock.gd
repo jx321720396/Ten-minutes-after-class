@@ -272,6 +272,10 @@ func snapshot() -> Dictionary:
 	out["ended_day"] = _ended_day
 	out["term_days"] = _term_days
 	out["player_grade"] = int(_core.grade(_core.node_count() - 1)) if _core != null else 0
+	out["volume"] = _core.volume() if _core != null else 0.0
+	for row in _tables.get("rules/environment", {}).get("rows", []):
+		if row["param"] in ["volume_max", "volume_threshold"]:
+			out[row["param"]] = float(row["value"])
 	out["display_name"] = _display_name_of(str(out.get("phase_id", "")))
 	var day := int(out.get("day", 0))
 	if _core != null and _core.has_method("exam_banner"):

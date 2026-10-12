@@ -20,6 +20,8 @@ static func start_leisure(c: SimCore, i: int, kind: String) -> bool:
 
 
 static func leave_class(c: SimCore) -> void:
+	c._term_record.end_state("study")
+	c._term_record.begin_state("leave_class")
 	var me := c._n - 1
 	for j in c._neighbor_idx[me]:
 		c._apply_event(j, me, "leave_absence")
@@ -40,6 +42,7 @@ static func class_affinity_settle(c: SimCore) -> void:
 				c._a[i * c._n + j] = c._clamp100(
 					c._a[i * c._n + j] + float(c._p["class_affinity_gain"])
 				)
+	c._term_record.capture(c, "class_affinity")
 
 
 static func settle_book_gifts(c: SimCore, snapshots: Array) -> Array:

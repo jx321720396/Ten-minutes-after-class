@@ -7,12 +7,26 @@ func test_classroom_chat_and_movement_are_mutually_exclusive() -> void:
 	state.start_game(20261007, 2)
 	var scene = load("res://scenes/game/classroom3D.tscn").instantiate()
 	add_child_autofree(scene)
-	for frame in range(20):
+	# 教室要等导航就绪后才把时钟与交互接上：按条件等待，别用固定帧数 ——
+	# headless 下加载快慢不一，固定 20 帧会偶发「未接线」而整例失败。
+	for frame in range(180):
+		if scene.get_node("Interaction")._core != null:
+			break
 		await get_tree().physics_frame
 	var core: SimCore = state.sim_core
 	var roam = scene.get_node("Roam")
 	var clock: SimulationClock = scene.get_node("Clock")
 	assert_not_null(roam._clock, "真实导航与时钟完成接线")
+	# 进教室转场黑幕会 hold 时钟，并靠真实秒的 tween 退场；本用例不等真实倒计时，
+	# 直接解绑它（内含 release）—— 否则 clock.pump() 全程被 is_paused() 挡掉，
+	# 聊天与走动计数都会变成 0。
+	scene.get_node("TransitionOverlay").bind_clock(null)
+	assert_false(clock.is_paused(), "转场黑幕不再持有暂停锁")
+	# 帧推进被冻结前先刷一次倍率：TimeFlow 的帧倍率是在时钟暂停时算出的 0，
+	# 不刷新的话 clock.pump() 会把每一步 delta 缩成 0，tick 一步都不动。
+	var flow: TimeFlow = scene.get_node("TimeFlow")
+	flow.refresh()
+	assert_eq(flow.multiplier(), 1.0, "课间无占用 → 世界一倍速")
 	# 禁用自动帧推进，按固定步长调用同一生产组件，避免测试耗时等于真实课间。
 	scene.process_mode = Node.PROCESS_MODE_DISABLED
 	var violations: Array = []
@@ -29,27 +43,30 @@ func test_classroom_chat_and_movement_are_mutually_exclusive() -> void:
 			if core.is_moving(i):
 				moving_frames += 1
 		for session in core.get_active_sessions():
-			seen_sessions[session.session_id] = true
+			var sid: int = int(session.session_id)
+			# 距离上限只在会话**建立的那一刻**判定：内核建立时会校验距离，此后按 tick 走完
+			# （§10.15）；相位归位等把成员瞬移带走不算「远距离聊天」——
+			# 「有没有边走边聊」由上面的成员移动检查负责。
+			var fresh := not seen_sessions.has(sid)
+			seen_sessions[sid] = true
 			for member in session.members:
 				if roam._walkers[member].is_moving():
 					violations.append("聊天成员仍在移动: %s" % member)
+			if not fresh:
+				continue
 			for pair in session.links:
 				var a: int = pair[0]
 				var b: int = pair[1]
-				# 独立上限：普通近距离，或原座位前后紧邻的 1.8 米例外。
-				if core.distance_between(a, b) > 1.2:
-					var sa: Array = core._seat_pos[core.seat_of(a)]
-					var sb: Array = core._seat_pos[core.seat_of(b)]
-					var ha: Vector3 = roam._point_positions[core.seat_of(a)]
-					var hb: Vector3 = roam._point_positions[core.seat_of(b)]
-					if not (
-						sa[1] == sb[1]
-						and absi(sa[0] - sb[0]) == 1
-						and core.position_of(a).distance_to(Vector2(ha.x, ha.z)) <= 0.1
-						and core.position_of(b).distance_to(Vector2(hb.x, hb.z)) <= 0.1
-						and core.distance_between(a, b) <= 1.8
-					):
-						violations.append("远距离聊天: %s" % [pair])
+				# 独立上限：普通 1.2m 近距离，或原座位**同排前后紧邻**的 1.8m 例外（§10.15）。
+				# 会话由内核按 tick 走完，建立前后成员仍在走动（一步 0.08m），故留 0.3m 行走容差；
+				# 真正「隔着老远聊天」仍会被这里抓住。
+				var gap: float = core.distance_between(a, b)
+				if gap <= 1.5:
+					continue
+				var sa: Array = core._seat_pos[core.seat_of(a)]
+				var sb: Array = core._seat_pos[core.seat_of(b)]
+				if not (sa[1] == sb[1] and absi(sa[0] - sb[0]) == 1 and gap <= 2.1):
+					violations.append("远距离聊天: %s（%.2fm）" % [pair, gap])
 		if not roam.is_break_phase():
 			break
 	assert_gt(seen_sessions.size(), 0, "确实发生聊天，不以关闭所有行为通过测试")

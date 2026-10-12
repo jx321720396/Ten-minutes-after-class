@@ -1,10 +1,14 @@
 [gd_scene format=3 uid="uid://cc7c5bw525vga"]
 
+[ext_resource type="FontFile" path="res://assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf" id="campus_font"]
+
 [ext_resource type="Script" uid="uid://cctsahkm2am3h" path="res://scripts/ui/main_menu.gd" id="1_menu"]
 
 [sub_resource type="FontVariation" id="FontVariation_title"]
+base_font = ExtResource("campus_font")
 
 [sub_resource type="FontVariation" id="FontVariation_btn"]
+base_font = ExtResource("campus_font")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
 content_margin_left = 20.0

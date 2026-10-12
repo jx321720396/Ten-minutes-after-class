@@ -994,6 +994,9 @@ func _refresh_teacher() -> void:
 		layer.layer = 12
 		add_child(layer)
 		_teacher_label = Label.new()
+		_teacher_label.add_theme_font_override(
+			"font", preload("res://scripts/ui/game_fonts.gd").regular()
+		)
 		layer.add_child(_teacher_label)
 		_teacher_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 		_teacher_label.offset_left = -120
