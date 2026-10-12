@@ -1,6 +1,6 @@
 [gd_resource type="Theme" load_steps=2 format=3]
 
-[ext_resource type="FontFile" uid="uid://cmisansrg01abcde" path="res://assets/fonts/misans/MiSans-Regular.ttf" id="1_font"]
+[ext_resource type="FontFile" uid="uid://charthemonyossans01" path="res://assets/fonts/harmonyos-sans/HarmonyOS_Sans_SC.ttf" id="1_font"]
 
 [resource]
 default_font = ExtResource("1_font")
