@@ -14,7 +14,7 @@ func _capture() -> void:
 	var compact := args.has("--compact")
 	var fixture := args.has("--fixture")
 	var state: Node = root.get_node("GameState")
-	state.start_game(20261010, 2)
+	state.start_game(20261010, 16)
 	var scene: Node = load(SCENE).instantiate()
 	root.add_child(scene)
 	current_scene = scene

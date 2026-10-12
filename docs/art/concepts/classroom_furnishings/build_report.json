@@ -1,0 +1,17 @@
+{
+  "cabinet": {
+    "meshes": 5,
+    "triangles": 3760,
+    "bytes": 206836
+  },
+  "schoolbag": {
+    "meshes": 4,
+    "triangles": 1880,
+    "bytes": 101632
+  },
+  "reused_bookshelf": {
+    "meshes": 12,
+    "triangles": 37864,
+    "bytes": 2835860
+  }
+}

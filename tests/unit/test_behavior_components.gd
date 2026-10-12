@@ -19,7 +19,7 @@ func test_all_behaviors_are_registered() -> void:
 	assert_true(ResourceLoader.exists(REGISTRY_PATH), "独立行为注册表必须存在")
 	if not ResourceLoader.exists(REGISTRY_PATH):
 		return
-	var c := SimCore.from_npc(12345, 16, ConfigLoader.new().load_all())
+	var c := SimCore.new(12345, 16, ConfigLoader.new().load_all())
 	var registry: Variant = c.get("_behavior_registry")
 	assert_not_null(registry, "每局构建自己的行为组件")
 	if registry == null:
@@ -127,7 +127,7 @@ func test_new_games_have_independent_components_and_state() -> void:
 
 
 func _core() -> SimCore:
-	return SimCore.from_npc(12345, 16, ConfigLoader.new().load_all())
+	return SimCore.new(12345, 16, ConfigLoader.new().load_all())
 
 
 func _digest(c: SimCore) -> PackedByteArray:

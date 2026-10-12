@@ -3,6 +3,7 @@ extends RefCounted
 
 const SETTINGS := "res://data/ui/campus_theme.json"
 const PAPER_SHADER := preload("res://assets/shaders/ui_paper.gdshader")
+const GameFonts := preload("res://scripts/ui/game_fonts.gd")
 
 
 static func settings() -> Dictionary:
@@ -11,15 +12,34 @@ static func settings() -> Dictionary:
 
 static func utility_button(view: Button, slot: int) -> void:
 	var cfg := settings()
-	button(view, true)
-	var normal := box("teal", "paper")
-	normal.set_border_width_all(2)
-	view.add_theme_stylebox_override("normal", normal)
+	var entry: Dictionary = cfg.utility_style
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		var style := box(
+			"disabled" if state == "disabled" else "paper", "gold" if state == "hover" else "teal"
+		)
+		style.set_border_width_all(int(entry.border_width))
+		style.shadow_color = Color(cfg.teal, float(entry.shadow_alpha))
+		style.shadow_size = int(entry.shadow_size)
+		style.shadow_offset = Vector2(float(entry.shadow_offset[0]), float(entry.shadow_offset[1]))
+		if state == "hover":
+			style.border_width_bottom = int(entry.hover_underline)
+		view.add_theme_stylebox_override(state, style)
+	var focus := box("paper", "gold")
+	focus.bg_color = Color.TRANSPARENT
+	focus.set_border_width_all(int(entry.border_width))
+	view.add_theme_stylebox_override("focus", focus)
+	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		view.add_theme_color_override(state, Color(cfg.teal))
+	view.add_theme_color_override("font_disabled_color", Color(cfg.line))
+	for state in ["normal", "hover", "pressed", "focus"]:
+		view.add_theme_color_override("icon_" + state + "_color", Color(cfg.teal))
+	view.add_theme_font_override("font", GameFonts.regular())
 	view.add_theme_font_size_override("font_size", int(cfg.utility_font_size))
-	view.icon = load(
-		"res://assets/icons/actions/%s.svg" % ("board" if slot == 0 else "encyclopedia")
-	)
+	view.icon = load("res://assets/icons/actions/%s.svg" % entry.icons[slot])
+	view.tooltip_text = str(entry.tooltips[slot])
+	view.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	view.add_theme_constant_override("icon_max_width", int(cfg.utility_icon_size))
+	view.add_theme_constant_override("h_separation", int(entry.icon_gap))
 	view.custom_minimum_size = Vector2(cfg.utility_width, cfg.utility_height)
 	view.anchor_left = 1.0
 	view.anchor_right = 1.0
@@ -29,6 +49,24 @@ static func utility_button(view: Button, slot: int) -> void:
 	view.offset_left = view.offset_right - cfg.utility_width
 	view.offset_bottom = -cfg.utility_margin
 	view.offset_top = view.offset_bottom - cfg.utility_height
+	if not view.has_node("CampusPaperGrain"):
+		var grain := ColorRect.new()
+		grain.name = "CampusPaperGrain"
+		grain.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var material := ShaderMaterial.new()
+		material.shader = PAPER_SHADER
+		grain.material = material
+		view.add_child(grain)
+		grain.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	if not view.pressed.is_connected(_close_backpacks.bind(view)):
+		view.pressed.connect(_close_backpacks.bind(view))
+
+
+static func _close_backpacks(view: Button) -> void:
+	if view.name == "BackpackButton":
+		return
+	for panel in view.get_tree().get_nodes_in_group("backpack_panels"):
+		panel.close()
 
 
 static func box(fill: String, border: String) -> StyleBoxFlat:
@@ -144,7 +182,7 @@ static func main_menu(view: Control) -> void:
 			item.custom_minimum_size.y = cfg.menu_button_height
 			item.add_theme_font_size_override("font_size", int(cfg.menu_font_size))
 			button(item, item.name == "NewGame")
-			var menu_font := preload("res://scripts/ui/game_fonts.gd").regular()
+			var menu_font := GameFonts.regular()
 
 			item.add_theme_font_override("font", menu_font)
 			var normal := box("paper", "line")

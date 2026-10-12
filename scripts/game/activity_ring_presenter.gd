@@ -19,25 +19,25 @@ extends Node3D
 ## 2026-10-08 改版（按美术反馈）：
 ##   · **融合是「切换」不是「叠加」**：一旦某人被画进融合区域，他的个人圈立刻取消
 ##     （以前个人圈无条件常显、融合区又故意压在更低的层，于是融合后脚下还留着旧圈）；
-##   · 圈只有**半透明实色填充**，不再有粗描边（透明度统一由 FILL_ALPHA 控制）；
+##   · 圈只有**半透明实色填充**，不再有粗描边（透明度统一由配置控制）；
 ##   · 个人圈与融合区**半径一致**（都用 `_ring_radius`），切换时不会一大一小。
 
 const SHADER_PATH := "res://assets/shaders/activity_ring.gdshader"
 const STYLE_TABLE := "ui/chat_feedback_style"
+const PALETTE_PATH := "res://data/ui/activity_ring_palette.json"
 ## 圈层高度（米）：个人圈与融合区**不会同时出现**，共用一个高度即可
 ## （既避开 z-fighting，也不会再出现"两层圈"）。
 const RING_HEIGHT := 0.016
-## 填充透明度：实色但透出地面 —— 美术要求「完全的颜色，但不是色块」
-const FILL_ALPHA := 0.75
 ## 平滑并集宽度（米）：越大，两人相接处越圆润
 const BLEND_RADIUS := 0.12
 ## 最大成员数 / 边数（与着色器数组一致）
 const MAX_MEMBERS := 8
 const MAX_LINKS := 8
 
-## 颜色不带 alpha：透明度统一由 FILL_ALPHA 决定（个人圈灰蓝 / 活动圈绿）
-const COLOR_PERSONAL := Color(0.38, 0.52, 0.68)
-const COLOR_ACTIVE := Color(0.22, 0.70, 0.46)
+## 会话存续期间保留配色槽；不按人物、行为或长期簇标签上色。
+var _personal_color := Color.WHITE
+var _palette: Array[Color] = []
+var _color_slots: Dictionary = {}
 
 var _core: Variant = null
 ## 索引 → 个人圈节点（池化复用，不每帧新建）
@@ -49,13 +49,17 @@ var _hidden: Dictionary = {}
 var _enabled := true
 var _ring_radius := 0.3
 var _blend_radius := BLEND_RADIUS
-var _fill_alpha := FILL_ALPHA
+var _fill_alpha := 0.0
 var _shader: Shader = null
 var _refresh_timer := 0.0
 
 
 func _ready() -> void:
 	_load_style()
+	var palette: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(PALETTE_PATH))
+	_personal_color = Color.html(str(palette["personal"]))
+	for color in palette["groups"]:
+		_palette.append(Color.html(str(color)))
 	_shader = load(SHADER_PATH) as Shader
 	if _shader == null:
 		push_warning("ActivityRingPresenter：找不到 %s —— 脚下圈不渲染。" % SHADER_PATH)
@@ -157,7 +161,7 @@ func refresh() -> void:
 		var pos: Vector2 = _core.position_of(index)
 		ring.visible = true
 		ring.global_position = Vector3(pos.x, RING_HEIGHT, pos.y)
-		_set_material(ring, [index], [], _ring_radius, COLOR_PERSONAL)
+		_set_material(ring, [index], [], _ring_radius, _personal_color)
 	_sync_merged()
 
 
@@ -176,6 +180,7 @@ func _merged_member_indices() -> Dictionary:
 
 func _sync_merged() -> void:
 	var sessions: Array = _core.get_active_sessions()
+	_sync_color_slots(sessions)
 	var alive := {}
 	for session in sessions:
 		var session_id := int(session["session_id"])
@@ -190,10 +195,32 @@ func _sync_merged() -> void:
 		var quad := node.mesh as PlaneMesh
 		quad.size = _quad_size_of(members)
 		# 半径与个人圈**一致**：切换时不会突然大一圈（相连交给 link 胶囊）。
-		_set_material(node, members, session["links"], _ring_radius, COLOR_ACTIVE)
+		var color: Color = _palette[int(_color_slots[session_id])]
+		_set_material(node, members, session["links"], _ring_radius, color)
 	for session_id in _merged.keys():
 		if not alive.has(session_id):
 			(_merged[session_id] as MeshInstance3D).visible = false
+			if not _color_slots.has(session_id):
+				(_merged[session_id] as MeshInstance3D).queue_free()
+				_merged.erase(session_id)
+
+
+## 先释放结束会话的槽，再为新会话分配空闲颜色；隐藏成员不会导致存续组换色。
+func _sync_color_slots(sessions: Array) -> void:
+	var alive := {}
+	for session in sessions:
+		alive[int(session["session_id"])] = true
+	for session_id in _color_slots.keys():
+		if not alive.has(session_id):
+			_color_slots.erase(session_id)
+	for session in sessions:
+		var session_id := int(session["session_id"])
+		if _color_slots.has(session_id):
+			continue
+		for slot in range(_palette.size()):
+			if not _color_slots.values().has(slot):
+				_color_slots[session_id] = slot
+				break
 
 
 ## 可用成员（排除未揭晓者与越界索引）。
@@ -317,6 +344,7 @@ func _clear_all() -> void:
 		(node as MeshInstance3D).queue_free()
 	_personal.clear()
 	_merged.clear()
+	_color_slots.clear()
 
 
 func _load_style() -> void:

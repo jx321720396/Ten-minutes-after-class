@@ -2,7 +2,7 @@ extends GutTest
 
 
 func _core() -> SimCore:
-	return SimCore.from_npc(12345, 8, ConfigLoader.new().load_all())
+	return SimCore.new(12345, 16, ConfigLoader.new().load_all())
 
 
 func test_five_icons_preserve_partial_fill() -> void:
@@ -103,7 +103,7 @@ func test_finished_report_is_automatic_and_world_stays_frozen() -> void:
 	for row in tables["rules/time_runtime"].rows:
 		if row.key == "term_days":
 			row.value = "1"
-	var core := SimCore.from_npc(12345, 8, tables)
+	var core := SimCore.new(12345, 16, tables)
 	var clock := SimulationClock.new()
 	add_child_autofree(clock)
 	clock.set_process(false)
@@ -123,7 +123,7 @@ func test_finished_report_is_automatic_and_world_stays_frozen() -> void:
 	assert_eq(core.global_tick(), tick, "回放与期末界面不得推进世界")
 	assert_false(clock.continue_after_report())
 	report.show_matrix(2)
-	assert_eq(report.matrix_cell_count(), 72, "9节点排除9个对角线")
+	assert_eq(report.matrix_cell_count(), 272, "17节点排除17个对角线")
 
 
 func test_completed_term_replays_to_true_final_matrices() -> void:

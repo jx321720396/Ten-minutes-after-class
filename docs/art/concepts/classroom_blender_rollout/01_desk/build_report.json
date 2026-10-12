@@ -1,0 +1,8 @@
+{
+  "blender": "5.2.2 LTS",
+  "source_objects": 24,
+  "export_meshes": 4,
+  "seed": 20261012,
+  "glb_front": "-Z",
+  "preview_book_exported": false
+}

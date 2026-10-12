@@ -164,5 +164,27 @@
     ],
     "wave_gap": 6,
     "wave_width": 3
+  },
+  "utility_style": {
+    "border_width": 2,
+    "shadow_alpha": 0.24,
+    "shadow_size": 3,
+    "shadow_offset": [
+      2,
+      3
+    ],
+    "hover_underline": 4,
+    "icon_gap": 10,
+    "icons": [
+      "board",
+      "encyclopedia",
+      "backpack"
+    ],
+    "tooltips": [
+      "打开推理板",
+      "打开百科全书",
+      "打开书包"
+    ],
+    "layer": 2
   }
 }

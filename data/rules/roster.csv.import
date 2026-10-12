@@ -1,0 +1,16 @@
+[remap]
+
+importer="keep"
+type=""
+uid="uid://f36c8i73q4hw"
+
+[deps]
+
+source_file="res://data/rules/roster.csv"
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

@@ -11,7 +11,7 @@ func before_each() -> void:
 
 
 func _core() -> SimCore:
-	return SimCore.from_npc(12345, 8, _tables)
+	return SimCore.new(12345, 16, _tables)
 
 
 func _n(core: SimCore) -> int:
@@ -71,7 +71,7 @@ func test_personality_multiplier() -> void:
 
 func test_apply_event_chain() -> void:
 	var core := _core()
-	_set_dims0(core, 100.0, 50.0, 50.0, 50.0)   # 倍率 1.2
+	_set_dims0(core, 100.0, 50.0, 50.0, 50.0)  # 倍率 1.2
 	var a := core._a
 	var h := core._h
 	a[1] = 60.0
@@ -79,7 +79,7 @@ func test_apply_event_chain() -> void:
 	core._a = a
 	core._h = h
 	var before := core.affinity(0, 1)
-	core._apply_event(0, 1, "topic_affinity")   # base=3 → 3×1.2×1.0 → sat → ×负反馈
+	core._apply_event(0, 1, "topic_affinity")  # base=3 → 3×1.2×1.0 → sat → ×负反馈
 	assert_almost_eq(core.affinity(0, 1) - before, 1.2, 0.011, "话题共鸣增量 +1.2（含性格/软饱和/负反馈/round）")
 
 

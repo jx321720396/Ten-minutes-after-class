@@ -56,7 +56,7 @@ func _ready() -> void:
 	_term_report.bind_sources(core, clock, actors)
 	transition.bind_clock(clock)
 	_bind_clue_board()
-	# 黑幕开始退场的瞬间就应用挂起的相位（含每日归位），不等淡出结束
+	# 黑幕开始退场的瞬间就应用挂起的相位（含上课 / 每日归位），不等淡出结束
 	transition.dismiss_started.connect(_on_transition_dismiss_started)
 	# ⚠️ 绑定 Roam 之前先等导航就绪：bind_clock 会立刻触发一次相位回调（上课归位），
 	#    地图没同步时那批走动会被全部判成「取不到路线」。
@@ -212,7 +212,7 @@ func _on_continue_requested() -> void:
 	push_warning("Classroom：未能进入下一天（学期已结束，或完整存档 / 简报组件尚未接入）——" + "时间停留在当前边界。")
 
 
-## 黑幕开始退场：立刻应用挂起的相位（含每日归位），避免淡出期间闪现旧位置。
+## 黑幕开始退场：立刻应用挂起的相位（含上课 / 每日归位），避免淡出期间闪现旧位置。
 func _on_transition_dismiss_started() -> void:
 	roam.flush_pending_phase()
 

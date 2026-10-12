@@ -144,11 +144,8 @@ func _initialize() -> void:
 
 
 func _new_core(script: GDScript, seed_value: int, tables: Dictionary) -> Variant:
-	for row in tables["rules/difficulty"]["rows"]:
-		if int(row.npc_count) == 16:
-			return script.new(seed_value, int(row.difficulty), tables)
-	push_error("等价性探针需要 16 NPC 配置")
-	return null
+	# 2026-10-12：不再有难度档映射，人数直接给 16（角色池 = 一局人数）
+	return script.new(seed_value, 16, tables)
 
 
 func _snapshot(c: Variant, events: Array, label: String) -> Dictionary:

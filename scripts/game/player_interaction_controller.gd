@@ -69,7 +69,6 @@ var _packet: Dictionary = {}
 var _pen_hold := false
 var _leave_dialog: ConfirmationDialog = null
 var _book_gift_dialog: AcceptDialog = null
-var _teacher_label: Label = null
 var _bar_timer := 0.0
 
 
@@ -126,6 +125,8 @@ func _connect_sources() -> void:
 		_bar.behavior_armed.connect(arm_behavior)
 	if _bar != null and not _bar.self_behavior_requested.is_connected(_on_self_behavior):
 		_bar.self_behavior_requested.connect(_on_self_behavior)
+	if _bar != null and not _bar.cancel_requested.is_connected(_on_backpack_opened):
+		_bar.cancel_requested.connect(_on_backpack_opened)
 	if _note != null and not _note.choice_made.is_connected(_on_note_choice):
 		_note.choice_made.connect(_on_note_choice)
 	if _hud != null and not _hud.result_revealed.is_connected(_on_result_revealed):
@@ -239,6 +240,13 @@ func _on_self_behavior(kind: StringName) -> void:
 		else:
 			_hud.show_status(str(PlayerActionBar.ACTIVITY_NAMES.get(action, "")))
 	_refresh_bar()
+
+
+func _on_backpack_opened() -> void:
+	if _is_committed():
+		return
+	cancel_pending(&"backpack_opened")
+	_clear_armed_state()
 
 
 ## 请求一次闲聊（`kind` 固定 chat；`mode` 只在选择时解析一次，之后必须用冻结值提交）。
@@ -477,6 +485,9 @@ func _bar_states() -> Dictionary:
 			reason = "" if ok else _action_reason(str(preview.get("error", "")), kind)
 		states[StringName(kind)] = {"ok": ok, "reason": reason}
 		if kind == "eat_snack":
+			states[StringName(kind)]["snacks"] = int(
+				_core.inventory_of(int(_core.node_count()) - 1)["snacks"]
+			)
 			states[StringName(kind)]["label"] = (
 				"吃零食（%d）" % int(_core.inventory_of(int(_core.node_count()) - 1)["snacks"])
 			)
@@ -785,9 +796,9 @@ func _on_request_failed(request_id: int, reason: StringName) -> void:
 func _on_event_happened(payload: Dictionary) -> void:
 	var kind := str(payload.get("kind", ""))
 	if kind in ["teacher_arrived", "teacher_left"]:
+		# 只留到场 / 离场短句（2026-10-12 用户裁定：删除界面顶部「老师在教室 / 办公室」字段）
 		if _hud != null:
 			_hud.show_status("老师进来了。" if kind == "teacher_arrived" else "老师回办公室了。")
-		_refresh_teacher()
 		return
 	if kind in ["book_confiscated", "book_confiscation_exempted", "teacher_caught"]:
 		if _core == null or int(payload.get("i", -1)) != int(_core.node_count()) - 1:
@@ -920,7 +931,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	_refresh_teacher()
 	# 纸条提示优先于菜单刷新：它**不打断**正在做的事，任何时候都可能到手
 	_poll_note()
 	if _bar == null:
@@ -984,26 +994,3 @@ func _target_portrait_texture(index: int) -> Texture2D:
 			if ResourceLoader.exists(head_path):
 				return load(head_path)
 	return sprite.texture
-
-
-func _refresh_teacher() -> void:
-	if _core == null:
-		return
-	if _teacher_label == null:
-		var layer := CanvasLayer.new()
-		layer.layer = 12
-		add_child(layer)
-		_teacher_label = Label.new()
-		_teacher_label.add_theme_font_override(
-			"font", preload("res://scripts/ui/game_fonts.gd").regular()
-		)
-		layer.add_child(_teacher_label)
-		_teacher_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-		_teacher_label.offset_left = -120
-		_teacher_label.offset_right = 120
-		_teacher_label.offset_top = 12
-		_teacher_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_teacher_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_teacher_label.add_theme_font_size_override("font_size", 24)
-	var state: Dictionary = _core.teacher_state()
-	_teacher_label.text = "老师在教室" if bool(state["present"]) else "老师在办公室"

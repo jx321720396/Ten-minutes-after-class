@@ -1,7 +1,8 @@
 extends GutTest
 ## 时间组件 Task 3 集成测试：「时钟 → 时间 HUD」的接线与显示口径。
 ##
-## 依据：docs/superpowers/plans/2026-10-07-time-component.md §3、§4、Task 3。
+## 依据：docs/superpowers/plans/2026-10-07-time-component.md §3、§4、Task 3；
+## 主文档第二章 §2.5（日末停留 `report_hold_seconds` 后自动进入次日）。
 ## 这里用最小场景（SimCore + SimulationClock + TimeHUD）验证接线：GUT 运行在 --script
 ## 模式下 autoload 不可用，而教室场景的演示建局依赖 /root/GameState；教室内的接线由
 ## MCP `run_project` 的调试输出与截图另行验证。
@@ -12,7 +13,7 @@ const NPC_COUNT := 16
 
 func _make_stack() -> Array:
 	var tables := ConfigLoader.new().load_all()
-	var core := SimCore.from_npc(SEED, NPC_COUNT, tables)
+	var core := SimCore.new(SEED, NPC_COUNT, tables)
 	var clock := SimulationClock.new()
 	add_child_autofree(clock)
 	assert_true(clock.bind_core(core, tables), "时钟应绑定成功")
@@ -20,6 +21,8 @@ func _make_stack() -> Array:
 	var hud: TimeHUD = load("res://scenes/ui/time_hud.tscn").instantiate()
 	add_child_autofree(hud)
 	hud.bind_clock(clock)
+	# 关掉 HUD 的 _process：布局与日末停留倒计时都由测试手动驱动，避免真实帧时间干扰断言
+	hud.set_process(false)
 	return [core, clock, hud]
 
 
@@ -85,6 +88,32 @@ func test_report_state_shows_ended_day_and_recovers() -> void:
 	assert_true(clock.continue_after_report(), "继续请求应成功")
 	assert_eq(hud.title_line(), "第 2 / 30 天 · 上午课间", "进入第 2 天")
 	assert_false(hud.controls_locked(), "恢复课间后允许操作")
+
+
+## 日末不等待玩家确认：停留 `report_hold_seconds` 后自动发出 continue_requested，且只发一次。
+## 依据：主文档第二章 §2.5；配置 `data/rules/time_runtime.csv`。
+func test_report_auto_continues_after_the_hold() -> void:
+	var parts := _make_stack()
+	var clock: SimulationClock = parts[1]
+	var hud: TimeHUD = parts[2]
+	var continued: Array = []
+	hud.continue_requested.connect(func() -> void: continued.append(true))
+
+	for _i in range(2000):
+		clock.pump(1.0)
+		if str(clock.snapshot()["mode"]) != SimulationClock.MODE_RUNNING:
+			break
+	assert_eq(str(clock.snapshot()["mode"]), SimulationClock.MODE_REPORT, "先进入日末")
+	assert_eq(hud.action_line(), "", "日末不显示确认按钮（自动进入）")
+
+	var hold := float(clock.snapshot()["report_hold_seconds"])
+	assert_true(hold > 0.0, "日末停留时长来自配置且为正（当前 %s）" % hold)
+	assert_false(hud.tick_report_hold(hold * 0.5), "未到停留时长不自动进入")
+	assert_eq(continued.size(), 0, "未到停留时长不发 continue_requested")
+	assert_true(hud.tick_report_hold(hold * 0.5 + 0.01), "到时自动进入次日")
+	assert_eq(continued.size(), 1, "只发一次")
+	assert_false(hud.tick_report_hold(1.0), "发出后不再重复")
+	assert_eq(continued.size(), 1, "不重复发信号")
 
 
 func test_rebinding_same_clock_does_not_duplicate_connections() -> void:

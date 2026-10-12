@@ -28,9 +28,9 @@ func test_config_get_table_missing() -> void:
 
 
 func test_game_state_start_and_end() -> void:
-	GameState.start_game(12345, 2)
+	GameState.start_game(12345, 16)
 	assert_eq(GameState.seed, 12345, "seed")
-	assert_eq(GameState.difficulty, 2, "difficulty")
+	assert_eq(GameState.npc_count, 16, "npc_count")
 	assert_eq(GameState.day, 0, "day 归零")
 	GameState.end_game()
 	assert_false(GameState.is_running(), "end 后未运行")
@@ -38,7 +38,7 @@ func test_game_state_start_and_end() -> void:
 
 func test_game_state_wire_events_routes_to_event_bus() -> void:
 	# D11 缺口④：GameState 把内核事件出口路由到 EventBus（内核不反向依赖 autoload）
-	var core := SimCore.from_npc(12345, 8, ConfigLoader.new().load_all())
+	var core := SimCore.new(12345, 16, ConfigLoader.new().load_all())
 	var received: Array = []
 	var cb := func(p: Dictionary) -> void: received.append(p)
 	EventBus.event_happened.connect(cb)

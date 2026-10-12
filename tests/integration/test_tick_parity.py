@@ -130,7 +130,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="逐 tick 对拍：Python 内核 ↔ GDScript 内核")
     parser.add_argument("--days", type=int, default=3)
     parser.add_argument("--seed", type=int, default=12345)
-    parser.add_argument("--npc", type=int, default=8)
+    parser.add_argument("--npc", type=int, default=16)
     parser.add_argument("--tol", type=float, default=0.01, help="相对误差上限（默认 1%% = 0.01）")
     parser.add_argument("--godot", default=None)
     parser.add_argument("--keep", default=None, help="GDScript 导出文件路径（默认临时文件）")

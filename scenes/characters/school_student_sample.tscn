@@ -1,0 +1,33 @@
+[gd_scene format=3]
+
+[ext_resource type="Texture2D" path="res://assets/textures/characters/samples/school_student_male_standing_v1.webp" id="1_7tyhe"]
+[ext_resource type="Shader" path="res://assets/shaders/classroom_contact_shadow.gdshader" id="2_t2cac"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0u0p6"]
+atlas = ExtResource("1_7tyhe")
+region = Rect2(268, 5, 461, 1518)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vurog"]
+render_priority = 0
+shader = ExtResource("2_t2cac")
+shader_parameter/shadow_color = Color(0.14509805, 0.22352941, 0.17254902, 0.1882353)
+shader_parameter/softness = 0.12
+shader_parameter/floor_height = 0.012
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_iyutw"]
+material = SubResource("ShaderMaterial_vurog")
+size = Vector2(0.56, 0.36)
+
+[node name="SchoolStudentSample" type="Node3D" unique_id=832483891]
+
+[node name="Sprite" type="Sprite3D" parent="." unique_id=1733313265]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.825, 0)
+cast_shadow = 0
+pixel_size = 0.0010869565
+billboard = 2
+alpha_cut = 1
+texture = SubResource("AtlasTexture_0u0p6")
+
+[node name="ContactShadow" type="MeshInstance3D" parent="." unique_id=1850812275]
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_iyutw")

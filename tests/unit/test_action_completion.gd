@@ -11,7 +11,7 @@ const CHAT_DURATION := 30
 
 
 func _core() -> SimCore:
-	return SimCore.from_npc(SEED, NPC, ConfigLoader.new().load_all())
+	return SimCore.new(SEED, NPC, ConfigLoader.new().load_all())
 
 
 func test_finished_action_clears_occupancy_and_is_observable() -> void:
@@ -30,7 +30,7 @@ func test_finished_action_clears_occupancy_and_is_observable() -> void:
 	# 跨过到期点：本 tick 的收尾把行为标记为完成
 	core.advance_tick()
 	assert_eq(int(core._busy_phase[0]), -1, "到期后占用记录被清理")
-	assert_eq(core._current_act[0], null, "到期后当前动作清空（空闲即在学）")
+	assert_ne(core._current_act[0], "chat", "到期后不再是被占用的行为（空闲可能立刻转入学习）")
 	assert_eq(core._last_finished[0], "chat", "刚完成的行为可被观测（供「完成才发信息」挂载）")
 
 	# 只在本 tick 有效：下一 tick 清空

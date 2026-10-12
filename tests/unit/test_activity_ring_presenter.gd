@@ -21,7 +21,7 @@ func _presenter(core: Variant) -> ActivityRingPresenter:
 
 
 func _core() -> SimCore:
-	return SimCore.from_npc(SEED, NPC, ConfigLoader.new().load_all())
+	return SimCore.new(SEED, NPC, ConfigLoader.new().load_all())
 
 
 func _digest(core: SimCore) -> PackedByteArray:
@@ -124,3 +124,50 @@ func test_refresh_is_read_only() -> void:
 	presenter.clear_hidden()
 	assert_eq(_digest(core), before, "圈只读：不改会话、矩阵与线索日志")
 	assert_false(presenter.is_hidden(0), "clear_hidden 后恢复可见")
+
+
+func _region_color(presenter: ActivityRingPresenter, session_id: int) -> Color:
+	var node := presenter.get_node("MergedRegion_%d" % session_id) as MeshInstance3D
+	return (node.material_override as ShaderMaterial).get_shader_parameter("ring_color")
+
+
+func test_groups_have_distinct_stable_colors_and_reuse_freed_color() -> void:
+	var core := _core()
+	var presenter: ActivityRingPresenter = await _presenter(core)
+	var first := core._sessions.begin("chat", [0, 1], 100)
+	var second := core._sessions.begin("chat", [4, 5], 100)
+	presenter.refresh()
+	var first_color := _region_color(presenter, first)
+	var second_color := _region_color(presenter, second)
+	assert_ne(first_color, second_color, "同为闲聊的两组也必须异色")
+	core._sessions.join(first, 2, 100)
+	presenter.hide_member(2)
+	presenter.show_member(2)
+	assert_eq(_region_color(presenter, first), first_color, "加入与揭晓不改变组色")
+	core._sessions.end(first)
+	var third := core._sessions.begin("chat", [6, 7], 100)
+	presenter.refresh()
+	assert_eq(_region_color(presenter, second), second_color, "其他组结束不改变存续组色")
+	assert_eq(_region_color(presenter, third), first_color, "释放的配色可复用")
+
+
+func test_all_class_groups_have_unique_colors_without_rng_consumption() -> void:
+	var tables := ConfigLoader.new().load_all()
+	# 一局 16 名 NPC → 最多 8 组两人会话（生产教室 17 座本就够，无需补座位）
+	var core := SimCore.new(SEED, 16, tables)
+	var presenter: ActivityRingPresenter = await _presenter(core)
+	var colors: Array[Color] = []
+	for index in range(0, 16, 2):
+		core._sessions.begin("chat", [index, index + 1], 100)
+	var rng_before := core._rng._mt.duplicate()
+	var rng_index := core._rng._mti
+	var before := _digest(core)
+	presenter.refresh()
+	for session in core.get_active_sessions():
+		var color := _region_color(presenter, int(session.session_id))
+		assert_false(colors.has(color), "16 NPC 两两成组：每组颜色唯一")
+		colors.append(color)
+	assert_eq(colors.size(), 8, "8 组会话全部上色")
+	assert_eq(_digest(core), before, "配色不回写内核")
+	assert_eq(core._rng._mt, rng_before)
+	assert_eq(core._rng._mti, rng_index)

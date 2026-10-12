@@ -113,11 +113,8 @@ static func action_error(c: SimCore, kind: String, me: int) -> String:
 
 static func select_roster(pool: Array, npc_count: int, leisure: Dictionary) -> Array:
 	var selected: Array = []
-	var book_count := int(
-		leisure.get(
-			"book_count_%d" % npc_count, float(leisure["book_count_24"]) * npc_count / pool.size()
-		)
-	)
+	# 持书配额是单值（rules/leisure.csv 的 book_count）；不得超过本局人数，否则下面会选出超过 npc_count 的人
+	var book_count := mini(int(leisure.get("book_count", 0)), npc_count)
 	var with_books: Array = []
 	var without_books: Array = []
 	for ch in pool:

@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "note": "行为符号粒子的位图字形（Blender 侧）。运行时使用方见 data/ui/behavior_particles.json 的 bitmaps 字段；本文件只喂给 tools/build_symbol_bitmaps_blender.py",
+  "font": "assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf",
+  "glyph_size": 1.0,
+  "extrude": 0.09,
+  "bevel": 0.024,
+  "bevel_resolution": 3,
+  "fill_ratio": 0.74,
+  "resolution": 256,
+  "materials": {
+    "symbol": {
+      "color": "#ffffff",
+      "roughness": 0.32,
+      "metallic": 0.0,
+      "coat": 0.45,
+      "coat_roughness": 0.08
+    }
+  },
+  "render": {
+    "engine": "BLENDER_EEVEE",
+    "fallback_engine": "BLENDER_EEVEE",
+    "samples": 48,
+    "view_transform": "Standard",
+    "film_transparent": true,
+    "world_color": "#f2f0ea",
+    "world_strength": 0.45,
+    "lights": [
+      {
+        "name": "Key",
+        "energy": 1.6,
+        "angle_degrees": 28.0,
+        "rotation": [
+          0.55,
+          0.35,
+          0.25
+        ]
+      },
+      {
+        "name": "Rim",
+        "energy": 0.7,
+        "angle_degrees": 28.0,
+        "rotation": [
+          2.35,
+          -0.3,
+          -0.55
+        ]
+      }
+    ]
+  },
+  "symbols": [
+    {
+      "name": "question",
+      "char": "?",
+      "used_by": "chat"
+    },
+    {
+      "name": "exclaim",
+      "char": "!",
+      "used_by": "chat"
+    },
+    {
+      "name": "star",
+      "char": "★",
+      "used_by": "chat, eat_snack"
+    },
+    {
+      "name": "wave",
+      "char": "~",
+      "used_by": "chat, listen_music, comfort"
+    }
+  ],
+  "outputs": {
+    "assets_dir": "assets/textures/ui/behavior_particles",
+    "concept_dir": "docs/art/concepts/behavior_particles"
+  }
+}

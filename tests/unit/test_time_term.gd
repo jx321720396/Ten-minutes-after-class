@@ -13,7 +13,7 @@ const TERM_DAYS := 30
 
 func _make_stack() -> Array:
 	var tables := ConfigLoader.new().load_all()
-	var core := SimCore.from_npc(SEED, NPC_COUNT, tables)
+	var core := SimCore.new(SEED, NPC_COUNT, tables)
 	var clock := SimulationClock.new()
 	add_child_autofree(clock)
 	assert_true(clock.bind_core(core, tables), "时钟应绑定成功")
@@ -39,6 +39,7 @@ func test_day_end_enters_report_and_freezes_the_clock() -> void:
 	var snap: Dictionary = clock.snapshot()
 	assert_eq(str(snap["mode"]), SimulationClock.MODE_REPORT, "第 1 天结束进入 report")
 	assert_eq(int(snap["ended_day"]), 1, "结束的是第 1 天")
+	assert_true(float(snap["report_hold_seconds"]) >= 0.0, "快照暴露日末停留时长（report_hold_seconds）")
 	assert_eq(int(core.time_snapshot()["global_tick"]), TICKS_PER_DAY, "一天正好 480 tick")
 	assert_eq(snap["remaining_seconds"], 0.0, "简报等待不计时")
 
@@ -102,7 +103,7 @@ func test_save_state_round_trip_at_day_end() -> void:
 	var restored: SimulationClock = SimulationClock.new()
 	add_child_autofree(restored)
 	restored.set_process(false)
-	assert_true(restored.bind_core(SimCore.from_npc(SEED, NPC_COUNT, tables), tables))
+	assert_true(restored.bind_core(SimCore.new(SEED, NPC_COUNT, tables), tables))
 	assert_true(restored.restore_state(saved), "同版本同配置的日末状态可恢复")
 
 	var snap: Dictionary = restored.snapshot()

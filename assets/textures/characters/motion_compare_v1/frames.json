@@ -1,0 +1,52 @@
+{
+  "character": {
+    "id": "01",
+    "name": "陈阳"
+  },
+  "status": "generated_motion_samples_not_runtime_verified",
+  "columns": 8,
+  "rows": 4,
+  "image_size": [
+    1448,
+    1086
+  ],
+  "rectangle_rule": "x0=round(col*width/8),x1=round((col+1)*width/8),y0=round(row*height/4),y1=round((row+1)*height/4)",
+  "actions": {
+    "idle": [
+      0
+    ],
+    "walk": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "chat": [
+      5,
+      6
+    ],
+    "sit": [
+      7
+    ]
+  },
+  "direction_rows": {
+    "chibi": {
+      "front": 0,
+      "back": 1,
+      "left": 2,
+      "right": 3
+    },
+    "normal": {
+      "front": 0,
+      "back": 1,
+      "left": 3,
+      "right": 2
+    }
+  },
+  "notes": [
+    "实际尺寸未遵循请求的2048x1536；行高271.5像素，区域边界按round处理。",
+    "帧间位置、脚底基线与行走交替存在生成误差，正式接入前需修整。",
+    "坐姿为单帧状态，不是坐下过渡动画。",
+    "本轮未覆盖其余玩法动作、八方向或表情集。"
+  ]
+}

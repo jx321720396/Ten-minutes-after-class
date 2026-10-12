@@ -1,5 +1,7 @@
 # 时间组件完整计划案
 
+> **更新（2026-10-12）**：日末进入次日已改为**自动** —— `report` 停留 `data/rules/time_runtime.csv` 的 `report_hold_seconds`（当前 1.5 秒）后自动进入，不再显示「进入第 N 天」按钮（空格 / 回车可提前）。见 `CHANGELOG.md` 与 v4 分册第二章 §2.5；下文提及「点继续开下一天」的段落为该计划当时的口径，保留作历史记录。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. 本文件仅为计划，尚未执行实现；不自动派发子代理。
 
 **Goal:** 把 3D 教室接入内核唯一时间源，实现可操作课间、上课发酵、每日简报停留与学期结束，并提供清晰的时间 UI。

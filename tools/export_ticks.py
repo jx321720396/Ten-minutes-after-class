@@ -123,7 +123,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Python 内核逐 tick 状态导出（对拍基建）")
     parser.add_argument("--days", type=int, default=1)
     parser.add_argument("--seed", type=int, default=12345)
-    parser.add_argument("--npc", type=int, default=8)
+    parser.add_argument("--npc", type=int, default=16)
     parser.add_argument("--format", choices=("jsonl", "csv"), default="jsonl")
     parser.add_argument("--out", default=None, help="输出文件（默认 tools/out/ticks_*.jsonl）")
     parser.add_argument("--quiet", action="store_true", help="只打印路径与行数")
