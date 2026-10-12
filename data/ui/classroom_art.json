@@ -4,31 +4,31 @@
   "decoration_seed_salt": 731027,
   "materials": {
     "wall": {
-      "color": "#eee9d9",
+      "color": "#f3e9d7",
       "roughness": 0.92
     },
     "wainscot": {
-      "color": "#789982",
+      "color": "#bdb9aa",
       "roughness": 0.92
     },
     "trim": {
-      "color": "#566d5c",
+      "color": "#b89c79",
       "roughness": 0.92
     },
     "metal": {
-      "color": "#657273",
+      "color": "#7d8588",
       "roughness": 0.92
     },
     "window": {
-      "color": "#d4d9d1",
+      "color": "#e4ddd0",
       "roughness": 0.92
     },
     "curtain": {
-      "color": "#a3bfc2",
+      "color": "#b9cbd0",
       "roughness": 0.92
     },
     "wood": {
-      "color": "#c09a62",
+      "color": "#cba46e",
       "roughness": 0.92
     },
     "board": {
@@ -72,7 +72,7 @@
       "roughness": 0.92
     },
     "pot": {
-      "color": "#b18b70",
+      "color": "#d5c9b3",
       "roughness": 0.92
     },
     "bark": {
@@ -80,33 +80,28 @@
       "roughness": 0.92
     },
     "building": {
-      "color": "#d5d6c5",
+      "color": "#e0d6c1",
       "roughness": 0.92
     },
     "exterior_glass": {
-      "color": "#8ca9b2",
+      "color": "#bccdd0",
       "roughness": 0.92
     },
     "floor": {
-      "color": "#ffffff",
-      "roughness": 0.92,
-      "texture": "res://assets/textures/classroom/scene_classroom_floor_soft.svg",
-      "uv_scale": [
-        10,
-        12,
-        1
-      ]
+      "color": "#e7dbc5",
+      "roughness": 0.92
     },
-    "wood_texture": {
-      "color": "#ffffff",
-      "roughness": 0.86,
-      "texture": "res://assets/textures/classroom/scene_classroom_wood_soft.svg",
-      "uv_scale": [
-        1.4,
-        1.4,
-        1.4
-      ],
-      "triplanar": true
+    "locker": {
+      "color": "#dbd4c7",
+      "roughness": 0.9
+    },
+    "cork": {
+      "color": "#baa58a",
+      "roughness": 0.9
+    },
+    "grout": {
+      "color": "#cabeaa",
+      "roughness": 0.9
     }
   },
   "material_replacements": {
@@ -114,14 +109,13 @@
     "mat_wall_lower": "wainscot",
     "mat_wall_trim": "trim",
     "mat_floor_tile": "floor",
-    "mat_wood_desk": "wood_texture",
-    "mat_wood": "wood_texture",
     "mat_metal_frame": "metal",
     "mat_window_frame": "window",
     "mat_curtain": "curtain",
-    "mat_locker": "green",
+    "mat_locker": "locker",
     "mat_blackboard_news": "board",
-    "mat_board_cork": "green"
+    "mat_board_cork": "cork",
+    "mat_ceiling": "wall"
   },
   "props": {
     "desk_neat": {
@@ -398,48 +392,6 @@
             -16,
             0
           ]
-        },
-        {
-          "name": "Bag",
-          "position": [
-            0.0,
-            0.54,
-            -0.395
-          ],
-          "size": [
-            0.25,
-            0.3,
-            0.09
-          ],
-          "material": "bag"
-        },
-        {
-          "name": "BagPocket",
-          "position": [
-            0.0,
-            0.48,
-            -0.34
-          ],
-          "size": [
-            0.18,
-            0.09,
-            0.025
-          ],
-          "material": "blue"
-        },
-        {
-          "name": "BagHandle",
-          "position": [
-            0.0,
-            0.71,
-            -0.4
-          ],
-          "size": [
-            0.085,
-            0.025,
-            0.025
-          ],
-          "material": "metal"
         },
         {
           "name": "DeskWear",
@@ -788,48 +740,6 @@
           ]
         },
         {
-          "name": "Bag",
-          "position": [
-            0.0,
-            0.54,
-            -0.395
-          ],
-          "size": [
-            0.25,
-            0.3,
-            0.09
-          ],
-          "material": "green"
-        },
-        {
-          "name": "BagPocket",
-          "position": [
-            0.0,
-            0.48,
-            -0.34
-          ],
-          "size": [
-            0.18,
-            0.09,
-            0.025
-          ],
-          "material": "blue"
-        },
-        {
-          "name": "BagHandle",
-          "position": [
-            0.0,
-            0.71,
-            -0.4
-          ],
-          "size": [
-            0.085,
-            0.025,
-            0.025
-          ],
-          "material": "metal"
-        },
-        {
           "name": "DeskWear",
           "position": [
             0.22,
@@ -1164,48 +1074,6 @@
           ]
         },
         {
-          "name": "Bag",
-          "position": [
-            0.0,
-            0.54,
-            -0.395
-          ],
-          "size": [
-            0.25,
-            0.3,
-            0.09
-          ],
-          "material": "bag"
-        },
-        {
-          "name": "BagPocket",
-          "position": [
-            0.0,
-            0.48,
-            -0.34
-          ],
-          "size": [
-            0.18,
-            0.09,
-            0.025
-          ],
-          "material": "blue"
-        },
-        {
-          "name": "BagHandle",
-          "position": [
-            0.0,
-            0.71,
-            -0.4
-          ],
-          "size": [
-            0.085,
-            0.025,
-            0.025
-          ],
-          "material": "metal"
-        },
-        {
           "name": "DeskWear",
           "position": [
             0.22,
@@ -1386,48 +1254,6 @@
             -16,
             0
           ]
-        },
-        {
-          "name": "Bag",
-          "position": [
-            0.0,
-            0.54,
-            -0.395
-          ],
-          "size": [
-            0.25,
-            0.3,
-            0.09
-          ],
-          "material": "green"
-        },
-        {
-          "name": "BagPocket",
-          "position": [
-            0.0,
-            0.48,
-            -0.34
-          ],
-          "size": [
-            0.18,
-            0.09,
-            0.025
-          ],
-          "material": "blue"
-        },
-        {
-          "name": "BagHandle",
-          "position": [
-            0.0,
-            0.71,
-            -0.4
-          ],
-          "size": [
-            0.085,
-            0.025,
-            0.025
-          ],
-          "material": "metal"
         },
         {
           "name": "DeskWear",
@@ -2594,60 +2420,232 @@
           "material": "ink"
         },
         {
-          "name": "Tick",
+          "name": "MinuteMark",
           "position": [
-            0,
-            0.126,
+            0.0,
+            0.124,
             0.03
           ],
           "size": [
-            0.013,
-            0.013,
+            0.008,
+            0.018,
             0.006
           ],
-          "material": "ink"
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
         },
         {
-          "name": "Tick",
+          "name": "MinuteMark",
           "position": [
-            0,
-            -0.126,
+            0.06199999999999999,
+            0.1073871500692704,
             0.03
           ],
           "size": [
-            0.013,
-            0.013,
+            0.008,
+            0.01,
             0.006
           ],
-          "material": "ink"
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -30
+          ]
         },
         {
-          "name": "Tick",
+          "name": "MinuteMark",
           "position": [
-            0.126,
-            0,
+            0.10738715006927038,
+            0.06200000000000001,
             0.03
           ],
           "size": [
-            0.013,
-            0.013,
+            0.008,
+            0.01,
             0.006
           ],
-          "material": "ink"
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -60
+          ]
         },
         {
-          "name": "Tick",
+          "name": "MinuteMark",
           "position": [
-            -0.126,
-            0,
+            0.124,
+            7.59281015471359e-18,
             0.03
           ],
           "size": [
-            0.013,
-            0.013,
+            0.008,
+            0.018,
             0.006
           ],
-          "material": "ink"
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -90
+          ]
+        },
+        {
+          "name": "MinuteMark",
+          "position": [
+            0.1073871500692704,
+            -0.06199999999999997,
+            0.03
+          ],
+          "size": [
+            0.008,
+            0.01,
+            0.006
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -120
+          ]
+        },
+        {
+          "name": "MinuteMark",
+          "position": [
+            0.06199999999999999,
+            -0.1073871500692704,
+            0.03
+          ],
+          "size": [
+            0.008,
+            0.01,
+            0.006
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -150
+          ]
+        },
+        {
+          "name": "MinuteMark",
+          "position": [
+            1.518562030942718e-17,
+            -0.124,
+            0.03
+          ],
+          "size": [
+            0.008,
+            0.018,
+            0.006
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -180
+          ]
+        },
+        {
+          "name": "MinuteMark",
+          "position": [
+            -0.061999999999999965,
+            -0.10738715006927041,
+            0.03
+          ],
+          "size": [
+            0.008,
+            0.01,
+            0.006
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -210
+          ]
+        },
+        {
+          "name": "MinuteMark",
+          "position": [
+            -0.10738715006927037,
+            -0.062000000000000055,
+            0.03
+          ],
+          "size": [
+            0.008,
+            0.01,
+            0.006
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -240
+          ]
+        },
+        {
+          "name": "MinuteMark",
+          "position": [
+            -0.124,
+            -2.277843046414077e-17,
+            0.03
+          ],
+          "size": [
+            0.008,
+            0.018,
+            0.006
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -270
+          ]
+        },
+        {
+          "name": "MinuteMark",
+          "position": [
+            -0.10738715006927038,
+            0.06200000000000001,
+            0.03
+          ],
+          "size": [
+            0.008,
+            0.01,
+            0.006
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -300
+          ]
+        },
+        {
+          "name": "MinuteMark",
+          "position": [
+            -0.062000000000000055,
+            0.10738715006927035,
+            0.03
+          ],
+          "size": [
+            0.008,
+            0.01,
+            0.006
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            -330
+          ]
         }
       ],
       "labels": []
@@ -3437,6 +3435,1040 @@
         }
       ],
       "labels": []
+    },
+    "floor_grout": {
+      "parts": [
+        {
+          "name": "GroutX-7",
+          "position": [
+            -4.55,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX-6",
+          "position": [
+            -3.9000000000000004,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX-5",
+          "position": [
+            -3.25,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX-4",
+          "position": [
+            -2.6,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX-3",
+          "position": [
+            -1.9500000000000002,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX-2",
+          "position": [
+            -1.3,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX-1",
+          "position": [
+            -0.65,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX0",
+          "position": [
+            0.0,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX1",
+          "position": [
+            0.65,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX2",
+          "position": [
+            1.3,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX3",
+          "position": [
+            1.9500000000000002,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX4",
+          "position": [
+            2.6,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX5",
+          "position": [
+            3.25,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX6",
+          "position": [
+            3.9000000000000004,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutX7",
+          "position": [
+            4.55,
+            0.002,
+            0
+          ],
+          "size": [
+            0.012,
+            0.002,
+            12
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ-9",
+          "position": [
+            0,
+            0.002,
+            -5.8500000000000005
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ-8",
+          "position": [
+            0,
+            0.002,
+            -5.2
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ-7",
+          "position": [
+            0,
+            0.002,
+            -4.55
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ-6",
+          "position": [
+            0,
+            0.002,
+            -3.9000000000000004
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ-5",
+          "position": [
+            0,
+            0.002,
+            -3.25
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ-4",
+          "position": [
+            0,
+            0.002,
+            -2.6
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ-3",
+          "position": [
+            0,
+            0.002,
+            -1.9500000000000002
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ-2",
+          "position": [
+            0,
+            0.002,
+            -1.3
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ-1",
+          "position": [
+            0,
+            0.002,
+            -0.65
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ0",
+          "position": [
+            0,
+            0.002,
+            0.0
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ1",
+          "position": [
+            0,
+            0.002,
+            0.65
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ2",
+          "position": [
+            0,
+            0.002,
+            1.3
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ3",
+          "position": [
+            0,
+            0.002,
+            1.9500000000000002
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ4",
+          "position": [
+            0,
+            0.002,
+            2.6
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ5",
+          "position": [
+            0,
+            0.002,
+            3.25
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ6",
+          "position": [
+            0,
+            0.002,
+            3.9000000000000004
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ7",
+          "position": [
+            0,
+            0.002,
+            4.55
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ8",
+          "position": [
+            0,
+            0.002,
+            5.2
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        },
+        {
+          "name": "GroutZ9",
+          "position": [
+            0,
+            0.002,
+            5.8500000000000005
+          ],
+          "size": [
+            10,
+            0.002,
+            0.012
+          ],
+          "material": "grout"
+        }
+      ],
+      "labels": []
+    },
+    "cabinet_supplies": {
+      "parts": [
+        {
+          "name": "FileBox0",
+          "position": [
+            -0.9,
+            0.16,
+            0
+          ],
+          "size": [
+            0.1,
+            0.31,
+            0.23
+          ],
+          "material": "blue"
+        },
+        {
+          "name": "FileLabel0",
+          "position": [
+            -0.9,
+            0.18,
+            0.119
+          ],
+          "size": [
+            0.062,
+            0.15,
+            0.008
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "FileRing0",
+          "position": [
+            -0.9,
+            0.065,
+            0.125
+          ],
+          "size": [
+            0.027,
+            0.027,
+            0.005
+          ],
+          "material": "ink",
+          "kind": "sphere"
+        },
+        {
+          "name": "LabelRule",
+          "position": [
+            -0.9,
+            0.2,
+            0.125
+          ],
+          "size": [
+            0.043,
+            0.004,
+            0.004
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "LabelRule",
+          "position": [
+            -0.9,
+            0.167,
+            0.125
+          ],
+          "size": [
+            0.043,
+            0.004,
+            0.004
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "LabelRule",
+          "position": [
+            -0.9,
+            0.134,
+            0.125
+          ],
+          "size": [
+            0.043,
+            0.004,
+            0.004
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "FileBox1",
+          "position": [
+            -0.78,
+            0.16,
+            0
+          ],
+          "size": [
+            0.1,
+            0.31,
+            0.23
+          ],
+          "material": "blue"
+        },
+        {
+          "name": "FileLabel1",
+          "position": [
+            -0.78,
+            0.18,
+            0.119
+          ],
+          "size": [
+            0.062,
+            0.15,
+            0.008
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "FileRing1",
+          "position": [
+            -0.78,
+            0.065,
+            0.125
+          ],
+          "size": [
+            0.027,
+            0.027,
+            0.005
+          ],
+          "material": "ink",
+          "kind": "sphere"
+        },
+        {
+          "name": "LabelRule",
+          "position": [
+            -0.78,
+            0.2,
+            0.125
+          ],
+          "size": [
+            0.043,
+            0.004,
+            0.004
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "LabelRule",
+          "position": [
+            -0.78,
+            0.167,
+            0.125
+          ],
+          "size": [
+            0.043,
+            0.004,
+            0.004
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "LabelRule",
+          "position": [
+            -0.78,
+            0.134,
+            0.125
+          ],
+          "size": [
+            0.043,
+            0.004,
+            0.004
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "FileBox2",
+          "position": [
+            -0.66,
+            0.16,
+            0
+          ],
+          "size": [
+            0.1,
+            0.31,
+            0.23
+          ],
+          "material": "blue"
+        },
+        {
+          "name": "FileLabel2",
+          "position": [
+            -0.66,
+            0.18,
+            0.119
+          ],
+          "size": [
+            0.062,
+            0.15,
+            0.008
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "FileRing2",
+          "position": [
+            -0.66,
+            0.065,
+            0.125
+          ],
+          "size": [
+            0.027,
+            0.027,
+            0.005
+          ],
+          "material": "ink",
+          "kind": "sphere"
+        },
+        {
+          "name": "LabelRule",
+          "position": [
+            -0.66,
+            0.2,
+            0.125
+          ],
+          "size": [
+            0.043,
+            0.004,
+            0.004
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "LabelRule",
+          "position": [
+            -0.66,
+            0.167,
+            0.125
+          ],
+          "size": [
+            0.043,
+            0.004,
+            0.004
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "LabelRule",
+          "position": [
+            -0.66,
+            0.134,
+            0.125
+          ],
+          "size": [
+            0.043,
+            0.004,
+            0.004
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "StackPages0",
+          "position": [
+            0.38,
+            0.019,
+            -0.025
+          ],
+          "size": [
+            0.33,
+            0.027,
+            0.22
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -8,
+            0
+          ]
+        },
+        {
+          "name": "StackCover0",
+          "position": [
+            0.38,
+            0.035,
+            -0.025
+          ],
+          "size": [
+            0.34,
+            0.005,
+            0.23
+          ],
+          "material": "blue",
+          "rotation": [
+            0,
+            -8,
+            0
+          ]
+        },
+        {
+          "name": "StackPages1",
+          "position": [
+            0.38,
+            0.055999999999999994,
+            -0.025
+          ],
+          "size": [
+            0.33,
+            0.027,
+            0.22
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -1,
+            0
+          ]
+        },
+        {
+          "name": "StackCover1",
+          "position": [
+            0.38,
+            0.07200000000000001,
+            -0.025
+          ],
+          "size": [
+            0.34,
+            0.005,
+            0.23
+          ],
+          "material": "red",
+          "rotation": [
+            0,
+            -1,
+            0
+          ]
+        },
+        {
+          "name": "StackPages2",
+          "position": [
+            0.38,
+            0.093,
+            -0.025
+          ],
+          "size": [
+            0.33,
+            0.027,
+            0.22
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            6,
+            0
+          ]
+        },
+        {
+          "name": "StackCover2",
+          "position": [
+            0.38,
+            0.109,
+            -0.025
+          ],
+          "size": [
+            0.34,
+            0.005,
+            0.23
+          ],
+          "material": "ochre",
+          "rotation": [
+            0,
+            6,
+            0
+          ]
+        },
+        {
+          "name": "TrayBase",
+          "position": [
+            -0.15,
+            0.025,
+            0
+          ],
+          "size": [
+            0.32,
+            0.035,
+            0.25
+          ],
+          "material": "wood"
+        },
+        {
+          "name": "TrayFront",
+          "position": [
+            -0.15,
+            0.055,
+            0.125
+          ],
+          "size": [
+            0.32,
+            0.055,
+            0.016
+          ],
+          "material": "wood"
+        },
+        {
+          "name": "TrayPaper",
+          "position": [
+            -0.15,
+            0.047,
+            0
+          ],
+          "size": [
+            0.27,
+            0.012,
+            0.21
+          ],
+          "material": "paper"
+        }
+      ],
+      "labels": []
+    },
+    "blackboard_tray": {
+      "parts": [
+        {
+          "name": "ChalkTray",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "size": [
+            3.43,
+            0.045,
+            0.13
+          ],
+          "material": "wood"
+        },
+        {
+          "name": "TrayLip",
+          "position": [
+            0,
+            0.035,
+            0.06
+          ],
+          "size": [
+            3.43,
+            0.035,
+            0.014
+          ],
+          "material": "wood"
+        },
+        {
+          "name": "Chalk0",
+          "position": [
+            -0.76,
+            0.034,
+            0.01
+          ],
+          "size": [
+            0.072,
+            0.012,
+            0.014
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Chalk1",
+          "position": [
+            -0.65,
+            0.034,
+            0.01
+          ],
+          "size": [
+            0.072,
+            0.012,
+            0.014
+          ],
+          "material": "chalk",
+          "rotation": [
+            0,
+            7,
+            0
+          ]
+        },
+        {
+          "name": "Chalk2",
+          "position": [
+            -0.54,
+            0.034,
+            0.01
+          ],
+          "size": [
+            0.072,
+            0.012,
+            0.014
+          ],
+          "material": "red",
+          "rotation": [
+            0,
+            14,
+            0
+          ]
+        },
+        {
+          "name": "Chalk3",
+          "position": [
+            -0.43,
+            0.034,
+            0.01
+          ],
+          "size": [
+            0.072,
+            0.012,
+            0.014
+          ],
+          "material": "blue",
+          "rotation": [
+            0,
+            21,
+            0
+          ]
+        },
+        {
+          "name": "EraserBase",
+          "position": [
+            1,
+            0.046,
+            0.006
+          ],
+          "size": [
+            0.16,
+            0.04,
+            0.065
+          ],
+          "material": "wood"
+        },
+        {
+          "name": "EraserFelt",
+          "position": [
+            1,
+            0.022,
+            0.006
+          ],
+          "size": [
+            0.16,
+            0.012,
+            0.065
+          ],
+          "material": "ink"
+        }
+      ],
+      "labels": []
     }
   },
   "desk_variants": [
@@ -3491,27 +4523,23 @@
       "name": "CleaningCorner",
       "prop": "cleaning_corner",
       "position": [
-        2.9,
+        -3.92,
         0,
-        -5.66
-      ]
-    },
-    {
-      "name": "ClassStorage",
-      "prop": "storage_trim",
-      "position": [
-        -2.955,
-        0,
-        -5.75
+        -5.64
       ]
     },
     {
       "name": "WallClock",
       "prop": "wall_clock",
       "position": [
-        3.65,
-        2.93,
+        -2.1,
+        2.67,
         -5.94
+      ],
+      "scale": [
+        1.4,
+        1.4,
+        1.4
       ]
     },
     {
@@ -3524,30 +4552,53 @@
       ]
     },
     {
-      "name": "WindowPlantA",
-      "prop": "plant",
-      "position": [
-        4.45,
-        1.02,
-        -3.9
-      ]
-    },
-    {
-      "name": "WindowPlantB",
-      "prop": "plant",
-      "position": [
-        4.45,
-        1.02,
-        -0.5
-      ]
-    },
-    {
       "name": "PodiumSupplies",
       "prop": "podium_supplies",
       "position": [
         0,
         0,
         0
+      ]
+    },
+    {
+      "name": "WarmFloorGrout",
+      "prop": "floor_grout",
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "CabinetSupplies",
+      "prop": "cabinet_supplies",
+      "position": [
+        -1.24,
+        0.88,
+        -5.72
+      ]
+    },
+    {
+      "name": "ReadingBookStacks",
+      "prop": "cabinet_supplies",
+      "position": [
+        0.53,
+        0.88,
+        -5.72
+      ],
+      "scale": [
+        0.8,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "BlackboardTray",
+      "prop": "blackboard_tray",
+      "position": [
+        0.645,
+        1.135,
+        -5.82
       ]
     }
   ],
@@ -3586,10 +4637,21 @@
     "Room/BackWall/ScheduleBoard/Paper1",
     "Room/BackWall/ScheduleBoard/Paper2",
     "Room/BackWall/ScheduleBoard/Paper3",
-    "Room/BackWall/ScheduleBoard/Paper4"
+    "Room/BackWall/ScheduleBoard/Paper4",
+    "Room/RightWall/WindowTall1",
+    "Room/RightWall/WindowTall2",
+    "Room/RightWall/WindowTall3",
+    "Room/RightWall/Curtain1",
+    "Room/RightWall/Curtain2",
+    "Room/RightWall/Curtain3",
+    "Room/RightWall/Curtain4",
+    "Room/RightWall/CurtainRod",
+    "Room/FrontWall",
+    "Room/BackWall/Lockers",
+    "Room/BackWall/Cabinet"
   ],
   "contact_shadow": {
-    "color": "#25392c30",
+    "color": "#4d40312e",
     "size": [
       0.65,
       0.4
@@ -3598,83 +4660,468 @@
     "softness": 0.12
   },
   "lighting": {
-    "background": "#bad3dc",
-    "ambient_color": "#f2f4e8",
-    "ambient_energy": 0.5,
+    "background": "#dce7e8",
+    "ambient_color": "#fff4e5",
+    "ambient_energy": 0.65,
     "sun_rotation": [
-      -48,
-      -35,
+      -40,
+      65,
       0
     ],
-    "sun_energy": 0.38,
-    "sun_color": "#ffefd5",
+    "sun_energy": 0.62,
+    "sun_color": "#fff1d9",
     "lights": [
       {
         "path": "FillBack",
-        "energy": 0.18,
-        "color": "#ecf1e7"
+        "energy": 0.2,
+        "color": "#fff7eb"
       },
       {
         "path": "FillFront",
-        "energy": 0.24,
-        "color": "#ecf1e7"
+        "energy": 0.2,
+        "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp1",
-        "energy": 0.25,
-        "color": "#f4f4df"
+        "energy": 0.18,
+        "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp2",
-        "energy": 0.25,
-        "color": "#f4f4df"
+        "energy": 0.18,
+        "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp3",
-        "energy": 0.25,
-        "color": "#f4f4df"
+        "energy": 0.18,
+        "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp4",
-        "energy": 0.25,
-        "color": "#f4f4df"
+        "energy": 0.18,
+        "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp5",
-        "energy": 0.25,
-        "color": "#f4f4df"
+        "energy": 0.18,
+        "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp6",
-        "energy": 0.25,
-        "color": "#f4f4df"
+        "energy": 0.18,
+        "color": "#fff7eb"
       }
-    ]
+    ],
+    "sun_shadows": true,
+    "shadow_distance": 28,
+    "shadow_mode": "orthogonal"
   },
   "phase_light": {
     "morning_break": {
-      "color": "#fff2dc",
-      "energy": 0.38
+      "color": "#fff5e4",
+      "energy": 0.62
     },
     "morning_class": {
-      "color": "#fff2dc",
-      "energy": 0.38
+      "color": "#fff5e4",
+      "energy": 0.62
     },
     "lunch_break": {
-      "color": "#fff8e9",
-      "energy": 0.42
+      "color": "#fff5e4",
+      "energy": 0.62
     },
     "afternoon_class": {
-      "color": "#ffe8c6",
-      "energy": 0.4
+      "color": "#fff0d8",
+      "energy": 0.68
     },
     "afternoon_break": {
-      "color": "#ffe8c6",
-      "energy": 0.4
+      "color": "#fff0d8",
+      "energy": 0.68
     },
     "day_settle": {
-      "color": "#ffe8c6",
-      "energy": 0.4
+      "color": "#fff0d8",
+      "energy": 0.62
+    }
+  },
+  "scene_details": [
+    {
+      "name": "WarmWindowTall1",
+      "scene": "res://scenes/components/school_window_warm.tscn",
+      "anchor_node": "Room/RightWall/WindowTall1"
+    },
+    {
+      "name": "WarmWindowTall2",
+      "scene": "res://scenes/components/school_window_warm.tscn",
+      "anchor_node": "Room/RightWall/WindowTall2"
+    },
+    {
+      "name": "WarmWindowTall3",
+      "scene": "res://scenes/components/school_window_warm.tscn",
+      "anchor_node": "Room/RightWall/WindowTall3"
+    },
+    {
+      "name": "WindowPlantA",
+      "scene": "res://scenes/components/school_potted_plant.tscn",
+      "position": [
+        4.34,
+        0.9275,
+        -3.9
+      ],
+      "rotation": [
+        0,
+        15,
+        0
+      ]
+    },
+    {
+      "name": "WindowPlantB",
+      "scene": "res://scenes/components/school_potted_plant.tscn",
+      "position": [
+        4.34,
+        0.9275,
+        -0.5
+      ],
+      "rotation": [
+        0,
+        -25,
+        0
+      ]
+    },
+    {
+      "name": "WindowPlantC",
+      "scene": "res://scenes/components/school_potted_plant.tscn",
+      "position": [
+        4.34,
+        0.9275,
+        3.8
+      ],
+      "rotation": [
+        0,
+        40,
+        0
+      ]
+    },
+    {
+      "name": "PodiumPlant",
+      "scene": "res://scenes/components/school_potted_plant.tscn",
+      "position": [
+        -0.78,
+        1.045,
+        4.57
+      ],
+      "rotation": [
+        0,
+        10,
+        0
+      ]
+    },
+    {
+      "name": "WarmStorage1",
+      "scene": "res://scenes/components/school_storage_cabinet.tscn",
+      "position": [
+        -2.955,
+        0,
+        -5.75
+      ]
+    },
+    {
+      "name": "WarmStorage2",
+      "scene": "res://scenes/components/school_storage_cabinet.tscn",
+      "position": [
+        -1.74,
+        0,
+        -5.75
+      ]
+    },
+    {
+      "name": "WarmStorage3",
+      "scene": "res://scenes/components/school_storage_cabinet.tscn",
+      "position": [
+        -0.525,
+        0,
+        -5.75
+      ]
+    },
+    {
+      "name": "WarmStorage4",
+      "scene": "res://scenes/components/school_storage_cabinet.tscn",
+      "position": [
+        0.69,
+        0,
+        -5.75
+      ]
+    },
+    {
+      "name": "WarmStorage5",
+      "scene": "res://scenes/components/school_storage_cabinet.tscn",
+      "position": [
+        1.905,
+        0,
+        -5.75
+      ]
+    },
+    {
+      "name": "ReadingBookshelf",
+      "scene": "res://scenes/components/school_bookshelf_warm.tscn",
+      "position": [
+        3.27,
+        0,
+        -5.73
+      ]
+    },
+    {
+      "name": "StoragePlantLeft",
+      "scene": "res://scenes/components/school_potted_plant.tscn",
+      "position": [
+        -2.9,
+        0.88,
+        -5.75
+      ]
+    },
+    {
+      "name": "StoragePlantRight",
+      "scene": "res://scenes/components/school_potted_plant.tscn",
+      "position": [
+        2.0,
+        0.88,
+        -5.75
+      ]
+    },
+    {
+      "name": "DeskSideBag0",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P0",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag1",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P1",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag2",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P2",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag3",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P3",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag4",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P4",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag5",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P5",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag6",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P6",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag7",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P7",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag8",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P8",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag9",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P9",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag10",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P10",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag11",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P11",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag12",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P12",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag13",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P13",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag14",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P14",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag15",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P15",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    },
+    {
+      "name": "DeskSideBag16",
+      "scene": "res://scenes/components/schoolbag_warm.tscn",
+      "anchor_node": "Seats/P16",
+      "position": [
+        0.43,
+        0.26,
+        0.035
+      ],
+      "yaw": -90
+    }
+  ],
+  "capture_views": {
+    "window": {
+      "position": [
+        1.8,
+        2.3,
+        -1.2
+      ],
+      "target": [
+        4.35,
+        1.8,
+        0
+      ],
+      "size": 3.2,
+      "hide_actors": true
+    },
+    "storage": {
+      "position": [
+        1.0,
+        1.75,
+        -1.2
+      ],
+      "target": [
+        1.0,
+        1.2,
+        -5.75
+      ],
+      "size": 2.8,
+      "hide_actors": true
+    }
+  },
+  "camera": {
+    "position": [
+      0,
+      3.35,
+      9.5
+    ],
+    "target": [
+      0,
+      0,
+      -0.3
+    ],
+    "fov": 36.0,
+    "follow": {
+      "enabled": true,
+      "dead_zone": 0.35,
+      "gain": 0.35,
+      "max_offset": 0.8,
+      "speed": 5.0
     }
   }
 }

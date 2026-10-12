@@ -17,7 +17,7 @@ const TICKS_PER_DAY := 480
 
 func _make_core() -> SimCore:
 	var tables := ConfigLoader.new().load_all()
-	return SimCore.from_npc(SEED, NPC_COUNT, tables)
+	return SimCore.new(SEED, NPC_COUNT, tables)
 
 
 func test_snapshot_initial_state() -> void:

@@ -12,7 +12,7 @@ const RUNTIME := "rules/time_runtime"
 
 
 func _make_core() -> SimCore:
-	return SimCore.from_npc(SEED, NPC_COUNT, ConfigLoader.new().load_all())
+	return SimCore.new(SEED, NPC_COUNT, ConfigLoader.new().load_all())
 
 
 func _make_clock(core: SimCore) -> SimulationClock:

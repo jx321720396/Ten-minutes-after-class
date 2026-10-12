@@ -14,7 +14,7 @@ const CHAT_DURATION := 30
 
 
 func _core() -> SimCore:
-	return SimCore.from_npc(SEED, NPC, ConfigLoader.new().load_all())
+	return SimCore.new(SEED, NPC, ConfigLoader.new().load_all())
 
 
 # ------------------------------------------------------------------ ActivitySessions 本体

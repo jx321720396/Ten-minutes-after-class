@@ -98,7 +98,7 @@ func test_slide_sampled_delegates_short_steps_to_slide() -> void:
 
 
 func test_core_position_roundtrip_and_distance() -> void:
-	var core := SimCore.from_npc(SEED, NPC, ConfigLoader.new().load_all())
+	var core := SimCore.new(SEED, NPC, ConfigLoader.new().load_all())
 	var me := int(core.node_count()) - 1
 	core.set_position(me, 1.5, -2.25)
 	assert_eq(core.position_of(me), Vector2(1.5, -2.25), "位置往返应一致")
@@ -108,7 +108,7 @@ func test_core_position_roundtrip_and_distance() -> void:
 
 
 func test_core_position_out_of_bounds_is_ignored() -> void:
-	var core := SimCore.from_npc(SEED, NPC, ConfigLoader.new().load_all())
+	var core := SimCore.new(SEED, NPC, ConfigLoader.new().load_all())
 	var me := int(core.node_count()) - 1
 	core.set_position(me, 1.0, 2.0)
 	core.set_position(me + 99, 9.0, 9.0)
@@ -117,7 +117,7 @@ func test_core_position_out_of_bounds_is_ignored() -> void:
 
 
 func test_core_is_busy() -> void:
-	var core := SimCore.from_npc(SEED, NPC, ConfigLoader.new().load_all())
+	var core := SimCore.new(SEED, NPC, ConfigLoader.new().load_all())
 	var me := int(core.node_count()) - 1
 	assert_false(core.is_busy(me), "开局玩家不忙")
 	var busy_until: Array = core._busy_until
