@@ -106,8 +106,8 @@ func _button_style() -> StyleBoxFlat:
 
 func _ui_font() -> Font:
 	if _font_cache == null:
-		var font := SystemFont.new()
-		font.font_names = PackedStringArray(FONT_FAMILIES)
+		var font := preload("res://scripts/ui/game_fonts.gd").regular()
+
 		_font_cache = font
 	return _font_cache
 
@@ -168,6 +168,9 @@ func _close() -> void:
 
 
 func _other_pause_open() -> bool:
+	var profile := get_node_or_null("../NpcProfile")
+	if profile != null and profile.has_method("is_open") and profile.is_open():
+		return true
 	var encyclopedia := get_node_or_null("../EncyclopediaEntry")
 	if encyclopedia != null and encyclopedia.has_method("is_open") and encyclopedia.is_open():
 		return true

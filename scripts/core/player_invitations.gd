@@ -97,6 +97,7 @@ func respond(id: int, accepted: bool) -> Dictionary:
 		core._behavior_registry.execute(StringName(kind), int(rec.actor), int(rec.target), options)
 	_choice = {}
 	var result := {"ok": true, "id": id, "accepted": accepted, "kind": kind}
+	core._term_record.invitation(kind, accepted)
 	_results[id] = result
 	return result.duplicate(true)
 

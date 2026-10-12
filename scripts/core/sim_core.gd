@@ -58,6 +58,9 @@ const PLAYER_INTERACTIONS = preload("res://scripts/core/player_interactions.gd")
 const PLAYER_INVITATIONS = preload("res://scripts/core/player_invitations.gd")
 const PLAYER_INTERACTION_TABLE := "rules/player_interaction"
 const EXAM_SETTLE := preload("res://scripts/core/exam_settle.gd")
+const TERM_RECORD := preload("res://scripts/core/term_record.gd")
+
+var _term_record: RefCounted
 
 var _behavior_context: RefCounted
 var _behavior_registry: RefCounted
@@ -254,6 +257,8 @@ func _init(seed: int, difficulty: int, tables: Dictionary = {}) -> void:
 	_player_interactions.configure(pi_params)
 	_intel.configure(pi_params)
 	_player_invitations = PLAYER_INVITATIONS.new(self, tables, pi_params)
+	_term_record = TERM_RECORD.new()
+	_term_record.configure(self, tables)
 
 
 ## difficulty（1/2/3）→ npc_count（8/16/24），映射表 data/rules/difficulty.csv（铁律 3：数值不落脚本）。
@@ -696,6 +701,8 @@ func _settle_finished_actions() -> void:
 		if _busy_phase[i] < 0 or _busy_until[i] > _global_tick:
 			continue
 		_last_finished[i] = _busy_act[i]
+		if is_player(i):
+			_term_record.end_action("completed")
 		if LEISURE_KINDS.has(_busy_act[i]):
 			var prefix: String = LEISURE_KINDS[_busy_act[i]]
 			_stress[i] = _clamp100(_stress[i] - float(_leisure[prefix + "_relief"]))
@@ -731,6 +738,7 @@ func _tick() -> void:
 	_teacher.step(self)
 	_decide_and_act()
 	_process_notes()  # 纸条链（§8.6）：每 tick 处理一张纸条
+	_term_record.tick_state(self)
 	_study_accumulate()
 	_study_circle_settle()  # 学习圈（§8.23 第 4 条）：每 N tick 额外结算一次
 	_update_environment()
@@ -795,6 +803,8 @@ func _grade_ticks_per_point(g: float) -> float:
 # -------------------------------------------------- 事件出口（D11 缺口④：内核 → 表现层，零 autoload 依赖）
 ## 向注入的事件出口派发一条事件（type + payload）。event_sink 为空时无副作用（headless/测试）。
 func _emit(type: String, payload: Dictionary) -> void:
+	if _term_record != null and type == "event_happened":
+		_term_record.event(payload)
 	if event_sink.is_valid():
 		event_sink.call({"type": type, "payload": payload})
 
@@ -905,6 +915,7 @@ func _settle_day() -> void:
 	_day_events.clear()
 	if _exam != null:
 		_exam.settle(_day, _grade, _stress, _alias_list())
+	_term_record.settle_day(self, _day)
 	_day += 1
 	_emit("day_settled", {"day": _day - 1, "stats": _stats.duplicate(true)})
 
@@ -1032,6 +1043,7 @@ func _apply_event(
 	var dekey := "%d,%d" % [i, j]
 	_day_events[dekey] = int(_day_events.get(dekey, 0)) + 1
 	var applied := false
+	var changes: Array = []
 	for row in _event_rows:
 		if str(row["event_id"]) != event_id:
 			continue
@@ -1069,6 +1081,8 @@ func _apply_event(
 				cur = _t[idx]
 			delta = _r1(_room_for(axis, cur) * delta)
 			var v := _clamp100(cur + delta)
+			if v != cur:
+				changes.append([AXES.find(axis), idx, cur, v])
 			if axis == "affinity":
 				_a[idx] = v
 			elif axis == "hostility":
@@ -1077,12 +1091,14 @@ func _apply_event(
 				_t[idx] = v
 		applied = true
 		_stats["events"] = int(_stats["events"]) + 1
+	_term_record.record_changes(self, changes, event_id)
 	return applied
 
 
 ## 举报旧回落的精确兼容点：仅封装原写入，后续规则迁移单独处理。
 func _reduce_reporter_hostility(actor: int, target: int) -> void:
 	_h[actor * _n + target] = _clamp100(_h[actor * _n + target] - 5.0)
+	_term_record.capture(self, "report_relief")
 
 
 ## 记录「施害者 → 受害者」的最近一次**重大**敌对行为（§10.25 排挤判据、§10.24 从众判据）。
@@ -1153,6 +1169,7 @@ func _transmission() -> void:
 				_h[i * n + k] = _clamp100(_h[i * n + k] + d_h[i * n + k])
 				_t[i * n + k] = _clamp100(_t[i * n + k] + d_t[i * n + k])
 	_stats["transmission_ticks"] = int(_stats["transmission_ticks"]) + 1
+	_term_record.capture(self, "transmission")
 
 
 ## 观测档位（§11.2，通透/可见/模糊/封闭）。
@@ -1347,6 +1364,8 @@ func _settle_sleep() -> void:
 	var relief := float(_probs.get("sleep_relief", 0.0))
 	for i in range(_n):
 		if _sleeping[i]:
+			if is_player(i):
+				_term_record.end_state("sleep")
 			_stress[i] = _clamp100(_stress[i] - relief)
 			_sleeping[i] = false
 			_busy_until[i] = 0
@@ -1365,6 +1384,8 @@ func _check_interrupt() -> void:
 		if _busy_phase[i] < 0:
 			continue
 		if _busy_until[i] > _global_tick:
+			if is_player(i):
+				_term_record.end_action("interrupted")
 			_busy_until[i] = 0
 			_busy_phase[i] = -1
 			var action_cost := (
@@ -1379,6 +1400,8 @@ func _check_interrupt() -> void:
 ## 统一边界协议 ④：清理被打断动作的残余状态（占用 / 会话 / 移动锁）。
 ## 不消耗 RNG；抽象内核（无移动输入）下移动锁清理为 no-op。
 func _cleanup_phase() -> void:
+	_term_record.end_state("study")
+	_term_record.moving(false, false)
 	for i in range(_n):
 		if _current_act[i] == "study":
 			_current_act[i] = null
@@ -1394,6 +1417,7 @@ func _cleanup_phase() -> void:
 	# 纸条链（§8.6）：纸条只在当前时间段内存活，进入下一个时间段即销毁。
 	_notes.clear()
 	if _player_absent:
+		_term_record.end_state("leave_class")
 		_player_absent = false
 		_busy_until[_n - 1] = 0
 		_current_act[_n - 1] = null
@@ -2019,6 +2043,8 @@ func _occupy(i: int, j: int, behavior: String, quiet: bool = false) -> void:
 		_study_acc[i] = 0.0
 	_current_act[i] = behavior
 	var occupy_target: bool = not is_player(j) or is_player(i) or _player_invitations.authorizes(i)
+	if is_player(i) or (is_player(j) and occupy_target):
+		_term_record.begin_action(behavior, i, [i, j])
 	if occupy_target:
 		if _current_act[j] == "study":
 			_study_acc[j] = 0.0
@@ -2043,6 +2069,8 @@ func _occupy(i: int, j: int, behavior: String, quiet: bool = false) -> void:
 func _occupy_members(
 	members: Array, behavior: String, until: int, sound_source: int, actor: int = -1
 ) -> void:
+	if members.has(_n - 1) and (is_player(actor) or _player_invitations.authorizes(actor)):
+		_term_record.begin_action(behavior, actor, members)
 	for m in members:
 		var idx := int(m)
 		if idx < 0 or idx >= _n:
@@ -2173,6 +2201,8 @@ func _do_observe(i: int, j: int) -> void:
 ## 学习（§8.23）：进入学习态。**不占时间槽**，靠 `_current_act` 表达；
 ## 起身 / 移动 / 相位切换即中断（`_cleanup_phase` 清 `_current_act`）。
 func _do_study(i: int) -> void:
+	if is_player(i):
+		_term_record.begin_state("study")
 	_current_act[i] = "study"
 	_stats["studies"] = int(_stats.get("studies", 0)) + 1
 	_emit("event_happened", {"kind": "study", "i": i})
@@ -2181,6 +2211,8 @@ func _do_study(i: int) -> void:
 ## 睡觉（§8.8）：玩家主动入睡 —— 与 NPC 同规则（段末由 `_settle_sleep` 一次性减压、
 ## 期间不被任何人交互）。原规格只写了 NPC 的概率触发。
 func _do_sleep(i: int) -> void:
+	if is_player(i):
+		_term_record.begin_state("sleep")
 	_sleeping[i] = true
 	_current_act[i] = "sleep"
 	_stats["sleeps"] = int(_stats["sleeps"]) + 1
@@ -2512,6 +2544,7 @@ func _do_lesson(kind: String, me: int, target: int) -> Dictionary:
 	if seat_of(receiver) == EMPEROR_SEAT:
 		ticks *= bonus
 	_credit_study_ticks(receiver, ticks)
+	_term_record.instant(kind)
 	return {"ok": true, "emperor": at_emperor}
 
 
@@ -2728,6 +2761,8 @@ func _at_own_seat(i: int) -> bool:
 
 ## 独立移动状态：玩家走动中不被 NPC 拉进新占用交互；**不是**聊天占用。
 func set_moving(i: int, moving: bool) -> void:
+	if is_player(i):
+		_term_record.moving(moving, _phase == "break")
 	if moving and _current_act[i] == "study":
 		_current_act[i] = null
 		_study_acc[i] = 0.0
@@ -2918,6 +2953,11 @@ func report() -> String:
 # ------------------------------------------------------------------ 只读访问器（§4.1）
 func seed() -> int:
 	return _seed
+
+
+## 期末只读记录。复制数据，UI不可借此修改内核或历史。
+func term_record() -> Dictionary:
+	return _term_record.snapshot(self)
 
 
 func node_count() -> int:

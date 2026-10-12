@@ -6,6 +6,9 @@ const SCENE_CONFIRM = preload("res://scenes/ui/confirm_dialog.tscn")
 const SCENE_ENCYCLOPEDIA = preload("res://scenes/ui/encyclopedia.tscn")
 const SCENE_CLASSROOM := "res://scenes/game/classroom3D.tscn"
 const SCENE_GENDER_SELECT = preload("res://scenes/ui/gender_select.tscn")
+const TERM_REPORT = preload("res://scenes/ui/term_report.tscn")
+const TERM_ARCHIVE = preload("res://scripts/game/term_archive.gd")
+const CAMPUS_THEME = preload("res://scripts/ui/campus_theme.gd")
 
 @onready var continue_btn: Button = $VBoxContainer/ContinueGame
 @onready var new_game_btn: Button = $VBoxContainer/NewGame
@@ -25,7 +28,7 @@ var gender_select_panel: Control
 
 
 func _ready():
-	preload("res://scripts/ui/campus_theme.gd").main_menu(self)
+	CAMPUS_THEME.main_menu(self)
 	new_game_btn.pressed.connect(_on_new_game)
 	continue_btn.pressed.connect(_on_continue)
 	setting_btn.pressed.connect(_on_settings)
@@ -64,6 +67,18 @@ func _ready():
 	add_child(gender_select_panel)
 	_layout_for_viewport()
 	get_viewport().size_changed.connect(_layout_for_viewport)
+	var archive_button := Button.new()
+	archive_button.text = "上局回顾"
+	archive_button.disabled = TERM_ARCHIVE.read().is_empty()
+	var menu: VBoxContainer = $VBoxContainer
+	menu.add_child(archive_button)
+	menu.move_child(archive_button, menu.get_child_count() - 2)
+	archive_button.pressed.connect(_open_term_archive)
+	CAMPUS_THEME.button(archive_button)
+	archive_button.add_theme_font_size_override("font_size", 24)
+	if GameState.new_game_requested:
+		GameState.new_game_requested = false
+		_ask_gender.call_deferred()
 
 
 func _layout_for_viewport() -> void:
@@ -85,6 +100,13 @@ func _layout_for_viewport() -> void:
 	menu_box.size = Vector2(
 		menu_width, minf(viewport.y - menu_box.position.y - 24.0, 553.0 * scale)
 	)
+
+
+func _open_term_archive() -> void:
+	var report := TERM_REPORT.instantiate()
+	add_child(report)
+	if not report.open_record(TERM_ARCHIVE.read()):
+		report.queue_free()
 
 
 func _has_save() -> bool:

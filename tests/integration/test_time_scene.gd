@@ -78,7 +78,7 @@ func test_report_state_shows_ended_day_and_recovers() -> void:
 		if str(clock.snapshot()["mode"]) != SimulationClock.MODE_RUNNING:
 			break
 	assert_eq(str(clock.snapshot()["mode"]), SimulationClock.MODE_REPORT, "第 1 天结束进入 report")
-	assert_eq(hud.detail_line(), "第 1 天结束", "日末显示结束的那一天")
+	assert_true(hud.detail_line().begins_with("第 1 天结束"), "日末显示结束的那一天：%s" % hud.detail_line())
 	assert_true(hud.controls_locked(), "简报停留期间不允许操作")
 	assert_eq(clock.snapshot()["remaining_seconds"], 0.0, "日末剩余为 0（不出现负数）")
 

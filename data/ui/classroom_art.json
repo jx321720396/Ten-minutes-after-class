@@ -1,0 +1,3680 @@
+{
+  "version": 1,
+  "font": "res://assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf",
+  "decoration_seed_salt": 731027,
+  "materials": {
+    "wall": {
+      "color": "#eee9d9",
+      "roughness": 0.92
+    },
+    "wainscot": {
+      "color": "#789982",
+      "roughness": 0.92
+    },
+    "trim": {
+      "color": "#566d5c",
+      "roughness": 0.92
+    },
+    "metal": {
+      "color": "#657273",
+      "roughness": 0.92
+    },
+    "window": {
+      "color": "#d4d9d1",
+      "roughness": 0.92
+    },
+    "curtain": {
+      "color": "#a3bfc2",
+      "roughness": 0.92
+    },
+    "wood": {
+      "color": "#c09a62",
+      "roughness": 0.92
+    },
+    "board": {
+      "color": "#2c574a",
+      "roughness": 0.92
+    },
+    "paper": {
+      "color": "#f3eedb",
+      "roughness": 0.92
+    },
+    "ink": {
+      "color": "#48575c",
+      "roughness": 0.92
+    },
+    "blue": {
+      "color": "#708ea0",
+      "roughness": 0.92
+    },
+    "red": {
+      "color": "#b77c69",
+      "roughness": 0.92
+    },
+    "green": {
+      "color": "#77937b",
+      "roughness": 0.92
+    },
+    "ochre": {
+      "color": "#c5a76a",
+      "roughness": 0.92
+    },
+    "chalk": {
+      "color": "#d7ddc7",
+      "roughness": 0.92
+    },
+    "bag": {
+      "color": "#627b88",
+      "roughness": 0.92
+    },
+    "leaf": {
+      "color": "#6d916f",
+      "roughness": 0.92
+    },
+    "pot": {
+      "color": "#b18b70",
+      "roughness": 0.92
+    },
+    "bark": {
+      "color": "#9c8e70",
+      "roughness": 0.92
+    },
+    "building": {
+      "color": "#d5d6c5",
+      "roughness": 0.92
+    },
+    "exterior_glass": {
+      "color": "#8ca9b2",
+      "roughness": 0.92
+    },
+    "floor": {
+      "color": "#ffffff",
+      "roughness": 0.92,
+      "texture": "res://assets/textures/classroom/scene_classroom_floor_soft.svg",
+      "uv_scale": [
+        10,
+        12,
+        1
+      ]
+    },
+    "wood_texture": {
+      "color": "#ffffff",
+      "roughness": 0.86,
+      "texture": "res://assets/textures/classroom/scene_classroom_wood_soft.svg",
+      "uv_scale": [
+        1.4,
+        1.4,
+        1.4
+      ],
+      "triplanar": true
+    }
+  },
+  "material_replacements": {
+    "mat_wall_upper": "wall",
+    "mat_wall_lower": "wainscot",
+    "mat_wall_trim": "trim",
+    "mat_floor_tile": "floor",
+    "mat_wood_desk": "wood_texture",
+    "mat_wood": "wood_texture",
+    "mat_metal_frame": "metal",
+    "mat_window_frame": "window",
+    "mat_curtain": "curtain",
+    "mat_locker": "green",
+    "mat_blackboard_news": "board",
+    "mat_board_cork": "green"
+  },
+  "props": {
+    "desk_neat": {
+      "parts": [
+        {
+          "name": "TextbookPages",
+          "position": [
+            -0.18,
+            0.78,
+            0.065
+          ],
+          "size": [
+            0.21,
+            0.028,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "TextbookCover",
+          "position": [
+            -0.18,
+            0.798,
+            0.065
+          ],
+          "size": [
+            0.22,
+            0.008,
+            0.16
+          ],
+          "material": "blue",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "TextbookSpine",
+          "position": [
+            -0.284,
+            0.78,
+            0.065
+          ],
+          "size": [
+            0.014,
+            0.032,
+            0.16
+          ],
+          "material": "blue",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "ExerciseBookPages",
+          "position": [
+            -0.18,
+            0.82,
+            0.065
+          ],
+          "size": [
+            0.21,
+            0.028,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -4,
+            0
+          ]
+        },
+        {
+          "name": "ExerciseBookCover",
+          "position": [
+            -0.18,
+            0.838,
+            0.065
+          ],
+          "size": [
+            0.22,
+            0.008,
+            0.16
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -4,
+            0
+          ]
+        },
+        {
+          "name": "ExerciseBookSpine",
+          "position": [
+            -0.284,
+            0.82,
+            0.065
+          ],
+          "size": [
+            0.014,
+            0.032,
+            0.16
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -4,
+            0
+          ]
+        },
+        {
+          "name": "Homework",
+          "position": [
+            0.055,
+            0.765,
+            -0.075
+          ],
+          "size": [
+            0.22,
+            0.003,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "HomeworkLine0",
+          "position": [
+            0.055,
+            0.767,
+            -0.12
+          ],
+          "size": [
+            0.09,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "HomeworkLine1",
+          "position": [
+            0.055,
+            0.767,
+            -0.093
+          ],
+          "size": [
+            0.15,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "HomeworkLine2",
+          "position": [
+            0.055,
+            0.767,
+            -0.066
+          ],
+          "size": [
+            0.15,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "HomeworkLine3",
+          "position": [
+            0.055,
+            0.767,
+            -0.03899999999999999
+          ],
+          "size": [
+            0.15,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "WaterBottle",
+          "position": [
+            0.25,
+            0.85,
+            0.12
+          ],
+          "size": [
+            0.063,
+            0.17,
+            0.063
+          ],
+          "material": "blue",
+          "kind": "cylinder"
+        },
+        {
+          "name": "BottleLid",
+          "position": [
+            0.25,
+            0.94,
+            0.12
+          ],
+          "size": [
+            0.052,
+            0.016,
+            0.052
+          ],
+          "material": "metal",
+          "kind": "cylinder"
+        },
+        {
+          "name": "BottleBand",
+          "position": [
+            0.25,
+            0.88,
+            0.12
+          ],
+          "size": [
+            0.065,
+            0.022,
+            0.065
+          ],
+          "material": "paper",
+          "kind": "cylinder"
+        },
+        {
+          "name": "Pen",
+          "position": [
+            0.13,
+            0.769,
+            -0.15
+          ],
+          "size": [
+            0.11,
+            0.008,
+            0.008
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            -16,
+            0
+          ]
+        },
+        {
+          "name": "Bag",
+          "position": [
+            0.0,
+            0.54,
+            -0.395
+          ],
+          "size": [
+            0.25,
+            0.3,
+            0.09
+          ],
+          "material": "bag"
+        },
+        {
+          "name": "BagPocket",
+          "position": [
+            0.0,
+            0.48,
+            -0.34
+          ],
+          "size": [
+            0.18,
+            0.09,
+            0.025
+          ],
+          "material": "blue"
+        },
+        {
+          "name": "BagHandle",
+          "position": [
+            0.0,
+            0.71,
+            -0.4
+          ],
+          "size": [
+            0.085,
+            0.025,
+            0.025
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "DeskWear",
+          "position": [
+            0.22,
+            0.762,
+            0.222
+          ],
+          "size": [
+            0.08,
+            0.001,
+            0.005
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "ShelfBook",
+          "position": [
+            -0.13,
+            0.635,
+            0.0
+          ],
+          "size": [
+            0.21,
+            0.026,
+            0.15
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "ShelfSpine",
+          "position": [
+            -0.13,
+            0.635,
+            -0.078
+          ],
+          "size": [
+            0.21,
+            0.026,
+            0.009
+          ],
+          "material": "blue"
+        }
+      ],
+      "labels": []
+    },
+    "desk_revision": {
+      "parts": [
+        {
+          "name": "TextbookPages",
+          "position": [
+            -0.18,
+            0.78,
+            0.065
+          ],
+          "size": [
+            0.21,
+            0.028,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "TextbookCover",
+          "position": [
+            -0.18,
+            0.798,
+            0.065
+          ],
+          "size": [
+            0.22,
+            0.008,
+            0.16
+          ],
+          "material": "green",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "TextbookSpine",
+          "position": [
+            -0.284,
+            0.78,
+            0.065
+          ],
+          "size": [
+            0.014,
+            0.032,
+            0.16
+          ],
+          "material": "green",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "ExerciseBookPages",
+          "position": [
+            -0.18,
+            0.82,
+            0.065
+          ],
+          "size": [
+            0.21,
+            0.028,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -4,
+            0
+          ]
+        },
+        {
+          "name": "ExerciseBookCover",
+          "position": [
+            -0.18,
+            0.838,
+            0.065
+          ],
+          "size": [
+            0.22,
+            0.008,
+            0.16
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -4,
+            0
+          ]
+        },
+        {
+          "name": "ExerciseBookSpine",
+          "position": [
+            -0.284,
+            0.82,
+            0.065
+          ],
+          "size": [
+            0.014,
+            0.032,
+            0.16
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -4,
+            0
+          ]
+        },
+        {
+          "name": "RevisionPages",
+          "position": [
+            -0.18,
+            0.86,
+            0.06
+          ],
+          "size": [
+            0.21,
+            0.028,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            3,
+            0
+          ]
+        },
+        {
+          "name": "RevisionCover",
+          "position": [
+            -0.18,
+            0.878,
+            0.06
+          ],
+          "size": [
+            0.22,
+            0.008,
+            0.16
+          ],
+          "material": "ochre",
+          "rotation": [
+            0,
+            3,
+            0
+          ]
+        },
+        {
+          "name": "RevisionSpine",
+          "position": [
+            -0.284,
+            0.86,
+            0.06
+          ],
+          "size": [
+            0.014,
+            0.032,
+            0.16
+          ],
+          "material": "ochre",
+          "rotation": [
+            0,
+            3,
+            0
+          ]
+        },
+        {
+          "name": "TestPaper",
+          "position": [
+            0.065,
+            0.765,
+            -0.055
+          ],
+          "size": [
+            0.22,
+            0.003,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "TestPaperLine0",
+          "position": [
+            0.065,
+            0.767,
+            -0.1
+          ],
+          "size": [
+            0.09,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "TestPaperLine1",
+          "position": [
+            0.065,
+            0.767,
+            -0.07300000000000001
+          ],
+          "size": [
+            0.15,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "TestPaperLine2",
+          "position": [
+            0.065,
+            0.767,
+            -0.046000000000000006
+          ],
+          "size": [
+            0.15,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "TestPaperLine3",
+          "position": [
+            0.065,
+            0.767,
+            -0.019000000000000003
+          ],
+          "size": [
+            0.15,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Folder",
+          "position": [
+            0.16,
+            0.779,
+            0.1
+          ],
+          "size": [
+            0.19,
+            0.023,
+            0.13
+          ],
+          "material": "blue"
+        },
+        {
+          "name": "Pen",
+          "position": [
+            0.13,
+            0.769,
+            -0.15
+          ],
+          "size": [
+            0.11,
+            0.008,
+            0.008
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            -16,
+            0
+          ]
+        },
+        {
+          "name": "Bag",
+          "position": [
+            0.0,
+            0.54,
+            -0.395
+          ],
+          "size": [
+            0.25,
+            0.3,
+            0.09
+          ],
+          "material": "green"
+        },
+        {
+          "name": "BagPocket",
+          "position": [
+            0.0,
+            0.48,
+            -0.34
+          ],
+          "size": [
+            0.18,
+            0.09,
+            0.025
+          ],
+          "material": "blue"
+        },
+        {
+          "name": "BagHandle",
+          "position": [
+            0.0,
+            0.71,
+            -0.4
+          ],
+          "size": [
+            0.085,
+            0.025,
+            0.025
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "DeskWear",
+          "position": [
+            0.22,
+            0.762,
+            0.222
+          ],
+          "size": [
+            0.08,
+            0.001,
+            0.005
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "ShelfBook",
+          "position": [
+            -0.13,
+            0.635,
+            0.0
+          ],
+          "size": [
+            0.21,
+            0.026,
+            0.15
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "ShelfSpine",
+          "position": [
+            -0.13,
+            0.635,
+            -0.078
+          ],
+          "size": [
+            0.21,
+            0.026,
+            0.009
+          ],
+          "material": "blue"
+        }
+      ],
+      "labels": []
+    },
+    "desk_work": {
+      "parts": [
+        {
+          "name": "TextbookPages",
+          "position": [
+            -0.18,
+            0.78,
+            0.065
+          ],
+          "size": [
+            0.21,
+            0.028,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "TextbookCover",
+          "position": [
+            -0.18,
+            0.798,
+            0.065
+          ],
+          "size": [
+            0.22,
+            0.008,
+            0.16
+          ],
+          "material": "red",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "TextbookSpine",
+          "position": [
+            -0.284,
+            0.78,
+            0.065
+          ],
+          "size": [
+            0.014,
+            0.032,
+            0.16
+          ],
+          "material": "red",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "ExerciseBookPages",
+          "position": [
+            -0.18,
+            0.82,
+            0.065
+          ],
+          "size": [
+            0.21,
+            0.028,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -4,
+            0
+          ]
+        },
+        {
+          "name": "ExerciseBookCover",
+          "position": [
+            -0.18,
+            0.838,
+            0.065
+          ],
+          "size": [
+            0.22,
+            0.008,
+            0.16
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -4,
+            0
+          ]
+        },
+        {
+          "name": "ExerciseBookSpine",
+          "position": [
+            -0.284,
+            0.82,
+            0.065
+          ],
+          "size": [
+            0.014,
+            0.032,
+            0.16
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            -4,
+            0
+          ]
+        },
+        {
+          "name": "OpenWork",
+          "position": [
+            0.04,
+            0.765,
+            -0.08
+          ],
+          "size": [
+            0.22,
+            0.003,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "OpenWorkLine0",
+          "position": [
+            0.04,
+            0.767,
+            -0.125
+          ],
+          "size": [
+            0.09,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "OpenWorkLine1",
+          "position": [
+            0.04,
+            0.767,
+            -0.098
+          ],
+          "size": [
+            0.15,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "OpenWorkLine2",
+          "position": [
+            0.04,
+            0.767,
+            -0.07100000000000001
+          ],
+          "size": [
+            0.15,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "OpenWorkLine3",
+          "position": [
+            0.04,
+            0.767,
+            -0.044
+          ],
+          "size": [
+            0.15,
+            0.001,
+            0.003
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "WaterBottle",
+          "position": [
+            0.245,
+            0.85,
+            0.125
+          ],
+          "size": [
+            0.063,
+            0.17,
+            0.063
+          ],
+          "material": "green",
+          "kind": "cylinder"
+        },
+        {
+          "name": "BottleLid",
+          "position": [
+            0.245,
+            0.94,
+            0.125
+          ],
+          "size": [
+            0.052,
+            0.016,
+            0.052
+          ],
+          "material": "metal",
+          "kind": "cylinder"
+        },
+        {
+          "name": "BottleBand",
+          "position": [
+            0.245,
+            0.88,
+            0.125
+          ],
+          "size": [
+            0.065,
+            0.022,
+            0.065
+          ],
+          "material": "paper",
+          "kind": "cylinder"
+        },
+        {
+          "name": "PencilCase",
+          "position": [
+            0.08,
+            0.786,
+            0.13
+          ],
+          "size": [
+            0.14,
+            0.03,
+            0.052
+          ],
+          "material": "ochre"
+        },
+        {
+          "name": "Pen",
+          "position": [
+            0.13,
+            0.769,
+            -0.15
+          ],
+          "size": [
+            0.11,
+            0.008,
+            0.008
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            -16,
+            0
+          ]
+        },
+        {
+          "name": "Bag",
+          "position": [
+            0.0,
+            0.54,
+            -0.395
+          ],
+          "size": [
+            0.25,
+            0.3,
+            0.09
+          ],
+          "material": "bag"
+        },
+        {
+          "name": "BagPocket",
+          "position": [
+            0.0,
+            0.48,
+            -0.34
+          ],
+          "size": [
+            0.18,
+            0.09,
+            0.025
+          ],
+          "material": "blue"
+        },
+        {
+          "name": "BagHandle",
+          "position": [
+            0.0,
+            0.71,
+            -0.4
+          ],
+          "size": [
+            0.085,
+            0.025,
+            0.025
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "DeskWear",
+          "position": [
+            0.22,
+            0.762,
+            0.222
+          ],
+          "size": [
+            0.08,
+            0.001,
+            0.005
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "ShelfBook",
+          "position": [
+            -0.13,
+            0.635,
+            0.0
+          ],
+          "size": [
+            0.21,
+            0.026,
+            0.15
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "ShelfSpine",
+          "position": [
+            -0.13,
+            0.635,
+            -0.078
+          ],
+          "size": [
+            0.21,
+            0.026,
+            0.009
+          ],
+          "material": "blue"
+        }
+      ],
+      "labels": []
+    },
+    "desk_light": {
+      "parts": [
+        {
+          "name": "SingleBookPages",
+          "position": [
+            -0.13,
+            0.78,
+            0.04
+          ],
+          "size": [
+            0.21,
+            0.028,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "SingleBookCover",
+          "position": [
+            -0.13,
+            0.798,
+            0.04
+          ],
+          "size": [
+            0.22,
+            0.008,
+            0.16
+          ],
+          "material": "blue",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "SingleBookSpine",
+          "position": [
+            -0.23399999999999999,
+            0.78,
+            0.04
+          ],
+          "size": [
+            0.014,
+            0.032,
+            0.16
+          ],
+          "material": "blue",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "WaterBottle",
+          "position": [
+            0.22,
+            0.85,
+            0.12
+          ],
+          "size": [
+            0.063,
+            0.17,
+            0.063
+          ],
+          "material": "ochre",
+          "kind": "cylinder"
+        },
+        {
+          "name": "BottleLid",
+          "position": [
+            0.22,
+            0.94,
+            0.12
+          ],
+          "size": [
+            0.052,
+            0.016,
+            0.052
+          ],
+          "material": "metal",
+          "kind": "cylinder"
+        },
+        {
+          "name": "BottleBand",
+          "position": [
+            0.22,
+            0.88,
+            0.12
+          ],
+          "size": [
+            0.065,
+            0.022,
+            0.065
+          ],
+          "material": "paper",
+          "kind": "cylinder"
+        },
+        {
+          "name": "PencilCase",
+          "position": [
+            0.04,
+            0.782,
+            -0.13
+          ],
+          "size": [
+            0.14,
+            0.024,
+            0.052
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Pen",
+          "position": [
+            0.13,
+            0.769,
+            -0.15
+          ],
+          "size": [
+            0.11,
+            0.008,
+            0.008
+          ],
+          "material": "ink",
+          "rotation": [
+            0,
+            -16,
+            0
+          ]
+        },
+        {
+          "name": "Bag",
+          "position": [
+            0.0,
+            0.54,
+            -0.395
+          ],
+          "size": [
+            0.25,
+            0.3,
+            0.09
+          ],
+          "material": "green"
+        },
+        {
+          "name": "BagPocket",
+          "position": [
+            0.0,
+            0.48,
+            -0.34
+          ],
+          "size": [
+            0.18,
+            0.09,
+            0.025
+          ],
+          "material": "blue"
+        },
+        {
+          "name": "BagHandle",
+          "position": [
+            0.0,
+            0.71,
+            -0.4
+          ],
+          "size": [
+            0.085,
+            0.025,
+            0.025
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "DeskWear",
+          "position": [
+            0.22,
+            0.762,
+            0.222
+          ],
+          "size": [
+            0.08,
+            0.001,
+            0.005
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "ShelfBook",
+          "position": [
+            -0.13,
+            0.635,
+            0.0
+          ],
+          "size": [
+            0.21,
+            0.026,
+            0.15
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "ShelfSpine",
+          "position": [
+            -0.13,
+            0.635,
+            -0.078
+          ],
+          "size": [
+            0.21,
+            0.026,
+            0.009
+          ],
+          "material": "blue"
+        }
+      ],
+      "labels": []
+    },
+    "blackboard_content": {
+      "parts": [
+        {
+          "name": "DividerA",
+          "position": [
+            -0.5,
+            -0.07,
+            0
+          ],
+          "size": [
+            0.007,
+            0.82,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "DividerB",
+          "position": [
+            0.57,
+            -0.07,
+            0
+          ],
+          "size": [
+            0.007,
+            0.82,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "TitleRule",
+          "position": [
+            0,
+            0.19,
+            0
+          ],
+          "size": [
+            2.95,
+            0.008,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk0_0",
+          "position": [
+            -0.99,
+            -0.12,
+            0
+          ],
+          "size": [
+            0.7,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk0_1",
+          "position": [
+            -0.99,
+            -0.215,
+            0
+          ],
+          "size": [
+            0.61,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk0_2",
+          "position": [
+            -0.99,
+            -0.31,
+            0
+          ],
+          "size": [
+            0.52,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk0_3",
+          "position": [
+            -0.99,
+            -0.405,
+            0
+          ],
+          "size": [
+            0.7,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk0_4",
+          "position": [
+            -0.99,
+            -0.5,
+            0
+          ],
+          "size": [
+            0.61,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk1_0",
+          "position": [
+            0.02,
+            -0.12,
+            0
+          ],
+          "size": [
+            0.7,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk1_1",
+          "position": [
+            0.02,
+            -0.215,
+            0
+          ],
+          "size": [
+            0.61,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk1_2",
+          "position": [
+            0.02,
+            -0.31,
+            0
+          ],
+          "size": [
+            0.52,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk1_3",
+          "position": [
+            0.02,
+            -0.405,
+            0
+          ],
+          "size": [
+            0.7,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk1_4",
+          "position": [
+            0.02,
+            -0.5,
+            0
+          ],
+          "size": [
+            0.61,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk2_0",
+          "position": [
+            1.06,
+            -0.12,
+            0
+          ],
+          "size": [
+            0.7,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk2_1",
+          "position": [
+            1.06,
+            -0.215,
+            0
+          ],
+          "size": [
+            0.61,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk2_2",
+          "position": [
+            1.06,
+            -0.31,
+            0
+          ],
+          "size": [
+            0.52,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk2_3",
+          "position": [
+            1.06,
+            -0.405,
+            0
+          ],
+          "size": [
+            0.7,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Chalk2_4",
+          "position": [
+            1.06,
+            -0.5,
+            0
+          ],
+          "size": [
+            0.61,
+            0.005,
+            0.003
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "DrawnBook",
+          "position": [
+            -1.24,
+            -0.4650000000000001,
+            0.001
+          ],
+          "size": [
+            0.1,
+            0.19,
+            0.004
+          ],
+          "material": "ochre"
+        },
+        {
+          "name": "DrawnBook",
+          "position": [
+            -1.09,
+            -0.44000000000000006,
+            0.001
+          ],
+          "size": [
+            0.1,
+            0.24,
+            0.004
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "DrawnBook",
+          "position": [
+            -0.94,
+            -0.48000000000000004,
+            0.001
+          ],
+          "size": [
+            0.1,
+            0.16,
+            0.004
+          ],
+          "material": "blue"
+        }
+      ],
+      "labels": [
+        {
+          "name": "Title",
+          "text": "把好奇心留给每一天",
+          "position": [
+            0,
+            0.43,
+            0.006
+          ],
+          "color": "#e3e6ce",
+          "pixel_size": 0.0032,
+          "font_size": 72,
+          "outline_size": 0
+        },
+        {
+          "name": "Read",
+          "text": "读书角",
+          "position": [
+            -0.99,
+            0.065,
+            0.006
+          ],
+          "color": "#e3e6ce",
+          "pixel_size": 0.0022,
+          "font_size": 48,
+          "outline_size": 0
+        },
+        {
+          "name": "Convention",
+          "text": "班级公约",
+          "position": [
+            0.02,
+            0.065,
+            0.006
+          ],
+          "color": "#e3e6ce",
+          "pixel_size": 0.0022,
+          "font_size": 48,
+          "outline_size": 0
+        },
+        {
+          "name": "Share",
+          "text": "本周分享",
+          "position": [
+            1.06,
+            0.065,
+            0.006
+          ],
+          "color": "#e3e6ce",
+          "pixel_size": 0.0022,
+          "font_size": 48,
+          "outline_size": 0
+        }
+      ]
+    },
+    "schedule": {
+      "parts": [
+        {
+          "name": "Paper",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "size": [
+            0.43,
+            0.68,
+            0.006
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "Tape",
+          "position": [
+            0,
+            0.34,
+            0.007
+          ],
+          "size": [
+            0.16,
+            0.035,
+            0.003
+          ],
+          "material": "ochre"
+        },
+        {
+          "name": "Column",
+          "position": [
+            -0.14,
+            -0.03,
+            0.006
+          ],
+          "size": [
+            0.002,
+            0.42,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Column",
+          "position": [
+            -0.07,
+            -0.03,
+            0.006
+          ],
+          "size": [
+            0.002,
+            0.42,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Column",
+          "position": [
+            0,
+            -0.03,
+            0.006
+          ],
+          "size": [
+            0.002,
+            0.42,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Column",
+          "position": [
+            0.07,
+            -0.03,
+            0.006
+          ],
+          "size": [
+            0.002,
+            0.42,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Column",
+          "position": [
+            0.14,
+            -0.03,
+            0.006
+          ],
+          "size": [
+            0.002,
+            0.42,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            -0.22,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            -0.145,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            -0.07,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            0.005,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            0.08,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            0.155,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        }
+      ],
+      "labels": [
+        {
+          "name": "Title",
+          "text": "课程表",
+          "position": [
+            0,
+            0.245,
+            0.01
+          ],
+          "color": "#35594a",
+          "pixel_size": 0.0012,
+          "font_size": 60,
+          "outline_size": 0
+        },
+        {
+          "name": "Subjects",
+          "text": "语  数  英  物  化",
+          "position": [
+            0,
+            0.13,
+            0.01
+          ],
+          "color": "#566657",
+          "pixel_size": 0.00055,
+          "font_size": 48,
+          "outline_size": 0
+        },
+        {
+          "name": "Notes",
+          "text": "认真听讲 · 及时复习",
+          "position": [
+            0,
+            -0.275,
+            0.01
+          ],
+          "color": "#566657",
+          "pixel_size": 0.00055,
+          "font_size": 40,
+          "outline_size": 0
+        }
+      ]
+    },
+    "duty": {
+      "parts": [
+        {
+          "name": "Paper",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "size": [
+            0.43,
+            0.68,
+            0.006
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "Tape",
+          "position": [
+            0,
+            0.34,
+            0.007
+          ],
+          "size": [
+            0.16,
+            0.035,
+            0.003
+          ],
+          "material": "ochre"
+        },
+        {
+          "name": "Column",
+          "position": [
+            -0.14,
+            -0.03,
+            0.006
+          ],
+          "size": [
+            0.002,
+            0.42,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Column",
+          "position": [
+            -0.07,
+            -0.03,
+            0.006
+          ],
+          "size": [
+            0.002,
+            0.42,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Column",
+          "position": [
+            0,
+            -0.03,
+            0.006
+          ],
+          "size": [
+            0.002,
+            0.42,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Column",
+          "position": [
+            0.07,
+            -0.03,
+            0.006
+          ],
+          "size": [
+            0.002,
+            0.42,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Column",
+          "position": [
+            0.14,
+            -0.03,
+            0.006
+          ],
+          "size": [
+            0.002,
+            0.42,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            -0.22,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            -0.145,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            -0.07,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            0.005,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            0.08,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        },
+        {
+          "name": "Row",
+          "position": [
+            0,
+            0.155,
+            0.006
+          ],
+          "size": [
+            0.35,
+            0.002,
+            0.001
+          ],
+          "material": "green"
+        }
+      ],
+      "labels": [
+        {
+          "name": "Title",
+          "text": "值日表",
+          "position": [
+            0,
+            0.245,
+            0.01
+          ],
+          "color": "#35594a",
+          "pixel_size": 0.0012,
+          "font_size": 60,
+          "outline_size": 0
+        },
+        {
+          "name": "Days",
+          "text": "一  二  三  四  五",
+          "position": [
+            0,
+            0.13,
+            0.01
+          ],
+          "color": "#566657",
+          "pixel_size": 0.00055,
+          "font_size": 48,
+          "outline_size": 0
+        },
+        {
+          "name": "Notes",
+          "text": "擦黑板 / 清扫 / 整理",
+          "position": [
+            0,
+            -0.275,
+            0.01
+          ],
+          "color": "#566657",
+          "pixel_size": 0.00055,
+          "font_size": 40,
+          "outline_size": 0
+        }
+      ]
+    },
+    "notice": {
+      "parts": [
+        {
+          "name": "Paper",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "size": [
+            0.58,
+            0.76,
+            0.006
+          ],
+          "material": "paper"
+        },
+        {
+          "name": "Tape",
+          "position": [
+            0,
+            0.38,
+            0.009
+          ],
+          "size": [
+            0.19,
+            0.038,
+            0.003
+          ],
+          "material": "ochre"
+        }
+      ],
+      "labels": [
+        {
+          "name": "Title",
+          "text": "班级公告",
+          "position": [
+            0,
+            0.24,
+            0.01
+          ],
+          "color": "#35594a",
+          "pixel_size": 0.0014,
+          "font_size": 64,
+          "outline_size": 0
+        },
+        {
+          "name": "Body",
+          "text": "课间请保持通道畅通\n离开座位前整理桌面\n爱护公物  随手关灯",
+          "position": [
+            0,
+            -0.035,
+            0.01
+          ],
+          "color": "#566657",
+          "pixel_size": 0.00095,
+          "font_size": 42,
+          "outline_size": 0
+        }
+      ]
+    },
+    "cleaning_corner": {
+      "parts": [
+        {
+          "name": "Bin",
+          "position": [
+            0,
+            0.2,
+            0
+          ],
+          "size": [
+            0.3,
+            0.4,
+            0.25
+          ],
+          "material": "green"
+        },
+        {
+          "name": "BinRim",
+          "position": [
+            0,
+            0.405,
+            0
+          ],
+          "size": [
+            0.32,
+            0.035,
+            0.27
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "BroomPole",
+          "position": [
+            0.33,
+            0.7,
+            -0.05
+          ],
+          "size": [
+            0.024,
+            1.15,
+            0.024
+          ],
+          "material": "wood",
+          "rotation": [
+            0,
+            0,
+            -8
+          ]
+        },
+        {
+          "name": "BroomHead",
+          "position": [
+            0.4,
+            0.14,
+            -0.05
+          ],
+          "size": [
+            0.25,
+            0.18,
+            0.075
+          ],
+          "material": "ochre"
+        },
+        {
+          "name": "Dustpan",
+          "position": [
+            0.67,
+            0.055,
+            0
+          ],
+          "size": [
+            0.23,
+            0.07,
+            0.21
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "DustpanHandle",
+          "position": [
+            0.67,
+            0.43,
+            -0.08
+          ],
+          "size": [
+            0.023,
+            0.7,
+            0.023
+          ],
+          "material": "metal"
+        }
+      ],
+      "labels": [
+        {
+          "name": "Label",
+          "text": "清洁角",
+          "position": [
+            0.25,
+            0.91,
+            0.01
+          ],
+          "color": "#3f604e",
+          "pixel_size": 0.0015,
+          "font_size": 48,
+          "outline_size": 0
+        }
+      ]
+    },
+    "storage_trim": {
+      "parts": [
+        {
+          "name": "Top",
+          "position": [
+            0,
+            1.91,
+            0
+          ],
+          "size": [
+            1.23,
+            0.035,
+            0.49
+          ],
+          "material": "wood"
+        },
+        {
+          "name": "DoorInsetL",
+          "position": [
+            -0.31,
+            1.0,
+            0.253
+          ],
+          "size": [
+            0.48,
+            1.42,
+            0.012
+          ],
+          "material": "wainscot"
+        },
+        {
+          "name": "DoorInsetR",
+          "position": [
+            0.31,
+            1.0,
+            0.253
+          ],
+          "size": [
+            0.48,
+            1.42,
+            0.012
+          ],
+          "material": "wainscot"
+        },
+        {
+          "name": "HomeworkTray",
+          "position": [
+            0,
+            1.95,
+            0
+          ],
+          "size": [
+            0.5,
+            0.07,
+            0.29
+          ],
+          "material": "wood"
+        }
+      ],
+      "labels": [
+        {
+          "name": "Label",
+          "text": "班级用品",
+          "position": [
+            0,
+            1.5,
+            0.27
+          ],
+          "color": "#e8ebd6",
+          "pixel_size": 0.0016,
+          "font_size": 48,
+          "outline_size": 0
+        }
+      ]
+    },
+    "wall_clock": {
+      "parts": [
+        {
+          "name": "ClockRim",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "size": [
+            0.34,
+            0.035,
+            0.34
+          ],
+          "material": "metal",
+          "kind": "cylinder",
+          "rotation": [
+            90,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "ClockFace",
+          "position": [
+            0,
+            0,
+            0.022
+          ],
+          "size": [
+            0.3,
+            0.01,
+            0.3
+          ],
+          "material": "paper",
+          "kind": "cylinder",
+          "rotation": [
+            90,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "MinuteHand",
+          "position": [
+            0,
+            0.05,
+            0.03
+          ],
+          "size": [
+            0.011,
+            0.1,
+            0.006
+          ],
+          "material": "ink"
+        },
+        {
+          "name": "HourHand",
+          "position": [
+            0.035,
+            0,
+            0.031
+          ],
+          "size": [
+            0.07,
+            0.012,
+            0.006
+          ],
+          "material": "ink"
+        },
+        {
+          "name": "Tick",
+          "position": [
+            0,
+            0.126,
+            0.03
+          ],
+          "size": [
+            0.013,
+            0.013,
+            0.006
+          ],
+          "material": "ink"
+        },
+        {
+          "name": "Tick",
+          "position": [
+            0,
+            -0.126,
+            0.03
+          ],
+          "size": [
+            0.013,
+            0.013,
+            0.006
+          ],
+          "material": "ink"
+        },
+        {
+          "name": "Tick",
+          "position": [
+            0.126,
+            0,
+            0.03
+          ],
+          "size": [
+            0.013,
+            0.013,
+            0.006
+          ],
+          "material": "ink"
+        },
+        {
+          "name": "Tick",
+          "position": [
+            -0.126,
+            0,
+            0.03
+          ],
+          "size": [
+            0.013,
+            0.013,
+            0.006
+          ],
+          "material": "ink"
+        }
+      ],
+      "labels": []
+    },
+    "class_sign": {
+      "parts": [
+        {
+          "name": "Sign",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "size": [
+            0.65,
+            0.2,
+            0.025
+          ],
+          "material": "blue"
+        }
+      ],
+      "labels": [
+        {
+          "name": "Class",
+          "text": "高一 · 教室",
+          "position": [
+            0,
+            0,
+            0.017
+          ],
+          "color": "#f1eedc",
+          "pixel_size": 0.0011,
+          "font_size": 56,
+          "outline_size": 0
+        }
+      ]
+    },
+    "plant": {
+      "parts": [
+        {
+          "name": "Pot",
+          "position": [
+            0,
+            0.085,
+            0
+          ],
+          "size": [
+            0.14,
+            0.17,
+            0.14
+          ],
+          "material": "pot",
+          "kind": "cylinder"
+        },
+        {
+          "name": "Stem",
+          "position": [
+            0,
+            0.23,
+            0
+          ],
+          "size": [
+            0.012,
+            0.22,
+            0.012
+          ],
+          "material": "leaf"
+        },
+        {
+          "name": "LeafA",
+          "position": [
+            -0.055,
+            0.24,
+            0
+          ],
+          "size": [
+            0.16,
+            0.055,
+            0.065
+          ],
+          "material": "leaf",
+          "kind": "sphere",
+          "rotation": [
+            0,
+            0,
+            25
+          ]
+        },
+        {
+          "name": "LeafB",
+          "position": [
+            0.06,
+            0.28,
+            0.01
+          ],
+          "size": [
+            0.15,
+            0.055,
+            0.07
+          ],
+          "material": "green",
+          "kind": "sphere",
+          "rotation": [
+            0,
+            0,
+            -30
+          ]
+        },
+        {
+          "name": "LeafC",
+          "position": [
+            0,
+            0.34,
+            0
+          ],
+          "size": [
+            0.095,
+            0.11,
+            0.085
+          ],
+          "material": "leaf",
+          "kind": "sphere"
+        }
+      ],
+      "labels": []
+    },
+    "podium_supplies": {
+      "parts": [
+        {
+          "name": "ChalkBox",
+          "position": [
+            -0.48,
+            1.064,
+            4.52
+          ],
+          "size": [
+            0.16,
+            0.045,
+            0.1
+          ],
+          "material": "green"
+        },
+        {
+          "name": "ChalkWhite",
+          "position": [
+            -0.48,
+            1.09,
+            4.52
+          ],
+          "size": [
+            0.1,
+            0.012,
+            0.026
+          ],
+          "material": "chalk"
+        },
+        {
+          "name": "Eraser",
+          "position": [
+            0.48,
+            1.068,
+            4.5
+          ],
+          "size": [
+            0.13,
+            0.05,
+            0.065
+          ],
+          "material": "wood"
+        },
+        {
+          "name": "EraserFelt",
+          "position": [
+            0.48,
+            1.035,
+            4.5
+          ],
+          "size": [
+            0.13,
+            0.018,
+            0.065
+          ],
+          "material": "metal"
+        },
+        {
+          "name": "LessonPlanPages",
+          "position": [
+            -0.18,
+            1.05,
+            4.43
+          ],
+          "size": [
+            0.21,
+            0.028,
+            0.15
+          ],
+          "material": "paper",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "LessonPlanCover",
+          "position": [
+            -0.18,
+            1.068,
+            4.43
+          ],
+          "size": [
+            0.22,
+            0.008,
+            0.16
+          ],
+          "material": "blue",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "LessonPlanSpine",
+          "position": [
+            -0.284,
+            1.05,
+            4.43
+          ],
+          "size": [
+            0.014,
+            0.032,
+            0.16
+          ],
+          "material": "blue",
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "labels": []
+    },
+    "school_building": {
+      "parts": [
+        {
+          "name": "Facade",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "size": [
+            0.3,
+            5.3,
+            12
+          ],
+          "material": "building"
+        },
+        {
+          "name": "FloorBand",
+          "position": [
+            -0.17,
+            -2.35,
+            0
+          ],
+          "size": [
+            0.02,
+            0.1,
+            12
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            -1.7,
+            -4.8
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            -1.7,
+            -4.8
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            -1.7,
+            -2.4
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            -1.7,
+            -2.4
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            -1.7,
+            0
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            -1.7,
+            0
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            -1.7,
+            2.4
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            -1.7,
+            2.4
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            -1.7,
+            4.8
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            -1.7,
+            4.8
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "FloorBand",
+          "position": [
+            -0.17,
+            -0.65,
+            0
+          ],
+          "size": [
+            0.02,
+            0.1,
+            12
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            0,
+            -4.8
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            0,
+            -4.8
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            0,
+            -2.4
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            0,
+            -2.4
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            0,
+            0
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            0,
+            0
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            0,
+            2.4
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            0,
+            2.4
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            0,
+            4.8
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            0,
+            4.8
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "FloorBand",
+          "position": [
+            -0.17,
+            1.0499999999999998,
+            0
+          ],
+          "size": [
+            0.02,
+            0.1,
+            12
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            1.7,
+            -4.8
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            1.7,
+            -4.8
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            1.7,
+            -2.4
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            1.7,
+            -2.4
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            1.7,
+            0
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            1.7,
+            0
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            1.7,
+            2.4
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            1.7,
+            2.4
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        },
+        {
+          "name": "Window",
+          "position": [
+            -0.18,
+            1.7,
+            4.8
+          ],
+          "size": [
+            0.023,
+            0.82,
+            1.55
+          ],
+          "material": "exterior_glass"
+        },
+        {
+          "name": "Mullion",
+          "position": [
+            -0.2,
+            1.7,
+            4.8
+          ],
+          "size": [
+            0.018,
+            0.82,
+            0.045
+          ],
+          "material": "window"
+        }
+      ],
+      "labels": []
+    },
+    "campus_tree": {
+      "parts": [
+        {
+          "name": "Trunk",
+          "position": [
+            0,
+            0.3,
+            0
+          ],
+          "size": [
+            0.17,
+            2.4,
+            0.17
+          ],
+          "material": "bark",
+          "kind": "cylinder"
+        },
+        {
+          "name": "CrownA",
+          "position": [
+            0,
+            1.75,
+            0
+          ],
+          "size": [
+            1.9,
+            1.8,
+            1.6
+          ],
+          "material": "leaf",
+          "kind": "sphere"
+        },
+        {
+          "name": "CrownB",
+          "position": [
+            0.65,
+            1.85,
+            0.35
+          ],
+          "size": [
+            1.5,
+            1.3,
+            1.4
+          ],
+          "material": "green",
+          "kind": "sphere"
+        },
+        {
+          "name": "CrownC",
+          "position": [
+            -0.6,
+            1.8,
+            -0.3
+          ],
+          "size": [
+            1.4,
+            1.5,
+            1.5
+          ],
+          "material": "leaf",
+          "kind": "sphere"
+        }
+      ],
+      "labels": []
+    }
+  },
+  "desk_variants": [
+    "desk_neat",
+    "desk_revision",
+    "desk_work",
+    "desk_light"
+  ],
+  "room_details": [
+    {
+      "name": "BlackboardContent",
+      "prop": "blackboard_content",
+      "position": [
+        0.645,
+        1.95,
+        -5.918
+      ]
+    },
+    {
+      "name": "Timetable",
+      "prop": "schedule",
+      "position": [
+        3.295,
+        1.95,
+        -5.932
+      ]
+    },
+    {
+      "name": "DutyRoster",
+      "prop": "duty",
+      "position": [
+        3.795,
+        1.95,
+        -5.932
+      ]
+    },
+    {
+      "name": "ClassNotice",
+      "prop": "notice",
+      "position": [
+        -4.245,
+        1.95,
+        -3.95
+      ],
+      "rotation": [
+        0,
+        90,
+        0
+      ]
+    },
+    {
+      "name": "CleaningCorner",
+      "prop": "cleaning_corner",
+      "position": [
+        2.9,
+        0,
+        -5.66
+      ]
+    },
+    {
+      "name": "ClassStorage",
+      "prop": "storage_trim",
+      "position": [
+        -2.955,
+        0,
+        -5.75
+      ]
+    },
+    {
+      "name": "WallClock",
+      "prop": "wall_clock",
+      "position": [
+        3.65,
+        2.93,
+        -5.94
+      ]
+    },
+    {
+      "name": "ClassSign",
+      "prop": "class_sign",
+      "position": [
+        -3.96,
+        2.86,
+        -5.93
+      ]
+    },
+    {
+      "name": "WindowPlantA",
+      "prop": "plant",
+      "position": [
+        4.45,
+        1.02,
+        -3.9
+      ]
+    },
+    {
+      "name": "WindowPlantB",
+      "prop": "plant",
+      "position": [
+        4.45,
+        1.02,
+        -0.5
+      ]
+    },
+    {
+      "name": "PodiumSupplies",
+      "prop": "podium_supplies",
+      "position": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "exterior": [
+    {
+      "name": "SchoolBuilding",
+      "prop": "school_building",
+      "position": [
+        8.8,
+        2.0,
+        -0.4
+      ]
+    },
+    {
+      "name": "CampusTreeA",
+      "prop": "campus_tree",
+      "position": [
+        6.4,
+        -0.1,
+        -3.7
+      ]
+    },
+    {
+      "name": "CampusTreeB",
+      "prop": "campus_tree",
+      "position": [
+        6.9,
+        -0.1,
+        2.7
+      ]
+    }
+  ],
+  "hide_nodes": [
+    "Room/BackWall/NewsBoard/Title",
+    "Room/BackWall/NewsBoard/Subtitle",
+    "Room/BackWall/ScheduleBoard/Paper1",
+    "Room/BackWall/ScheduleBoard/Paper2",
+    "Room/BackWall/ScheduleBoard/Paper3",
+    "Room/BackWall/ScheduleBoard/Paper4"
+  ],
+  "contact_shadow": {
+    "color": "#25392c30",
+    "size": [
+      0.65,
+      0.4
+    ],
+    "height": 0.012,
+    "softness": 0.12
+  },
+  "lighting": {
+    "background": "#bad3dc",
+    "ambient_color": "#f2f4e8",
+    "ambient_energy": 0.5,
+    "sun_rotation": [
+      -48,
+      -35,
+      0
+    ],
+    "sun_energy": 0.38,
+    "sun_color": "#ffefd5",
+    "lights": [
+      {
+        "path": "FillBack",
+        "energy": 0.18,
+        "color": "#ecf1e7"
+      },
+      {
+        "path": "FillFront",
+        "energy": 0.24,
+        "color": "#ecf1e7"
+      },
+      {
+        "path": "Room/CeilingFixtures/Lamp1",
+        "energy": 0.25,
+        "color": "#f4f4df"
+      },
+      {
+        "path": "Room/CeilingFixtures/Lamp2",
+        "energy": 0.25,
+        "color": "#f4f4df"
+      },
+      {
+        "path": "Room/CeilingFixtures/Lamp3",
+        "energy": 0.25,
+        "color": "#f4f4df"
+      },
+      {
+        "path": "Room/CeilingFixtures/Lamp4",
+        "energy": 0.25,
+        "color": "#f4f4df"
+      },
+      {
+        "path": "Room/CeilingFixtures/Lamp5",
+        "energy": 0.25,
+        "color": "#f4f4df"
+      },
+      {
+        "path": "Room/CeilingFixtures/Lamp6",
+        "energy": 0.25,
+        "color": "#f4f4df"
+      }
+    ]
+  },
+  "phase_light": {
+    "morning_break": {
+      "color": "#fff2dc",
+      "energy": 0.38
+    },
+    "morning_class": {
+      "color": "#fff2dc",
+      "energy": 0.38
+    },
+    "lunch_break": {
+      "color": "#fff8e9",
+      "energy": 0.42
+    },
+    "afternoon_class": {
+      "color": "#ffe8c6",
+      "energy": 0.4
+    },
+    "afternoon_break": {
+      "color": "#ffe8c6",
+      "energy": 0.4
+    },
+    "day_settle": {
+      "color": "#ffe8c6",
+      "energy": 0.4
+    }
+  }
+}

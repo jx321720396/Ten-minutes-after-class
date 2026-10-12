@@ -1,5 +1,7 @@
 [gd_scene load_steps=2 format=3]
 
+[ext_resource type="FontFile" path="res://assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf" id="campus_font"]
+
 [ext_resource type="Script" path="res://scripts/ui/term_tooltip.gd" id="1"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tip"]
@@ -35,12 +37,22 @@ theme_override_constants/margin_bottom = 12
 theme_override_constants/separation = 6
 
 [node name="TermLabel" type="RichTextLabel" parent="Panel/Margin/VBox"]
+theme_override_fonts/mono_font = ExtResource("campus_font")
+theme_override_fonts/bold_italics_font = ExtResource("campus_font")
+theme_override_fonts/italics_font = ExtResource("campus_font")
+theme_override_fonts/bold_font = ExtResource("campus_font")
+theme_override_fonts/normal_font = ExtResource("campus_font")
 custom_minimum_size = Vector2(320, 0)
 bbcode_enabled = true
 fit_content = true
 scroll_active = false
 
 [node name="BodyLabel" type="RichTextLabel" parent="Panel/Margin/VBox"]
+theme_override_fonts/mono_font = ExtResource("campus_font")
+theme_override_fonts/bold_italics_font = ExtResource("campus_font")
+theme_override_fonts/italics_font = ExtResource("campus_font")
+theme_override_fonts/bold_font = ExtResource("campus_font")
+theme_override_fonts/normal_font = ExtResource("campus_font")
 custom_minimum_size = Vector2(320, 0)
 bbcode_enabled = true
 fit_content = true

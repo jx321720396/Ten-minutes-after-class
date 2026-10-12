@@ -5,8 +5,9 @@ extends GutTest
 func test_load_all_reads_all_tables() -> void:
 	var loader := ConfigLoader.new()
 	var tables := loader.load_all()
-	# 新增独立世界倍速表与学业成绩分段表；其余既有表继续全部加载。
-	assert_eq(tables.size(), 33, "应加载 33 张表（含减压、出门与情绪表情图）")
+	# 数量随独立配置增长；约束关键契约表，避免新增合法配置导致旧总数断言失效。
+	assert_true(tables.has("rules/exam"), "考试配置应加载")
+	assert_true(tables.has("rules/teacher"), "老师巡查配置应加载")
 	assert_true(tables.has("rules/leisure"))
 	assert_true(tables.has("rules/player_absence"))
 	assert_true(tables.has("ui/emotion_faces"))
@@ -32,7 +33,7 @@ func test_skips_comments_and_header() -> void:
 	var headers: Array = t["headers"]
 	assert_eq(headers[0], "behavior", "首列应为 behavior")
 	var rows: Array = t["rows"]
-	assert_eq(rows.size(), 13, "behaviors 应有 13 个行为（不含注释与表头）")
+	assert_eq(rows.size(), 15, "含提问与讲题的15个行为（不含注释与表头）")
 
 
 func test_rows_keyed_by_header() -> void:

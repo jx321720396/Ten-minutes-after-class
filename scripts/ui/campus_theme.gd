@@ -144,8 +144,8 @@ static func main_menu(view: Control) -> void:
 			item.custom_minimum_size.y = cfg.menu_button_height
 			item.add_theme_font_size_override("font_size", int(cfg.menu_font_size))
 			button(item, item.name == "NewGame")
-			var menu_font := SystemFont.new()
-			menu_font.font_names = PackedStringArray(["SimSun", "Noto Serif CJK SC", "serif"])
+			var menu_font := preload("res://scripts/ui/game_fonts.gd").regular()
+
 			item.add_theme_font_override("font", menu_font)
 			var normal := box("paper", "line")
 			normal.bg_color.a = 0.2

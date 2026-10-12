@@ -8,12 +8,19 @@ func test_real_classroom_chat_scales_world_and_normal_event_restores_it() -> voi
 	var scene = load("res://scenes/game/classroom3D.tscn").instantiate()
 	scene.get_node("Roam").enabled = false
 	add_child_autofree(scene)
-	for frame in range(20):
+	# 同上：等接线完成再冻结帧推进（固定帧数在 headless 下会偶发跑在接线之前）。
+	for frame in range(180):
+		if scene.get_node("Interaction")._core != null:
+			break
 		await get_tree().physics_frame
 	scene.process_mode = Node.PROCESS_MODE_DISABLED
 	var core: SimCore = state.sim_core
 	var clock: SimulationClock = scene.get_node("Clock")
 	var flow: TimeFlow = scene.get_node("TimeFlow")
+	# 进教室转场黑幕会 hold 时钟，并靠真实秒的 tween 退场；本用例不等真实倒计时，
+	# 直接解绑它（内含 release）—— 否则倍率恒为 0、NPC 不走、HUD 显示「已暂停」。
+	scene.get_node("TransitionOverlay").bind_clock(null)
+	assert_false(clock.is_paused(), "转场黑幕不再持有暂停锁")
 	# 完成段首设置，之后创建真实合法聊天；夹具只挪位置、解除睡眠与占用。
 	clock.pump(1.0)
 	var me := core.node_count() - 1
