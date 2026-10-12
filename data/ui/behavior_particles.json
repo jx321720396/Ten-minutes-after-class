@@ -1,0 +1,54 @@
+{
+  "settings": {
+    "seed_offset": 716,
+    "interval_seconds": 0.55,
+    "lifetime_seconds": 2.8,
+    "max_per_actor": 7,
+    "font_size": 34,
+    "outline_size": 3,
+    "outline_color": "fff9eecc",
+    "halo_enabled": false,
+    "halo_alpha": 0.09,
+    "halo_radius_pixels": 22,
+    "halo_segments": 32,
+    "head_lift_m": 0.28,
+    "fallback_height_m": 1.62,
+    "spread_m": 0.12,
+    "side_speed_m": 0.42,
+    "rise_speed_m": 0.42,
+    "gravity_m": 0.85,
+    "floor_height_m": 0.03,
+    "fade_start": 0.45,
+    "minimum_scale": 0.06,
+    "scale_ease_power": 1.6,
+    "drift_ease_power": 2.0,
+    "appear_span": 0.18,
+    "appear_scale": 0.62,
+    "speed_variation": 0.12,
+    "size_variation": 0.1,
+    "rotation_radians": 0.18,
+    "reference_height_pixels": 1080,
+    "minimum_view_scale": 0.5,
+    "maximum_view_scale": 1.5
+  },
+  "styles": {
+    "chat": {"symbols": ["?", "!", "★", "~"], "colors": ["f582aa", "b798ed", "75c9f1", "f5cc70"]},
+    "study": {"symbols": ["+", "−", "×", "÷", "=", "π", "√", "x²"], "colors": ["75baff", "80d8ed", "a3c9ff"]},
+    "listen_music": {"symbols": ["♪", "♫", "~"], "colors": ["79dbb6", "7cced4", "b2ebc3"]},
+    "eat_snack": {"symbols": ["cookie", "candy", "★"], "colors": ["ffc36f", "f59b79", "ffdb91"]},
+    "read_book": {"symbols": ["book", "page", "A", "B", "“", "”"], "colors": ["bb9bec", "d0b2f3", "a99cde"]},
+    "comfort": {"symbols": ["♥", "✦", "~"], "colors": ["f2a3b6", "f9bd9b", "efb8c9"]}
+  },
+  "icons": {
+    "cookie": "<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><circle cx='32' cy='32' r='25' fill='white'/><g fill='#8d6844'><circle cx='23' cy='20' r='3'/><circle cx='41' cy='24' r='4'/><circle cx='19' cy='38' r='3'/><circle cx='34' cy='43' r='4'/><circle cx='43' cy='37' r='2'/></g></svg>",
+    "candy": "<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><g fill='white' stroke='#fff9ee' stroke-width='3' stroke-linejoin='round'><path d='M20 25L6 18L9 33L5 44L21 39ZM44 25L58 18L55 33L59 44L43 39Z'/><rect x='18' y='20' width='28' height='25' rx='10'/></g></svg>",
+    "book": "<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><g fill='white' stroke='#fff9ee' stroke-width='3' stroke-linejoin='round'><path d='M32 18Q19 10 5 15V48Q20 43 32 51Q44 43 59 48V15Q45 10 32 18Z'/></g><g fill='none' stroke='#79628c' stroke-width='2.5'><path d='M32 18V48M11 24Q20 21 27 25M11 32Q20 29 27 33M37 25Q45 21 53 24M37 33Q45 29 53 32'/></g></svg>",
+    "page": "<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><path d='M15 6H39L50 18V57H15Z' fill='white' stroke='#fff9ee' stroke-width='3' stroke-linejoin='round'/><path d='M38 7V19H49M22 28H42M22 36H42M22 44H36' fill='none' stroke='#79628c' stroke-width='3'/></svg>"
+  },
+  "bitmaps": {
+    "?": "res://assets/textures/ui/behavior_particles/question.png",
+    "!": "res://assets/textures/ui/behavior_particles/exclaim.png",
+    "★": "res://assets/textures/ui/behavior_particles/star.png",
+    "~": "res://assets/textures/ui/behavior_particles/wave.png"
+  }
+}

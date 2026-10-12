@@ -113,16 +113,16 @@ func _start_new_game() -> void:
 	# §4.1 契约：先建本局唯一的内核实例，再切课间空间——教室只读 GameState.sim_core
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	GameState.start_game(rng.randi(), _default_difficulty())
+	GameState.start_game(rng.randi(), _npc_count())
 	var error := get_tree().change_scene_to_file(SCENE_CLASSROOM)
 	if error != OK:
 		push_error("无法进入教室：%s" % error_string(error))
 
 
-## 默认难度：见 autoload/config.gd 的 default_difficulty()（读 data/rules/difficulty.csv）。
-# 难度选择 UI 待做；当前先固定默认档（16 NPC + 玩家 = 17 节点）。
-func _default_difficulty() -> int:
-	return Config.default_difficulty()
+## 本局人数：见 autoload/config.gd 的 default_npc_count()（读 data/rules/roster.csv）。
+## 一局固定 16 名 NPC（+ 玩家 = 17 个节点）—— 2026-10-12 起不再有难度选择。
+func _npc_count() -> int:
+	return Config.default_npc_count()
 
 
 func _on_continue():
