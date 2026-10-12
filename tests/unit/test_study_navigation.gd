@@ -24,7 +24,7 @@ func before_each() -> void:
 	_profile = _ui.get_node("NpcProfile")
 	_board = _ui.get_node("ClueBoardEntry")
 	_book = _ui.get_node("EncyclopediaEntry")
-	var core := SimCore.new(12345, 1)
+	var core := SimCore.new(12345, 16)
 	_profile.bind_sources(core, null, null)
 	if ResourceLoader.exists(NAV_PATH):
 		_nav = load(NAV_PATH).new()

@@ -3,7 +3,7 @@ extends GutTest
 
 
 func _core() -> SimCore:
-	var core := SimCore.from_npc(12345, 8, ConfigLoader.new().load_all())
+	var core := SimCore.new(12345, 16, ConfigLoader.new().load_all())
 	core.set_interaction_geometry([], Rect2(-10, -10, 20, 20))
 	for i in range(core.node_count()):
 		core._sleeping[i] = false

@@ -8,7 +8,7 @@ const NODES := 8
 
 
 func _core(seed_num: int = 12345) -> SimCore:
-	return SimCore.from_npc(seed_num, NODES, ConfigLoader.new().load_all())
+	return SimCore.new(seed_num, NODES, ConfigLoader.new().load_all())
 
 
 func _at_settle_tick(c: SimCore) -> void:

@@ -13,14 +13,14 @@ extends GutTest
 
 const SCENE_PATH := "res://scenes/game/classroom3D.tscn"
 const SEED := 20261010
-const DIFFICULTY := 1
+const NPC_COUNT := 16
 ## 难度 1 = 8 个 NPC；玩家另算，所以本局共 9 个节点（§3.1）
-const EXPECTED_NODES := 9
+const EXPECTED_NODES := 17
 
 
 func before_each() -> void:
 	var state: Variant = get_node("/root/GameState")
-	state.start_game(SEED, DIFFICULTY)
+	state.start_game(SEED, NPC_COUNT)
 
 
 func after_each() -> void:
@@ -70,10 +70,10 @@ func test_note_prompt_node_is_wired_to_the_controller() -> void:
 	assert_true(interaction.is_processing(), "每帧轮询已开启")
 
 
-func test_difficulty_one_has_eight_npcs_plus_the_player() -> void:
+func test_sixteen_npcs_plus_the_player() -> void:
 	var scene := await _open_scene()
 	var sim: Variant = _sim(scene)
-	assert_eq(int(sim.node_count()), EXPECTED_NODES, "难度 1 = 8 NPC + 玩家")
+	assert_eq(int(sim.node_count()), EXPECTED_NODES, "一局 = 16 NPC + 玩家")
 
 
 func test_offered_note_shows_prompt_without_interrupting_the_player() -> void:

@@ -4,7 +4,7 @@ extends GutTest
 
 func test_real_classroom_chat_scales_world_and_normal_event_restores_it() -> void:
 	var state = get_node("/root/GameState")
-	state.start_game(20261009, 1)
+	state.start_game(20261009, 16)
 	var scene = load("res://scenes/game/classroom3D.tscn").instantiate()
 	scene.get_node("Roam").enabled = false
 	add_child_autofree(scene)

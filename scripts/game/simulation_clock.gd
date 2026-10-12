@@ -44,6 +44,9 @@ var _paused_by: Dictionary = {}
 var _ended_day := 0
 var _term_days := 0
 var _max_ticks_per_frame := 1
+## 日末提示停留秒数（`rules/time_runtime` 的 `report_hold_seconds`；0 = 立刻自动进入次日）。
+## 时钟只**暴露**这个数，不自己计时 —— 停留与自动进入由表现层 HUD 倒计时（`time_hud.gd`）。
+var _report_hold_seconds := 0.0
 var _time_flow: TimeFlow = null
 
 
@@ -114,10 +117,13 @@ func _validate_config() -> String:
 func _read_runtime(rows: Array) -> String:
 	_term_days = int(_runtime_value(rows, "term_days", 0.0))
 	_max_ticks_per_frame = int(_runtime_value(rows, "max_ticks_per_frame", 0.0))
+	_report_hold_seconds = _runtime_value(rows, "report_hold_seconds", -1.0)
 	if _term_days <= 0:
 		return "SimulationClock：term_days 必须是正整数（当前 %d）。" % _term_days
 	if _max_ticks_per_frame <= 0:
 		return "SimulationClock：max_ticks_per_frame 必须是正整数（当前 %d）。" % _max_ticks_per_frame
+	if not is_finite(_report_hold_seconds) or _report_hold_seconds < 0.0:
+		return "SimulationClock：report_hold_seconds 必须是非负有限数（当前 %s）。" % _report_hold_seconds
 	return ""
 
 
@@ -236,6 +242,8 @@ func is_paused() -> bool:
 
 
 ## 日末简报「继续」：仅 report 状态可用；清空累计真实时间，进入下一天。
+## 表现层在日末停留（`report_hold_seconds`）结束后**自动**调用它（`time_hud.gd`），
+## 玩家也可按空格提前进入；第 30 天结束时 mode 为 finished，本方法拒绝。
 func continue_after_report() -> bool:
 	if _mode != MODE_REPORT:
 		return false
@@ -271,6 +279,7 @@ func snapshot() -> Dictionary:
 	out["progress"] = _progress(out) if running else 0.0
 	out["ended_day"] = _ended_day
 	out["term_days"] = _term_days
+	out["report_hold_seconds"] = _report_hold_seconds
 	out["player_grade"] = int(_core.grade(_core.node_count() - 1)) if _core != null else 0
 	out["volume"] = _core.volume() if _core != null else 0.0
 	for row in _tables.get("rules/environment", {}).get("rows", []):

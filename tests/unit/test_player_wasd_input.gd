@@ -47,7 +47,7 @@ func _make_world() -> Dictionary:
 	var walker: Node = actor.get_node("Walker")
 	pc._player_actor = actor
 	pc._walker = walker
-	pc._core = SimCore.from_npc(SEED, NPC, ConfigLoader.new().load_all())
+	pc._core = SimCore.new(SEED, NPC, ConfigLoader.new().load_all())
 	pc._player_index = int(pc._core.node_count()) - 1
 	pc._clock = null
 	pc._snapshot = {}

@@ -68,7 +68,7 @@ func test_profile_pause_empty_state_switch_and_escape() -> void:
 		return
 	var profile = load(path).instantiate()
 	add_child_autofree(profile)
-	var core := SimCore.new(12345, 1)
+	var core := SimCore.new(12345, 16)
 	profile.bind_sources(core, null, null)
 	var before := core.get_player_intel()
 	profile.open_profile(0)
@@ -95,7 +95,7 @@ func test_profile_pause_empty_state_switch_and_escape() -> void:
 func test_profile_uses_snapshot_even_after_live_relationship_changes() -> void:
 	var profile = load("res://scenes/ui/npc_profile.tscn").instantiate()
 	add_child_autofree(profile)
-	var core := SimCore.new(12345, 1)
+	var core := SimCore.new(12345, 16)
 	(
 		core
 		. _intel

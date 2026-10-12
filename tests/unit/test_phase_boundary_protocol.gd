@@ -12,7 +12,7 @@ const NPC := 8
 
 
 func _core() -> SimCore:
-	return SimCore.from_npc(SEED, NPC, ConfigLoader.new().load_all())
+	return SimCore.new(SEED, NPC, ConfigLoader.new().load_all())
 
 
 func _advance_to(core: SimCore, tick: int) -> void:

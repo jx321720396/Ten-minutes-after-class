@@ -85,7 +85,7 @@ var _walker: ActorWalker = null
 var _player_index := -1
 var _snapshot: Dictionary = {}
 ## 距离口径（全部来自 data/rules/movement.csv）
-var _speed := 0.8
+var _speed := 1.6
 var _radius := 0.24
 var _grid := 0.25
 var _eps := 0.02
@@ -453,7 +453,7 @@ func _cancel_movement(reason: StringName = &"lost_control") -> void:
 	_manual = false
 	if _walker != null:
 		# ⚠️ 只收尾**玩家自己**的步态：**不调** `_walker.stop()` —— 它会打断系统发起的走动
-		# （上课归位由 classroom_roam 直接调 walker.walk_to_navigated_in，玩家无权取消它）。
+		# （上课归位由 classroom_roam 直接瞬移贴座 / 派发走动，玩家无权取消它）。
 		_walker.stop_manual()
 	_sync_position_to_core()
 	_sync_moving_state()
@@ -993,7 +993,7 @@ func _load_config() -> void:
 			"stand_snap_radius":
 				_snap = value
 	if _speed <= 0.0:
-		_speed = 0.8
+		_speed = 1.6
 	if _grid <= 0.0:
 		_grid = 0.25
 

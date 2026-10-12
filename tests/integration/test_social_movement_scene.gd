@@ -4,7 +4,7 @@ extends GutTest
 
 func test_classroom_chat_and_movement_are_mutually_exclusive() -> void:
 	var state = get_node("/root/GameState")
-	state.start_game(20261007, 2)
+	state.start_game(20261007, 16)
 	var scene = load("res://scenes/game/classroom3D.tscn").instantiate()
 	add_child_autofree(scene)
 	# 教室要等导航就绪后才把时钟与交互接上：按条件等待，别用固定帧数 ——

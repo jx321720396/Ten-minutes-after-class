@@ -144,11 +144,11 @@ func _start_demo_game() -> Variant:
 	var game_seed := demo_seed
 	if game_seed == 0:
 		game_seed = int(Time.get_unix_time_from_system())
-	var difficulty := Config.default_difficulty()
-	state.start_game(game_seed, difficulty)
+	var npc_count := Config.default_npc_count()
+	state.start_game(game_seed, npc_count)
 	push_warning(
 		(
-			"ClassroomActors：单场景运行 —— 已自动建演示局（种子 %d，难度 %d）；" % [game_seed, difficulty]
+			"ClassroomActors：单场景运行 —— 已自动建演示局（种子 %d，%d 名 NPC）；" % [game_seed, npc_count]
 			+ "正常流程请从主菜单「新游戏」进入。"
 		)
 	)

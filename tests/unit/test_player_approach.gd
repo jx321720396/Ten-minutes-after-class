@@ -192,7 +192,7 @@ func test_new_ground_click_cancels_the_pending_approach() -> void:
 func test_moving_state_is_written_back_to_the_core() -> void:
 	# 计划 §3.3：接近时标记玩家为「移动中」，NPC 不把移动中的玩家拉进新交互
 	var pc := _controller(Vector3(-3.0, 0.0, 0.0))
-	var core := SimCore.from_npc(12345, 8, ConfigLoader.new().load_all())
+	var core := SimCore.new(12345, 16, ConfigLoader.new().load_all())
 	pc._core = core
 	pc._player_index = int(core.node_count()) - 1
 	var plan := pc.plan_approach([Vector3(2.0, 0.0, 0.0)], RANGE)
@@ -237,7 +237,7 @@ func _click_stage(with_actor: bool, with_blocker: bool) -> Dictionary:
 	var pc: PlayerController = add_child_autofree(PlayerController.new()) as PlayerController
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var core := SimCore.from_npc(12345, 8, ConfigLoader.new().load_all())
+	var core := SimCore.new(12345, 16, ConfigLoader.new().load_all())
 	pc._bounds = BOUNDS
 	pc._raw_obstacles = []
 	pc._obstacles = []
