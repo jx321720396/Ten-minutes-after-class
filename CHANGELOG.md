@@ -1,5 +1,16 @@
 # 变更记录
 
+- **docs/ 加 `.gdignore`：文档与 Blender 源工程不再进 Godot（2026-10-12）**
+  - 现状问题：Godot 导入 `.blend` 必须本机安装 Blender 并配好路径（官方文档要求「所有团队成员都安装 Blender」），
+    docs 下 6 个 `.blend` 源工程会让没装 Blender 的协作者打开项目即报 Blender not found 类错误。
+  - 处理：新增 `docs/.gdignore`（Godot 见文件即忽略整个目录），并移除 docs 下 69 个已无用的 `.import`。
+    docs 下的一切（策划文档 / 概念图 / 试片 GIF / Blender 源工程 / QA 报告）都不是运行时资源。
+  - 影响面（已核）：全仓对 `res://docs/` 的引用只剩 3 个离线截图工具的 OUTPUT 路径（只写不读）；游戏与导出只用
+    `assets/` 下的 `.glb` / `.png`，**效果与使用不受影响**；导出包不再打包 docs 下的 PNG / GIF / `.blend` 产物。
+  - 验证：`--headless --path . --import` 退出码 0，导入日志里连既有 `docs/qa` 的 UID 冲突警告也一并消失。
+  - 顺带：`.gitignore` 忽略 Blender 自动备份 `*.blend1`（5 个已从索引移除、本地文件保留）；`.gitattributes`
+    显式声明 `*.glb` / `*.gltf` / `*.blend` / `*.blend1` / `*.gif` 为 binary。
+
 - **修复导入声明缺口：`roster.csv` 补 `keep` + 新素材补 `.import`（2026-10-12，上传后自查）**
   - 新增的 `data/rules/roster.csv` 没有 `.csv.import`，Godot 首次扫描会用 `csv_translation` 认领它并报
     `WARNING: CSV file 'res://data/rules/roster.csv' does not contain any translation`（`--headless --import` 退出码非 0），

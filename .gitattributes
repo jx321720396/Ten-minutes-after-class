@@ -12,6 +12,11 @@
 *.csv    text eol=lf
 
 # ---- 二进制资源（禁用行尾转换与文本 diff）----
+*.glb   binary
+*.gltf  binary
+*.blend binary
+*.blend1 binary
+*.gif   binary
 *.png   binary
 *.jpg   binary
 *.jpeg  binary
