@@ -1,0 +1,418 @@
+[
+  {
+    "id": "01",
+    "name": "陈阳",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      300,
+      20,
+      753,
+      1509
+    ],
+    "transparent_pixels": 1170690,
+    "bytes": 1431777
+  },
+  {
+    "id": "02",
+    "name": "林晚",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      292,
+      6,
+      736,
+      1529
+    ],
+    "transparent_pixels": 1183329,
+    "bytes": 1408754
+  },
+  {
+    "id": "03",
+    "name": "张渊",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      273,
+      7,
+      769,
+      1525
+    ],
+    "transparent_pixels": 1163409,
+    "bytes": 1410014
+  },
+  {
+    "id": "04",
+    "name": "周敏",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      281,
+      4,
+      740,
+      1534
+    ],
+    "transparent_pixels": 1155352,
+    "bytes": 1459398
+  },
+  {
+    "id": "05",
+    "name": "吴哲",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      293,
+      16,
+      747,
+      1519
+    ],
+    "transparent_pixels": 1170908,
+    "bytes": 1417322
+  },
+  {
+    "id": "06",
+    "name": "赵蕊",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      262,
+      9,
+      770,
+      1524
+    ],
+    "transparent_pixels": 1157077,
+    "bytes": 1441260
+  },
+  {
+    "id": "07",
+    "name": "孙悦",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      317,
+      25,
+      721,
+      1513
+    ],
+    "transparent_pixels": 1204361,
+    "bytes": 1435466
+  },
+  {
+    "id": "08",
+    "name": "郑浩",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      273,
+      17,
+      793,
+      1516
+    ],
+    "transparent_pixels": 1160192,
+    "bytes": 1422690
+  },
+  {
+    "id": "09",
+    "name": "许静",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      311,
+      9,
+      755,
+      1519
+    ],
+    "transparent_pixels": 1170838,
+    "bytes": 1484767
+  },
+  {
+    "id": "10",
+    "name": "何川",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      301,
+      17,
+      758,
+      1521
+    ],
+    "transparent_pixels": 1170366,
+    "bytes": 1413783
+  },
+  {
+    "id": "11",
+    "name": "王磊",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      241,
+      12,
+      779,
+      1518
+    ],
+    "transparent_pixels": 1134542,
+    "bytes": 1474754
+  },
+  {
+    "id": "12",
+    "name": "刘畅",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      239,
+      13,
+      780,
+      1523
+    ],
+    "transparent_pixels": 1152992,
+    "bytes": 1419158
+  },
+  {
+    "id": "13",
+    "name": "马强",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      197,
+      15,
+      800,
+      1521
+    ],
+    "transparent_pixels": 1120093,
+    "bytes": 1495616
+  },
+  {
+    "id": "14",
+    "name": "韩雪",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      326,
+      12,
+      795,
+      1519
+    ],
+    "transparent_pixels": 1160851,
+    "bytes": 1452807
+  },
+  {
+    "id": "15",
+    "name": "苏晴",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      313,
+      11,
+      782,
+      1522
+    ],
+    "transparent_pixels": 1139483,
+    "bytes": 1501087
+  },
+  {
+    "id": "16",
+    "name": "沈浪",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      320,
+      9,
+      758,
+      1524
+    ],
+    "transparent_pixels": 1154711,
+    "bytes": 1477958
+  },
+  {
+    "id": "17",
+    "name": "顾言",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      276,
+      11,
+      765,
+      1522
+    ],
+    "transparent_pixels": 1159134,
+    "bytes": 1390721
+  },
+  {
+    "id": "18",
+    "name": "唐糖",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      349,
+      14,
+      679,
+      1519
+    ],
+    "transparent_pixels": 1208397,
+    "bytes": 1359435
+  },
+  {
+    "id": "19",
+    "name": "罗杰",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      314,
+      12,
+      772,
+      1526
+    ],
+    "transparent_pixels": 1159280,
+    "bytes": 1480196
+  },
+  {
+    "id": "20",
+    "name": "叶梓",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      352,
+      8,
+      748,
+      1517
+    ],
+    "transparent_pixels": 1179955,
+    "bytes": 1374529
+  },
+  {
+    "id": "21",
+    "name": "佳豪",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      234,
+      16,
+      784,
+      1514
+    ],
+    "transparent_pixels": 1157814,
+    "bytes": 1431946
+  },
+  {
+    "id": "22",
+    "name": "白柔",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      355,
+      35,
+      729,
+      1506
+    ],
+    "transparent_pixels": 1206118,
+    "bytes": 1411272
+  },
+  {
+    "id": "23",
+    "name": "温雅",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      269,
+      9,
+      720,
+      1519
+    ],
+    "transparent_pixels": 1195283,
+    "bytes": 1420184
+  },
+  {
+    "id": "24",
+    "name": "李峥",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      330,
+      9,
+      753,
+      1524
+    ],
+    "transparent_pixels": 1173638,
+    "bytes": 1413661
+  },
+  {
+    "id": "player_male",
+    "name": "男主角",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      306,
+      12,
+      759,
+      1523
+    ],
+    "transparent_pixels": 1150470,
+    "bytes": 1424777
+  },
+  {
+    "id": "player_female",
+    "name": "女主角",
+    "size": [
+      1024,
+      1536
+    ],
+    "alpha_bbox": [
+      311,
+      16,
+      745,
+      1520
+    ],
+    "transparent_pixels": 1184898,
+    "bytes": 1431627
+  }
+]

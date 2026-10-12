@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/game/school_student_sample_showroom.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/game/school_student_motion_sample.gd" id="2"]
+
+[node name="SchoolStudentMotionSampleShowroom" instance=ExtResource("1")]
+script = ExtResource("2")

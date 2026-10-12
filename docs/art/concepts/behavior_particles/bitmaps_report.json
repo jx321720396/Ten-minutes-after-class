@@ -1,0 +1,39 @@
+{
+  "blender": "5.2.2 LTS",
+  "engine": "BLENDER_EEVEE",
+  "engine_fallback": false,
+  "font": "assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf",
+  "resolution": 256,
+  "fill_ratio": 0.74,
+  "glyphs": [
+    {
+      "name": "question",
+      "char": "?",
+      "used_by": "chat",
+      "vertices": 5052,
+      "path": "D:\\下课十分钟\\assets\\textures\\ui\\behavior_particles\\question.png"
+    },
+    {
+      "name": "exclaim",
+      "char": "!",
+      "used_by": "chat",
+      "vertices": 2664,
+      "path": "D:\\下课十分钟\\assets\\textures\\ui\\behavior_particles\\exclaim.png"
+    },
+    {
+      "name": "star",
+      "char": "★",
+      "used_by": "chat, eat_snack",
+      "vertices": 120,
+      "path": "D:\\下课十分钟\\assets\\textures\\ui\\behavior_particles\\star.png"
+    },
+    {
+      "name": "wave",
+      "char": "~",
+      "used_by": "chat, listen_music, comfort",
+      "vertices": 2880,
+      "path": "D:\\下课十分钟\\assets\\textures\\ui\\behavior_particles\\wave.png"
+    }
+  ],
+  "preview": "D:\\下课十分钟\\docs\\art\\concepts\\behavior_particles\\bitmaps_preview.png"
+}

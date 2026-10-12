@@ -1,0 +1,7 @@
+{
+  "blender": "5.2.2 LTS",
+  "window_meshes": 7,
+  "plant_meshes": 5,
+  "reused_plant_objects": 30,
+  "plant_source": "docs/art/concepts/school_bookshelf_blender/school_bookshelf_blender_v2.blend"
+}

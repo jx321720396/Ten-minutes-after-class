@@ -1,0 +1,8 @@
+{
+  "blender": "5.2.2 LTS",
+  "seed": 20261012,
+  "source_meshes": 71,
+  "bones": 18,
+  "arm_deformation_test_m": 0.017769866651644928,
+  "animations_included": false
+}

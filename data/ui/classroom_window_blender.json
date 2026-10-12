@@ -1,0 +1,18 @@
+{
+  "width": 2.8, "height": 1.8, "frame": 0.062, "frame_depth": 0.10,
+  "sill_size": [2.96, 0.38, 0.055], "transom_height": 1.25,
+  "mullions": [-0.47, 0.47], "curtain_centers": [-1.48, 1.48],
+  "curtain_width": 0.31, "curtain_height": 1.98, "curtain_top": 2.04,
+  "curtain_fold_depth": 0.045, "curtain_folds": 4, "curtain_segments": 32,
+  "curtain_offset": -0.28, "rod_offset": -0.28, "tie_offset": -0.33,
+  "palette": {"frame":"#e4ddd0", "rail":"#b7b7ad", "handle":"#818e90", "sill":"#e5dac4", "curtain":"#b9cbd0", "tie":"#829ba5", "glass":"#e8f0ed", "wall":"#f2e7d4", "floor":"#e3d7c3"},
+  "glass_alpha": 0.065,
+  "plant_source": "docs/art/concepts/school_bookshelf_blender/school_bookshelf_blender_v2.blend",
+  "plant_origin": [-0.27, 0.015, 1.55],
+  "preview_plant_position": [-0.75, -0.13, 0.028],
+  "render": {"resolution":[1500,1100], "samples":48, "camera_position":[3.5,-5.8,2.8], "camera_target":[0,0,1.02], "camera_size":3.9, "area_position":[-2,-3,5], "area_energy":600, "area_size":4, "world_strength":0.65},
+  "assets": [
+    {"source":"res://assets/models/classroom_window/prop_window_warm_v1.glb", "scene":"res://scenes/components/school_window_warm.tscn", "name":"SchoolWindowWarm"},
+    {"source":"res://assets/models/classroom_window/prop_potted_plant_reused.glb", "scene":"res://scenes/components/school_potted_plant.tscn", "name":"SchoolPottedPlant"}
+  ]
+}

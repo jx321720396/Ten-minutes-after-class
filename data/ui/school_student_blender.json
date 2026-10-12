@@ -1,0 +1,42 @@
+{
+  "seed": 20261012,
+  "height": 1.65,
+  "segments": 20,
+  "sphere_rings": 12,
+  "palette": {
+    "skin": "#ecc4a2", "white": "#eee9df", "blue": "#456581", "dark_blue": "#354e68",
+    "hair": "#3c2d28", "iris": "#40352f", "eye_white": "#f6eee0", "mouth": "#aa7662",
+    "sole": "#d2d2c8", "metal": "#89979f", "ground": "#d7c9b1"
+  },
+  "head": {"center": [0, 0, 1.43], "size": [0.285, 0.245, 0.335], "eye_z": 1.447, "eye_x": 0.060, "eye_y": -0.116},
+  "hair": {"center": [0, 0.012, 1.455], "radius": [0.151, 0.136, 0.179], "bang_count": 7},
+  "torso_rings": [[0.875, 0.15, 0.09], [0.91, 0.155, 0.096], [1.08, 0.172, 0.103], [1.175, 0.18, 0.10], [1.222, 0.091, 0.067]],
+  "leg_points": [[0.083, 0.0, 0.885], [0.091, -0.003, 0.465], [0.100, 0.0, 0.104]],
+  "leg_radii": [0.074, 0.059, 0.045],
+  "arm_points": [[0.174, 0.0, 1.174], [0.233, -0.003, 0.983], [0.255, -0.015, 0.812]],
+  "arm_radii": [0.062, 0.052, 0.041],
+  "shoe_size": [0.103, 0.205, 0.032],
+  "shoe_y": -0.052,
+  "bones": [
+    {"name":"Root", "head":[0,0,0], "tail":[0,0,0.14]},
+    {"name":"Hips", "head":[0,0,0.865], "tail":[0,0,0.96], "parent":"Root"},
+    {"name":"Spine", "head":[0,0,0.96], "tail":[0,0,1.10], "parent":"Hips"},
+    {"name":"Chest", "head":[0,0,1.10], "tail":[0,0,1.215], "parent":"Spine"},
+    {"name":"Neck", "head":[0,0,1.215], "tail":[0,0,1.275], "parent":"Chest"},
+    {"name":"Head", "head":[0,0,1.275], "tail":[0,0,1.59], "parent":"Neck"},
+    {"name":"UpperArm.L", "head":[0.174,0,1.174], "tail":[0.233,-0.003,0.983], "parent":"Chest"},
+    {"name":"Forearm.L", "head":[0.233,-0.003,0.983], "tail":[0.255,-0.015,0.812], "parent":"UpperArm.L"},
+    {"name":"Hand.L", "head":[0.255,-0.015,0.812], "tail":[0.256,-0.018,0.72], "parent":"Forearm.L"},
+    {"name":"UpperArm.R", "head":[-0.174,0,1.174], "tail":[-0.233,-0.003,0.983], "parent":"Chest"},
+    {"name":"Forearm.R", "head":[-0.233,-0.003,0.983], "tail":[-0.255,-0.015,0.812], "parent":"UpperArm.R"},
+    {"name":"Hand.R", "head":[-0.255,-0.015,0.812], "tail":[-0.256,-0.018,0.72], "parent":"Forearm.R"},
+    {"name":"Thigh.L", "head":[0.083,0,0.885], "tail":[0.091,-0.003,0.465], "parent":"Hips"},
+    {"name":"Shin.L", "head":[0.091,-0.003,0.465], "tail":[0.100,0,0.128], "parent":"Thigh.L"},
+    {"name":"Foot.L", "head":[0.100,0,0.128], "tail":[0.100,-0.14,0.055], "parent":"Shin.L"},
+    {"name":"Thigh.R", "head":[-0.083,0,0.885], "tail":[-0.091,-0.003,0.465], "parent":"Hips"},
+    {"name":"Shin.R", "head":[-0.091,-0.003,0.465], "tail":[-0.100,0,0.128], "parent":"Thigh.R"},
+    {"name":"Foot.R", "head":[-0.100,0,0.128], "tail":[-0.100,-0.14,0.055], "parent":"Shin.R"}
+  ],
+  "render": {"resolution": [1100, 1300], "samples": 48, "camera_position": [2.0, -4.5, 2.1], "camera_target": [0,0,0.85], "ortho_scale": 1.95, "light_position": [-2,-3,4], "light_energy": 300, "light_size": 4, "world_strength": 0.55},
+  "godot": {"resolution": [1500,1100], "camera_position": [2.0,2.1,4.5], "camera_target": [0,0.85,0], "camera_size": 1.90, "comparison_camera_size": 2.10, "student_position": [-0.42,0,0], "desk_position": [0.46,0,0.12]}
+}
