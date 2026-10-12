@@ -19,7 +19,7 @@ func _initialize() -> void:
 	var out_path: String = args.get("out", "tools/out/ticks_gd.jsonl")
 
 	var tables := ConfigLoader.new().load_all()
-	var core := SimCore.from_npc(seed_value, npc, tables)
+	var core := SimCore.new(seed_value, npc, tables)
 	var n := core.node_count()
 
 	var f := FileAccess.open(out_path, FileAccess.WRITE)

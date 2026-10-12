@@ -14,15 +14,21 @@ func get_table(name: String) -> Dictionary:
 	return _tables.get(name, {})
 
 
-## 新游戏默认难度：取 data/rules/difficulty.csv 中标了 default=1 的档（数值不落脚本）。
+## 本局人数（NPC 数）：取 data/rules/roster.csv 的 npc_count（数值不落脚本）。
 ## 供 main_menu（「新游戏」）与 classroom_actors（单场景调试的演示局）共用。
-func default_difficulty() -> int:
-	var rows: Array = get_table("rules/difficulty").get("rows", [])
-	for row in rows:
-		if str(row.get("default", "0")) == "1":
-			return int(str(row["difficulty"]))
-	push_warning("difficulty.csv 里没有 default=1 的档，回退难度 1")
-	return 1
+## 2026-10-12：删除难度档概念 —— 一局固定 16 名 NPC（+ 玩家 = 17 个节点）。
+func default_npc_count() -> int:
+	for row in get_table("rules/roster").get("rows", []):
+		if str(row.get("key", "")) == "npc_count":
+			var value := int(str(row["value"]))
+			if value > 0:
+				return value
+			push_error("Config：rules/roster.csv 的 npc_count 必须为正整数（当前 %d）。" % value)
+			break
+	# 兜底：按角色池人数开局，并明确告警（不静默用默认值）
+	var pool: Array = get_table("characters/seeds").get("rows", [])
+	push_warning("Config：rules/roster.csv 读不到 npc_count，按角色池人数 %d 开局。" % pool.size())
+	return pool.size()
 
 
 ## 全部配置表 {表名: 表}。

@@ -26,6 +26,7 @@ import os
 import re
 import sys
 import math
+import json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
@@ -194,6 +195,13 @@ check("term_days 为正整数",
 check("max_ticks_per_frame 为正整数",
       _runtime.get("max_ticks_per_frame", "").isdigit() and int(_runtime.get("max_ticks_per_frame", "0")) > 0,
       _runtime.get("max_ticks_per_frame"))
+try:
+    _report_hold = float(_runtime.get("report_hold_seconds", ""))
+    _report_hold_ok = math.isfinite(_report_hold) and _report_hold >= 0.0
+except ValueError:
+    _report_hold_ok = False
+check("report_hold_seconds 为非负有限数（0 = 立即自动进入次日）",
+      _report_hold_ok, _runtime.get("report_hold_seconds"))
 check("time_presentation 与 phases 相位一一对应",
       set(_pres_by_phase) == {r["phase_id"] for r in _phases_rows},
       "pres=%s phases=%s" % (sorted(_pres_by_phase), sorted(r["phase_id"] for r in _phases_rows)))
@@ -250,7 +258,39 @@ if all(k in _pi for k in _pi_required):
           and _pi["actor_pick_layer"] != _pi["world_pick_blocker_layer"],
           "%s / %s" % (_pi["actor_pick_layer"], _pi["world_pick_blocker_layer"]))
 
+_particles = json.loads(read(os.path.join(DATA, "ui", "behavior_particles.json")))
+_ps = _particles["settings"]
+_positive_particle_keys = (
+    "interval_seconds", "lifetime_seconds", "max_per_actor", "font_size", "halo_radius_pixels",
+    "halo_segments", "head_lift_m", "fallback_height_m", "spread_m", "side_speed_m",
+    "rise_speed_m", "gravity_m", "reference_height_pixels", "minimum_view_scale",
+    "maximum_view_scale",
+)
+check("符号粒子：尺寸、寿命、密度和运动参数为有限正数",
+      all(math.isfinite(float(_ps.get(k, 0))) and float(_ps.get(k, 0)) > 0
+          for k in _positive_particle_keys))
+check("符号粒子：透明度、缩放和淡出起点合法",
+      0 <= _ps["halo_alpha"] <= 1 and 0 <= _ps["minimum_scale"] < 1
+      and 0 <= _ps["fade_start"] < 1
+      and _ps["minimum_view_scale"] <= _ps["maximum_view_scale"])
+check("符号粒子：容量和圆形分段为整数",
+      all(int(_ps[k]) == _ps[k] for k in ("max_per_actor", "halo_segments")))
+_particle_kinds = {"chat", "study", "listen_music", "eat_snack", "read_book", "comfort"}
+check("符号粒子：六种公开行为样式齐全", set(_particles["styles"]) == _particle_kinds)
+check("符号粒子：各样式符号与颜色有效",
+      all(s["symbols"] and all(isinstance(v, str) and v for v in s["symbols"])
+          and s["colors"] and all(re.fullmatch(r"[0-9a-fA-F]{6}", c) for c in s["colors"])
+          for s in _particles["styles"].values()))
+
 _style_rows = load("ui/chat_feedback_style.csv")
+with open(os.path.join(DATA, "ui/activity_ring_palette.json"), encoding="utf-8") as _file:
+    _ring_palette = json.load(_file)
+_ring_colors = [_ring_palette["personal"]] + _ring_palette["groups"]
+check("活动圈配色为不透明六位十六进制 RGB",
+      all(re.fullmatch(r"#[0-9a-fA-F]{6}", c) for c in _ring_colors))
+check("活动圈配色覆盖最大 12 组且与个人圈互异",
+      len(_ring_palette["groups"]) >= 12 and
+      len({c.lower() for c in _ring_colors}) == len(_ring_colors))
 _style = {r["param"]: r["value"] for r in _style_rows}
 _style_required = [
     "pen_windup_seconds",
@@ -259,7 +299,6 @@ _style_required = [
     "pen_result_seconds",
     "menu_width_px",
     "menu_margin_px",
-    "bubble_dot_seconds",
     "bubble_follow_height_m",
     "progress_bar_height_px",
     "ring_radius_m",
@@ -281,7 +320,7 @@ if all(k in _style for k in _style_required):
     check("呈现尺寸 / 时长参数为正",
           all(float(_style[k]) > 0 for k in
               ("pen_windup_seconds", "pen_spin_seconds", "pen_settle_seconds",
-               "pen_result_seconds", "menu_width_px", "menu_margin_px", "bubble_dot_seconds",
+               "pen_result_seconds", "menu_width_px", "menu_margin_px",
                "bubble_follow_height_m", "progress_bar_height_px", "toast_seconds")))
     check("圈半径为正、填充透明度在 [0,1]、融合宽度非负",
           float(_style["ring_radius_m"]) > 0 and 0.0 <= float(_style["ring_fill_alpha"]) <= 1.0,
@@ -406,12 +445,16 @@ for prefix in ("music", "snack", "book"):
           and math.isfinite(_leisure.get(prefix + "_noise", -1)) and _leisure.get(prefix + "_noise", -1) >= 0)
 _seed_books = load("characters/seeds.csv")
 check("P0-3：课外书种子仅 0/1", all(r.get("book") in ("0", "1") for r in _seed_books))
-for count in (8, 16, 24):
-    quota = _leisure.get("book_count_%d" % count, -1)
-    available = sum(r.get("book") == "1" for r in _seed_books)
-    check("P0-3 %d 人班：持书配额可抽足" % count,
-          0 <= quota <= count and int(quota) == quota and quota <= available
-          and count - quota <= len(_seed_books) - available)
+_roster = {r["key"]: r["value"] for r in load("rules/roster.csv")}
+_npc_count = int(float(_roster.get("npc_count", 0)))
+check("P0-3：一局 NPC 数 = 角色池人数（16 人一一对应）",
+      _npc_count > 0 and _npc_count == len(_seed_books), "%s vs 池 %d" % (_npc_count, len(_seed_books)))
+_quota = _leisure.get("book_count", -1)
+_available = sum(r.get("book") == "1" for r in _seed_books)
+check("P0-3：持书配额可抽足（book_count 单值）",
+      0 <= _quota <= _npc_count and int(_quota) == _quota and _quota <= _available
+      and _npc_count - _quota <= len(_seed_books) - _available,
+      "book_count=%s，持书者 %d" % (_quota, _available))
 check("P0-3：玩家零食为非负整数", _leisure.get("snack_count_per_run", -1) >= 0
       and _leisure["snack_count_per_run"] == int(_leisure["snack_count_per_run"]))
 check("P0-3：中断压力有限且非负", math.isfinite(_leisure.get("interrupted_stress", -1)) and _leisure.get("interrupted_stress", -1) >= 0)

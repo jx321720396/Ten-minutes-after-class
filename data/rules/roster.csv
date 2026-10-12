@@ -1,0 +1,7 @@
+# 本局人数（NPC 数）—— 一局固定 16 名 NPC，玩家另算（本局 17 个节点）
+# 依据：docs/gdd/v4/09-人物设计.md §9.14（16 角色池）；铁律 3：数值集中 data/，不落脚本。
+# 2026-10-12（用户裁定）：删除难度档概念 —— 原 rules/difficulty.csv 的 8/16/24 三档收敛为单一 16，
+#   「8 人局 / 24 人局」不再存在；内核入口改为直接接收 npc_count（SimCore.new(seed, npc_count)）。
+# 列：key | value | note
+key,value,note
+npc_count,16,一局 NPC 数：等于角色池人数（characters/seeds.csv 16 行），与座位表 P0–P16 一一对应
