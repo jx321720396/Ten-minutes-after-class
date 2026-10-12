@@ -1,4 +1,9 @@
 # 变更记录
+- **移动端字体适配：全局字体换为 MiSans + 建立项目级主题（2026-10-12，UI）**：此前字体**散在两处**且没有项目级出口 —— 9 个 UI 场景各自 `preload` 霞鹜文楷，动态创建的 UI 则走 `scripts/ui/game_fonts.gd`；`project.godot` 里既没有 `[gui]` 主题段，也没有默认字体。
+  - **字体**：引入小米 MiSans（`assets/fonts/misans/`，Regular + Demibold 两档），登记进 `assets/CREDITS.md`（**包内未附许可文件，依据待补**）。
+  - **统一出口**：新建 `resources/ui/game_theme.tres`（default_font = MiSans / default_font_size = 24），并在 `project.godot` 加 `[gui] theme/custom` 指向它；`game_fonts.gd` 的 `REGULAR` 同步换为 MiSans 并新增 `demibold()`。9 个场景里写死的字体引用一并改指 MiSans（`pause_menu` 标题的描边/阴影设置保留）。
+  - **拉伸模式**：`window/stretch/mode` 由 `viewport` 改为 `canvas_items`（`viewport` 在移动端非整数倍缩放下文字会抖/糊，属「字体漂」的疑似主因之一）。
+  - **遗留**：`game_fonts.gd` 与 `game_theme.tres` 目前是**两个**字体出口（换字体要同时改）；后续可让脚本侧也从主题取，收敛为唯一出口。
 
 - **一局固定 16 人：删除 8 / 24 人局与难度档（2026-10-12，用户裁定）**
   - 玩法口径：**角色池 24 → 16 人，一局全池入局**（+ 玩家 = 17 个节点），与该局 16 张 NPC 立绘**一人一张**（同局撞脸问题随之关闭，见 §25.8）。删除 8 人局 / 24 人局与整个难度档概念。
