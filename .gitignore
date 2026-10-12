@@ -12,6 +12,7 @@
 *.aab
 *.dmg
 *.msi
+*.idsig
 
 # ---- 编辑器 / IDE ----
 .vscode/*
