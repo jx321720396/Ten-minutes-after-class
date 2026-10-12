@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><title>陈阳 · 动作风格对比</title>
+<style>body{font-family:system-ui;background:#eee7db;color:#343b42;margin:28px}h1{font-size:26px}p{line-height:1.7}section{display:flex;gap:24px;flex-wrap:wrap}.card{background:#faf7ef;border-radius:16px;padding:22px;flex:1;min-width:300px;text-align:center}canvas{width:200px;height:300px;background:repeating-conic-gradient(#f2eadc 0% 25%,#e8decc 0% 50%) 50%/24px 24px}select,button{padding:9px;margin:8px;border:1px solid #b4b7a5;border-radius:6px}img{max-width:100%;margin-top:16px}summary{cursor:pointer;padding:12px}a{color:#426957}</style>
+<h1>陈阳：Q 版 / 正常比例 · 四方向动作小样</h1>
+<p>每套 32 帧：4 个方向 ×（站立 1、行走 4、聊天 2、坐姿 1）。这是生成动作小样，帧间对齐与步态仍需修整，尚未接入游戏。</p>
+<label>方向 <select id="direction"><option value="front">正面</option><option value="back">背面</option><option value="left">左侧</option><option value="right">右侧</option></select></label>
+<label>动作 <select id="action"><option value="idle">站立</option><option value="walk" selected>行走</option><option value="chat">聊天</option><option value="sit">坐姿</option></select></label>
+<button id="pause">暂停</button><span id="status"></span>
+<section><div class="card"><h2>Q 版</h2><canvas id="chibi" width="362" height="544"></canvas><p><a href="char_01_chibi_sheet_v1.png">打开透明图集</a></p><details><summary>查看完整帧图</summary><img src="char_01_chibi_sheet_v1.png"></details></div>
+<div class="card"><h2>正常比例</h2><canvas id="normal" width="362" height="544"></canvas><p><a href="char_01_normal_sheet_v1.png">打开透明图集</a></p><details><summary>查看完整帧图</summary><img src="char_01_normal_sheet_v1.png"></details></div></section>
+<script>
+const clips={idle:[0],walk:[1,2,3,4],chat:[5,6],sit:[7]};
+const rows={chibi:{front:0,back:1,left:2,right:3},normal:{front:0,back:1,left:3,right:2}};
+const imgs={};let tick=0,paused=false;
+for(const type of ['chibi','normal']){imgs[type]=new Image();imgs[type].src='char_01_'+type+'_sheet_v1.png';imgs[type].onload=draw;}
+function draw(){const action=document.getElementById('action').value,direction=document.getElementById('direction').value;const clip=clips[action],column=clip[tick%clip.length];
+for(const type of ['chibi','normal']){const im=imgs[type];if(!im.complete||!im.naturalWidth)continue;const row=rows[type][direction],x0=Math.round(column*im.width/8),x1=Math.round((column+1)*im.width/8),y0=Math.round(row*im.height/4),y1=Math.round((row+1)*im.height/4);const c=document.getElementById(type),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);ctx.drawImage(im,x0,y0,x1-x0,y1-y0,0,0,c.width,c.height);}document.getElementById('status').textContent='动作帧 '+(tick%clip.length+1)+' / '+clip.length;}
+document.getElementById('pause').onclick=()=>{paused=!paused;document.getElementById('pause').textContent=paused?'播放':'暂停';};
+for(const id of ['action','direction'])document.getElementById(id).onchange=()=>{tick=0;draw();};
+setInterval(()=>{if(!paused){tick++;draw();}},180);
+</script></html>
