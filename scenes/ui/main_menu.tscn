@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cc7c5bw525vga"]
 
-[ext_resource type="FontFile" path="res://assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf" id="campus_font"]
+[ext_resource type="FontFile" uid="uid://charthemonyossans01" path="res://assets/fonts/harmonyos-sans/HarmonyOS_Sans_SC.ttf" id="campus_font"]
 
 [ext_resource type="Script" uid="uid://cctsahkm2am3h" path="res://scripts/ui/main_menu.gd" id="1_menu"]
 

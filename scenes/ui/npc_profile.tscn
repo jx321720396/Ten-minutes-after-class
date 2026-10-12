@@ -1,6 +1,6 @@
 [gd_scene load_steps=6 format=3]
 
-[ext_resource type="FontFile" path="res://assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf" id="campus_font"]
+[ext_resource type="FontFile" uid="uid://charthemonyossans01" path="res://assets/fonts/harmonyos-sans/HarmonyOS_Sans_SC.ttf" id="campus_font"]
 
 [ext_resource type="Script" path="res://scripts/ui/npc_profile.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/ui/touch_scroll_container.gd" id="4_touch_scroll"]
