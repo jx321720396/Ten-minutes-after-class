@@ -1,0 +1,1150 @@
+{
+  "version": 1,
+  "quality": {
+    "corner_segments": 6,
+    "tube_segments": 16,
+    "joint_segments": 12,
+    "joint_rings": 6
+  },
+  "materials": {
+    "wood": {
+      "color": "#e8c391",
+      "roughness": 0.53,
+      "texture": "res://assets/textures/classroom/scene_classroom_wood_plank.png",
+      "uv_scale": [
+        1.5,
+        1.5,
+        1.5
+      ]
+    },
+    "edge": {
+      "color": "#a98051",
+      "roughness": 0.72
+    },
+    "steel": {
+      "color": "#65777b",
+      "roughness": 0.42,
+      "metallic": 0.25
+    },
+    "bolt": {
+      "color": "#a6b1af",
+      "roughness": 0.3,
+      "metallic": 0.65
+    },
+    "rubber": {
+      "color": "#394444",
+      "roughness": 0.9
+    },
+    "ground": {
+      "color": "#deded2",
+      "roughness": 0.95
+    }
+  },
+  "parts": [
+    {
+      "name": "RoundedDesktop",
+      "group": "Desk",
+      "kind": "panel",
+      "material": "wood",
+      "position": [
+        0,
+        0.74,
+        0
+      ],
+      "size": [
+        0.66,
+        0.04,
+        0.46
+      ],
+      "corner_radius": 0.027,
+      "bevel": 0.005
+    },
+    {
+      "name": "PlywoodEdge",
+      "group": "Desk",
+      "kind": "panel",
+      "material": "edge",
+      "position": [
+        0,
+        0.731,
+        0
+      ],
+      "size": [
+        0.659,
+        0.0018,
+        0.459
+      ],
+      "corner_radius": 0.027,
+      "bevel": 0.0005
+    },
+    {
+      "name": "BentFrameLeft",
+      "group": "Desk",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          -0.275,
+          0.026,
+          0.19
+        ],
+        [
+          -0.275,
+          0.07,
+          0.19
+        ],
+        [
+          -0.275,
+          0.58,
+          0.165
+        ],
+        [
+          -0.275,
+          0.68,
+          0.165
+        ],
+        [
+          -0.275,
+          0.698,
+          0.151
+        ],
+        [
+          -0.275,
+          0.698,
+          -0.151
+        ],
+        [
+          -0.275,
+          0.68,
+          -0.165
+        ],
+        [
+          -0.275,
+          0.58,
+          -0.165
+        ],
+        [
+          -0.275,
+          0.07,
+          -0.19
+        ],
+        [
+          -0.275,
+          0.026,
+          -0.19
+        ]
+      ],
+      "radius": 0.013
+    },
+    {
+      "name": "DeskFootLeftRear",
+      "group": "Desk",
+      "kind": "cylinder",
+      "material": "rubber",
+      "position": [
+        -0.275,
+        0.018,
+        -0.19
+      ],
+      "radius": 0.016,
+      "height": 0.035,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "DeskFootLeftFront",
+      "group": "Desk",
+      "kind": "cylinder",
+      "material": "rubber",
+      "position": [
+        -0.275,
+        0.018,
+        0.19
+      ],
+      "radius": 0.016,
+      "height": 0.035,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "BottomRailLeft",
+      "group": "Desk",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          -0.275,
+          0.09,
+          -0.19
+        ],
+        [
+          -0.275,
+          0.09,
+          0.19
+        ]
+      ],
+      "radius": 0.01
+    },
+    {
+      "name": "BentFrameRight",
+      "group": "Desk",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          0.275,
+          0.026,
+          0.19
+        ],
+        [
+          0.275,
+          0.07,
+          0.19
+        ],
+        [
+          0.275,
+          0.58,
+          0.165
+        ],
+        [
+          0.275,
+          0.68,
+          0.165
+        ],
+        [
+          0.275,
+          0.698,
+          0.151
+        ],
+        [
+          0.275,
+          0.698,
+          -0.151
+        ],
+        [
+          0.275,
+          0.68,
+          -0.165
+        ],
+        [
+          0.275,
+          0.58,
+          -0.165
+        ],
+        [
+          0.275,
+          0.07,
+          -0.19
+        ],
+        [
+          0.275,
+          0.026,
+          -0.19
+        ]
+      ],
+      "radius": 0.013
+    },
+    {
+      "name": "DeskFootRightRear",
+      "group": "Desk",
+      "kind": "cylinder",
+      "material": "rubber",
+      "position": [
+        0.275,
+        0.018,
+        -0.19
+      ],
+      "radius": 0.016,
+      "height": 0.035,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "DeskFootRightFront",
+      "group": "Desk",
+      "kind": "cylinder",
+      "material": "rubber",
+      "position": [
+        0.275,
+        0.018,
+        0.19
+      ],
+      "radius": 0.016,
+      "height": 0.035,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "BottomRailRight",
+      "group": "Desk",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          0.275,
+          0.09,
+          -0.19
+        ],
+        [
+          0.275,
+          0.09,
+          0.19
+        ]
+      ],
+      "radius": 0.01
+    },
+    {
+      "name": "DeskCrossBrace",
+      "group": "Desk",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          -0.275,
+          0.19,
+          0.16
+        ],
+        [
+          0.275,
+          0.19,
+          0.16
+        ]
+      ],
+      "radius": 0.01
+    },
+    {
+      "name": "ShelfFrontLip",
+      "group": "Desk",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          -0.266,
+          0.645,
+          -0.175
+        ],
+        [
+          0.266,
+          0.645,
+          -0.175
+        ]
+      ],
+      "radius": 0.007
+    },
+    {
+      "name": "ShelfBase",
+      "group": "Desk",
+      "kind": "panel",
+      "material": "steel",
+      "position": [
+        0,
+        0.598,
+        0
+      ],
+      "size": [
+        0.54,
+        0.009,
+        0.35
+      ],
+      "corner_radius": 0.014,
+      "bevel": 0.002
+    },
+    {
+      "name": "ShelfBack",
+      "group": "Desk",
+      "kind": "box",
+      "material": "steel",
+      "position": [
+        0,
+        0.644,
+        0.171
+      ],
+      "size": [
+        0.54,
+        0.083,
+        0.008
+      ]
+    },
+    {
+      "name": "ShelfWallLeft",
+      "group": "Desk",
+      "kind": "box",
+      "material": "steel",
+      "position": [
+        -0.266,
+        0.644,
+        0
+      ],
+      "size": [
+        0.008,
+        0.083,
+        0.35
+      ]
+    },
+    {
+      "name": "TopMountLeft",
+      "group": "Desk",
+      "kind": "box",
+      "material": "steel",
+      "position": [
+        -0.266,
+        0.705,
+        0
+      ],
+      "size": [
+        0.028,
+        0.022,
+        0.32
+      ]
+    },
+    {
+      "name": "ShelfWallRight",
+      "group": "Desk",
+      "kind": "box",
+      "material": "steel",
+      "position": [
+        0.266,
+        0.644,
+        0
+      ],
+      "size": [
+        0.008,
+        0.083,
+        0.35
+      ]
+    },
+    {
+      "name": "TopMountRight",
+      "group": "Desk",
+      "kind": "box",
+      "material": "steel",
+      "position": [
+        0.266,
+        0.705,
+        0
+      ],
+      "size": [
+        0.028,
+        0.022,
+        0.32
+      ]
+    },
+    {
+      "name": "DesktopScrew0",
+      "group": "Desk",
+      "kind": "cylinder",
+      "material": "bolt",
+      "position": [
+        -0.26,
+        0.7604,
+        -0.16
+      ],
+      "radius": 0.0034,
+      "height": 0.0012,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "ScrewSlot0",
+      "group": "Desk",
+      "kind": "box",
+      "material": "rubber",
+      "position": [
+        -0.26,
+        0.7611,
+        -0.16
+      ],
+      "size": [
+        0.0045,
+        0.0005,
+        0.0006
+      ]
+    },
+    {
+      "name": "DesktopScrew1",
+      "group": "Desk",
+      "kind": "cylinder",
+      "material": "bolt",
+      "position": [
+        0.26,
+        0.7604,
+        -0.16
+      ],
+      "radius": 0.0034,
+      "height": 0.0012,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "ScrewSlot1",
+      "group": "Desk",
+      "kind": "box",
+      "material": "rubber",
+      "position": [
+        0.26,
+        0.7611,
+        -0.16
+      ],
+      "size": [
+        0.0045,
+        0.0005,
+        0.0006
+      ]
+    },
+    {
+      "name": "DesktopScrew2",
+      "group": "Desk",
+      "kind": "cylinder",
+      "material": "bolt",
+      "position": [
+        -0.26,
+        0.7604,
+        0.16
+      ],
+      "radius": 0.0034,
+      "height": 0.0012,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "ScrewSlot2",
+      "group": "Desk",
+      "kind": "box",
+      "material": "rubber",
+      "position": [
+        -0.26,
+        0.7611,
+        0.16
+      ],
+      "size": [
+        0.0045,
+        0.0005,
+        0.0006
+      ]
+    },
+    {
+      "name": "DesktopScrew3",
+      "group": "Desk",
+      "kind": "cylinder",
+      "material": "bolt",
+      "position": [
+        0.26,
+        0.7604,
+        0.16
+      ],
+      "radius": 0.0034,
+      "height": 0.0012,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "ScrewSlot3",
+      "group": "Desk",
+      "kind": "box",
+      "material": "rubber",
+      "position": [
+        0.26,
+        0.7611,
+        0.16
+      ],
+      "size": [
+        0.0045,
+        0.0005,
+        0.0006
+      ]
+    },
+    {
+      "name": "Seat",
+      "group": "Chair",
+      "kind": "panel",
+      "material": "wood",
+      "position": [
+        0,
+        0.445,
+        0
+      ],
+      "size": [
+        0.4,
+        0.03,
+        0.38
+      ],
+      "corner_radius": 0.04,
+      "bevel": 0.004
+    },
+    {
+      "name": "SeatPlyEdge",
+      "group": "Chair",
+      "kind": "panel",
+      "material": "edge",
+      "position": [
+        0,
+        0.441,
+        0
+      ],
+      "size": [
+        0.399,
+        0.0015,
+        0.379
+      ],
+      "corner_radius": 0.04,
+      "bevel": 0.0004
+    },
+    {
+      "name": "CurvedBackrest",
+      "group": "Chair",
+      "kind": "panel",
+      "material": "wood",
+      "position": [
+        0,
+        0.78,
+        -0.175
+      ],
+      "size": [
+        0.4,
+        0.026,
+        0.2
+      ],
+      "corner_radius": 0.024,
+      "bevel": 0.004,
+      "curve": 0.023,
+      "rotation": [
+        82,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "ChairFrontLegLeft",
+      "group": "Chair",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          -0.17696,
+          0.023,
+          0.172
+        ],
+        [
+          -0.158,
+          0.36,
+          0.145
+        ],
+        [
+          -0.158,
+          0.421,
+          0.135
+        ]
+      ],
+      "radius": 0.011
+    },
+    {
+      "name": "ChairRearFrameLeft",
+      "group": "Chair",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          -0.17696,
+          0.023,
+          -0.19
+        ],
+        [
+          -0.158,
+          0.36,
+          -0.145
+        ],
+        [
+          -0.158,
+          0.45,
+          -0.147
+        ],
+        [
+          -0.158,
+          0.63,
+          -0.177
+        ],
+        [
+          -0.158,
+          0.89,
+          -0.207
+        ]
+      ],
+      "radius": 0.011
+    },
+    {
+      "name": "SeatSideRailLeft",
+      "group": "Chair",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          -0.158,
+          0.415,
+          -0.145
+        ],
+        [
+          -0.158,
+          0.415,
+          0.145
+        ]
+      ],
+      "radius": 0.01
+    },
+    {
+      "name": "ChairLowerBraceLeft",
+      "group": "Chair",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          -0.158,
+          0.19,
+          -0.156
+        ],
+        [
+          -0.158,
+          0.19,
+          0.154
+        ]
+      ],
+      "radius": 0.008
+    },
+    {
+      "name": "ChairFootLeftFront",
+      "group": "Chair",
+      "kind": "cylinder",
+      "material": "rubber",
+      "position": [
+        -0.17696,
+        0.016,
+        0.172
+      ],
+      "radius": 0.013,
+      "height": 0.029,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "ChairFootLeftRear",
+      "group": "Chair",
+      "kind": "cylinder",
+      "material": "rubber",
+      "position": [
+        -0.17696,
+        0.016,
+        -0.19
+      ],
+      "radius": 0.013,
+      "height": 0.029,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "ChairFrontLegRight",
+      "group": "Chair",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          0.17696,
+          0.023,
+          0.172
+        ],
+        [
+          0.158,
+          0.36,
+          0.145
+        ],
+        [
+          0.158,
+          0.421,
+          0.135
+        ]
+      ],
+      "radius": 0.011
+    },
+    {
+      "name": "ChairRearFrameRight",
+      "group": "Chair",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          0.17696,
+          0.023,
+          -0.19
+        ],
+        [
+          0.158,
+          0.36,
+          -0.145
+        ],
+        [
+          0.158,
+          0.45,
+          -0.147
+        ],
+        [
+          0.158,
+          0.63,
+          -0.177
+        ],
+        [
+          0.158,
+          0.89,
+          -0.207
+        ]
+      ],
+      "radius": 0.011
+    },
+    {
+      "name": "SeatSideRailRight",
+      "group": "Chair",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          0.158,
+          0.415,
+          -0.145
+        ],
+        [
+          0.158,
+          0.415,
+          0.145
+        ]
+      ],
+      "radius": 0.01
+    },
+    {
+      "name": "ChairLowerBraceRight",
+      "group": "Chair",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          0.158,
+          0.19,
+          -0.156
+        ],
+        [
+          0.158,
+          0.19,
+          0.154
+        ]
+      ],
+      "radius": 0.008
+    },
+    {
+      "name": "ChairFootRightFront",
+      "group": "Chair",
+      "kind": "cylinder",
+      "material": "rubber",
+      "position": [
+        0.17696,
+        0.016,
+        0.172
+      ],
+      "radius": 0.013,
+      "height": 0.029,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "ChairFootRightRear",
+      "group": "Chair",
+      "kind": "cylinder",
+      "material": "rubber",
+      "position": [
+        0.17696,
+        0.016,
+        -0.19
+      ],
+      "radius": 0.013,
+      "height": 0.029,
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "ChairRearBrace",
+      "group": "Chair",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          -0.158,
+          0.375,
+          -0.15
+        ],
+        [
+          0.158,
+          0.375,
+          -0.15
+        ]
+      ],
+      "radius": 0.008
+    },
+    {
+      "name": "SeatFrontRail",
+      "group": "Chair",
+      "kind": "pipe",
+      "material": "steel",
+      "points": [
+        [
+          -0.158,
+          0.415,
+          0.135
+        ],
+        [
+          0.158,
+          0.415,
+          0.135
+        ]
+      ],
+      "radius": 0.01
+    },
+    {
+      "name": "BackBolt0",
+      "group": "Chair",
+      "kind": "cylinder",
+      "material": "bolt",
+      "position": [
+        -0.14,
+        0.73,
+        -0.143
+      ],
+      "radius": 0.004,
+      "height": 0.003,
+      "rotation": [
+        90,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "BackSlot0",
+      "group": "Chair",
+      "kind": "box",
+      "material": "rubber",
+      "position": [
+        -0.14,
+        0.73,
+        -0.141
+      ],
+      "size": [
+        0.0055,
+        0.001,
+        0.0006
+      ]
+    },
+    {
+      "name": "BackBolt1",
+      "group": "Chair",
+      "kind": "cylinder",
+      "material": "bolt",
+      "position": [
+        0.14,
+        0.73,
+        -0.143
+      ],
+      "radius": 0.004,
+      "height": 0.003,
+      "rotation": [
+        90,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "BackSlot1",
+      "group": "Chair",
+      "kind": "box",
+      "material": "rubber",
+      "position": [
+        0.14,
+        0.73,
+        -0.141
+      ],
+      "size": [
+        0.0055,
+        0.001,
+        0.0006
+      ]
+    },
+    {
+      "name": "BackBolt2",
+      "group": "Chair",
+      "kind": "cylinder",
+      "material": "bolt",
+      "position": [
+        -0.14,
+        0.831,
+        -0.15713999999999997
+      ],
+      "radius": 0.004,
+      "height": 0.003,
+      "rotation": [
+        90,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "BackSlot2",
+      "group": "Chair",
+      "kind": "box",
+      "material": "rubber",
+      "position": [
+        -0.14,
+        0.831,
+        -0.15513999999999997
+      ],
+      "size": [
+        0.0055,
+        0.001,
+        0.0006
+      ]
+    },
+    {
+      "name": "BackBolt3",
+      "group": "Chair",
+      "kind": "cylinder",
+      "material": "bolt",
+      "position": [
+        0.14,
+        0.831,
+        -0.15713999999999997
+      ],
+      "radius": 0.004,
+      "height": 0.003,
+      "rotation": [
+        90,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "BackSlot3",
+      "group": "Chair",
+      "kind": "box",
+      "material": "rubber",
+      "position": [
+        0.14,
+        0.831,
+        -0.15513999999999997
+      ],
+      "size": [
+        0.0055,
+        0.001,
+        0.0006
+      ]
+    }
+  ],
+  "showroom": {
+    "camera_size": 1.72,
+    "camera_position": [
+      1.4,
+      1.4,
+      -3.5
+    ],
+    "camera_target": [
+      0,
+      0.44,
+      -0.22
+    ],
+    "background": "#e8e5d9",
+    "ambient_color": "#f0f1ea",
+    "ambient_energy": 0.42,
+    "ground_size": 20,
+    "lights": [
+      {
+        "name": "WindowKey",
+        "rotation": [
+          -50,
+          -35,
+          0
+        ],
+        "color": "#fff0da",
+        "energy": 1.0,
+        "shadows": true
+      },
+      {
+        "name": "SoftFill",
+        "rotation": [
+          -25,
+          125,
+          0
+        ],
+        "color": "#d9e7ee",
+        "energy": 0.35,
+        "shadows": false
+      }
+    ],
+    "models": [
+      {
+        "name": "Original",
+        "scene": "res://scenes/components/desk_chair.tscn",
+        "position": [
+          -0.66,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "Sample",
+        "scene": "res://scenes/components/school_desk_chair_sample.tscn",
+        "position": [
+          0.65,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  }
+}

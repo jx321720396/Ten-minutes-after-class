@@ -1,0 +1,35 @@
+{
+  "seed": 20261012,
+  "width": 1.0,
+  "depth": 0.36,
+  "height": 1.55,
+  "board_thickness": 0.05,
+  "shelf_heights": [0.075, 0.55, 1.025, 1.525],
+  "bevel": 0.008,
+  "bevel_segments": 3,
+  "books_per_shelf": 10,
+  "book_widths": [0.055, 0.062, 0.074, 0.065],
+  "book_heights": [0.325, 0.36, 0.345, 0.38],
+  "book_depth": 0.235,
+  "book_gap": 0.014,
+  "book_cover": 0.004,
+  "book_label_height": 0.04,
+  "palette": {
+    "wood": "#bd854c", "back": "#a77347", "paper": "#e5dcc7",
+    "blue": "#5c7287", "green": "#798773", "red": "#b47c70",
+    "yellow": "#d4b46c", "pot": "#dad1bd", "soil": "#544338",
+    "leaf": "#7f984c", "leaf_light": "#a0ad61", "stem": "#667e43",
+    "wall": "#e6dbca", "sage": "#8fa99c", "tile": "#d7c9b1",
+    "grout": "#b4a996", "skirting": "#89715e"
+  },
+  "texture": {"resolution": 512, "grain_strength": 0.04, "grain_frequency": 37.0},
+  "plant": {"position": [-0.27, 0.015, 1.55], "pot_radius": 0.105, "pot_height": 0.17, "leaf_count": 14, "leaf_length": 0.15, "leaf_width": 0.065},
+  "render": {
+    "resolution": [1200, 1200], "samples": 48,
+    "camera_position": [2.7, -4.4, 3.0], "camera_target": [0.0, 0.0, 0.94], "ortho_scale": 2.55,
+    "world_strength": 0.45, "sun_energy": 2.0, "sun_angle": 0.07,
+    "sun_rotation": [28, -30, -35], "area_energy": 230,
+    "area_position": [-2.0, -3.0, 4.0], "area_size": 4.0
+  },
+  "godot": {"camera_position": [2.7, 3.0, 4.4], "camera_target": [0.0, 0.94, 0.0], "camera_size": 2.55, "resolution": [1200, 1200]}
+}

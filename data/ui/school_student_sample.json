@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "texture": "res://assets/textures/characters/samples/school_student_male_standing_v1.webp",
+  "image_region": [268, 5, 461, 1518],
+  "height": 1.65,
+  "alpha_threshold": 0.5,
+  "shadow": {
+    "size": [0.56, 0.36],
+    "height": 0.012,
+    "softness": 0.12,
+    "color": "#25392c30"
+  },
+  "showroom": {
+    "student_position": [-0.58, 0.0, -0.05],
+    "desk_position": [0.46, 0.0, 0.12],
+    "camera_position": [1.55, 1.58, -3.4],
+    "camera_target": [0.0, 0.79, -0.02],
+    "camera_size": 2.05
+  }
+}

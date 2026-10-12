@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "seed": 20261012,
+  "shape": {
+    "width": 2.0,
+    "height": 1.06,
+    "corner_radius": 0.34,
+    "corner_segments": 14,
+    "thickness": 0.11,
+    "edge_bevel": 0.05,
+    "bevel_resolution": 4,
+    "tail_root": -0.34,
+    "tail_root_width": 0.46,
+    "tail_tip": [
+      -0.52,
+      -1.06
+    ],
+    "tail_bulge": 0.52,
+    "tail_segments": 10
+  },
+  "materials": {
+    "paper": {
+      "color": "#fffdf8",
+      "roughness": 0.42,
+      "metallic": 0.0,
+      "coat": 0.22,
+      "coat_roughness": 0.08
+    },
+    "ink": {
+      "color": "#0d1210",
+      "roughness": 0.75,
+      "thickness": 0.075
+    }
+  },
+  "camera": {
+    "center": [
+      0.5,
+      0.84
+    ],
+    "ortho_scale": 2.35,
+    "still_resolution": 512,
+    "frame_resolution": 256,
+    "preview_columns": 6
+  },
+  "sequence": {
+    "pop": {
+      "frames": 10,
+      "min_scale": 0.22,
+      "squash_compensation": 0.12,
+      "back_overshoot": 1.70158,
+      "back_c3": 2.70158
+    },
+    "idle": {
+      "frames": 9,
+      "cycles": 1.0,
+      "scale_amplitude": 0.045,
+      "squash_amplitude": 0.03,
+      "lift": 0.03
+    },
+    "fade": {
+      "frames": 5,
+      "shrink": 0.55,
+      "lift": 0.16,
+      "alpha_hold": 0.5,
+      "ink_alpha_power": 2.0
+    }
+  },
+  "render": {
+    "engine": "BLENDER_EEVEE",
+    "fallback_engine": "BLENDER_EEVEE",
+    "samples": 64,
+    "view_transform": "Standard",
+    "film_transparent": true,
+    "world_color": "#f4f2ec",
+    "world_strength": 1.05,
+    "lights": [
+      {
+        "name": "Key",
+        "energy": 2.3,
+        "angle_degrees": 28.0,
+        "rotation": [
+          0.28,
+          0.2,
+          0.1
+        ]
+      },
+      {
+        "name": "Rim",
+        "energy": 1.0,
+        "angle_degrees": 28.0,
+        "rotation": [
+          2.45,
+          0.0,
+          -0.45
+        ]
+      }
+    ]
+  },
+  "outputs": {
+    "assets_dir": "assets/textures/ui/speech_bubble",
+    "concept_dir": "docs/art/concepts/chat_bubble",
+    "blend_name": "chat_bubble_blender_v1.blend",
+    "export_glb": false
+  }
+}

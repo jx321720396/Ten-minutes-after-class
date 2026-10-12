@@ -14,37 +14,75 @@ func _initialize() -> void:
 
 func _capture() -> void:
 	var label := "after"
-	var difficulty := 2
+	var npc_count := 16
 	var art_enabled := true
 	var clean := false
+	var view := ""
+	var right_preview := false
+	var no_camera_follow := false
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--label="):
 			label = argument.trim_prefix("--label=")
-		elif argument.begins_with("--difficulty="):
-			difficulty = int(argument.trim_prefix("--difficulty="))
+		elif argument.begins_with("--npc="):
+			npc_count = int(argument.trim_prefix("--npc="))
 		elif argument == "--no-art":
 			art_enabled = false
 		elif argument == "--clean":
 			clean = true
+		elif argument.begins_with("--view="):
+			view = argument.trim_prefix("--view=")
+		elif argument == "--camera-right-preview":
+			right_preview = true
+		elif argument == "--no-camera-follow":
+			no_camera_follow = true
 	root.size = Vector2i(1920, 1080)
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = 0
-	root.get_node("GameState").start_game(SEED, difficulty)
+	root.get_node("GameState").start_game(SEED, npc_count)
 	var scene: Node = load(SCENE).instantiate()
 	if scene.has_node("ClassroomArt"):
 		scene.get_node("ClassroomArt").enabled = art_enabled
 	scene.get_node("Roam").enabled = false
 	root.add_child(scene)
 	current_scene = scene
+	if no_camera_follow and art_enabled:
+		scene.get_node("ClassroomArt").set_camera_follow_enabled(false)
 	# 场景绑定在首个 process_frame 后发生；冻结帧内核还未推进一个 tick。
 	await process_frame
 	scene.get_node("Clock").hold(&"classroom_art_capture")
 	for frame in range(WARMUP_FRAMES):
 		await process_frame
 	scene.get_node("TransitionOverlay").force_hide()
+	if right_preview:
+		# Frozen presentation probe only: move the rendered actor to a safe stand marker.
+		var player := scene.get_node("Player") as PlayerController
+		player._player_actor.global_position = (
+			scene.get_node("StandPoints/SIDE_RIGHT").global_position
+		)
 	await create_timer(2.0).timeout
 	if clean:
 		_hide_interface(scene)
+	if not view.is_empty():
+		if art_enabled:
+			scene.get_node("ClassroomArt").set_camera_follow_enabled(false)
+		var style: Dictionary = JSON.parse_string(
+			FileAccess.get_file_as_string("res://data/ui/classroom_art.json")
+		)
+		var views: Dictionary = style.get("capture_views", {})
+		if not views.has(view):
+			push_error("未知教室截图视角：" + view)
+			quit(1)
+			return
+		var definition: Dictionary = views[view]
+		var camera := scene.get_node("Camera3D") as Camera3D
+		camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+		camera.size = float(definition["size"])
+		camera.look_at_from_position(
+			ClassroomArtProps.vector(definition["position"]),
+			ClassroomArtProps.vector(definition["target"])
+		)
+		if bool(definition.get("hide_actors", false)):
+			scene.get_node("Actors").visible = false
 	var frame_times: Array[float] = []
 	var measurement_start := Time.get_ticks_usec()
 	while float(Time.get_ticks_usec() - measurement_start) / 1000000.0 < SAMPLE_SECONDS:
@@ -60,10 +98,12 @@ func _capture() -> void:
 		"label": label,
 		"engine": Engine.get_version_info().string,
 		"seed": SEED,
-		"difficulty": difficulty,
+		"npc_count": npc_count,
 		"actors": scene.get_node("Actors").get_child_count(),
 		"art_enabled": art_enabled,
 		"clean": clean,
+		"camera_right_preview": right_preview,
+		"camera_follow_disabled": no_camera_follow,
 		"samples": frame_times.size(),
 		"frame_ms_mean": _mean(frame_times),
 		"frame_ms_median": frame_times[frame_times.size() / 2],

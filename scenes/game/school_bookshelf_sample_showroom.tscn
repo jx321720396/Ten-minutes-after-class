@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/components/school_bookshelf_sample.tscn" id="1_5w1h4"]
+
+[sub_resource type="Environment" id="Environment_ulmf2"]
+background_mode = 1
+background_color = Color(0.8745098, 0.8392157, 0.76862746, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.9411765, 0.94509804, 0.91764706, 1)
+ambient_light_energy = 0.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cv0jq"]
+albedo_color = Color(0.7411765, 0.7137255, 0.6627451, 1)
+roughness = 0.8
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_tsbwo"]
+size = Vector2(200, 200)
+
+[node name="SchoolBookshelfShowroom" type="Node3D" unique_id=643406642]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=739048765]
+transform = Transform3D(-0.80565107, -0.19249219, 0.5602438, 0, 0.94573414, 0.32494146, -0.59239036, 0.26178944, -0.7619317, 2.5, 2.35, -3.4)
+projection = 1
+current = true
+size = 2.65
+
+[node name="@WorldEnvironment@2" type="WorldEnvironment" parent="." unique_id=1048667873]
+environment = SubResource("Environment_ulmf2")
+
+[node name="WindowKey" type="DirectionalLight3D" parent="." unique_id=1877599056]
+transform = Transform3D(0.81915206, 0.43938506, -0.36868784, 0, 0.64278764, 0.76604444, 0.57357645, -0.62750685, 0.5265408, 0, 0, 0)
+light_color = Color(1, 0.9411765, 0.85490197, 1)
+shadow_enabled = true
+
+[node name="SoftFill" type="DirectionalLight3D" parent="." unique_id=1052360585]
+transform = Transform3D(-0.57357645, -0.3461886, 0.7424038, 0, 0.90630776, 0.42261827, -0.819152, 0.24240388, -0.5198368, 0, 0, 0)
+light_color = Color(0.8509804, 0.90588236, 0.93333334, 1)
+light_energy = 0.35
+
+[node name="Ground" type="MeshInstance3D" parent="." unique_id=1680461511]
+material_override = SubResource("StandardMaterial3D_cv0jq")
+mesh = SubResource("PlaneMesh_tsbwo")
+
+[node name="Sample" type="Node3D" parent="." unique_id=1157888657 instance=ExtResource("1_5w1h4")]

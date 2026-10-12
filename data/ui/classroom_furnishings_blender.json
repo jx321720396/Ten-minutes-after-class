@@ -1,0 +1,11 @@
+{
+  "palette": {"body":"#d9d1bf", "door":"#e6dfcf", "wood":"#c69b63", "shadow":"#938775", "metal":"#7b8586", "cloth":"#586d7c", "pocket":"#718695", "zip":"#d2c9b8"},
+  "cabinet": {"width":1.2, "depth":0.44, "height":0.88, "board":0.025, "foot":0.065, "gap":0.012, "bevel":0.006, "handle":0.10},
+  "bag": {"width":0.24, "depth":0.12, "height":0.33, "bevel":0.035, "pocket_width":0.18, "pocket_height":0.12, "handle_width":0.085},
+  "render": {"resolution":[1400,1000], "camera_position":[2.4,-3.8,2.3], "camera_target":[0,0,0.55], "camera_size":2.0, "area_position":[-2,-3,4], "area_energy":500, "area_size":4, "samples":32},
+  "assets": [
+    {"source":"res://assets/models/classroom_furnishings/prop_storage_cabinet.glb", "scene":"res://scenes/components/school_storage_cabinet.tscn", "name":"SchoolStorageCabinet"},
+    {"source":"res://assets/models/classroom_furnishings/prop_schoolbag.glb", "scene":"res://scenes/components/schoolbag_warm.tscn", "name":"SchoolbagWarm"},
+    {"source":"res://assets/models/classroom_furnishings/prop_bookshelf_reused.glb", "scene":"res://scenes/components/school_bookshelf_warm.tscn", "name":"SchoolBookshelfWarm"}
+  ]
+}
