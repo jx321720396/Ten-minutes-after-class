@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "note": "新手教程文案（docs/gdd/v4/28-新手教程设计.md §28.7）。steps.timeout_seconds=0 表示不设超时、跟到课间结束；anchor 为空表示该步不高亮界面锚点。",
+  "labels": {
+    "next": "开始上课",
+    "next_hint": "下一步",
+    "skip": "跳过教程"
+  },
+  "intro_cards": [
+    {
+      "id": "card_who",
+      "title": "转学第一天",
+      "text": "你是 3 班的转学生。这学期 30 天，没人认识你——一切从零开始。"
+    },
+    {
+      "id": "card_day",
+      "title": "一天怎么过",
+      "text": "每天三段课间是你的时间。上课铃一响，只能看着班里自己发酵。"
+    },
+    {
+      "id": "card_free",
+      "title": "没有标准答案",
+      "text": "想跟谁好、想看谁笑话、想安静读书，都行。下课了。"
+    }
+  ],
+  "steps": [
+    {
+      "id": "s1_time",
+      "text": "左上是日子。课间一结束就会上课，别磨蹭。",
+      "anchor": "time_hud",
+      "auto_pass_seconds": 3.0
+    },
+    {
+      "id": "s2_move",
+      "text": "点地面走走，或者用 WASD。",
+      "anchor": "",
+      "timeout_seconds": 20.0
+    },
+    {
+      "id": "s3_action",
+      "text": "右边是能做的事：先点一件事，再点一个人。",
+      "anchor": "action_bar",
+      "timeout_seconds": 20.0
+    },
+    {
+      "id": "s4_chat",
+      "text": "走近一个同学，点「闲聊」，再点他。聊什么都行。",
+      "anchor": "",
+      "timeout_seconds": 0.0
+    },
+    {
+      "id": "s5_observe",
+      "text": "想知道谁怎么看你，就「观察」他——只看，不会被发觉。",
+      "anchor": "",
+      "timeout_seconds": 0.0
+    }
+  ]
+}

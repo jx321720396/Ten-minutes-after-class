@@ -241,6 +241,11 @@ func is_paused() -> bool:
 	return not _paused_by.is_empty()
 
 
+## 查某个拥有者是否正持着 hold（教程测试用：只关心自己的冻结，不牵连转场等其他持有者）。
+func is_held_by(who: StringName) -> bool:
+	return _paused_by.has(who)
+
+
 ## 日末简报「继续」：仅 report 状态可用；清空累计真实时间，进入下一天。
 ## 表现层在日末停留（`report_hold_seconds`）结束后**自动**调用它（`time_hud.gd`），
 ## 玩家也可按空格提前进入；第 30 天结束时 mode 为 finished，本方法拒绝。

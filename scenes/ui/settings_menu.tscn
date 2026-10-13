@@ -223,6 +223,23 @@ value = 80.0
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 
+[node name="ReplayBtn" type="Button" parent="Overlay/CenterContainer/Panel/VBox" unique_id=1905350021]
+custom_minimum_size = Vector2(240, 52)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)
+theme_override_colors/font_hover_color = Color(0.2, 0.14, 0.06, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.5, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
+text = "重看教程"
+
 [node name="BackBtn" type="Button" parent="Overlay/CenterContainer/Panel/VBox" unique_id=1905350022]
 custom_minimum_size = Vector2(240, 52)
 layout_mode = 2

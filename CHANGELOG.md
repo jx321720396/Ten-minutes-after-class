@@ -1,4 +1,10 @@
 # 变更记录
+- **新手教程 P0 实装（2026-10-13，UI）**：按 28 章 P0 范围落地——开场 3 张纸卡（此期间 `clock.hold(&"tutorial")` 冻结世界，玩家零损失）→ 首课间 5 步提示（条件触发、超时放行、课间结束静默收尾，不暂停不锁输入）→ 跳过 / 重看。
+  - **新增**：`data/ui/tutorial.json`（文案全外置）、`scenes/ui/tutorial_overlay.tscn` + `scripts/ui/tutorial_overlay.gd`（CanvasLayer 压在转场之上；锚点高亮传内部面板而非 CanvasLayer 本体、跳过按钮、已看标记写 `user://tutorial_seen.dat`）；五步提示每步附「下一步」按钮，可手动推进（完成条件 / 超时仍自动推进），条身不拦截鼠标、只有按钮接输入。
+  - **接线**：`classroom.gd` 新增 `_bind_tutorial()`——教程由入口驱动（主菜单开新局置 `GameState.tutorial_pending`，教室只认标记；直接实例化教室的测试 / 调试零教程零冻结）；行为栏选中 / 交互提交（含被拒）转发给覆盖层；Esc 口径：开场卡期间跳过，步进阶段归暂停菜单。`settings_menu` 加「重看教程」（教室里直接重放，主菜单记标记下局生效）；`SimulationClock` 加 `is_held_by()` 查询。
+  - **验证**：新增 `tests/unit/test_tutorial_overlay.gd` 15 项（含教室级「默认无教程 / 置位才弹 / S1 高亮」用例，断言只看教程自己的 hold，不牵连转场黑幕；含 CanvasLayer 锚点类型回归）；全量 unit + integration 426/426 通过；`check_docs` 全绿；曾用例污染的 `user://tutorial_seen.dat` 已删并加临时路径隔离。
+  - **遗留**：P1 六条里程碑短句未做；gdformat / gdlint 本机缺失未跑格式门；真机触屏验收未做（D16 前补）。
+- **新手教程设计分册（2026-10-13，文档）**：新增 `docs/gdd/v4/28-新手教程设计.md`（策划案，未开工），确立三段式结构——开场纸卡（第一节课间计时前，玩家零损失）、首课间五步提示（条件触发、超时放行、不暂停世界）、贯穿 30 天的仅首次里程碑短句。四条设计原则：删掉即无痕（纯表现层、不读 NPC 隐藏数值）、世界不等人、教规则不教打法（不教举报/排挤/递纸条用法）、一次会话（跨局已读标记 + 设置内「重看教程」）。文案全部外置 `data/ui/tutorial.json`（结构草案已给），复用时间 HUD 短句、聊天反馈、术语悬停与 EventBus 通知，不新增内核信号；含七项验收清单与 T1/T2 开放问题（开场卡时机、观察步骤去留待裁决）。
 - **Android 导出打通：本机 SDK / 模板 / 签名就位，能打出可安装的 APK（2026-10-12，构建）**：此前 `export_presets.cfg` 里 Android 预设 `package/signed=true` 却**没有 keystore 键**，导出必然失败；本机也没有 Android SDK 与 Godot 导出模板。
   - **预设**：补 debug keystore 三个键（keystore 在仓库外的 `~/.android/debug.keystore`，不进库）、输出路径（Windows `build/windows/`、Android `build/android/`）、`include_filter` 追加新字体的 LICENSE。注意 **`use_gradle_build=false` 时 `min_sdk` / `target_sdk` 必须留空**，填了会直接报「只有在启用『使用 Gradle 构建』时才能覆盖」。
   - **本机环境**（不进仓库）：`tools/setup_android_sdk.ps1` 一键装 Android SDK（下载官方 command line tools → 装 platform-tools / platforms;android-34 / build-tools;34.0.0）；Godot 导出模板（1.19 GB）手动放到 `%APPDATA%/Godot/export_templates/4.7.2.stable/`；编辑器设置里 `java_sdk_path` / `android_sdk_path` / `debug_keystore` 三个值。
@@ -26,6 +32,40 @@
   - 修复两张配置表导出后消失：`data/rules/choice_weights.csv` 与 `data/ui/emotion_faces.csv` 的 `.import` 由 `csv_translation` 改为 `keep`。此前它们被翻译导入器吞掉、源文件不进包，而 `config_loader.gd` 是运行时扫 `res://data/*.csv` 读的 —— 发行版里选择权重与玩家表情两张表直接缺失。
   - 两个导出预设新增 `exclude_filter`，排除 `addons/gut`、`tests`、`tools`、`docs`（此前共约 394 个无关文件混入包内）；Windows 预设补 `product_name="下课十分钟"`。
   - 验证：Godot 4.7.2 实跑导出并逐条核对包内清单（35 个 csv、7 个 json 齐全，四个排除目录清零，Windows 包 145.7 MB → 124.7 MB、803 个文件）；导出 pck 无头运行 150 帧零错误，两张表的表头内容确认写入 PCK。
+
+- **未验收人物素材暂不打包（2026-10-13）**
+  - 按用户要求，Android 与 Windows 导出暂时排除备用全身立绘、简化立绘样例、动作对比图及站立/走路/坐姿测试图；配套展示场景、脚本、配置和采集校验工具同步排除，避免缺资源引用。
+  - 开发文件保留，编辑器可继续测试；正式游戏人物立绘不受影响。测试验收后按需移除对应导出排除项。
+
+- **书包三类物品事件接线补验（2026-10-13）**
+  - 沿用零食、课外书、MP3 的既有行为入口与 `data/rules/leisure.csv` 数值；完成／铃声中断通知在动作清理后发布，控制器即时刷新书包，过期库存请求失败也刷新并给出零食耗尽原因。
+  - 补生产面板、控制器与 EventBus 的集成回归，覆盖自然完成、中断、重复操作、库存耗尽、老师没收及铃声边界；修正百科实装状态并补 MP3 词条。
+  - 原概念素材记录为 2026-10-12，本批不调整平衡数值；接线与验证范围见 `docs/qa/书包物品事件接线验收-2026-10-13.md`。
+  - Godot 回归 49 项／729 断言、配置 313 项、Python 单测 61 项、公式对拍 11 项与 7 天 3360 tick 对拍通过；文档门、内核静态检查超限及魔法数字扫描的既有未通过项详见验收记录。
+
+- **手机包体宣传素材排除（2026-10-13）**
+  - Android 与 Windows 导出排除带标题的宣传图及未被运行时引用的壁纸；源素材保留用于对外宣传。
+  - 保留主菜单实际使用的 classroom-social-1920x1080-v1.png 背景，避免运行时缺图。排除素材源文件合计约 66.9 MiB，实际包体降幅以重新导出结果为准。
+
+- **封面按钮图标与文字排版（2026-10-13）**
+  - 设置、百科、关于、退出使用居中的文字与右侧图标组合，间隔集中配置，避免图标贴边或重叠；选中后文字与图标同步切换为浅色，保留笔刷状态与原按钮功能。
+
+- **封面按钮统一笔刷状态（2026-10-13）**
+  - 六个菜单按钮统一使用已有灰色/深绿色笔刷贴图。未选中为灰色，点击或键盘聚焦后为深绿色；共享按钮组确保一次只选中一个，禁用的继续游戏保持灰色。
+  - 保留设置、百科、关于、退出等既有功能。实机选中状态截图、脚本静态检查与菜单导航回归通过。
+
+- **封面菜单统一（2026-10-13）**
+  - 移除主菜单动态追加的“上局回顾”入口；保留“退出”，沿用设置、百科、关于的纸面边框、字体及图标样式，六个按钮完整落在菜单纸张内。
+  - 实机截图与菜单边界、退出信号连接检查通过；已有菜单导航回归 1 项、10 个断言通过。
+
+- **人物动作小样比例、节奏与桌椅组合修正（2026-10-13）**
+  - 人物缩小 20%，行走和聊天帧速减半；修正坐姿中心轴偏移、相机水平偏角和随相机旋转的问题。坐姿上身/腿部分层，行走终点停在桌椅旁。参数集中于原小样 JSON，仅影响独立展示场景。
+  - Godot 4.7.2 专项验证、渲染截图及新改脚本格式/静态检查通过；坐下仍为单帧切换，未添加过渡动作。
+
+- **正常比例人物帧动画独立小样（2026-10-12）**
+  - 新增可直接 F6 运行的 `normal_student_motion_sample.tscn`：站立、四方向行走/聊天及正面坐姿，支持动作切换和自动演示。
+  - 动画资源、帧速、裁切和脚底对齐集中在 `data/ui/normal_student_motion_sample.json`；只载入 29 帧，不载入侧面和背面坐姿。修正等分裁切带入邻行碎片问题，座位取真实 SitPoint。
+  - Godot 4.7.2 专项验证与实际截图通过；新脚本格式和静态检查通过。仅独立表现小样，不修改主教室、外观表或玩法内核。详情见 `docs/art/concepts/normal_student_motion_sample/README.md`。
 
 - **补修 3 个漏改的 `csv_translation` 导入声明（2026-10-12，从零克隆实测发现）**
   - 现象：`data/rules/choice_weights.csv`、`data/ui/emotion_faces.csv`、`tests/invariants/fixtures/data/characters/seeds.csv`
