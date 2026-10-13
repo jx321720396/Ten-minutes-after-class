@@ -28,8 +28,11 @@ const TERM_REPORT_SCENE := preload("res://scenes/ui/term_report.tscn")
 @onready var note_prompt: NotePrompt = $NotePrompt
 @onready var behavior_badge: BehaviorBadgePresenter = $BehaviorBadge
 @onready var npc_profile: NpcProfile = $UI/NpcProfile
+@onready var tutorial: TutorialOverlay = $TutorialOverlay
 
 var _term_report: CanvasLayer
+## 教程步进用：最近一次被选中的行为栏 kind（提交时连同状态一起转发给教程）
+var _tutorial_armed: StringName = &""
 
 
 func _ready() -> void:
@@ -66,6 +69,53 @@ func _ready() -> void:
 	_bind_feedback(core)
 	clock.time_updated.connect(_sync_state_mirror)
 	time_hud.continue_requested.connect(_on_continue_requested)
+	_bind_tutorial()
+
+
+## 新手教程（28 章 P0）：只有入口（主菜单开新局）置了 tutorial_pending 才弹；
+## 直接实例化教室（测试 / 调试）永远零教程、零冻结。开场卡期间用 clock.hold 冻结世界。
+func _bind_tutorial() -> void:
+	var settings: Control = pause_menu.settings_panel
+	if settings != null and settings.has_signal("replay_requested"):
+		settings.replay_requested.connect(_on_tutorial_replay)
+	action_bar.behavior_armed.connect(_on_tutorial_armed)
+	interaction.state_changed.connect(_on_tutorial_state)
+	if not GameState.tutorial_pending:
+		return
+	GameState.tutorial_pending = false
+	clock.hold(&"tutorial")
+	if not tutorial.intro_closed.is_connected(_on_tutorial_intro_closed):
+		tutorial.intro_closed.connect(_on_tutorial_intro_closed, CONNECT_ONE_SHOT)
+	# 锚点必须传 Control：TimeHUD / 行为栏本体是 CanvasLayer，高亮矩形取的是它们内部的纸卡面板
+	tutorial.bind_world(clock, player, {"time_hud": time_hud._panel, "action_bar": action_bar._panel})
+	tutorial.start_first_run()
+
+
+func _on_tutorial_intro_closed() -> void:
+	clock.release(&"tutorial")
+
+
+## 设置菜单「重看教程」：教室里直接重放（不置 pending，立刻弹）。
+func _on_tutorial_replay() -> void:
+	if tutorial.is_running():
+		return
+	clock.hold(&"tutorial")
+	if not tutorial.intro_closed.is_connected(_on_tutorial_intro_closed):
+		tutorial.intro_closed.connect(_on_tutorial_intro_closed, CONNECT_ONE_SHOT)
+	# 同上：锚点传内部面板，不传 CanvasLayer 本体
+	tutorial.bind_world(clock, player, {"time_hud": time_hud._panel, "action_bar": action_bar._panel})
+	tutorial.start_first_run()
+
+
+func _on_tutorial_armed(kind: StringName) -> void:
+	_tutorial_armed = kind
+	tutorial.notify_armed(kind)
+
+
+func _on_tutorial_state(state: StringName) -> void:
+	# 提交 = 行为真的开始跑（ACTIVE）；被拒（REJECTED）也算「开口了」，S4 照样完成（28 章）。
+	if state == PlayerInteractionController.STATE_ACTIVE or state == PlayerInteractionController.STATE_REJECTED:
+		tutorial.notify_committed(_tutorial_armed)
 
 
 ## 黑板跟这一局走：学期结束才清板。新开一局会换一间教室，板面本来就是空的。
@@ -234,6 +284,8 @@ func _sync_state_mirror(snapshot_data: Dictionary) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
+		if tutorial != null and tutorial.is_intro_open():
+			return  # 开场卡期间 Esc 由教程自己处理（跳过），不开暂停菜单
 		pause_menu.show()
 		get_tree().paused = true
 		get_viewport().set_input_as_handled()

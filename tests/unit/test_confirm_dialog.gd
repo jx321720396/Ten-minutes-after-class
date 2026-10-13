@@ -1,0 +1,73 @@
+extends GutTest
+
+## confirm_dialog 双口径回归（2026-10-13）：「新游戏」一律先过确认面板。
+## · open(true)：「检测到存档」三键，警示红按钮；
+## · open(false)：「开始新游戏？」两键，隐藏「保留存档」，确定键墨色；
+## · 信号链不变：confirmed_clear / confirmed_keep / cancelled，Esc 走 cancelled。
+
+const CONFIRM = preload("res://scenes/ui/confirm_dialog.tscn")
+const MAIN_MENU = preload("res://scenes/ui/main_menu.tscn")
+
+
+func _dialog() -> Control:
+	var d: Control = CONFIRM.instantiate()
+	add_child_autofree(d)
+	return d
+
+
+func test_open_without_save_shows_plain_confirm() -> void:
+	var d := _dialog()
+	d.open(false)
+	assert_true(d.visible, "open 后面板可见")
+	assert_eq(d.title_label.text, d.FRESH_TITLE, "无存档标题换口径")
+	assert_eq(d.msg_label.text, d.FRESH_MSG)
+	assert_eq(d.clear_btn.text, d.FRESH_OK, "主按钮显示「确定」")
+	assert_false(d.keep_btn.visible, "无存档不显示「保留存档」键")
+	assert_true(d.cancel_btn.visible, "取消键保留")
+
+
+func test_open_with_save_keeps_archive_three_buttons() -> void:
+	var d := _dialog()
+	d.open(false)  # 先切到无存档口径，再切回，验证口径可反复切换
+	d.open(true)
+	assert_eq(d.title_label.text, "检测到存档", "有存档维持原标题")
+	assert_eq(d.clear_btn.text, "清除存档并开始")
+	assert_true(d.keep_btn.visible, "保留存档键恢复显示")
+	assert_false(d.clear_btn.has_theme_color_override("font_color"), "警示红回落到场景样式")
+
+
+func test_confirm_and_cancel_signal_chain() -> void:
+	var d := _dialog()
+	d.open(false)
+	watch_signals(d)
+	d.clear_btn.pressed.emit()
+	assert_signal_emitted(d, "confirmed_clear", "确定 → confirmed_clear")
+	d.cancel_btn.pressed.emit()
+	assert_signal_emitted(d, "cancelled", "取消 → cancelled")
+
+
+func test_keep_signal_still_available_in_save_mode() -> void:
+	var d := _dialog()
+	d.open(true)
+	watch_signals(d)
+	d.keep_btn.pressed.emit()
+	assert_signal_emitted(d, "confirmed_keep", "保留存档 → confirmed_keep")
+
+
+func test_main_menu_new_game_flow_matches_save_state() -> void:
+	# 自适应本机真实存档状态，不碰存档文件（GUT 的 stub 不接受 autoload，无法打桩）。
+	var menu: Control = MAIN_MENU.instantiate()
+	add_child_autofree(menu)
+	(menu.get_node("VBoxContainer/NewGame") as Button).pressed.emit()
+	assert_true(menu.confirm_dialog.visible, "两种情况都先弹确认面板")
+	if Save.has_save():
+		assert_eq(menu.confirm_dialog.title_label.text, "检测到存档")
+		assert_true(menu.confirm_dialog.keep_btn.visible, "有存档维持三键口径")
+		menu.confirm_dialog.cancel_btn.pressed.emit()  # 只取消，不动真实存档
+		assert_false(menu.confirm_dialog.visible, "取消后面板收起")
+		assert_false(menu.gender_select_panel.visible, "取消不进性别选择")
+	else:
+		assert_eq(menu.confirm_dialog.title_label.text, menu.confirm_dialog.FRESH_TITLE)
+		menu.confirm_dialog.clear_btn.pressed.emit()  # 无存档：确定不删除任何文件
+		assert_true(menu.gender_select_panel.visible, "确认后进性别选择")
+		assert_false(menu.confirm_dialog.visible, "面板已收起")

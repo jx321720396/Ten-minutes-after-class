@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/components/window_high.tscn" id="4_win_high"]
 [ext_resource type="PackedScene" path="res://scenes/components/curtain.tscn" id="5_curtain"]
 [ext_resource type="PackedScene" path="res://scenes/ui/player_action_bar.tscn" id="action_bar_scene"]
+[ext_resource type="PackedScene" path="res://scenes/ui/tutorial_overlay.tscn" id="tutorial_scene"]
 [ext_resource type="Script" uid="uid://djhb6l8bh2yun" path="res://scripts/game/classroom_actors.gd" id="actors_script"]
 [ext_resource type="PackedScene" path="res://scenes/game/behavior_badge_presenter.tscn" id="badge_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/chat_activity_bubble.tscn" id="chat_bubble_scene"]
@@ -833,3 +834,4 @@ script = ExtResource("player_script")
 [node name="BehaviorBadge" parent="." unique_id=62531855 instance=ExtResource("badge_scene")]
 
 [node name="Interaction" parent="." unique_id=1165301091 instance=ExtResource("interaction_scene")]
+[node name="TutorialOverlay" parent="." instance=ExtResource("tutorial_scene")]

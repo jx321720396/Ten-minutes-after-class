@@ -228,6 +228,7 @@ func _on_self_behavior(kind: StringName) -> void:
 	if not bool(result.get("ok", false)):
 		if _hud != null:
 			_hud.show_status(_action_reason(str(result.get("error", ""))))
+		_refresh_bar()
 		return
 	if _hud != null and not bool(result.get("teacher_feedback", false)):
 		if action == "study":
@@ -529,6 +530,8 @@ func _action_reason_of(kind: String) -> String:
 ## 内核错误码 → 一句人话（不暴露任何隐藏数值）。
 func _action_reason(error: String, kind: String = "") -> String:
 	match error:
+		"no_snacks":
+			return "零食吃完了"
 		"player_busy":
 			return "你正忙着"
 		"phase_not_allowed":
@@ -842,6 +845,7 @@ func _on_event_happened(payload: Dictionary) -> void:
 			elif activity == "listen_music":
 				message = "音乐还没听完，铃声就响了。"
 			_hud.show_status(message)
+		_refresh_bar()
 		return
 	# 观察结果（§10.3.1）：只读信息进情报日志，不提交任何行为
 	if kind == "observe":
