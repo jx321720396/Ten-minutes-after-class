@@ -485,47 +485,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
-[node name="JudgmentCard" type="PanelContainer" parent="Root/Design/Frame/Margin/Content/Body/Details"]
-unique_name_in_owner = true
-layout_mode = 2
-
-
-[node name="Contents" type="VBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="JudgmentTitle" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents"]
-theme_override_fonts/font = ExtResource("campus_font")
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 28
-
-
-[node name="ValueRow" type="HBoxContainer" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents"]
-layout_mode = 2
-
-
-[node name="JudgmentValue" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents/ValueRow"]
-theme_override_fonts/font = ExtResource("campus_font")
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 32
-size_flags_horizontal = 3
-
-[node name="UnknownNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents/ValueRow"]
-theme_override_fonts/font = ExtResource("campus_font")
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 23
-
-
-[node name="JudgmentNote" type="Label" parent="Root/Design/Frame/Margin/Content/Body/Details/JudgmentCard/Contents"]
-theme_override_fonts/font = ExtResource("campus_font")
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-
-
 [node name="Footer" type="Label" parent="Root/Design/Frame/Margin/Content"]
 theme_override_fonts/font = ExtResource("campus_font")
 unique_name_in_owner = true

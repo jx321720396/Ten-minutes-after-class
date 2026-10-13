@@ -79,12 +79,7 @@ static func apply(view: Node) -> void:
 	view.get_node("%PortraitFrame").add_theme_stylebox_override(
 		"panel", box(Color("ece5d1"), Color("e4d8bc"), 4, 1)
 	)
-	view.get_node("%JudgmentCard").add_theme_stylebox_override(
-		"panel", box(Color("e6e8db"), Color("c7cfba"), 10, 1)
-	)
-	for name in [
-		"Subtitle", "KnownNote", "Seat", "HistoryNote", "JudgmentNote", "Footer", "UnknownNote"
-	]:
+	for name in ["Subtitle", "KnownNote", "Seat", "HistoryNote", "Footer"]:
 		view.get_node("%" + name).add_theme_color_override("font_color", MUTED)
 	view.get_node("%StaleNote").add_theme_color_override("font_color", GOLD)
 	var title_font := GameFonts.regular()
