@@ -36,6 +36,7 @@ func _ready():
 	settings_panel = SCENE_SETTINGS.instantiate()
 	settings_panel.visible = false
 	settings_panel.closed.connect(_on_close_settings)
+	settings_panel.replay_requested.connect(_on_replay_tutorial)
 	add_child(settings_panel)
 
 	about_panel = SCENE_ABOUT.instantiate()
@@ -70,10 +71,10 @@ func _has_save() -> bool:
 
 
 func _on_new_game():
-	if _has_save():
-		confirm_dialog.visible = true
-	else:
-		_ask_gender()
+	# 2026-10-13：点「新游戏」一律先过确认面板——
+	# 有存档走「检测到存档」三键；无存档仅确认「开始新游戏？」。
+	# 确认（清除 / 保留 / 确定）都进性别选择，取消留在主菜单。
+	confirm_dialog.open(_has_save())
 
 
 ## 进教室之前先问性别。每次新游戏都问；性别只在本局内有效（写 GameState，不落盘）。
@@ -96,6 +97,9 @@ func _start_new_game() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	GameState.start_game(rng.randi(), _npc_count())
+	# 教程由入口决定（28 章）：没看过、或设置里点了「重看」，这局进教室才弹。
+	GameState.tutorial_pending = not TutorialOverlay.is_seen() or GameState.replay_tutorial
+	GameState.replay_tutorial = false
 	var error := get_tree().change_scene_to_file(SCENE_CLASSROOM)
 	if error != OK:
 		push_error("无法进入教室：%s" % error_string(error))
@@ -137,13 +141,20 @@ func _on_close_settings():
 	settings_panel.visible = false
 
 
+## 主菜单里没有教室可放教程：记一个标记，下一次新游戏进教室时重放。
+func _on_replay_tutorial():
+	GameState.replay_tutorial = true
+
+
 func _on_close_about():
 	about_panel.visible = false
 
 
 func _on_confirm_clear():
 	confirm_dialog.visible = false
-	Save.delete()
+	# 无存档口径的「确定」也走本信号：删除有 file_exists 守卫，但这里再挡一层。
+	if Save.has_save():
+		Save.delete()
 	_ask_gender()
 
 

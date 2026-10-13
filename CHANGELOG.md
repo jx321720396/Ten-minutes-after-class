@@ -1,4 +1,9 @@
 # 变更记录
+- **新手教程 P0 实装（2026-10-13，UI）**：按 28 章 P0 范围落地——开场 3 张纸卡（此期间 `clock.hold(&"tutorial")` 冻结世界，玩家零损失）→ 首课间 5 步提示（条件触发、超时放行、课间结束静默收尾，不暂停不锁输入）→ 跳过 / 重看。
+  - **新增**：`data/ui/tutorial.json`（文案全外置）、`scenes/ui/tutorial_overlay.tscn` + `scripts/ui/tutorial_overlay.gd`（CanvasLayer 压在转场之上；锚点高亮传内部面板而非 CanvasLayer 本体、跳过按钮、已看标记写 `user://tutorial_seen.dat`）；五步提示每步附「下一步」按钮，可手动推进（完成条件 / 超时仍自动推进），条身不拦截鼠标、只有按钮接输入。
+  - **接线**：`classroom.gd` 新增 `_bind_tutorial()`——教程由入口驱动（主菜单开新局置 `GameState.tutorial_pending`，教室只认标记；直接实例化教室的测试 / 调试零教程零冻结）；行为栏选中 / 交互提交（含被拒）转发给覆盖层；Esc 口径：开场卡期间跳过，步进阶段归暂停菜单。`settings_menu` 加「重看教程」（教室里直接重放，主菜单记标记下局生效）；`SimulationClock` 加 `is_held_by()` 查询。
+  - **验证**：新增 `tests/unit/test_tutorial_overlay.gd` 15 项（含教室级「默认无教程 / 置位才弹 / S1 高亮」用例，断言只看教程自己的 hold，不牵连转场黑幕；含 CanvasLayer 锚点类型回归）；全量 unit + integration 426/426 通过；`check_docs` 全绿；曾用例污染的 `user://tutorial_seen.dat` 已删并加临时路径隔离。
+  - **遗留**：P1 六条里程碑短句未做；gdformat / gdlint 本机缺失未跑格式门；真机触屏验收未做（D16 前补）。
 - **新手教程设计分册（2026-10-13，文档）**：新增 `docs/gdd/v4/28-新手教程设计.md`（策划案，未开工），确立三段式结构——开场纸卡（第一节课间计时前，玩家零损失）、首课间五步提示（条件触发、超时放行、不暂停世界）、贯穿 30 天的仅首次里程碑短句。四条设计原则：删掉即无痕（纯表现层、不读 NPC 隐藏数值）、世界不等人、教规则不教打法（不教举报/排挤/递纸条用法）、一次会话（跨局已读标记 + 设置内「重看教程」）。文案全部外置 `data/ui/tutorial.json`（结构草案已给），复用时间 HUD 短句、聊天反馈、术语悬停与 EventBus 通知，不新增内核信号；含七项验收清单与 T1/T2 开放问题（开场卡时机、观察步骤去留待裁决）。
 - **Android 导出打通：本机 SDK / 模板 / 签名就位，能打出可安装的 APK（2026-10-12，构建）**：此前 `export_presets.cfg` 里 Android 预设 `package/signed=true` 却**没有 keystore 键**，导出必然失败；本机也没有 Android SDK 与 Godot 导出模板。
   - **预设**：补 debug keystore 三个键（keystore 在仓库外的 `~/.android/debug.keystore`，不进库）、输出路径（Windows `build/windows/`、Android `build/android/`）、`include_filter` 追加新字体的 LICENSE。注意 **`use_gradle_build=false` 时 `min_sdk` / `target_sdk` 必须留空**，填了会直接报「只有在启用『使用 Gradle 构建』时才能覆盖」。
