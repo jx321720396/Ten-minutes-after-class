@@ -15,6 +15,11 @@ var player_gender: String = "male"
 var sim_core: Variant = null
 ## 期末「再玩一局」交回主菜单已有的性别选择流程。
 var new_game_requested := false
+## 设置菜单「重看教程」请求（2026-10-13）：主菜单开新局时并入 tutorial_pending，消费后清零。
+var replay_tutorial := false
+## 本次进教室是否要弹新手教程（由入口决定：主菜单开新局置位，教室消费后清零）。
+## 教室自身不读「已看」文件——直接实例化教室（测试 / 调试）永远零教程、零冻结。
+var tutorial_pending := false
 
 
 func start_game(new_seed: int, new_npc_count: int) -> void:
