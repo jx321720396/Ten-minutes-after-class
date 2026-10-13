@@ -57,6 +57,9 @@ __pycache__/
 .godot_path
 /tools/out/
 
+# ---- Godot 导出预设本地基准层（含本机 keystore 路径，不共享）----
+.export_presets.base.cfg
+
 # ---- 临时脚本与片段（.tmp-* / .frag-* 前缀）----
 .tmp-*
 .frag-*
