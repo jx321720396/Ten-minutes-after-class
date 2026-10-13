@@ -186,5 +186,6 @@
       "打开书包"
     ],
     "layer": 2
-  }
+  },
+  "menu_caption_gap": 12
 }

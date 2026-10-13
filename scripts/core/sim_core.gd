@@ -691,6 +691,7 @@ func _settle_finished_actions() -> void:
 	var due_sessions: Array = _sessions.expire(_global_tick)
 	# ② 读取这一刻情报 + 写入本局日志（只有玩家参与的自然完成才登记线索）
 	var notifications: Array = _player_interactions.on_sessions_completed(due_sessions)
+	var leisure_notifications: Array = []
 	# ③ 清理占用/当前动作
 	for i in range(_n):
 		if _busy_phase[i] < 0 or _busy_until[i] > _global_tick:
@@ -701,8 +702,7 @@ func _settle_finished_actions() -> void:
 		if LEISURE_KINDS.has(_busy_act[i]):
 			var prefix: String = LEISURE_KINDS[_busy_act[i]]
 			_stress[i] = _clamp100(_stress[i] - float(_leisure[prefix + "_relief"]))
-			_emit(
-				"event_happened",
+			leisure_notifications.append(
 				{
 					"kind": "leisure_finished",
 					"i": i,
@@ -721,6 +721,8 @@ func _settle_finished_actions() -> void:
 	if _in_conversation[me] and _sessions.session_of(me) < 0 and _global_tick >= _busy_until[me]:
 		_in_conversation[me] = false
 	# ④ 发布通知：完成在前，线索在后
+	for payload in leisure_notifications:
+		_emit("event_happened", payload)
 	for payload in notifications:
 		_emit("event_happened", payload)
 	for gift in LeisureActions.settle_book_gifts(self, due_sessions):
@@ -1397,18 +1399,21 @@ func _check_interrupt() -> void:
 func _cleanup_phase() -> void:
 	_term_record.end_state("study")
 	_term_record.moving(false, false)
+	var leisure_notifications: Array = []
 	for i in range(_n):
 		if _current_act[i] == "study":
 			_current_act[i] = null
 			_study_acc[i] = 0.0
 	for i in _interrupted_nodes:
 		if LEISURE_KINDS.has(_busy_act[i]):
-			_emit(
-				"event_happened", {"kind": "leisure_interrupted", "i": i, "activity": _busy_act[i]}
+			leisure_notifications.append(
+				{"kind": "leisure_interrupted", "i": i, "activity": _busy_act[i]}
 			)
 		_current_act[i] = null
 		_busy_act[i] = null
 		_in_conversation[i] = false
+	for payload in leisure_notifications:
+		_emit("event_happened", payload)
 	# 纸条链（§8.6）：纸条只在当前时间段内存活，进入下一个时间段即销毁。
 	_notes.clear()
 	if _player_absent:
