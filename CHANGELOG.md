@@ -1,4 +1,5 @@
 # 变更记录
+- **新手教程设计分册（2026-10-13，文档）**：新增 `docs/gdd/v4/28-新手教程设计.md`（策划案，未开工），确立三段式结构——开场纸卡（第一节课间计时前，玩家零损失）、首课间五步提示（条件触发、超时放行、不暂停世界）、贯穿 30 天的仅首次里程碑短句。四条设计原则：删掉即无痕（纯表现层、不读 NPC 隐藏数值）、世界不等人、教规则不教打法（不教举报/排挤/递纸条用法）、一次会话（跨局已读标记 + 设置内「重看教程」）。文案全部外置 `data/ui/tutorial.json`（结构草案已给），复用时间 HUD 短句、聊天反馈、术语悬停与 EventBus 通知，不新增内核信号；含七项验收清单与 T1/T2 开放问题（开场卡时机、观察步骤去留待裁决）。
 - **Android 导出打通：本机 SDK / 模板 / 签名就位，能打出可安装的 APK（2026-10-12，构建）**：此前 `export_presets.cfg` 里 Android 预设 `package/signed=true` 却**没有 keystore 键**，导出必然失败；本机也没有 Android SDK 与 Godot 导出模板。
   - **预设**：补 debug keystore 三个键（keystore 在仓库外的 `~/.android/debug.keystore`，不进库）、输出路径（Windows `build/windows/`、Android `build/android/`）、`include_filter` 追加新字体的 LICENSE。注意 **`use_gradle_build=false` 时 `min_sdk` / `target_sdk` 必须留空**，填了会直接报「只有在启用『使用 Gradle 构建』时才能覆盖」。
   - **本机环境**（不进仓库）：`tools/setup_android_sdk.ps1` 一键装 Android SDK（下载官方 command line tools → 装 platform-tools / platforms;android-34 / build-tools;34.0.0）；Godot 导出模板（1.19 GB）手动放到 `%APPDATA%/Godot/export_templates/4.7.2.stable/`；编辑器设置里 `java_sdk_path` / `android_sdk_path` / `debug_keystore` 三个值。
