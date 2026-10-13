@@ -1,0 +1,438 @@
+{
+  "texture": "res://assets/textures/characters/motion_compare_v1/char_01_normal_sheet_v1.png",
+  "pixel_size": 0.005096525096525097,
+  "alpha_threshold": 0.7,
+  "clips": {
+    "idle_front": {
+      "fps": 1,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            74,
+            9,
+            83,
+            259
+          ],
+          "pivot_x": 32.0,
+          "baseline": 259,
+          "visible_height": 259
+        }
+      ]
+    },
+    "walk_front": {
+      "fps": 3.0,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            256,
+            9,
+            91,
+            260
+          ],
+          "pivot_x": 49.0,
+          "baseline": 260,
+          "visible_height": 260
+        },
+        {
+          "region": [
+            441,
+            9,
+            85,
+            260
+          ],
+          "pivot_x": 40.0,
+          "baseline": 260,
+          "visible_height": 260
+        },
+        {
+          "region": [
+            613,
+            9,
+            88,
+            260
+          ],
+          "pivot_x": 46.0,
+          "baseline": 260,
+          "visible_height": 260
+        },
+        {
+          "region": [
+            785,
+            10,
+            88,
+            259
+          ],
+          "pivot_x": 37.0,
+          "baseline": 259,
+          "visible_height": 259
+        }
+      ]
+    },
+    "chat_front": {
+      "fps": 1.5,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            948,
+            8,
+            122,
+            261
+          ],
+          "pivot_x": 42.0,
+          "baseline": 261,
+          "visible_height": 261
+        },
+        {
+          "region": [
+            1134,
+            11,
+            110,
+            258
+          ],
+          "pivot_x": 54.0,
+          "baseline": 258,
+          "visible_height": 258
+        }
+      ]
+    },
+    "sit_front": {
+      "fps": 1,
+      "loop": false,
+      "frames": [
+        {
+          "region": [
+            1311,
+            55,
+            103,
+            215
+          ],
+          "pivot_x": 51.5,
+          "baseline": 215,
+          "visible_height": 215
+        }
+      ]
+    },
+    "idle_back": {
+      "fps": 1,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            71,
+            279,
+            83,
+            254
+          ],
+          "pivot_x": 30.0,
+          "baseline": 254,
+          "visible_height": 254
+        }
+      ]
+    },
+    "walk_back": {
+      "fps": 3.0,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            251,
+            277,
+            92,
+            256
+          ],
+          "pivot_x": 50.0,
+          "baseline": 256,
+          "visible_height": 256
+        },
+        {
+          "region": [
+            437,
+            278,
+            81,
+            255
+          ],
+          "pivot_x": 36.0,
+          "baseline": 255,
+          "visible_height": 255
+        },
+        {
+          "region": [
+            604,
+            278,
+            90,
+            256
+          ],
+          "pivot_x": 48.0,
+          "baseline": 256,
+          "visible_height": 256
+        },
+        {
+          "region": [
+            781,
+            277,
+            91,
+            257
+          ],
+          "pivot_x": 43.0,
+          "baseline": 257,
+          "visible_height": 257
+        }
+      ]
+    },
+    "chat_back": {
+      "fps": 1.5,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            968,
+            278,
+            118,
+            257
+          ],
+          "pivot_x": 64.0,
+          "baseline": 257,
+          "visible_height": 257
+        },
+        {
+          "region": [
+            1148,
+            277,
+            104,
+            258
+          ],
+          "pivot_x": 63.0,
+          "baseline": 258,
+          "visible_height": 258
+        }
+      ]
+    },
+    "idle_left": {
+      "fps": 1,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            86,
+            814,
+            51,
+            251
+          ],
+          "pivot_x": 26.0,
+          "baseline": 251,
+          "visible_height": 251
+        }
+      ]
+    },
+    "walk_left": {
+      "fps": 3.0,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            219,
+            814,
+            142,
+            247
+          ],
+          "pivot_x": 113.0,
+          "baseline": 247,
+          "visible_height": 247
+        },
+        {
+          "region": [
+            404,
+            814,
+            128,
+            244
+          ],
+          "pivot_x": 39.0,
+          "baseline": 244,
+          "visible_height": 244
+        },
+        {
+          "region": [
+            573,
+            814,
+            139,
+            244
+          ],
+          "pivot_x": 97.0,
+          "baseline": 244,
+          "visible_height": 244
+        },
+        {
+          "region": [
+            758,
+            814,
+            124,
+            248
+          ],
+          "pivot_x": 95.0,
+          "baseline": 248,
+          "visible_height": 248
+        }
+      ]
+    },
+    "chat_left": {
+      "fps": 1.5,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            949,
+            814,
+            99,
+            252
+          ],
+          "pivot_x": 71.0,
+          "baseline": 252,
+          "visible_height": 252
+        },
+        {
+          "region": [
+            1153,
+            814,
+            79,
+            251
+          ],
+          "pivot_x": 57.0,
+          "baseline": 251,
+          "visible_height": 251
+        }
+      ]
+    },
+    "idle_right": {
+      "fps": 1,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            87,
+            546,
+            53,
+            252
+          ],
+          "pivot_x": 25.0,
+          "baseline": 252,
+          "visible_height": 252
+        }
+      ]
+    },
+    "walk_right": {
+      "fps": 3.0,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            222,
+            547,
+            137,
+            248
+          ],
+          "pivot_x": 34.0,
+          "baseline": 248,
+          "visible_height": 248
+        },
+        {
+          "region": [
+            417,
+            547,
+            117,
+            250
+          ],
+          "pivot_x": 77.0,
+          "baseline": 250,
+          "visible_height": 250
+        },
+        {
+          "region": [
+            579,
+            545,
+            137,
+            251
+          ],
+          "pivot_x": 34.0,
+          "baseline": 251,
+          "visible_height": 251
+        },
+        {
+          "region": [
+            773,
+            547,
+            119,
+            250
+          ],
+          "pivot_x": 29.0,
+          "baseline": 250,
+          "visible_height": 250
+        }
+      ]
+    },
+    "chat_right": {
+      "fps": 1.5,
+      "loop": true,
+      "frames": [
+        {
+          "region": [
+            970,
+            547,
+            100,
+            255
+          ],
+          "pivot_x": 28.0,
+          "baseline": 255,
+          "visible_height": 255
+        },
+        {
+          "region": [
+            1145,
+            548,
+            82,
+            253
+          ],
+          "pivot_x": 23.0,
+          "baseline": 253,
+          "visible_height": 253
+        }
+      ]
+    }
+  },
+  "default_clip": "idle_front",
+  "idle_duration": 1.2,
+  "walk_duration": 3.0,
+  "chat_duration": 3.0,
+  "sit_duration": 2.5,
+  "path_start": [
+    -1.25,
+    0,
+    -0.45
+  ],
+  "camera_position": [
+    0,
+    1.55,
+    3.6
+  ],
+  "camera_target": [
+    0,
+    0.75,
+    -0.35
+  ],
+  "camera_size": 2.8,
+  "capture_size": [
+    960,
+    640
+  ],
+  "walk_goal": [
+    -0.7,
+    0,
+    -0.45
+  ],
+  "seated_layers": {
+    "split_y": 100,
+    "lower_depth": 0.28
+  }
+}
