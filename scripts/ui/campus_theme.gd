@@ -177,6 +177,7 @@ static func main_menu(view: Control) -> void:
 	view.add_child(panel)
 	view.move_child(panel, menu.get_index())
 	menu.move_child(menu.get_node("Encyclopedia"), 3)
+	var selection := ButtonGroup.new()
 	for item in menu.get_children():
 		if item is Button:
 			item.custom_minimum_size.y = cfg.menu_button_height
@@ -185,24 +186,12 @@ static func main_menu(view: Control) -> void:
 			var menu_font := GameFonts.regular()
 
 			item.add_theme_font_override("font", menu_font)
-			var normal := box("paper", "line")
-			normal.bg_color.a = 0.2
-			normal.shadow_size = 0
-			item.add_theme_stylebox_override("normal", normal)
 			match str(item.name):
 				"NewGame":
 					item.text = "新游戏　›"
 					item.custom_minimum_size.y = cfg.menu_primary_height
-					var brush := StyleBoxTexture.new()
-					brush.texture = load("res://assets/textures/ui/paper/campus-menu-brush-v1.png")
-					item.add_theme_stylebox_override("normal", brush)
 				"ContinueGame":
 					item.custom_minimum_size.y = cfg.menu_primary_height
-					var disabled_brush := StyleBoxTexture.new()
-					disabled_brush.texture = load(
-						"res://assets/textures/ui/paper/campus-menu-brush-disabled-v1.png"
-					)
-					item.add_theme_stylebox_override("disabled", disabled_brush)
 				"Setting", "Encyclopedia", "About", "Exit":
 					var icon_name: String = {
 						"Setting": "settings",
@@ -215,3 +204,65 @@ static func main_menu(view: Control) -> void:
 					item.text = {"Setting": "设置", "Encyclopedia": "百科", "About": "关于", "Exit": "退出"}[str(
 						item.name
 					)]
+			item.toggle_mode = true
+			item.button_group = selection
+			item.focus_entered.connect(item.set_pressed.bind(true))
+			var gray_brush := StyleBoxTexture.new()
+			gray_brush.texture = load(
+				"res://assets/textures/ui/paper/campus-menu-brush-disabled-v1.png"
+			)
+			var green_brush := StyleBoxTexture.new()
+			green_brush.texture = load("res://assets/textures/ui/paper/campus-menu-brush-v1.png")
+			for state in ["normal", "hover", "disabled"]:
+				item.add_theme_stylebox_override(state, gray_brush)
+			for state in ["pressed", "hover_pressed"]:
+				item.add_theme_stylebox_override(state, green_brush)
+			item.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+			for state in [
+				"font_color", "font_hover_color", "icon_normal_color", "icon_hover_color"
+			]:
+				item.add_theme_color_override(state, Color(cfg.ink))
+			for state in ["font_pressed_color", "font_hover_pressed_color", "icon_pressed_color"]:
+				item.add_theme_color_override(state, Color(cfg.paper))
+			if item.icon != null:
+				_menu_caption(item, cfg)
+
+
+static func _menu_caption(item: Button, cfg: Dictionary) -> void:
+	var center := CenterContainer.new()
+	center.name = "Caption"
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	item.add_child(center)
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", int(cfg.menu_caption_gap))
+	center.add_child(row)
+	var text := Label.new()
+	text.text = item.text
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.add_theme_font_override("font", GameFonts.regular())
+	text.add_theme_font_size_override("font_size", int(cfg.menu_font_size))
+	row.add_child(text)
+	var icon := TextureRect.new()
+	icon.name = "CaptionIcon"
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.custom_minimum_size = Vector2.ONE * float(cfg.menu_icon_size)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var svg := FileAccess.get_file_as_string(item.icon.resource_path)
+	var image := Image.new()
+	image.load_svg_from_string(svg.replace("#284536", "#ffffff"))
+	icon.texture = ImageTexture.create_from_image(image)
+	row.add_child(icon)
+	item.tooltip_text = item.text
+	item.text = ""
+	item.icon = null
+	text.add_theme_color_override("font_color", Color(cfg.ink))
+	icon.modulate = Color(cfg.ink)
+	item.toggled.connect(
+		func(selected: bool) -> void:
+			var color := Color(cfg.paper if selected else cfg.ink)
+			text.add_theme_color_override("font_color", color)
+			icon.modulate = color
+	)
