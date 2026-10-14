@@ -19,6 +19,7 @@ func _ready() -> void:
 	paper.content_margin_top = float(config.paper_top)
 	%Frame.add_theme_stylebox_override("panel", paper)
 	%ModeBadge.add_theme_stylebox_override("panel", STYLE.box("paper", "line"))
+	%MonitorHeader.add_theme_stylebox_override("panel", STYLE.box("paper", "line"))
 	%Heading.text = config.copy.heading
 	%TargetHeading.text = config.copy.target_heading
 	%Target.text = config.copy.no_target
@@ -73,6 +74,13 @@ func _ready() -> void:
 
 func set_mode(mode: String) -> void:
 	var monitor := mode == "monitor"
+	%Frame.visible = not monitor
+	%MonitorHeader.visible = monitor
+	var destination: Control = %MonitorHeader if monitor else %Rows
+	if %ModeRow.get_parent() != destination:
+		%ModeRow.reparent(destination)
+		if not monitor:
+			%Rows.move_child(%ModeRow, 0)
 	%Mode.text = config.copy.monitor_title if monitor else config.copy.classroom_title
 	%ReturnOffice.text = config.copy.monitor_return if monitor else config.copy.classroom_return
 	%Status.text = config.copy.monitor_status if monitor else config.copy.classroom_status

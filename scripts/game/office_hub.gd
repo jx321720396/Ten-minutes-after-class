@@ -287,6 +287,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if pick:
 		var index: int = _room.get_node("Player").pick_actor(point)
 		select_observed_student(index)
+		if _mode == "monitor" and index >= 0 and _teacher.selected_student() == index:
+			_room.get_node("UI/NpcProfile").open_profile(index)
 		get_viewport().set_input_as_handled()
 
 

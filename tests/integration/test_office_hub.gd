@@ -35,6 +35,8 @@ func _run() -> void:
 	check(not scene.get_node("Player").enabled, "安装办公室不得解除原有输入禁用")
 	check(not scene.get_node("Interaction").is_processing(), "安装办公室不得解除原有处理禁用")
 	check(hub.mode_name() == "monitor", "开局教室默认监控视角")
+	check(not hub.teacher_view().get_node("%Frame").visible, "监控不显示老师行动和当前对象面板")
+	check(hub._return.is_visible_in_tree(), "监控仍有关闭入口")
 	check(not scene.get_node("ActionBar").visible, "老师教室不显示学生行为栏")
 	check(not scene.get_node("ChatHUD").visible, "老师界面移除旧学生事件反馈")
 	check(not scene.get_node("ChatHUD").is_processing(), "旧邀请不能继续刷新弹窗")
@@ -69,6 +71,7 @@ func _run() -> void:
 	check(not scene.get_node("Interaction").is_processing(), "实际教室不再轮询学生纸条")
 	var teacher_ui: Control = hub.teacher_view()
 	check(teacher_ui.visible, "显示原生老师操作面板")
+	check(teacher_ui.get_node("%Frame").visible, "实际进入教室才显示老师行动")
 	var camera: Camera3D = root.get_camera_3d()
 	var picked := false
 	for index in range(core.node_count()):
@@ -196,6 +199,9 @@ func _run() -> void:
 				Rect2(Vector2.ZERO, office.get_viewport_rect().size).encloses(rect), "按钮在画面内：" + key
 			)
 		hub.set_mode("monitor")
+		await process_frame
+		check(not teacher_ui.get_node("%Frame").visible, "任意横屏尺寸下监控不显示行动纸卡")
+		hub.set_mode("classroom")
 		await process_frame
 		var frame_rect: Rect2 = teacher_ui.get_node("%Frame").get_global_rect()
 		var tools_rect: Rect2 = teacher_ui.get_node("%Tools").get_global_rect()
