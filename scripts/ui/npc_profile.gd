@@ -9,7 +9,7 @@ const STYLE = preload("res://scripts/ui/npc_profile_theme.gd")
 const COPY_PATH := "res://data/localization/npc_profile.json"
 const CONFIG_PATH := "res://data/ui/npc_profile.json"
 const DESIGN_SIZE := Vector2(1920, 1080)
-const AXIS_NODES := {"affinity": "Affinity", "hostility": "Hostility", "trust": "Trust"}
+const AXIS_NODES := {"affinity": "Affinity", "hostility": "Hostility"}
 
 @onready var _root: Control = $Root
 @onready var _design: Control = %Design
@@ -326,7 +326,6 @@ func _set_static_text() -> void:
 		"TargetHeading": "relationship_target",
 		"AffinityHeading": "affinity",
 		"HostilityHeading": "hostility",
-		"TrustHeading": "trust",
 	}
 	for node in mapping:
 		get_node("%" + node).text = words(mapping[node])

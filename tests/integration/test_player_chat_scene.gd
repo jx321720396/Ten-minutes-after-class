@@ -220,9 +220,6 @@ func _force(scene: Node3D, accept: bool) -> void:
 	var a: Variant = sim._a
 	a[0 * n + me] = 100.0 if accept else 0.0
 	sim._a = a
-	var dims: Variant = sim._dims
-	dims[0] = 100.0 if accept else 0.0
-	sim._dims = dims
 	var stress: Variant = sim._stress
 	stress[0] = 0.0 if accept else 100.0
 	sim._stress = stress

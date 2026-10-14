@@ -1,17 +1,10 @@
 extends GutTest
-## 行为组件的注册、旧入口兼容、RNG 与生命周期契约。
+## 行为组件的注册、分发、RNG 与生命周期契约（老师版行为集：只 chat + roughhouse）。
 
 const REGISTRY_PATH := "res://scripts/systems/behaviors/behavior_registry.gd"
 const EXPECTED := [
 	&"chat",
-	&"tease",
-	&"report",
-	&"roughhouse",
-	&"exclude",
-	&"comfort",
-	&"apologize",
-	&"pass_note",
-	&"observe"
+	&"roughhouse"
 ]
 
 
@@ -43,57 +36,10 @@ func test_registered_ids_are_a_read_only_copy() -> void:
 	assert_eq(c._behavior_registry.behavior_ids(), EXPECTED)
 
 
-func test_component_dispatch_matches_all_compatibility_entries() -> void:
-	for kind in EXPECTED:
-		var old_entry := _core()
-		var direct := _core()
-		var old_events: Array = []
-		var new_events: Array = []
-		old_entry.event_sink = func(e: Dictionary): old_events.append(e)
-		direct.event_sink = func(e: Dictionary): new_events.append(e)
-		var options := {}
-		match kind:
-			&"chat":
-				options = {"mode": "join", "roll": 0.0}
-				old_entry._do_chat_join(0, 1, 0.0)
-			&"tease":
-				options = {"audience": [5, 2, 3, 4]}
-				old_entry._do_tease(0, 1, options.audience)
-			&"exclude":
-				options = {"crowd": [0, 4, 2]}
-				old_entry._do_exclude(0, 1, options.crowd)
-			&"roughhouse":
-				options = {"bystanders": [4, 2, 3]}
-				old_entry._do_roughhouse(0, 1, options.bystanders)
-			_:
-				old_entry.call("_do_" + str(kind), 0, 1)
-		assert_true(direct._behavior_registry.execute(kind, 0, 1, options))
-		assert_eq(_digest(direct), _digest(old_entry), str(kind) + " 状态与 RNG 一致")
-		assert_eq(new_events, old_events, str(kind) + " 通知顺序一致")
-
-
-func test_pre_rolled_join_does_not_draw_again_and_keeps_event_order() -> void:
+func test_registry_dispatches_kept_behaviors() -> void:
 	var c := _core()
-	var events: Array = []
-	c.event_sink = func(e: Dictionary): events.append(e)
-	var rng_before := var_to_bytes([c._rng._mt, c._rng._mti])
-	c._do_chat_join(0, 1, 0.0)
-	assert_eq(var_to_bytes([c._rng._mt, c._rng._mti]), rng_before)
-	assert_eq(events.size(), 2)
-	assert_eq(events[0].payload.kind, "chat")
-	assert_eq(events[1].payload.mode, "join")
-	assert_true(events[1].payload.accepted)
-
-
-func test_default_join_consumes_exactly_one_roll() -> void:
-	var c := _core()
-	var expected := _core()
-	expected._rng.random()
-	c._do_chat_join(0, 1)
-	assert_eq(
-		var_to_bytes([c._rng._mt, c._rng._mti]),
-		var_to_bytes([expected._rng._mt, expected._rng._mti])
-	)
+	assert_true(c._behavior_registry.execute(&"chat", 0, 1), "闲聊走注册表分发")
+	assert_true(c._behavior_registry.execute(&"roughhouse", 0, 1), "打闹走注册表分发")
 
 
 func test_context_uses_current_arrays_after_replacement() -> void:
@@ -122,7 +68,7 @@ func test_new_games_have_independent_components_and_state() -> void:
 	var second := _core()
 	var before := _digest(second)
 	assert_ne(first._behavior_registry, second._behavior_registry)
-	first._do_report(0, 1)
+	first._do_chat(0, 1)
 	assert_eq(_digest(second), before, "一个局的行为不污染另一个局")
 
 
@@ -135,19 +81,15 @@ func _digest(c: SimCore) -> PackedByteArray:
 	for field in [
 		"_a",
 		"_h",
-		"_h_deep",
-		"_t",
 		"_stress",
-		"_b_a",
-		"_b_h",
-		"_b_t",
+		"_grade",
 		"_current_act",
 		"_in_conversation",
 		"_busy_until",
 		"_busy_phase",
 		"_busy_act",
+		"_last_finished",
 		"_stats",
-		"_hurt_day",
 		"_settled",
 		"_day_events"
 	]:

@@ -36,8 +36,7 @@
     "study": {"symbols": ["+", "−", "×", "÷", "=", "π", "√", "x²"], "colors": ["75baff", "80d8ed", "a3c9ff"]},
     "listen_music": {"symbols": ["♪", "♫", "~"], "colors": ["79dbb6", "7cced4", "b2ebc3"]},
     "eat_snack": {"symbols": ["cookie", "candy", "★"], "colors": ["ffc36f", "f59b79", "ffdb91"]},
-    "read_book": {"symbols": ["book", "page", "A", "B", "“", "”"], "colors": ["bb9bec", "d0b2f3", "a99cde"]},
-    "comfort": {"symbols": ["♥", "✦", "~"], "colors": ["f2a3b6", "f9bd9b", "efb8c9"]}
+    "read_book": {"symbols": ["book", "page", "A", "B", "“", "”"], "colors": ["bb9bec", "d0b2f3", "a99cde"]}
   },
   "icons": {
     "cookie": "<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><circle cx='32' cy='32' r='25' fill='white'/><g fill='#8d6844'><circle cx='23' cy='20' r='3'/><circle cx='41' cy='24' r='4'/><circle cx='19' cy='38' r='3'/><circle cx='34' cy='43' r='4'/><circle cx='43' cy='37' r='2'/></g></svg>",

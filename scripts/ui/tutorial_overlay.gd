@@ -21,7 +21,7 @@ const UI_LAYER := 45
 const MOVE_DONE_METERS := 1.2
 const HINT_WIDTH := 640.0
 ## 步骤 id → 该步等待的提交行为（动作栏 kind）
-const COMMIT_KIND_OF := {&"s4_chat": &"chat", &"s5_observe": &"observe"}
+const COMMIT_KIND_OF := {&"s4_chat": &"chat"}
 ## 提示条内「下一步」按钮的尺寸（热区 ≥44，§20.0.4）
 const HINT_NEXT_MIN := Vector2(96, 44)
 

@@ -1,16 +1,14 @@
 """最小无头内核原型（Python）
 
 用途：验证 docs/design/ 里的公式与不变式；Godot 版（scripts/core/）可据此移植。
-依据：docs/design/统一影响公式.md、信念矩阵.md、NPC行为决策.md、主文档 §3/§5–§10
+依据：docs/design/统一影响公式.md、NPC行为决策.md、主文档 §3/§5–§10
 运行：python tools/core_sim.py --days 1 --seed 12345
 
 实现范围（「最小」= 够验证公式，不追求全部行为）：
   · 时间：天 / 相位（课间×3、上课×2）/ tick（课间 100、上课 90）
-  · 状态：A/H/T 有向矩阵、O/Stress 个体量、MBTI 四维
-  · 统一影响公式：E × 性格倍率 × 关系调制 → +β·C → 软饱和 → round(0.1) → 写入
-  · 传导：阈值 + 竞争归一化 + **感知值**，每 settle_interval 结算
-  · 信念矩阵：B_A/B_B/B_T，观测噪声由对方透明度决定、学习率由信任决定
-  · 行为：闲聊（环境类）、搭话（意向类）、举报（阈值类）—— 覆盖三类触发
+  · 状态：A/H 有向矩阵（16×16）、Stress/StudyAcc/Grade 个体量（长度 16）
+  · 统一影响公式：E × 关系调制 → 软饱和 → round(0.1) → 写入
+  · 行为：闲聊 / 搭话 / 多人聊天 / 打闹 / 学习 / 娱乐 / 睡觉（老师版 §9.2 + §9.4 行为集）
   · 跨天：衰减 + 座位重排（简化为随机重排相邻关系）
 """
 
@@ -25,12 +23,11 @@ from teacher_patrol import TeacherPatrol
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 
-AXES = ("affinity", "hostility", "trust")
+AXES = ("affinity", "hostility")
 
 # 主动行为的冷却（tick）：每角色每这么久最多发起一次行为
 # ⚠️ 文档未规定，属实现补充；待标定（见 docs/design/NPC行为决策.md 待确认）
 ACTION_COOLDOWN = 20
-DIMS = ("e", "n", "f", "p")
 LEISURE_KINDS = {"listen_music": "music", "eat_snack": "snack", "read_book": "book"}
 
 
@@ -143,7 +140,6 @@ class Sim:
         self.player_absent = False
         self.leave_count = 0
         self.p = load_params("rules/transmission.csv")
-        self.bp = load_params("rules/belief.csv")
         self.probs = {r["behavior"]: float(r["base_p"]) for r in load_table("rules/behavior_probs.csv")}
         self.thresholds = load_table("rules/behavior_thresholds.csv")
         # 阈值查表：键为 `<behavior>_<metric>`（同一行为可有多个指标，如调侃的两档）
@@ -171,21 +167,6 @@ class Sim:
             [(float(r["band_upper"]), float(r["ticks_per_point"]))
              for r in load_table("rules/grade_table.csv")],
             key=lambda x: x[0])
-        # 选择侧系数表（§4.5）：(event, option) -> 系数行
-        self.choice = {}
-        for _r in load_table("rules/choice_weights.csv"):
-            self.choice[(_r["event"], _r["option"])] = {
-                "theta": float(_r["theta"]),
-                "scale": float(_r["scale"]),
-                "w_e": float(_r["w_e"]),
-                "w_s": float(_r["w_s"]),
-                "w_f": float(_r["w_f"]),
-                "w_j": float(_r["w_j"]),
-                "w_stress": float(_r.get("w_stress") or 0.0),
-            }
-        # 纸条链状态（§8.6）：活跃纸条列表 + 编号（不消耗 RNG）
-        self.notes = []
-        self.note_next_id = 0
         seeds = load_table("characters/seeds.csv")
 
         # --- 装配本局阵容（池 = 一局人数；洗牌只决定顺序，§11.5 的绑定组/原型去重仍未接入）---
@@ -197,10 +178,6 @@ class Sim:
         others = [c for c in pool if c["book"] == "0"][:npc_count - book_count]
         self.chars = [c for c in pool if c in books or c in others]
         self.book = [int(c["book"]) for c in self.chars] + [0]
-        self.book_gifted = [False] * (npc_count + 1)
-        self.book_gifts_this_break = 0
-        self.book_gift_events = []
-        self.book_gift_chats = []
         self.snacks_remaining = int(self.leisure["snack_count_per_run"])
         for kind, prefix in LEISURE_KINDS.items():
             self.behaviors[kind] = dict(duration=int(self.leisure[prefix + "_duration"]),
@@ -213,39 +190,13 @@ class Sim:
         n = self.N
         self.A = [[0.0] * n for _ in range(n)]
         self.H = [[0.0] * n for _ in range(n)]
-        # 深层敌对（§10.22）：只由 tier=major 的负性事件写入，**永不衰减**。
-        # H 存的仍是「总敌对」，H_deep 是其中「忘不掉的那一部分」。
-        self.H_deep = [[0.0] * n for _ in range(n)]
-        # 施害者一侧的证据（§8.4 修订）：最近一次「i 对 j 做过敌对行为」的日。
-        # 排挤的判据要用它 —— 集体排斥的证据在**施害者**一侧，不在受害者一侧。
-        self.hurt_day = [[-10 ** 9] * n for _ in range(n)]
-        # 排挤冷却：同一目标多少天内不再被重复驱逐。
-        # 「孤立某人」是一个**状态**而不是反复的动作 —— 没有冷却时同一人一天被排挤 9 次（实测）。
-        self.exclude_last_day = [-10 ** 9] * n
-        self.T = [[0.0] * n for _ in range(n)]
-        self.O = [0.0] * n
         self.Stress = [0.0] * n
         self.Grade = [0.0] * n         # 成绩（§17.1）
         self.StudyAcc = [0.0] * n      # 学习时长累加器（§17.1.2）
-        self.dims = [[50.0] * 4 for _ in range(n)]  # E N F P
-
-        # --- 信念矩阵：B_X[i][j] = i 估计的「j 对 i 的 X」---
-        self.B = {ax: [[0.0] * n for _ in range(n)] for ax in AXES}
-        prior = {"affinity": self.bp["prior_a"], "hostility": self.bp["prior_h"], "trust": self.bp["prior_t"]}
-        for i in range(n):
-            for j in range(n):
-                for ax in AXES:
-                    self.B[ax][i][j] = prior[ax]
 
         # --- 初始化 ---
-        for i, ch in enumerate(self.chars):
-            self.O[i] = float(ch.get("opacity_init") or 50)
-            self.dims[i] = [float(ch[k]) for k in DIMS]
-        self.O[n - 1] = 50.0
-        self.dims[n - 1] = [50.0] * 4
         self._init_relations()
         self._init_grade()
-        self._init_belief_bias()   # 按 信念矩阵.md §3：初始值 = 先验 + 性格偏差
         self._init_exam()
 
         # --- 时间与统计 ---
@@ -254,14 +205,10 @@ class Sim:
         self.tick_in_phase = 0
         # 一天的相位序列（段名, tick 数）。与 GDScript 内核 `_active_phases` 对齐（break/class 交替）。
         self.day_phases = [("break", 100), ("class", 90), ("break", 100), ("class", 90), ("break", 100)]
-        self.stats = {"events": 0, "chats": 0, "joins": 0, "reports": 0, "bursts": 0,
-                      "teases": 0, "tease_fail": 0, "excludes": 0,
+        self.stats = {"events": 0, "chats": 0, "joins": 0, "bursts": 0,
                       "interrupts": 0,
-                      "transmission_ticks": 0, "skipped_events": 0, "dedup_skips": 0,
+                      "skipped_events": 0, "dedup_skips": 0,
                       "roughhouse": 0, "sleeps": 0,
-                      "comforts": 0,
-                      "apologizes": 0, "apologize_rejects": 0,
-                      "notes_written": 0, "notes_read": 0, "notes_destroyed": 0,
                       "chat_joins": 0, "join_vetoes": 0, "chat_leaves": 0,
                       "chat_max_size": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
@@ -298,8 +245,6 @@ class Sim:
         self.current_act = [None] * n     # 当前正在做/刚做完的行为（供音量统计）
         self.vol_log = []                 # 每个相位末的音量（标定观测用）
         self.sleeping = [False] * n       # 睡觉中（§10.8）：本课间不做别的事，且别人不能与之交互
-        # --- 举报把柄（§10.2）：目击到的「标签行为痕迹」虚拟层 ---
-        self.witness_day = [[-999] * n for _ in range(n)]   # witness_day[i][j] = i 最近目击 j 违规的日
         # --- 空间层（§15.1、§10.17.2 种子一）：座位表 + 邻接 ---
         self.seats = load_table("rules/seats.csv")
         self.seat_pos = {r["seat_id"]: (int(r["row"]), int(r["col"])) for r in self.seats}
@@ -365,13 +310,11 @@ class Sim:
                     continue
                 self.A[i][j] = clamp100(20 + self.rng.random() * 20)
                 self.H[i][j] = clamp100(self.rng.random() * 15)
-                self.T[i][j] = clamp100(20 + self.rng.random() * 20)
         # 环境事实（§11.3）：小情侣绑定、佳豪对外好感 50
         idx = {c["alias"]: k for k, c in enumerate(self.chars)}
         if "陈阳" in idx and "林晚" in idx:
             a, b = idx["陈阳"], idx["林晚"]
             self.A[a][b] = self.A[b][a] = 85.0
-            self.T[a][b] = self.T[b][a] = 80.0
         if "佳豪" in idx:
             g = idx["佳豪"]
             for j in range(n):
@@ -389,59 +332,11 @@ class Sim:
             self.Grade[i] = gmin + self.rng.random() * (gmax - gmin)
         self.Grade[self.N - 1] = self.kp["grade_init_player"]
 
-    def _init_belief_bias(self):
-        """按 `docs/design/信念矩阵.md` §3 补**初始信念偏差**。
-
-        文档规定：`B_X[i][j] = prior_X + bias_X(j) × w_bias`，其中
-            bias_A(j) = +k · [ (E_j−50)/50·0.5 + (F_j−50)/50·0.5 ]   外向 / 共情型「显得友善」→ 被高估好感
-            bias_H(j) = −bias_A(j)                                    同一人显得友善 → 被低估敌对
-            bias_T(j) = 0                                             信任没有「看起来」这回事
-
-        要点：**偏差是性格的函数，不是随机数** —— 让「话痨型总被高估亲近、冰山型总被低估好感」
-        成为**可预测的系统性错觉**。
-
-        ⚠️ 此前实现只写了纯先验（`B = prior`，全员同一值），漏了本项；
-        后果是开局**所有人对所有人的猜测完全相同**，既失去系统性错觉，也让搭话判据在开局无分化。
-        """
-        w = self.bp["w_bias"]
-        k = self.bp.get("bias_observer_k", 0.0)
-        tr = self.bp.get("bias_trust_ratio", 0.0)
-
-        def perceived(j):
-            """对方「看起来」多友善：外向 + 共情 → 显得友善（被观察者项）"""
-            return (self.dims[j][0] - 50.0) / 50.0 * 0.5 + (self.dims[j][2] - 50.0) / 50.0 * 0.5
-
-        def observer(i):
-            """我自己多倾向于把人往好处想：共情 + 外向 → 乐观（观察者项）"""
-            return (self.dims[i][2] - 50.0) / 50.0 * 0.5 + (self.dims[i][0] - 50.0) / 50.0 * 0.5
-
-        for i in range(self.N):
-            for j in range(self.N):
-                if i == j:
-                    continue
-                # 双方性格共同决定：对方的可见特质 × 我自己的乐观程度
-                bias_a = w * perceived(j) * (1.0 + k * observer(i))
-                self.B["affinity"][i][j] = clamp100(self.B["affinity"][i][j] + bias_a)
-                self.B["hostility"][i][j] = clamp100(self.B["hostility"][i][j] - bias_a)
-                # 信任只受**观察者**影响（对方"看起来"与否无关）：乐观者更易先信任
-                self.B["trust"][i][j] = clamp100(self.B["trust"][i][j] + tr * w * observer(i) * 0.1)
-
     # ------------------------------------------------ 派生量
-    def mult_personality(self, row, i):
-        """性格倍率 clamp(1 + Σw·d, 0.1, 1.2)"""
-        w = [float(row["w_e"]), float(row["w_s"]), float(row["w_f"]), float(row["w_j"])]
-        d = [(self.dims[i][k] - 50.0) / 50.0 for k in range(4)]
-        return clamp(1.0 + sum(w[k] * d[k] for k in range(4)), 0.1, 1.2)
+    def m_relation(self, i, j):
+        """关系调制 M = clamp((A − H)/50, −1, +1)。
 
-    def m_relation(self, i, j, tier="normal"):
-        """关系调制 M = clamp((A − H)/50, −1, +1)
-
-        **边界②：重大档（tier=major）禁止被关系反转** —— 取 max(0, M)，即"允许削弱、禁止翻转符号"。
-        否则「我们关系好，所以他举报我反而是好事」会塌掉欺凌线与信任崩塌线
-        （`report_hostility` / `leak_hostility` / `leak_trust` 都是 major）。
-        常规档保留反转：关系差时「聊了反而掉好感」是设计意图（§2.1）。
-        ⚠️ 注意不是 max(0, M)：那样关系差时伤害会归零，等于"被讨厌就不会被伤害"，同样不合理。
-        重大事件的语义是**伤害与关系无关**（关系好坏都会被举报，伤害一样）→ 直接不调制。
+        关系差时「聊了反而掉好感」是设计意图（§2.1）—— 保留反转。
         """
         return clamp((self.A[i][j] - self.H[i][j]) / 50.0, -1.0, 1.0)
 
@@ -459,7 +354,7 @@ class Sim:
     def room_for(self, axis, value):
         """负反馈：正向轴越接近饱和，增益越小（负面轴不适用）。
 
-        · 好感 / 信任：越满越难涨 —— 这就是阻止「30 天全班一起封顶」的机制
+        · 好感：越满越难涨 —— 这就是阻止「30 天全班一起封顶」的机制
         · 敌对 / 压力：不加负反馈，否则「敌意升级」会被压死
         """
         if self.feedback <= 0 or axis in ("hostility", "stress"):
@@ -467,24 +362,18 @@ class Sim:
         return max(0.0, 1.0 - self.feedback * value / 100.0)
 
     def sat(self, u, axis):
-        key = {"affinity": "u_a", "hostility": "u_h", "trust": "u_t", "stress": "u_s"}[axis]
+        key = {"affinity": "u_a", "hostility": "u_h", "stress": "u_s"}[axis]
         U = self.p.get(key, 25.0)
         return u / (1.0 + abs(u) / U)
 
     # ------------------------------------------------ 事件写入
-    def apply_event(self, i, j, event_id, scale=1.0, no_modulation=False):
-        """按统一影响公式写入：E × 性格 × 关系调制 → 软饱和 → round(0.1) → clamp
+    def apply_event(self, i, j, event_id, scale=1.0):
+        """按统一影响公式写入：E × 关系调制 → 软饱和 → round(0.1) → clamp
 
         含事件去重：同一对子同一规则每课间段只结算一次（§2.5.4）
 
-        `scale`：**外部幅度系数**（默认 1.0）—— 让「同一事件」随情境强弱缩放，
-        例如音量越吵、怕吵者的敌对越重。它与 `base` 相乘、仍走同一套公式，
-        不是旁路写入（保持 §2.6 的单一写入点）。
-
-        `no_modulation`：跳过**关系调制** `M(i,j)`（与 `tier=major` 同口径，§7.1 边界②）。
-        用于**修复类行为**：道歉的发起门槛保证 `H ≥ 30` → `M` 常为负 → 常规档会把
-        「敌对回落」乘以负的 `M` **翻成敌对上升**、「好感回升」翻成好感下降 ——
-        即「越道歉越糟」。修复行为与 `M` 的冲突是结构性的，故整条行为不走调制。
+        `scale`：**外部幅度系数**（默认 1.0）—— 让「同一事件」随情境强弱缩放。
+        它与 `base` 相乘、仍走同一套公式，不是旁路写入（保持 §2.6 的单一写入点）。
         """
 
         if not self.is_present(i) or not self.is_present(j):
@@ -501,34 +390,15 @@ class Sim:
                 continue
             axis = row["axis"]
             base = float(row["base"])
-            e_val = base * scale * self.mult_personality(row, i)
+            e_val = base * scale
             if axis in AXES:
-                # 边界②：重大档不做关系调制（M_eff = 1）
-                #   否则「关系好 → 举报反而是好事」会塌掉欺凌线与信任崩塌线；
-                #   也不是 max(0, M)（那样关系差时伤害归零，等于「被讨厌就不会被伤害」）
-                if row.get("tier", "normal") != "major" and not no_modulation:
-                    e_val *= self.m_relation(i, j)
-            p_val = e_val + (0.0 if axis == "stress" else 0.0)  # 事件侧不含传导
+                e_val *= self.m_relation(i, j)
             m = self.m_state(i, negative=(base < 0) == (axis in AXES))
-            delta = r1(m * self.sat(p_val, axis)) if axis != "stress" else r1(self.sat(p_val, axis))
-            # ⚠️ `hurt_day` **不在此处维护**（2026-10-07 修）：本方法的 (i, j) 是
-            #    「被作用方 → 作用方」，而读者（§10.25 排挤、§10.24 从众）要的是
-            #    「施害者 → 受害者」—— 两者在一次调用里恰好相反，曾使**受害者被误记为施害者**。
-            #    改由**调用点**用 `mark_hurt(施害者, 受害者)` 显式记录。
-            if axis == "hostility" and row.get("tier") == "major":
-                # 重大负性事件 → 同时写入**永不衰减**的深层（§10.22）。
-                # ⚠️ 不经 room_for：负反馈是给「表层摩擦」用的，若也套在深层上，
-                #    仇恨会自己封顶（越满越涨不动），「不可消减」就名存实亡了。
-                # 深层**软上限**（§10.27）：不会一路涨到 100。
-                # 「恨到顶了」——到了上限就不再加深，但**永不回落**（忘不掉依然成立）。
-                # 总 H 仍可更高（深层 + 表层），所以「死仇」的强度不被压平，只是不再无限堆积。
-                cap = self.env.get("deep_cap", 70.0)
-                self.H_deep[i][j] = min(cap, self.H_deep[i][j] + abs(delta))
-                self.stats["deep_writes"] = self.stats.get("deep_writes", 0) + 1
+            delta = r1(m * self.sat(e_val, axis)) if axis != "stress" else r1(self.sat(e_val, axis))
             if axis == "stress":
                 self.Stress[i] = clamp100(self.Stress[i] + delta)
             else:
-                target = {"affinity": self.A, "hostility": self.H, "trust": self.T}[axis]
+                target = {"affinity": self.A, "hostility": self.H}[axis]
                 # 统一写入点：正向轴乘负反馈（越满越难涨）
                 delta = r1(self.room_for(axis, target[i][j]) * delta)
                 target[i][j] = clamp100(target[i][j] + delta)
@@ -536,152 +406,19 @@ class Sim:
             self.stats["events"] += 1
         return applied
 
-    def mark_hurt(self, perpetrator, victim):
-        """记录「施害者 → 受害者」的最近一次**重大**敌对行为（§10.25 排挤判据、§10.24 从众判据）。
-
-        ⚠️ 只在 `tier = major` 的事件调用点使用 —— 日常摩擦（`noise_hostility` 等）每天让
-        几乎所有人互相「损害」，若一并记录，「被 3 人损害」会成为常态、排挤天天发生
-        （实测 268 次 / 30 天）。「被欺负」指的是**严重**的事：当众羞辱、举报、秘密泄露。
-        """
-        self.hurt_day[perpetrator][victim] = self.day
-
-    # ------------------------------------------------ 传导（涓流）
-    def transmission(self):
-        """阈值 + 竞争归一化 + 感知值；每 settle_interval 结算一次"""
-        n = self.N
-        th = {"affinity": self.p["theta_a"], "hostility": self.p["theta_h"], "trust": self.p["theta_t"]}
-        beta = {"affinity": self.p["beta_a"], "hostility": self.p["beta_h"], "trust": self.p["beta_t"]}
-        true = {"affinity": self.A, "hostility": self.H, "trust": self.T}
-        deltas = {ax: [[0.0] * n for _ in range(n)] for ax in AXES}
-
-        # 预计算感知表：perceive(j, k, ax) 只依赖被感知者 j、目标 k、轴，
-        # **与观察者 i 无关**，而它原本写在 `for i` 的内层 —— 每个 (j,k,ax) 被重算 n 次。
-        # 提到循环外先算一次（n²·3 次，而非 n³·3 次），结果逐位不变：
-        # perceive 是纯函数，其入参 A/H/T/O 在本函数内直到下方 apply 之前都不被改动。
-        seen = {ax: [[self.perceive(j, k, ax) for k in range(n)] for j in range(n)]
-                for ax in AXES}
-
-        for i in range(n):
-            if not self.is_present(i):
-                continue
-            A_i = self.A[i]
-            for k in range(n):
-                if not self.is_present(k):
-                    continue
-                if i == k:
-                    continue
-                w_sum = 0.0
-                num = {"affinity": 0.0, "hostility": 0.0, "trust": 0.0}
-                for j in range(n):
-                    if not self.is_present(j):
-                        continue
-                    if j == i or j == k:
-                        continue
-                    w = A_i[j] / 100.0  # 听从度
-                    if w <= 0:
-                        continue
-                    w_sum += w
-                    for ax in AXES:
-                        # σ = max(0, 感知_X(j→k) − θ)
-                        perceived = seen[ax][j][k]
-                        num[ax] += w * max(0.0, perceived - th[ax])
-                if w_sum <= 0:
-                    continue
-                denom = w_sum + self.p["epsilon"]
-                net_a = (num["affinity"] - num["hostility"]) / denom
-                net_h = (num["hostility"] - num["affinity"]) / denom
-                # 负反馈：越接近饱和，传导增益越小（与事件侧同一口径）
-                room_a = self.room_for("affinity", true["affinity"][i][k])
-                deltas["affinity"][i][k] = r1(room_a * self.sat(beta["affinity"] * net_a, "affinity"))
-                deltas["hostility"][i][k] = r1(self.sat(beta["hostility"] * net_h, "hostility"))
-                deltas["trust"][i][k] = r1(self.sat(beta["trust"] * num["trust"] / denom, "trust"))
-
-        for ax in AXES:
-            target = true[ax]
-            for i in range(n):
-                if not self.is_present(i):
-                    continue
-                for k in range(n):
-                    if not self.is_present(k):
-                        continue
-                    if i != k:
-                        target[i][k] = clamp100(target[i][k] + deltas[ax][i][k])
-        self.stats["transmission_ticks"] += 1
-
-    def perceive(self, j, k, axis):
-        """i 感知到的 X(j→k)：经 j 的透明度档位过滤（信念矩阵 §11）+ 确定性噪声"""
-        tier = self.tier(self.O[j])
-        if tier == "sealed":
-            return 0.0
-        val = {"affinity": self.A, "hostility": self.H, "trust": self.T}[axis][j][k]
-        z = self.hash01(j, k, axis) * 2 - 1
-        sigma = self.sigma_max(axis) * (1 - self.O[j] / 100.0)
-        if tier == "blurry":
-            return clamp100(val + sigma * z * 1.5)
-        return clamp100(val + sigma * z)
-
-    @staticmethod
-    def tier(opacity):
-        if opacity >= 80:
-            return "clear"
-        if opacity >= 50:
-            return "visible"
-        if opacity >= 20:
-            return "blurry"
-        return "sealed"
-
-    def sigma_max(self, axis):
-        return {"affinity": self.bp["sigma_max_a"], "hostility": self.bp["sigma_max_h"],
-                "trust": self.bp["sigma_max_t"]}[axis]
-
-    # ------------------------------------------------ 信念更新
-    def observe(self, i, j, axis, weight=1.0):
-        """i 通过一次观测更新「j 对 i 的 axis」信念"""
-        if i == j:
-            return
-        true_val = {"affinity": self.A, "hostility": self.H, "trust": self.T}[axis][j][i]
-        sigma = self.sigma_max(axis) * (1 - self.O[j] / 100.0)
-        z = self.hash01(i, j, axis) * 2 - 1
-        bias = 0.0
-        if axis == "affinity":
-            bias = self.bp["w_bias"] * ((self.dims[j][0] - 50) / 50.0 * 0.5 + (self.dims[j][2] - 50) / 50.0 * 0.5)
-        obs = clamp100(true_val + sigma * z + bias)
-        eta_key = {"affinity": "eta0_a", "hostility": "eta0_h", "trust": "eta0_t"}[axis]
-        eta = self.bp[eta_key] * (0.3 + 0.7 * self.T[i][j] / 100.0) * weight
-        cur = self.B[axis][i][j]
-        self.B[axis][i][j] = clamp100(cur + eta * (obs - cur))
-
-    def hash01(self, *parts):
-        """确定性伪随机（不用真随机，保证可复现）"""
-        h = 2166136261
-        for p in parts:
-            for b in str(p).encode("utf-8"):
-                h = ((h ^ b) * 16777619) & 0xFFFFFFFF
-        return (h % 10000) / 10000.0
-
     # ------------------------------------------------ 决策
     def alpha(self, i):
+        # 老师版删四维：意向权重退化为 A/H/stress 常数（§5）。
         raw = {
-            "affinity": self.nw["alpha_a_base"] + self.nw["alpha_a_f"] * self.dims[i][2] / 100.0
-                        + self.nw["alpha_a_e"] * self.dims[i][0] / 100.0,
-            # **选项 C：两行都跟 J**（判断型爱恨分明 —— 「谁值得信、谁是敌人」都是**先判断再下结论**的事）。
-            #   · 接通了原本断掉的一条线：强 J 种子「举报倾向由 J 派生」，若敌对意向权重低，
-            #     则**最有动机举报的人反而不记恨**，欺凌→举报链对他们不成立；
-            #   · 与从众（§10.24）互补而非重叠：**J 型发起（意向层高权重）→ P 型跟从（从众通道）**，
-            #     「主谋 + 被拉拢的乌合」的分层才出得来；
-            #   · 对齐 §5.5「J/P 影响小团体归属倾向、被拉拢概率」——P 型被拉拢 = 低自主权重 + 高从众。
-            # `(1 + arg_j)/2` 把 J 强度从 [-1,1] 映到 [0,1]，与系数原标定区间一致。
-            "trust": self.nw["alpha_t_base"] + self.nw["alpha_t_j"] * (1.0 + self.arg_j(i)) / 2.0,
-            "hostility": self.nw["alpha_h_base"] + self.nw["alpha_h_f"] * (1 - self.dims[i][2] / 100.0)
-                         + self.nw["alpha_h_j"] * (1.0 + self.arg_j(i)) / 2.0,
-            "stress": self.nw["alpha_s_base"] + self.nw["alpha_s_e"] * (1 - self.dims[i][0] / 100.0),
+            "affinity": self.nw["alpha_a_base"],
+            "hostility": self.nw["alpha_h_base"],
+            "stress": self.nw["alpha_s_base"],
         }
         total = sum(raw.values())
         return {k: v / total for k, v in raw.items()}
 
     def tau(self, i):
-        # 「高 J 温度更低」：J 强度用 arg_j
-        t = self.nw["tau0"] * (1 + self.nw["tau_j"] * (0.5 - self.arg_j(i) / 2.0))
+        t = self.nw["tau0"]
         if self.Stress[i] >= 70:
             t *= self.nw["tau_stress_mult"]
         return max(t, 0.01)
@@ -701,52 +438,6 @@ class Sim:
         za = (self.A[i][j] - ga) / scale
         zs = (gs - self.Stress[i]) / scale
         return w * (sigmoid(za) + sigmoid(zs) - 1.0)
-
-    def free_join(self):
-        """**「别人做什么，我也跟着做什么」**（用户设计）—— `join_mode = free` 的活动可自由跟随。
-
-        与 `chat` 的加入路径（accept 类，需对方判定）相对：学习 / 睡觉这类活动**不需要谁同意**，
-        但它同样会「传染」—— 而**传染强度由 `conformity(i)` 决定**（§10.19 从众度：
-        高 F 随大流、高 J·高 N 有主见）。于是「从众」第一次从**意愿层**落到**行为层**：
-
-          · `conformity(i)` 管「我倾向做什么」（氛围影响意愿，原有）
-          · `free_join` 管「我具体跟谁做」（看到别人在做，我也做，新增）
-
-        只看**邻居**（看得见才谈得上跟随），且只跟随**当前真在做的**活动。
-        """
-        rates = self.probs
-        # 玩家（末位）由人选择活动，不参与自动跟随。
-        for i in range(self.N - 1):
-            if self.sleeping[i] or self.busy_until[i] > self.global_tick:
-                continue
-            # ⚠️ **「学习」是个例外**：它是 `default` 状态、不占用时间槽，因此**不体现在 `current_act` 里**。
-            #    但现实中它恰恰最常被跟随（"看他摊开书，我也学"）。
-            #    判定：邻居此刻**既不忙、也不在做别的事** → 他在学习 → 可跟着学。
-            acts = []
-            for k in self.neighbor_idx[i]:
-                if k == i or self.sleeping[k]:
-                    continue
-                a = self.current_act[k]
-                if a and self.behaviors.get(a, {}).get("join_mode") == "free":
-                    acts.append(a)
-                elif (not a) and self.busy_until[k] <= self.global_tick:
-                    acts.append("study")
-            cands = acts
-            if not cands:
-                continue
-            # 从众度高的人更容易跟着做；反从众的人（conformity≈0）基本不跟
-            conf = self.conformity(i)
-            if conf <= 0.05:
-                continue
-            if self.rng.random() < rates.get("free_join_rate", 0.0) * conf:
-                a = self.rng.choice(cands)
-                if a == "sleep" and self.allowed("sleep"):
-                    self.sleeping[i] = True
-                    self.current_act[i] = "sleep"
-                    self.busy_until[i] = 10 ** 9
-                elif a == "study":
-                    self.current_act[i] = None    # None = 默认状态 = 在学习
-                self.stats["free_joins"] = self.stats.get("free_joins", 0) + 1
 
     # ---------- 只读查询（供 UI 画圈 / 上绿红，零副作用）----------
     def activity_of(self, i):
@@ -768,7 +459,7 @@ class Sim:
         return {a: sorted(v) for a, v in groups.items() if len(v) >= 2}
 
     def join_score(self, i, j):
-        """判定侧 score：**被请求者的真值好感 `A[j][i]`** + 对方外向度 − 对方压力惩罚（§6.4）。
+        """判定侧 score：**被请求者的真值好感 `A[j][i]`** − 对方压力惩罚（§6.4）。
 
         判定读真值 —— 「他会不会接纳我」由**他的真实态度**决定，不由我的猜测决定；
         我的猜测只进两处：决策侧（要不要去试）与展示层（成功率）。两者之差就是误判，
@@ -798,28 +489,20 @@ class Sim:
     def join_feedback(self, i, j):
         """只读：返回玩家侧会看到的成功率 `p`（§10.32）。
 
-        ⚠️ 这里**必须用信念 `B_A`**（我猜对方对我多有好感），**不得用真值** ——
-        否则等于把对方心里的真实态度直接告诉玩家（§10.32.3「不泄露隐藏信息」）。
-
-        于是**显示值与实际结算值（`join_probability`，读真值）刻意不同**：
-        「我明明有 80% 把握却被拒」正是认知偏差的具象化，不是 bug（§10.32.4）。
+        2026-10-14 删信念/透明度后玩家可读真值：显示概率 = 实际结算概率（读 A[j][i]）。
         """
         th = self.thresholds_lookup
         hot = max(0.0, self.Stress[j] - 50.0) / 50.0
-        # 2026-10-14 删四维外向项（与 join_score 同口径）
-        score = (self.B["affinity"][i][j]
-                 - th.get("chat_join_stress_penalty", 12.0) * hot)
+        score = self.A[j][i] - th.get("chat_join_stress_penalty", 12.0) * hot
         theta = th.get("chat_join_affinity", 45.0)
         scale = th.get("chat_join_scale", 10.0)
         return {"p": round(sigmoid((score - theta) / scale), 2)}
 
     # ---------- 玩家侧判定展示（NPC 静默，玩家可见过程）----------
     def verdict(self, i, j, kind="join"):
-        """**一次判定的展示包**（用户设计）：NPC 之间静默出结果，涉及玩家时展示三拍。
+        """**一次判定的展示包**：涉及玩家时展示三拍 = ① 当前成功率 → ② 掷骰 → ③ 结果。
 
-        三拍 = ① 当前成功率（由**信念**算）→ ② 掷骰 → ③ 结果。
-
-        与判定本身**完全分离**：判定用 `do_chat_join` / `do_tease` 等照常静默执行，
+        与判定本身**完全分离**：判定用 `do_chat_join` 照常静默执行，
         本方法只是**只读地取出「此刻玩家会看到的那个概率与结果」**，不参与结算。
         """
         if kind == "join":
@@ -827,10 +510,10 @@ class Sim:
             roll = self.rng.random()
             return {
                 "kind": kind,
-                "p": fb["p"],                    # ① 成功率（信念算得，不泄露真值）
+                "p": fb["p"],                    # ① 成功率
                 "roll": roll,                    # ② 掷骰
-                "ok": roll < self.join_probability(i, j),   # ③ 结果（与 do_chat_join 同一 p：读真值）
-                "note": "成功率来自「你以为对方怎么看你」，不是事实 —— 把握大也可能被拒。",
+                "ok": roll < self.join_probability(i, j),   # ③ 结果（与 do_chat_join 同一 p）
+                "note": "成功与否看对方对你的真实好感。",
             }
         return None
 
@@ -852,55 +535,6 @@ class Sim:
                 self.current_act[i] = "sleep"
                 self.busy_until[i] = 10 ** 9
                 self.stats["sleeps"] += 1
-
-    def phone_exposure(self):
-        """举报把柄虚拟层（§10.2）：带手机者课间可能被目击「玩手机」。
-
-        目击者 = 非睡觉的邻居（看得见才谈得上目击）。被目击一次，
-        目击者获得 `report_witness_window` 天内的举报把柄。
-        这是「标签 → 行为痕迹 → 目击」的链路。
-        """
-        p = self.probs.get("phone_expose_p", 0.0)
-        if p <= 0:
-            return
-        for j in range(self.N):
-            if not self.is_present(j):
-                continue
-            if self.sleeping[j] or "带手机" not in self.character_tags[j]:
-                continue
-            if self.rng.random() >= p:
-                continue
-            for i in self.neighbor_idx[j]:
-                if i == j or self.sleeping[i] or not self.is_present(i):
-                    continue
-                self.witness_day[i][j] = self.day
-
-    def roll_reports(self):
-        """举报判定（§10.2）：每段课间对有把柄的候选掷一次骰，而不是每 tick。
-
-        概率 = report_p × σ(z)，其中 z 由敌对、好感、信任共同决定——
-        好友几乎不举报（A/T 高把 z 压低），但概率永不为 0。
-        """
-        th_rep = self.thresholds_lookup.get("report_hostility", 60.0)
-        sc_rep = self.thresholds_lookup.get("report_scale", 8.0)
-        win = self.thresholds_lookup.get("report_witness_window", 7.0)
-        w_a = self.thresholds_lookup.get("report_affinity_penalty", 3.0)
-        w_t = self.thresholds_lookup.get("report_trust_penalty", 2.0)
-        p_rep = self.probs.get("report_p", 0.05)
-        for i in range(self.N):
-            if not self.is_present(i):
-                continue
-            if self.sleeping[i]:
-                continue
-            for j in range(self.N):
-                if not self.is_present(j):
-                    continue
-                if i == j or self.sleeping[j] or self.day - self.witness_day[i][j] > win:
-                    continue
-                z = (self.H[i][j] - th_rep) / sc_rep - w_a * self.A[i][j] / 100.0 - w_t * self.T[i][j] / 100.0
-                if self.rng.random() < p_rep * sigmoid(z):
-                    self.do_report(i, j)
-                    break
 
     def decide_and_act(self):
         """一 tick 内的行为决策（简化：只挑一个行为执行）"""
@@ -950,146 +584,27 @@ class Sim:
                 if self.try_join_conversation(i):
                     busy.add(i)
                     continue
-            # 环境类：传纸条（§8.6 纸条链）—— 写一张纸条，投给相邻或走近的人
-            # 纸条本身不做判定；接收者的「看不看 / 销毁 / 继传」由 process_notes() 走 §4.5 选择侧公式
-            if self.allowed("pass_note") and self.rng.random() < self.probs.get("pass_note", 0.0):
-                j = self.pick_target(i)
-                if j is not None:
-                    self.do_pass_note(i, j)
-                    busy.add(i)
-                    busy.add(j)
-                    continue
-            # 意向类：当众调侃（需 ≥3 人围观；失败则目标受辱）
-            # 目标选择**带偏好**：敌对越高 / 好感越低越容易被针对 —— 被讨厌的人会被反复打击，
-            # 这正是"压力分化 → 个别爆发"的机制来源（不允许随机摊平）
-            # 调侃候选：**好意 / 挑衅双轨**（§10.12 修订）——
-            #   好意 A ≥ 40；或挑衅式（**i 猜测 j 对自己敌对** B_H ≥ 25，或发起者对目标 A < 25）。
-#   ⚠️ 挑衅式读的是**信念** B_H[i][j] 而非真值 H[j][i] —— 决策只读信念（§18.7 不变式 3）。
-            #   修复前只有「A ≥ 20」这一条，与 §10.16 的嘲讽档判据互斥，使嘲讽档永远发不出来。
-            cands_t = [j for j in range(n)
-                       if j != i and j not in busy and self.can_interact_with(j)
-                       and self.are_neighbors(i, j)      # 调侃需物理接近（§10.12 围观前提）
-                       and (self.A[i][j] >= 40.0 or self.B["hostility"][i][j] >= 25.0 or self.A[i][j] < 25.0)]
-            if self.allowed("tease") and len(cands_t) >= 3 and self.rng.random() < self.probs.get("tease_p", 0.18) * self.teacher.multiplier("tease") * (1.0 + self.tag_bias(i, "tease_bias")):
-                wts = [max(1.0, ((100.0 - self.A[i][j]) + self.H[i][j]) ** 2) for j in cands_t]
-                j = self.rng.choices(cands_t, weights=wts, k=1)[0]
-                # **围观者 = 物理上在场的人（邻居）**，而不是「全班减去两个忙人」。
-                #    后者让 audience 恒有 13~15 人，任何「被围着」的门槛都会恒真。
-                #    §10.12 说的「周围 ≥3 人围观」，'周围'本就是空间概念（§10.20 座位表）。
-                # 围观者 = **i 与 j 的共同邻居**（调侃发生在两人之间，看热闹的是两人旁边的人）。
-                #    用「并集」会得到约 10 人（5+5），任何门槛都会恒真；
-                #    用「交集」才是真正的「围在他俩周围」—— 数量少、有筛选力。
-                audience = [k for k in self.neighbor_idx[i]
-                            if k in self.neighbor_idx[j]
-                            and k not in (i, j) and k not in busy and not self.sleeping[k]]
-                if len(audience) >= 3:
-                    # ⚠️ **不截断** audience：`audience[:3]` 曾把围观者固定为恰好 3 人，
-                    #    而羞辱门槛也是 3 → `len(audience) >= 3` **恒真**，
-                    #    §10.23 所说「私下嘲讽只是摩擦、被围着才写深层」的区分**从未生效**。
-                    #    而且 [:3] 取的是 range(n) 前 3 个 → 围观者系统性偏向低索引角色。
-                    self.do_tease(i, j, audience)
-                    busy.add(i)
-                    busy.add(j)
-                    continue
-            # 意向类：追逐打闹 —— 敌对种子（参与者好感↑ / 旁观者敌对↑）
-            th_rh = self.thresholds_lookup.get("roughhouse_affinity", 45.0)
+            # 意向类：追逐打闹 —— 参与者互相好感↑（老师版 §9.2，去四维门槛与旁观者敌对）
             th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
-            if self.allowed("roughhouse") and self.dims[i][0] >= th_rh and self.rng.random() < self.probs.get("roughhouse_p", 0.05) * self.teacher.multiplier("roughhouse"):
+            if self.allowed("roughhouse") and self.rng.random() < self.probs.get("roughhouse_p", 0.05) * self.teacher.multiplier("roughhouse"):
                 others = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)]
                 if others:
-                    # 追跑对象按外向度加权：越外向越可能一起闹（→ 同样的少数人反复搭配）
-                    w_rh = [max(1.0, self.dims[j][0] - 30.0) for j in others]
-                    j = self.rng.choices(others, weights=w_rh, k=1)[0]
+                    j = self.rng.choice(others)
                     bys = [k for k in range(n) if k not in (i, j) and k not in busy]
                     if len(bys) >= th_rc:
-                        # 旁观者聚焦「安静专注型」（高 J + 内向）—— 他们最容易被吵到，
-                        # 于是「活跃分子 × 严肃分子」这一批边会被反复击中而累积，而不是被摊平
-                        # 随机采样，而非取 range(n) 前 N 个 —— 否则围观者永远是低索引角色
-                        bys = self.rng.sample(bys, min(len(bys), 4))
-                        # 打闹**只吵到邻座**（§10.18 + 空间层）——
-                        # 修复前用的是「全班路过的」，一次打闹就摊到全班的边上，这正是边数摊薄的主因。
-                        nb = [k for k in (self.neighbor_idx[i] + self.neighbor_idx[j])
-                              if k != i and k != j and not self.sleeping[k]]
-                        self.do_roughhouse(i, j, sorted(set(nb))[:3])
+                        self.do_roughhouse(i, j)
                         busy.add(i)
                         busy.add(j)
                         continue
-            # 阈值类：排挤（"大家都讨厌他" → 集体驱逐）—— B 类，让关系能无条件变差
-            # 阈值类：排挤（§8.4 **修订**：「有多少人**近期损害过他**」→ 集体驱逐）。
-            # ⚠️ 原判据是「≥3 人**恨**他 ≥40」，方向反了 —— 欺凌是**多对一**：
-            #    施害者多人、受害者一人，**受害者只能单向记恨**，永远凑不出「3 人恨他」。
-            #    集体排斥的证据在**施害者一侧**：有多少人**对他做过敌对行为**。
-            if self.allowed("exclude") and self.rng.random() < self.probs.get("exclude_p", 0.04) * self.teacher.multiplier("exclude"):
-                th_n = int(self.thresholds_lookup.get("exclude_count", 3))
-                cd_days = self.thresholds_lookup.get("exclude_cooldown", 7.0)
-                window = self.thresholds_lookup.get("exclude_window", 7.0)
-                done = False
-                for j in range(n):
-                    if j == i or j in busy:
-                        continue
-                    if self.day - self.exclude_last_day[j] < cd_days:
-                        continue                      # 冷却中：已经被驱逐过，不再重复
-                    hurters = [k for k in range(n)
-                               if k != j and self.day - self.hurt_day[k][j] <= window]
-                    if len(hurters) >= th_n:
-                        self.do_exclude(i, j, hurters[:4])
-                        self.exclude_last_day[j] = self.day
-                        busy.add(i)
-                        done = True
-                        break
-                if done:
-                    continue
-            # ---------- 意向类：三条「主动接近他人」的行为（§10.10 / §10.11 / §10.13）----------
-            # 三者都必须排在下面**无门槛的搭话回退块之前**，否则会被它永远抢先。
-            # 门槛一律读「我自己的立场」（A[i][j] / H[i][j] / Stress[j]）与信念 B，
-            # **不读 A[j][i] / H[j][i]**（§18.7 不变式 3：决策路径不得读「别人对我的态度」）。
-            thk = self.thresholds_lookup
-            e_i = self.dims[i][0]
-            # 意向类：安慰（§10.13，A 类）—— 有人正处在高压区，而我和他关系够近
-            if self.allowed("comfort") and self.rng.random() < self.probs.get("comfort_p", 0.0):
-                # 好感门槛：E ≥ 50 用默认值，E < 50 向内向端线性抬高
-                # （§10.13「一般 50 / 内向 70」→ E=50 恰为 50、E=0 恰为 70；连续、不跳变）
-                base_cf = thk.get("comfort_trigger_affinity", 50.0)
-                intro_cf = thk.get("comfort_trigger_introvert_affinity", 70.0)
-                need_cf = base_cf + (intro_cf - base_cf) * max(0.0, (50.0 - e_i) / 50.0)
-                cands_cf = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)
-                            and self.Stress[j] >= thk.get("comfort_trigger_target_stress", 70.0)
-                            and self.A[i][j] >= need_cf]
-                if cands_cf:
-                    # 谁越崩溃越该被关心（目标是**可见的**情绪状态，不是「他对我的态度」）
-                    w_cf = [max(1.0, self.Stress[j]) for j in cands_cf]
-                    j = self.rng.choices(cands_cf, weights=w_cf, k=1)[0]
-                    self.do_comfort(i, j)
-                    busy.add(i)
-                    busy.add(j)
-                    continue
-            # 意向类：道歉 / 和解（§10.11，E 类）—— 僵局够深才有「和解」这件事
-            if self.allowed("apologize") and self.rng.random() < self.probs.get("apologize_p", 0.0):
-                th_ap = thk.get("apologize_trigger_hostility", 30.0)
-                # 决策侧只看**我自己的立场**（我对他敌对到什么程度才谈得上「和解」）——
-                # §10.11 的「双方」由**判定侧**承接：接受概率里含 `H[j][i]`（他的气有多大）。
-                # ⚠️ 不在这里读 `H[j][i]`：决策路径禁读「别人对我的态度」（§18.7 不变式 3）。
-                cands_ap = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)
-                            and self.H[i][j] >= th_ap]
-                if cands_ap:
-                    # 我越恨、也越以为他恨我 → 越有动力去破这个僵局
-                    w_ap = [max(1.0, self.H[i][j] + self.B["hostility"][i][j]) for j in cands_ap]
-                    j = self.rng.choices(cands_ap, weights=w_ap, k=1)[0]
-                    self.do_apologize(i, j)
-                    busy.add(i)
-                    busy.add(j)
-                    continue
-            # 意向类：搭话
+            # 意向类：搭话（老师版 §9.2）—— 决策读「我对他」的 A/H（§18.7 不变式 3）
             cands = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)]
             if cands:
                 alpha = self.alpha(i)
                 scores = []
                 for j in cands:
-                    gain_a = self.B["affinity"][i][j] / 100.0 * 3.0  # 预期收益（读信念）
-                    gain_t = self.B["trust"][i][j] / 100.0 * 2.0
-                    risk_h = self.B["hostility"][i][j] / 100.0 * 2.0
-                    u = alpha["affinity"] * gain_a + alpha["trust"] * gain_t - alpha["hostility"] * risk_h
-                    u += self.crowd_bias(i, "loud")   # 氛围项：吵则更想搭话（从众者）
+                    gain_a = self.A[i][j] / 100.0 * 3.0  # 预期收益（读我对他好感）
+                    risk_h = self.H[i][j] / 100.0 * 2.0
+                    u = alpha["affinity"] * gain_a - alpha["hostility"] * risk_h
                     u += self.tag_bias(i, "chat_bias") - self.tag_bias(i, "alone_bias")  # 标签项
                     u += self.join_gate_utility(i, j)   # 软门槛：低门槛仍可有小概率发起（§6.4）
                     scores.append(u)
@@ -1251,7 +766,6 @@ class Sim:
             self.apply_event(i, j, "reject_affinity")
             self.apply_event(i, j, "reject_hostility")
             self.apply_event(i, j, "reject_stress")
-            self.observe(i, j, "affinity")
             self.stats["joins"] += 1
             self.stats["join_rejects"] = self.stats.get("join_rejects", 0) + 1
             self.stats["skipped_events"] += 1
@@ -1270,7 +784,6 @@ class Sim:
         self._occupy_chat(j)
         self._settle_chat_pair(i, j)
         self.stats["chats"] += 1
-        self._record_book_gift_chat((i, j))
 
     def _chat_duration(self):
         """聊天时长：base × uniform[jitter_min, jitter_max]，逐人独立（规格 ③）。"""
@@ -1287,14 +800,10 @@ class Sim:
         self.busy_act[i] = "chat"
 
     def _settle_chat_pair(self, initiator, existing):
-        """initiator 与 existing 之间的聊天结算。与旧 do_chat 同口径：发起方多一次 topic_stress 减压。"""
+        """initiator 与 existing 之间的聊天结算（两轴：好感 + 压力）。"""
         self.apply_event(initiator, existing, "topic_affinity")
-        self.apply_event(initiator, existing, "topic_trust")
         self.apply_event(initiator, existing, "topic_stress")
         self.apply_event(existing, initiator, "topic_affinity")
-        self.apply_event(existing, initiator, "topic_trust")
-        self.observe(initiator, existing, "affinity")
-        self.observe(existing, initiator, "affinity")
 
     def _joinable_conversations(self, i):
         """i 可加入的会话：不含玩家（玩家交互走邀请机制）、且至少一名成员是 i 的邻居（邻域）。"""
@@ -1381,7 +890,6 @@ class Sim:
                 self._settle_chat_pair(k, m)
         self.stats["chat_joins"] = self.stats.get("chat_joins", 0) + 1
         self.stats["chat_max_size"] = max(self.stats.get("chat_max_size", 0), len(conv["members"]))
-        self._record_book_gift_chat(conv["members"])
 
     def _leave_conversation(self, m, conv):
         """m 离开会话（自然到期或解散）。"""
@@ -1418,194 +926,17 @@ class Sim:
                 self.busy_until[m] = 0
             self.conversations.remove(conv)
 
-    def do_report(self, i, j):
-        """举报（§10.2）：**i = 举报者，j = 被举报者**。
-
-        ⚠️ **效果落在被举报者身上**（2026-10-07 修）：两处 `apply_event` 曾写作 `(i, j)`，
-        于是被举报者压力恒为 0、深层敌对记到了举报者一侧 —— 与 §10.2「举报会大幅提升
-        **被举报者**的压力值」、§6.3 major 档（压力 +5 / 敌对 +5）相反。
-        方向与 `do_tease` 的羞辱链路同构（受害者 → 施害者）。
-        """
-        self.apply_event(j, i, "report_stress")       # 被举报者压力↑（§6.3 major）
-        self.apply_event(j, i, "report_hostility")    # 被举报者 → 举报者 敌对↑（major → 深层，§10.22）
-        self.mark_hurt(i, j)                          # 施害者视角：i 举报了 j（§10.25）
-        self.H[i][j] = clamp100(self.H[i][j] - 5.0)   # 举报后 A 对 B 的敌对回落（§10.2）
-        self.stats["reports"] += 1
-
-    def do_tease(self, i, j, audience):
-        """当众调侃（§10.12）：**结果方向由净态度 M 决定**，而不是二分的「成功 / 过火」。
-
-        同一个行为覆盖三种社会含义：
-          · **玩笑档**（A ≥ 55 且 H < 25）→ 双方好感↑、被逗笑减压
-          · **嘲讽档**（H ≥ 40 或 A < 25）→ 目标压力↑、对发起者敌对↑、围观者按性格分裂
-          · **尴尬档**（其余）             → 不结算（效果自然为 0）
-        方向由 `behavior_thresholds.csv` 的**绝对阈值**判定；强度仍由 |M| 调制。
-        ⚠️ 不用 M 的符号判方向：M 的零点在 A=H，而 A 的基线(25~40)远高于 H 的基线(0~15)，
-        M 恒偏正 → 会退化成「永远玩笑」，实测全班冲到 89.4 / SD 1.5 / 爆发 0。
-        """
-        th = self.thresholds_lookup
-        self.occupy(i, j, "tease")
-        if self.A[i][j] >= th["tease_laugh_affinity"] and self.H[i][j] < th["tease_laugh_hostility"]:
-            self.apply_event(i, j, "tease_success_affinity")
-            self.apply_event(j, i, "tease_success_affinity")
-            for k in audience:
-                self.apply_event(k, j, "tease_success_affinity")
-            self.apply_event(j, i, "tease_laugh_stress")
-        elif self.H[i][j] >= th["tease_taunt_hostility"] or self.A[i][j] < th["tease_taunt_affinity"]:
-            self.apply_event(j, i, "tease_hostility")
-            self.apply_event(j, i, "tease_stress")
-            # 围观者站哪边：由**他对被调侃者的态度**决定（与主行为同一套轴与阈值，表驱动）
-            for k in audience:
-                if self.A[k][j] >= th["tease_stand_affinity"]:
-                    self.apply_event(k, i, "tease_hostility")     # 站被调侃者 → 不满发起者
-                elif self.H[k][j] >= th["tease_sneer_hostility"]:
-                    self.apply_event(k, j, "tease_affinity")      # 讨厌被调侃者 → 附和发起者
-                # 其余：中立，不表态
-            # **当众羞辱**（§10.23）：被一群人看着嘲笑，就不是"过火"而是**羞辱**了。
-            # 私下的嘲讽只是表层摩擦（会淡忘）；**当众**才写进永不衰减的深层。
-            # 判定只看「有多少人在看」—— 这是纯粹的处境条件，与是谁无关（无特例）。
-            if len(audience) >= th.get("humiliate_bystanders", 3.0):
-                self.apply_event(j, i, "humiliate_hostility")
-                self.mark_hurt(i, j)             # 施害者视角：i 当众羞辱了 j（§10.25）
-                self.stats["humiliations"] = self.stats.get("humiliations", 0) + 1
-            self.stats["tease_fail"] += 1
-        self.stats["teases"] += 1
-
-    def do_exclude(self, i, j, crowd):
-        """【排挤】（B 类：纯损害，判定来源＝**群体状态**）。
-
-        触发条件是「**大家都讨厌他**」——需要多个人同时对 j 敌对过阈，才构成集体驱逐。
-        因此它与任何一对个人关系无关：**不是「我讨厌你所以排挤你」，而是「大家都讨厌你」**。
-        这正是 §10.16 所说的 B 类（判定来源为「无」的纯损害行为），也是本作此前缺失的
-        「让关系无条件变差」的通道。
-
-        效果：被排挤者压力↑（§8.4）且**对参与者好感↓** —— 关系真的变差。
-        """
-        self.occupy(i, j, "exclude")
-        self.apply_event(j, i, "exclude_stress")
-        # 双向：**「他恨上了排斥他的人」**
-        self.apply_event(j, i, "exclude_affinity")
-        for k in crowd:
-            if k != i:
-                self.apply_event(j, k, "exclude_affinity")
-        # 双向：**「大家不跟他玩了」**（§10.24.4 补齐）
-        # ⚠️ 反向效果此前缺失，导致「被孤立」只表现为「受害者单向记恨」，
-        #    而**观察不到全班对他的疏远** —— 孤立因此不是一个可观测的**状态**。
-        self.apply_event(i, j, "exclude_affinity")
-        for k in crowd:
-            if k != i:
-                self.apply_event(k, j, "exclude_affinity")
-        self.stats["excludes"] += 1
-
     @invitation_behavior("roughhouse")
-    def do_roughhouse(self, i, j, bystanders):
-        """【追逐打闹】（§10.18）—— 全系统唯一不依赖既有敌对的「敌对种子」。
+    def do_roughhouse(self, i, j):
+        """【追逐打闹】（§10.18）—— 参与者互相好感↑（A 类效果）。
 
-        · 参与者互相**好感↑**（A 类效果）；
-        · **路过的旁观者对参与者敌对↑**（B 类效果）—— 只需「有人在打闹」+「有人在场」，
-          不引用任何已有敌对值，因此 **t = 0 即可触发**，解开了「要产生敌对需先有敌对」的死锁。
-
-        社会含义自带讽刺：打闹的两人越来越亲近，被吵到的人越来越讨厌他们两个 ——
-        「聚集」与「排斥」在同一个动作里同时发生，这正是 §16「小团体自发抱团」的机理。
-
-        聚焦而非纯随机：发起者须外向（热闹型才追跑）、旁观者的敌对受 `w_j` 调制（高 J 的专注型
-        最容易被吵到），于是「活跃分子 × 严肃分子」这一批边会持续累积，而不是被摊平。
+        一起闹的人越来越亲近 —— 这是「小团体自发抱团」的机理之一。
+        （老师版去四维门槛与旁观者敌对，只保留参与者好感。）
         """
         self.occupy(i, j, "roughhouse")
         self.apply_event(i, j, "roughhouse_affinity")
         self.apply_event(j, i, "roughhouse_affinity")
-        for k in bystanders:
-            self.apply_event(k, i, "roughhouse_hostility")
-            self.apply_event(k, j, "roughhouse_hostility")
         self.stats["roughhouse"] += 1
-
-    # ---------- 意向类：三条「主动接近他人」的行为（§10.10 / §10.11 / §10.13）----------
-    # 三者同守 §6.4 两段式：**决策侧读信念、判定侧读真值**。
-    # 它们的共同点：**发起者要付出压力成本**（主动接近别人是有代价的）——
-    # 于是「谁被照顾、谁被求、谁被原谅」都不白给，代价由发起者承担。
-
-    @invitation_behavior("comfort")
-    def do_comfort(self, i, j):
-        """安慰（§10.13，A 类）：**i 主动去关心正处在高压区的 j**。
-
-        触发（决策侧）：目标 `Stress[j] ≥ 70` 且我对他的好感跨过门槛（内向门槛更高）。
-        效果（major 档，效果行见 `w_events.csv` 的 `comfort_target_*`）：
-
-        · 目标压力 ↓、**对安慰者**好感 ↑ / 信任 ↑（`apply_event(j, i, ...)` 的方向语义：
-          被安慰者才是数值变化的一方）
-        · 发起者付出 `comfort_cost_stress`（+2 压力，不论结果）
-
-        它是**深度关系的主要建立方式**：门槛苛刻（须已有好感 + 对方正崩溃），但回报是全表
-        最重的正向档 —— 关系的跃升发生在「救援时刻」，而不是日常寒暄里。
-
-        ⚠️ 本轮未实现：目标 `Stress ≥ 90` 时的共情判定与效果 ×1.5（§10.13 第 4 条）。
-        """
-        self.occupy(i, j, "comfort")
-        self.apply_event(i, j, "comfort_cost_stress")      # 发起者成本（不论结果）
-        self.apply_event(j, i, "comfort_target_stress")    # 目标：压力 ↓
-        self.apply_event(j, i, "comfort_target_affinity")  # 目标 → 安慰者：好感 ↑
-        self.apply_event(j, i, "comfort_target_trust")     # 目标 → 安慰者：信任 ↑
-        self.stats["comforts"] += 1
-
-    @invitation_behavior("apologize")
-    def do_apologize(self, i, j):
-        """道歉 / 和解（§10.11，E 类）：**i 主动向 j 低头**。双方敌对 ≥30 才谈得上和解。
-
-        判定读**真值**：`p = σ((A[j][i] + 对方随和系数(F_j) − H[j][i]×惩罚) / scale)` ——
-        三个输入**全部是「j 对 i 的立场」**：他对我好感越高、性格越随和、对我的气越少，
-        越可能接受。发起方的态度不参与判定（低头的人没资格决定对方原不原谅）。
-
-        效果（§10.11）：
-
-        · 接受 → **表层**敌对回落、双向好感/信任回升、双方减压
-        · 被拒 → 敌对继续累积、发起者压力↑（major）、信任↓
-        发起成本（+3 压力）不论结果都付。
-
-        ⚠️ **只消表层敌对**：`H_deep`（心结）不因道歉而消 —— 与 §10.22「心结永不衰减」自洽
-        （「道歉能消当下的气，但忘不掉的还是忘不掉」）。同一行为的敌对变化也不写 `hurt_day`
-        （那是**施害者**视角的重伤记录，道歉是和解不是伤害）。
-
-        ⚠️ 效果行一律 `no_modulation=True`：见 `apply_event` 的说明 —— 和解与关系调制
-        `M` 的冲突是结构性的（门槛 H ≥ 30 保证 M 常为负，否则会「越道歉越糟」）。
-
-        ⚠️ 本轮未实现：发起时的「透明度临时 +10」（现有实现没有临时透明度机制）。
-        """
-        thk = self.thresholds_lookup
-        self.occupy(i, j, "apologize")
-        self.apply_event(i, j, "apologize_cost_stress")
-        score = (self.A[j][i]
-                 + self.dims[j][2] / 100.0 * thk.get("apologize_calm_bonus", 20.0)
-                 - self.H[j][i] * thk.get("apologize_hostility_penalty", 0.5))
-        p = sigmoid((score - thk.get("apologize_accept_theta", 40.0))
-                    / thk.get("apologize_accept_scale", 12.0))
-        if (self.player_invitations.choice_for(i) if self.player_invitations.choice_for(i) is not None
-                else self.rng.random() < p):
-            for a, b in ((i, j), (j, i)):          # 双向：和解是双方的事
-                self.apply_event(a, b, "apologize_ok_hostility", no_modulation=True)
-                self.apply_event(a, b, "apologize_ok_affinity", no_modulation=True)
-                self.apply_event(a, b, "apologize_ok_trust", no_modulation=True)
-                self.apply_event(a, b, "apologize_ok_stress", no_modulation=True)
-            self.stats["apologizes"] += 1
-        else:
-            self.apply_event(i, j, "apologize_no_hostility", no_modulation=True)
-            self.apply_event(i, j, "apologize_no_stress", no_modulation=True)
-            self.apply_event(i, j, "apologize_no_trust", no_modulation=True)
-            self.stats["apologize_rejects"] += 1
-
-    # ------------------------------------------------------------------ 纸条链（§8.6，2026-10-10）
-    def choice_prob(self, event, option, i, extra=0.0):
-        """§4.5 选择侧统一公式：p = sigma((score - theta)/scale)。
-
-        score = Σ w_p·d_p + w_stress·(Stress-50)/50 + extra；未登记的 (event, option) 返回 None。
-        """
-        row = self.choice.get((event, option))
-        if row is None:
-            return None
-        d = [(self.dims[i][k] - 50.0) / 50.0 for k in range(4)]
-        score = (row["w_e"] * d[0] + row["w_s"] * d[1] + row["w_f"] * d[2]
-                 + row["w_j"] * d[3]
-                 + row["w_stress"] * (self.Stress[i] - 50.0) / 50.0 + extra)
-        return sigmoid((score - row["theta"]) / row["scale"])
 
     def set_seat_zones(self, positions):
         """表现层注入座位站位世界坐标：index -> (x, z)。参考只读。"""
@@ -1619,39 +950,6 @@ class Sim:
         # 范围 = 自己那张桌椅的占位矩形（x, z, w, h）
         x, z, w, h = seat
         return x <= self.pos_x[i] <= x + w and z <= self.pos_z[i] <= z + h
-
-    def study_circle_settle(self):
-        """学习圈（§8.23 第 4 条）：8 邻域内都在学习的人之间，每 N tick 额外结算一次。不消耗 RNG。"""
-        interval = int(self.kp.get("study_circle_interval_ticks", 20))
-        if interval <= 0 or self.phase != "break" or self.global_tick % interval != 0:
-            return
-        studying = {
-            i
-            for i in range(self.N)
-            if self.current_act[i] == "study" and self.in_own_seat(i)
-        }
-        if len(studying) < 2:
-            return
-        members = sorted(
-            {
-                i
-                for i in studying
-                for j in self.neighbor_idx[i]
-                if j != i and j in studying
-            }
-        )
-        if len(members) < 2:
-            return
-        for i in members:
-            neighbours = [j for j in self.neighbor_idx[i] if j != i and j in studying]
-            for other in neighbours:
-                self.apply_event(i, other, "study_circle_trust")
-                self.apply_event(i, other, "study_circle_affinity")
-                self.apply_event(other, i, "study_circle_trust")
-                self.apply_event(other, i, "study_circle_affinity")
-            if neighbours:
-                self.apply_event(i, i, "study_circle_stress")
-        self.stats["study_circles"] = self.stats.get("study_circles", 0) + 1
 
     def do_study(self, i):
         """学习（§8.23）：进入学习态。学习是**占用态**（2026-10-14 修）——
@@ -1671,225 +969,13 @@ class Sim:
         self.current_act[i] = "sleep"
         self.stats["sleeps"] += 1
 
-    def do_observe(self, me, j):
-        """观察（§10.3.1）：玩家独有的**只读**行为（参考实现）。
-
-        零副作用：不写任何矩阵、不产生噪音、**不占用也不打断对象**、不进 NPC 决策。
-        信息口径：真实 = 对象对玩家的 A/H（O ≥ 50 再给 T）；信念 = 对象以为玩家怎么看他（可能是错的）。
-        """
-        self.occupy(me, me, "observe")
-        self.stats["observes"] = self.stats.get("observes", 0) + 1
-        day = self.day
-        clues = [
-            {"source": j, "subject": me, "axis": "affinity", "value": self.A[j][me], "day": day, "via": "observe"},
-            {"source": j, "subject": me, "axis": "hostility", "value": self.H[j][me], "day": day, "via": "observe"},
-        ]
-        if self.O[j] >= 50:
-            clues.append(
-                {"source": j, "subject": me, "axis": "trust", "value": self.T[j][me], "day": day, "via": "observe"}
-            )
-        if self.current_act[j] != "sleep":
-            clues.append(
-                {
-                    "source": j,
-                    "subject": j,
-                    "axis": "affinity",
-                    "value": self.B["affinity"][j][me],
-                    "day": day,
-                    "via": "observe",
-                    "belief": True,
-                }
-            )
-        return clues
-
-
-    def do_pass_note(self, i, j):
-        """写纸条（§8.6 纸条链）：i 写一张纸条投给 j（相邻或走近的人）。
-
-        - 被说者 X：w(X) ∝ 1 + |A - H| / 50（态度越极端越可能被写）
-        - 话术：i 对 X 的净态度决定好话 / 坏话；模板随机（4 类）
-        - 纸条由持有者逐 tick 处理（看 / 不看 → 销毁 / 继续传），见 process_notes()
-        消耗 RNG：choices（挑 X） + random（挑模板） = 2 次。
-        """
-        n = self.N
-        cands = [k for k in range(n) if k != i]
-        wts = [1.0 + abs(self.A[i][k] - self.H[i][k]) / 50.0 for k in cands]
-        x = self.rng.choices(cands, weights=wts, k=1)[0]
-        tone = 1 if self.A[i][x] >= self.H[i][x] else -1
-        tpl = int(self.rng.random() * 4.0)
-        self.note_next_id += 1
-        self.notes.append({
-            "id": self.note_next_id,
-            "author": i,
-            "target": x,
-            "tone": tone,
-            "tpl": tpl,
-            "holder": j,
-            "prev": i,
-            "seen": {i, j},
-            "read": False,
-        })
-        # **纸条到达不占用接收者**（§8.6 硬规则：不打断别人正在做的事）——
-        # 只占写纸条的人自己的时间。否则纸条会卡在徙忙者手里到段末被清空。
-        self.occupy(i, i, "pass_note")
-        self.stats["notes_written"] += 1
-
-    def settle_note(self, holder, note):
-        """读纸条的结算（§8.6）：只改「收件人对被说者 X」的态度。
-
-        方向按收件人对 X 的现有态度分档（净态度 A - H）；每条效果 base = 1，走统一影响公式。不消耗 RNG。
-        """
-        x = note["target"]
-        net = self.A[holder][x] - self.H[holder][x]
-        if net < 0.0:                       # 讨厌 X
-            key = "note_bad_to_hostile" if note["tone"] < 0 else "note_good_to_hostile"
-        else:                               # 喜欢 / 中性
-            key = "note_good_to_friendly" if note["tone"] > 0 else "note_bad_to_friendly"
-        self.apply_event(holder, x, key)
-
-    def pick_note_target(self, holder, note):
-        """挑下一个接收者（§8.6）：优先座位相邻且没拿过这张纸条的人，没有则退化为任意可交互的人。
-
-        无候选返回 None（纸条走到头，销毁）。消耗 RNG：randrange = 1 次。
-        """
-        nb = [k for k in self.neighbor_idx[holder]
-              if k != holder and k not in note["seen"] and self.can_interact_with(k)]
-        pool = nb if nb else [k for k in range(self.N)
-                              if k != holder and k not in note["seen"] and self.can_interact_with(k)]
-        if not pool:
-            return None
-        return pool[self.rng.randrange(len(pool))]
-
-    def process_notes(self):
-        """每 tick 处理一张纸条（按 note_id 升序）：持有者先决定「看不看」，看完再决定去向（§8.6）。
-
-        - 玩家持有 -> 不自动处理（等玩家选，见 note_pending_for_player / respond_note）
-        - 看：占 10 tick 并立即结算；不看：不占时间、不中断行为
-        - 去向一律走 §4.5 的 continue 判定：继续传 / 销毁
-        - 每 tick 最多一张 -- 避免一张纸条在同 tick 内传遍全班
-        消耗 RNG：random（看不看） + random（继不继传） + [继传时] randrange（挑人）。
-        """
-        if not self.notes:
-            return
-        # 按 note_id 升序找第一张**可处理**的纸条：
-        # 持有者忙 / 睡 / 是玩家 → 跳过继续往下看。
-        # （不这么做的话，一张卡在徙忙者手里的纸条会阱塞后面所有纸条：实测 3 天写 46 张却只读了 4 次。）
-        note = None
-        holder = -1
-        for nt in sorted(self.notes, key=lambda x: x["id"]):
-            h = nt["holder"]
-            if h < 0 or h == self.N - 1:         # 玩家：等人选
-                continue
-            if self.sleeping[h] or self.global_tick < self.busy_until[h]:
-                continue                         # 忙 / 睡：纸条留在他手上，等有空
-            note = nt
-            holder = h
-            break
-        if note is None:
-            return
-        p_read = self.choice_prob("pass_note", "read", holder)
-        if self.rng.random() < (0.5 if p_read is None else p_read):
-            self.settle_note(holder, note)
-            self.occupy(holder, holder, "pass_note")     # 看也占 10 tick（会打断当前行为）
-            self.stats["notes_read"] += 1
-        p_cont = self.choice_prob("pass_note", "continue", holder)
-        if self.rng.random() < (0.5 if p_cont is None else p_cont):
-            nxt = self.pick_note_target(holder, note)
-            if nxt is not None:
-                note["prev"] = holder
-                note["holder"] = nxt
-                note["seen"].add(nxt)
-                self.occupy(holder, holder, "pass_note")     # 只占递出的人
-                return
-        self.notes = [nt for nt in self.notes if nt["id"] != note["id"]]   # 销毁
-        self.stats["notes_destroyed"] += 1
-
-    def note_holders(self):
-        """当前手里拿着纸条的节点编号（升序，只读）—— 供表现层 / 报告画「纸条」徽标（§21.2.9）。
-
-        不消耗 RNG，也不改任何状态。
-        """
-        return sorted({nt["holder"] for nt in self.notes if nt["holder"] >= 0})
-
-    def note_pending_for_player(self):
-        """玩家手上是否有待处理的纸条（供玩家侧 / 对拍）。不消耗 RNG。"""
-        me = self.N - 1
-        for nt in sorted(self.notes, key=lambda x: x["id"]):
-            if nt["holder"] == me:
-                return dict(nt)
-        return None
-
-    def _player_note(self):
-        """玩家手上最早的一张纸条（没有返回 None）。"""
-        me = self.N - 1
-        for nt in sorted(self.notes, key=lambda x: x["id"]):
-            if nt["holder"] == me:
-                return nt
-        return None
-
-    def read_note(self):
-        """**只读**（§8.6）：结算一次并占 10 tick 打断当前行为；纸条留在手上等归属决策。
-
-        已读过的不重复结算。消耗 RNG：0 次。返回是否真的读了。
-        """
-        me = self.N - 1
-        note = self._player_note()
-        if note is None or note.get("read"):
-            return False
-        self.settle_note(me, note)
-        self.occupy(me, me, "pass_note")
-        self.stats["notes_read"] += 1
-        note["read"] = True
-        return True
-
-    def finish_note(self, forward=True, report_prev=False):
-        """归属决策（§8.6）：继续传 / 撕掉 / **当场举报**。
-
-        - 举报只能在看之后（`read` 为真）当场做；撕掉后不能再举（纸条已销毁）。
-        - 消耗 RNG：继续传时 1 次（randrange 挑下一个）。
-        """
-        me = self.N - 1
-        note = self._player_note()
-        if note is None:
-            return False
-        if report_prev:
-            if not note.get("read"):
-                return False
-            if note["prev"] >= 0:
-                # 1 级把柄：写入现有举报链的把柄表（被举报者 = 上一个递给我的人）；
-                # 等级在判定里的数值口径待定（§8.2，聊举报那轮定）。
-                self.witness_day[me][note["prev"]] = self.day
-        if forward:
-            nxt = self.pick_note_target(me, note)
-            if nxt is not None:
-                note["prev"] = me
-                note["holder"] = nxt
-                note["seen"].add(nxt)
-                self.occupy(me, me, "pass_note")
-                return True
-        self.notes = [nt for nt in self.notes if nt["id"] != note["id"]]
-        self.stats["notes_destroyed"] += 1
-        return True
-
-    def respond_note(self, read, forward, report_prev=False):
-        """玩家处理手上的纸条（§8.6）。
-
-        - read：是否读（读则立即结算，并占 10 tick）
-        - forward：读完 / 不读后是否继续传；False = 撕掉
-        - report_prev：**当场举报** -- 把把柄写给「上一个递给我的人」（§8.2，1 级把柄）
-        分步版本见 read_note() / finish_note()（UI 是两次决策）。
-        消耗 RNG：仅在 forward 且有候选时 1 次（randrange）。
-        """
-        if read:
-            self.read_note()
-        return self.finish_note(forward=forward, report_prev=report_prev)
 
     def update_environment(self):
         """环境层：由「当前大家在做什么」推出目标音量，再平滑趋近。
 
         `target = clamp(Σ noise(各人当前行为), 0, max)` —— **量的累积产生质变**：
         2 人聊天 noise=12×2=24（正常）；8 人聊天 96（**吵到别人**）。
-        超阈部分才转化为压力，且**怕吵程度取决于性格**（高 J 的专注型、内向者更受不了）。
+        超阈部分才转化为压力。
         """
         e = self.env
         target = 0.0
@@ -1913,8 +999,8 @@ class Sim:
         """标签对行为倾向的加成（`data/rules/tags.csv`，按作用轴分类、分 weak/strong 两级）。
 
         **标签是"对底层轴的调制"，不是身份** —— 所以「学霸」不是规则，
-        而是「高 J × 低从众度 × 爱学习」这组条件涌现出来的称呼（§10.19 结尾）。
-        这里只做**倾向加成**：weak ≈ +0.10、strong ≈ +0.50（对应表里的 `effect` 列）。
+        而是这组倾向条件涌现出来的称呼。这里只做**倾向加成**：
+        weak ≈ +0.10、strong ≈ +0.50（对应表里的 `effect` 列）。
         """
         if not self.character_tags:
             return 0.0
@@ -1929,7 +1015,7 @@ class Sim:
     def allowed(self, behavior):
         """当前相位是否允许该行为（§3.3：上课段只跑规则子集）。
 
-    `phases.csv` 用 `study_together|stress_drip|transmission` 描述上课段允许的规则；
+    `phases.csv` 用 `stress_drip` 描述上课段允许的规则；
         这里把它翻译成"行为白名单"——**上课时禁用的行为** = 一切主动社交。
         """
         if behavior in LEISURE_KINDS or behavior == "leave_class":
@@ -1940,54 +1026,8 @@ class Sim:
         rules = self.phase_rules.get(pid, ["all"])
         if "all" in rules:
             return True
-        banned = {"chat", "tease",
-                  "comfort", "apologize", "share_secret", "roughhouse", "exclude",
-                  "report", "move"}
+        banned = {"chat", "roughhouse", "move"}
         return behavior not in banned
-
-    def arg_j(self, i):
-        """J（判断型）强度 ∈ [-1,1]：**`dims[3]` 直读，它就是 J 强度**（50 = 中性）。
-
-        ⚠️ **重要更正（2026-10-05）**：文档 §5.5 曾把第 4 维描述为「感知度 P（0 端=判断 J）」，
-        但**种子数据 `seeds.csv` 的第 4 列实际存的是 J 强度** —— 证据：
-          · 李峥 **ESTJ** 班长 = 95，其注释原文「举报倾向由 **J=95** 派生」；
-          · 王磊 **ESFP** / 郑浩 **ENTP**（两个强 P 型）= 25；
-          · 陈阳 ESFJ = 65、张渊 INTJ = 85 —— **全部与 MBTI 字符串一致**。
-        且主文档自己的引言写的就是 `α_T ∝ 0.5 + 0.5·J/100`（直用 J）。
-        **∴ 文档的文字定义与数据矛盾，以数据为准**（数据才是设计者真实意图）。
-
-        曾有一版按文档文字把它写成 `(50 − dims[3])/50` —— 那会把**全班人格镜像**：
-        最强的 J（班长）被当成最随性的人（从众最高、最不怕吵、τ 最随机、意向权重最低）。
-        """
-        return (self.dims[i][3] - 50.0) / 50.0
-
-    def arg_i(self, i):
-        """内向强度 ∈ [-1,1]：`dims[0]` 是外向 E，故内向 = (50 − E)/50。"""
-        return (50.0 - self.dims[i][0]) / 50.0
-
-    def conformity(self, i):
-        """从众度 ∈ [0,1]：**大部分人从众，少数人有主见**。
-
-        · 高 F（情感型、在意氛围）→ 从众；
-        · 高 J（判断型，有自己的计划）+ 高 N（直觉型，脑内自成一套）→ 反从众。
-        从众者跟着环境走（吵就更想聊、静就更想学），反从众者不受环境影响 ——
-        所以「安静也要聊天」「吵闹也会学习」这两种人天然存在，**不需要特例**。
-        """
-        # 高 F（情感型、在意氛围）→ 从众；高 J（判断型）+ 高 N（直觉型）→ 反从众。
-        # ⚠️ 原式误把 dims[3] 当 J 用，实际让 **J 型更从众**（与文档相反）；
-        #    现改用 arg_j（J 强度）与 arg_n（N 强度），方向与文档一致。
-        f = (self.dims[i][2] - 50.0) / 100.0
-        j = self.arg_j(i) / 2.0
-        n = (self.dims[i][1] - 50.0) / 100.0
-        return clamp(0.5 + f - j * 0.5 - n * 0.5, 0.0, 1.0)
-
-    def crowd_bias(self, i, kind):
-        """环境氛围对行为意愿的加成（kind ∈ {"loud","quiet"}）：从众者受影响，反从众者不受。"""
-        conf = self.conformity(i)
-        v = self.volume / 100.0
-        if kind == "loud":
-            return conf * v
-        return conf * (1.0 - v)
 
     def deviance_pressure(self):
         """**偏离氛围 → 压力（而非禁止）** —— 「社会压力」的机制化。
@@ -2001,7 +1041,7 @@ class Sim:
         if k <= 0:
             return
         v = self.volume / 100.0
-        loud = ("chat", "tease", "roughhouse")
+        loud = ("chat", "roughhouse")
         for i in range(self.N):
             if not self.is_present(i):
                 continue
@@ -2013,156 +1053,8 @@ class Sim:
                 # 而 study 是默认行为 → 等于给全班加压力（实测会把爆发从 20 推到 70+）
                 self.Stress[i] = clamp100(self.Stress[i] + k * (v - 0.72) * 10.0)
 
-    def noise_pressure(self):
-        """超阈音量 → 压力。极慢的涓流（每次结算一次），怕吵程度由性格决定。"""
-        e = self.env
-        excess = max(0.0, self.volume - e.get("volume_threshold", 60.0))
-        if excess <= 0:
-            return
-        k = e.get("stress_k", 0.0)
-        fj, fe = e.get("fear_j", 0.0), e.get("fear_e", 0.0)
-        for i in range(self.N):
-            if not self.is_present(i):
-                continue
-            # J 越高越受不了吵（§10.18 原意）—— 用助手，避免与 P 混淆
-            fear = fj * self.arg_j(i) + fe * self.arg_i(i)
-            fear = max(0.0, fear)
-            # ⚠️ 加上**基础项**：嘈杂环境对**所有人**都有压力，不只是「怕吵的人」。
-            # 此前只在 fear 上做文章，导致 stress_k 放大 12 倍仍无效 —— 因为压力只压到了少数内向/专注者。
-            fear = e.get("noise_base_fear", 0.0) + fear
-            self.Stress[i] = clamp100(self.Stress[i] + excess * k * fear)
-
-    def conformity_hostility(self):
-        """从众 → 敌对（§10.24）：**「大家都讨厌他，那我也讨厌他」**。
-
-        这是把「散落的敌意」变成「集体围攻」的枢纽。排挤要求
-        「**≥3 人同时对同一目标敌对 ≥40**」（`behavior_thresholds.csv`），
-        而单靠一对一摩擦永远凑不齐那么多人 —— 之前实测就是：一个人到处欺负别人、
-        其他人各有一条互怼边，**「被围攻」的格局出现不了**。
-
-        有了从众，旁观者会**跟着已有的敌意走** —— 「欺凌」这才可能成立。
-
-        从众度由性格给出（§10.19 `conformity`），**不需要特例**：
-        高 F 者随大流，高 J / 高 N 者有自己的判断、不被裹挟 ——
-        所以「敢替被孤立的人说话」这种人天然存在，**不必专门写一个"正义者"角色**。
-        """
-        # `conformity_see` 的语义已随信息来源改变（§10.24）：
-        #   旧 = 「敌对值门槛」（读真值，已废弃）；新 = 「**公开敌对行为的可见窗口天数**」。
-        see = self.thresholds_lookup.get("conformity_see", 25.0)
-        see_window = self.thresholds_lookup.get("conformity_see_window", 14.0)
-        need = int(self.thresholds_lookup.get("conformity_min", 2.0))
-        for i in range(self.N):
-            if not self.is_present(i):
-                continue
-            conf = self.conformity(i)
-            if conf <= 0.05:
-                continue                    # 有主见的人不被裹挟
-            for j in range(self.N):
-                if not self.is_present(j):
-                    continue
-                if i == j:
-                    continue
-                # ⚠️ **不读真值敌对**（§7.4 不变式）：从众依循的是「**i 亲眼见过的敌对行为**」。
-                #    旧写法 `self.H[k][j] >= see` 是**信息层穿透** —— 低透明度的人把恨藏起来，
-                #    却仍会在这里扩散给从众者，直接破坏 §7.4「藏得住的人真的藏得住」。
-                #    现用 `hurt_day[k][j]`（**公开**的 major 负性事件：当众羞辱 / 举报 / 排挤）：
-                #    做过公开行为的人才被看见，藏着的人**不会被跟风**。
-                haters = [k for k in self.neighbor_idx[i]
-                          if k != j and self.is_present(k) and not self.sleeping[k]
-                          and 0 <= self.day - self.hurt_day[k][j] <= see_window]
-                if len(haters) >= need:
-                    # 跟着恨：人数越多、从众度越高，跟得越紧（走统一影响公式，scale 传从众度）
-                    self.apply_event(i, j, "conformity_hostility",
-                                     scale=conf * len(haters) / float(max(1, need)))
-
-    def noise_of(self, j):
-        """j 此刻的噪音贡献（来自 behaviors.csv 的 noise 列；0 = 安静）。"""
-        return float(self.behaviors.get(self.current_act[j], {}).get("noise", 0.0))
-
-    def noise_fear(self, i):
-        """i 的「怕吵程度」（§10.18）：越内向、越专注，越受不了吵。
-
-        与 `noise_pressure` 用的是**同一个 fear**（同源），只是后果不同。
-        ⚠️ 待核验：`dims` 第 4 维在本原型里名为 `p`，而注释说的是「J（专注型）」，
-        两者在 MBTI 里互斥（J 判/断 vs P 感知）。此处沿用现有实现的方向，暂不改动。
-        """
-        e = self.env
-        fj, fe = e.get("fear_j", 0.0), e.get("fear_e", 0.0)
-        f = fj * self.arg_j(i) + fe * self.arg_i(i)
-        return max(0.0, f)
-
-    def noise_hostility(self):
-        """超阈音量 → **定向敌对**：怕吵的人会记恨「最吵的那个邻居」。
-
-        **不对称是本机制的灵魂**（用户设计）：
-          · **安静/学习者 → 敌视吵闹者** ✓ —— 他是真的在受损；
-          · **吵闹者 → 敌视安静者** ✗ —— 他不觉得自己被打扰。
-        ∴ 这是本项目第一条**天然单向**的关系通道（其余通道都是对称的）。
-
-        与 `noise_pressure` 同源、不同轴：同一刺激，一份转化成**压力**（内耗），
-        一份转化成**敌对**（指向他人）—— 这正是社会解释的分岔。
-
-        为什么它能解决「种子频率太低」：音量**持续存在**，不像打闹那样稀疏，
-        因此每个涓流周期都在累积，而且**方向明确**（对象是具体的「最吵的邻居」）。
-        """
-        e = self.env
-        excess = max(0.0, self.volume - e.get("volume_threshold", 20.0))
-        if excess <= 0:
-            return
-        scale = max(1e-6, e.get("noise_scale", 8.0))
-        base = e.get("noise_hostility_base", 0.0) * min(2.0, excess / scale)
-        if base <= 0:
-            return
-        for i in range(self.N):
-            if not self.is_present(i):
-                continue
-            fear = self.noise_fear(i)
-            if fear <= 0.05:
-                continue                       # 不怕吵的人不会去恨（不对称的另一面）
-            culprits = [j for j in self.neighbor_idx[i]
-                        if j != i and not self.sleeping[j] and self.noise_of(j) > 0]
-            if not culprits:
-                continue
-            # 恨「最吵的那个」—— 但**并列的第二个也恨**。
-            # 只取 1 个时对象每次结算都在变，同一对子很难被反复命中（实测 H 上不去）；
-            # 取 2 个既保留「盯着最吵的人」的方向性，又让敌意在**稳定的边**上真正累积。
-            culprits.sort(key=self.noise_of, reverse=True)
-            for j in culprits[:2]:
-                self.apply_event(i, j, "noise_hostility", scale=base * fear)
-                self.stats["noise_grudges"] = self.stats.get("noise_grudges", 0) + 1
-
-    def spread_knot(self, i, severity=0.0):
-        """爆发传染：把「心结」扩散给与 i 关系最鲜明的少数人。
-
-        情绪传染沿**关系**传播 —— 与爆发者关系越鲜明（无论亲密还是敌对，|A − H| 越大），
-        情绪共鸣越强、越容易被波及。这不是"随机撒点"，而是关系结构算出来的：
-          · 死党的朋友会替他焦虑
-          · 死对头也会因对手崩溃而兴奋/紧张
-          · 泛泛之交则不受影响
-        因此「连环爆发」的形态由班级关系结构决定，而非掷骰子。
-        """
-        tag = self.status_tags.get("heart_knot")
-        if not tag:
-            return
-        ratio, kmax = float(tag.get("spread_ratio", 0)), int(float(tag.get("spread_max", 0)))
-        if ratio <= 0 or kmax <= 0:
-            return
-        others = [j for j in range(self.N) if j != i and self.knot_days[j] == 0]
-        if not others:
-            return
-        others.sort(key=lambda j: -abs(self.A[i][j] - self.H[i][j]))   # 关系最鲜明者优先
-        pool = others[:max(1, int(len(others) * ratio))]
-        # 越晚爆发（severity 越高）→ 波及越广、心结越久：这就是「拖得越久，爆得越大」
-        kmax_eff = int(round(kmax * (1.0 + severity)))
-        days_eff = int(round(float(tag["days"]) * (1.0 + severity)))
-        for j in self.rng.sample(pool, min(kmax_eff, len(pool))):
-            self.knot_days[j] = max(self.knot_days[j], days_eff)
-
     # ------------------------------------------------ 主循环
     def stress_drip(self):
-        self.noise_pressure()      # 环境层：超阈音量 → 压力
-        self.noise_hostility()     # 环境层：超阈音量 → 定向敌对（单向，§10.21）
-        self.conformity_hostility()  # 社会层：从众 → 跟着恨（§10.24，让排挤凑得齐人）
         self.deviance_pressure()   # 环境层：偏离氛围 → 压力（不是禁止，是代价）
         """涓流：独处恢复 / 学习累积（主文档 §8.4）"""
         for i in range(self.N):
@@ -2221,46 +1113,6 @@ class Sim:
                 interrupted.append(i)
         return interrupted
 
-    def _record_book_gift_chat(self, members):
-        # 合并共享成员的同场闲聊，不以同时到期推断共同活动。
-        members = set(members)
-        end_tick = max(self.busy_until[m] for m in members)
-        for chat in self.book_gift_chats:
-            if members.intersection(chat["members"]):
-                chat["members"] = sorted(set(chat["members"]) | members)
-                chat["end_tick"] = max(chat["end_tick"], end_tick)
-                return
-        self.book_gift_chats.append(dict(members=sorted(members), end_tick=end_tick))
-
-    def _settle_book_gifts(self):
-        due = [chat for chat in self.book_gift_chats if chat["end_tick"] <= self.global_tick]
-        self.book_gift_chats = [chat for chat in self.book_gift_chats if chat["end_tick"] > self.global_tick]
-        if self.phase != "break":
-            return
-        player = self.N - 1
-        for chat in due:
-            if player not in chat["members"]:
-                continue
-            for donor in chat["members"]:
-                if self.book_gifts_this_break >= int(self.leisure["book_gift_max_per_break"]):
-                    return
-                if donor == player or self.book[donor] <= 0 or self.book_gifted[donor]:
-                    continue
-                if not all(self.is_present(i) and not self.sleeping[i] for i in (donor, player)):
-                    continue
-                if self.A[donor][player] < self.leisure["book_gift_affinity_threshold"]:
-                    continue
-                if self.T[donor][player] < self.leisure["book_gift_trust_threshold"]:
-                    continue
-                if self.rng.random() >= self.leisure["book_gift_probability"]:
-                    continue
-                self.book[donor] -= 1
-                self.book[player] += 1
-                self.book_gifted[donor] = True
-                self.book_gifts_this_break += 1
-                self.book_gift_events.append(dict(kind="book_gift", donor=donor, recipient=player,
-                                                 books=self.book[player], first=self.book[player] == 1))
-
     def settle_finished_actions(self):
         """行为完成结算：把**已到期**的占用收尾（§10.4 / §12.2 行为耗时契约）。
 
@@ -2284,20 +1136,15 @@ class Sim:
             self.busy_act[i] = None
             self.busy_phase[i] = -1
 
-        self._settle_book_gifts()
-
     def tick(self):
         self.global_tick += 1
         self.settle_finished_actions()
         self.settle_conversations()      # 多人聊天：逐人离场 / 解散（2026-10-14）
         self.teacher.step(self)
         self.decide_and_act()
-        self.process_notes()          # 纸条链（§8.6）：每 tick 处理一张纸条
         self.study_accumulate()
-        self.study_circle_settle()
         self.update_environment()
         if self.global_tick % int(self.p["settle_interval"]) == 0:   # 每天 2 次（上午/下午）
-            self.transmission()
             self.stress_drip()
         # 压力爆发已在每日结算时按概率判定（见 try_burst），此处不再做阈值相变
 
@@ -2330,60 +1177,6 @@ class Sim:
             self.StudyAcc[i] -= tpp
             self.Grade[i] += 1.0
             self.apply_event(i, i, "study_stress")
-
-    def credit_study_ticks(self, i, ticks):
-        if ticks <= 0.0 or i < 0 or i >= self.N:
-            return
-        if self.Grade[i] >= self.kp["grade_max"]:
-            self.StudyAcc[i] = 0.0
-            return
-        self.StudyAcc[i] += ticks
-        self._fold_study_acc(i)
-
-    def lesson(self, kind, target):
-        """玩家提问 / 讲题（§18.2）。返回 {ok, error?, emperor?}。"""
-        me = self.N - 1
-        err = self._lesson_error(kind, me, target)
-        if err:
-            return {"ok": False, "error": err}
-        if self.current_act[me] == "study":
-            self.current_act[me] = None
-            self.StudyAcc[me] = 0.0
-        receiver = me if kind == "ask_question" else target
-        affected = target if kind == "ask_question" else me
-        actor = me if kind == "ask_question" else target
-        bonus = float(self.kp.get("emperor_bonus", 1.0))
-        at_emperor = self.seat_of[me] == "P0" or self.seat_of[target] == "P0"
-        scale = bonus if at_emperor else 1.0
-        if not self.apply_event(affected, actor, kind, scale):
-            return {"ok": False, "error": "already_used"}
-        tick_key = "ask_question_bonus_ticks" if kind == "ask_question" else "teach_lesson_bonus_ticks"
-        ticks = float(self.kp.get(tick_key, 0.0))
-        if self.seat_of[receiver] == "P0":
-            ticks *= bonus
-        self.credit_study_ticks(receiver, ticks)
-        return {"ok": True, "emperor": at_emperor}
-
-    def _lesson_error(self, kind, me, target):
-        if self.phase != "break":
-            return "phase_not_allowed"
-        if self.sleeping[me] or self.global_tick < self.busy_until[me]:
-            return "player_busy"
-        if target < 0 or target >= self.N or target == me:
-            return "invalid_target"
-        if self.sleeping[target] or self.global_tick < self.busy_until[target]:
-            return "target_unavailable"
-        gap = self.Grade[me] - self.Grade[target]
-        blur = float(self.kp.get("grade_gap_blur", 0.0))
-        if kind == "ask_question" and gap > blur:
-            return "grade_gap"
-        if kind == "teach_lesson" and gap < -blur:
-            return "grade_gap"
-        affected = target if kind == "ask_question" else me
-        actor = me if kind == "ask_question" else target
-        if (affected, actor, kind, self.day, self.phase_index) in self.settled:
-            return "already_used"
-        return ""
 
     def _init_exam(self):
         rows = load_table("rules/exam.csv")
@@ -2453,9 +1246,6 @@ class Sim:
             self.current_act[i] = None
             self.busy_act[i] = None
             self.in_conversation[i] = False
-        # 纸条链（§8.6）：**纸条只在当前时间段内存活**，进入下一个时间段即销毁。
-        self.notes = []
-        self.book_gift_chats = []
         if self.player_absent:
             self.player_absent = False
             self.busy_until[self.N - 1] = 0
@@ -2480,18 +1270,12 @@ class Sim:
     def begin_phase(self):
         """统一边界协议 ⑦：进入当前段（`phase_index` 已指向本段）并执行新段判定。
 
-        核心 RNG 消费序：roll_sleep → free_join → [break: phone_exposure → roll_reports]。
+        核心 RNG 消费序：roll_sleep。
         """
         self.phase = self.day_phases[self.phase_index][0]
         self.tick_in_phase = 0
         self.teacher.begin_phase(self)
-        if self.phase == "break":
-            self.book_gifts_this_break = 0
         self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
-        self.free_join()                  # 「别人做什么我也跟着做」（free 类活动，§10.31）
-        if self.phase == "break":
-            self.phone_exposure()         # 举报把柄：课间目击「带手机」等标签行为痕迹（§10.2）
-            self.roll_reports()           # 举报判定：每段一次，有把柄才掷骰（§10.2）
 
     def run_day(self):
         total_ticks = 0
@@ -2534,26 +1318,12 @@ class Sim:
             if tag:
                 self.knot_days[i] = max(self.knot_days[i],
                                         int(round(float(tag["days"]) * (1.0 + severity))))
-            self.spread_knot(i, severity)
             self.stats["bursts"] += 1
 
     def settle_day(self):
         """跨天结算（§3.5）"""
         self.try_burst()                      # 每日一次：压力爆发按概率判定
         d = self.decay
-        # 信念遗忘回归（`belief.lambda_b`）：每天把信念向先验缓慢拉回 —— 信念不能"只学不忘"，
-        # 否则久了会固执地停在某个旧印象上（§18.9 列为未落实项，本轮补齐）。
-        lam = self.bp.get("lambda_b", 0.0)
-        if lam > 0:
-            prior = {"affinity": self.bp["prior_a"], "hostility": self.bp["prior_h"],
-                     "trust": self.bp["prior_t"]}
-            for i in range(self.N):
-                for j in range(self.N):
-                    if i == j:
-                        continue
-                    for ax in AXES:
-                        cur = self.B[ax][i][j]
-                        self.B[ax][i][j] = clamp100(cur + lam * (prior[ax] - cur))
 
         # 「心结」：爆发后的 3 天里，每天先加 5 点压力（长线心理创伤，§3.5）
         for i in range(self.N):
@@ -2566,21 +1336,7 @@ class Sim:
                     continue
                 interacted = self.day_events.get((i, j), 0) >= d["interact_min_events"]
                 self.A[i][j] *= d["decay_a_interact"] if interacted else d["decay_a_no_interact"]
-                # 两层敌对（§10.22）：深层原样保留，只衰减**表层**。
-                # 「表层怒火会消，但心结永远在」—— 所以「可以原谅，但忘不了」。
-                # ⚠️ 表层要夹到 ≥0：H 会被别的负向事件（和解类）降到低于 deep，
-                #    那时 `H - deep` 为负，若不夹住会把负数继续带下去 ——
-                #    结果出现「深层 17.5 而总数只有 9.0」的自相矛盾（深层本应是**底线**）。
-                # 深层**极慢衰减**（§10.29）：这是「忘不掉」与「吸收态」之间的平衡。
-                #   · 30 天尺度：0.995^30 ≈ 0.86 → 几乎不衰减，「忘不了」依然成立；
-                #   · 百年尺度：会缓慢收敛 → 死仇也有解冻的可能，
-                #     **保住结局空间的开放性**（否则所有局最终都掉进同一个终态）。
-                dd = d.get("deep_decay", 0.995)
-                self.H_deep[i][j] *= dd
-                deep = self.H_deep[i][j]
-                surf = max(0.0, self.H[i][j] - deep)
-                self.H[i][j] = min(100.0, deep + surf * d["decay_h"])
-                self.T[i][j] *= d["decay_t"]
+                self.H[i][j] *= d["decay_h"]
             self.Stress[i] *= d["retain_s"]
         self.day_events.clear()          # 新的一天，重置「有互动」判定
         self.settle_exam(self.day)
@@ -2594,34 +1350,22 @@ class Sim:
         aff.sort()
         mean = sum(aff) / len(aff)
         saturated = sum(1 for v in aff if v >= 95) / len(aff)
-        err = 0.0
-        for i, j in pairs:
-            err += abs(self.B["affinity"][i][j] - self.A[j][i])
-        err /= len(pairs)
         print("=== 内核运行统计（seed=%d, 天数=%d, 节点=%d）===" % (self.seed, self.day - 1, self.N))
         print("  好感：min %.1f / 中位 %.1f / 均值 %.1f / max %.1f" % (aff[0], aff[len(aff) // 2], mean, aff[-1]))
         print("  接近饱和(>=95)比例：%.1f%%" % (saturated * 100))
-        print("  事件 %d 次（闲聊 %d / 搭话 %d / 举报 %d）" % (
-            self.stats["events"], self.stats["chats"], self.stats["joins"], self.stats["reports"]))
+        print("  事件 %d 次（闲聊 %d / 搭话 %d / 打闹 %d）" % (
+            self.stats["events"], self.stats["chats"], self.stats["joins"], self.stats.get("roughhouse", 0)))
         print(
-            "  睡着 %d 人次 | 调侃 %d（过火 %d）/ 排挤 %d / 打闹 %d / 被打断 %d"
+            "  睡着 %d 人次 | 被打断 %d"
             % (
                 self.stats.get("sleeps", 0),
-                self.stats.get("teases", 0),
-                self.stats.get("tease_fail", 0),
-                self.stats.get("excludes", 0),
-                self.stats.get("roughhouse", 0),
                 self.stats.get("interrupts", 0),
             )
         )
-        print("  纸条：写 %d / 读 %d / 销毁 %d（活跃 %d）"
-              % (self.stats["notes_written"], self.stats["notes_read"],
-                 self.stats["notes_destroyed"], len(self.notes)))
         print("  去重跳过 %d 次" % self.stats["dedup_skips"])
-        print("  传导结算 %d 次 | 压力爆发 %d 次（平均每 %.1f 天一次）" % (
-            self.stats["transmission_ticks"], self.stats["bursts"],
+        print("  压力爆发 %d 次（平均每 %.1f 天一次）" % (
+            self.stats["bursts"],
             (self.day - 1) / max(1, self.stats["bursts"])))
-        print("  信念平均误差 |B − 真值|：%.1f" % err)
 
 
 def main():
@@ -2640,64 +1384,37 @@ if __name__ == "__main__":
     main()
 
 class ObserverLayer:
-    """观察层：**只读**、**按透明度过滤**、**每个角色一份视角**的标签器。
+    """观察层：**只读**、**每个角色一份视角**的标签器。
 
-    为什么是「透明度的下属」（用户判断 + §7.4）：
-      「只读」只保证标签**不干扰**模拟；但若直接读真值矩阵，它对玩家就是**上帝视角** ——
-      低透明度角色的「藏」会在标签层被绕过。§7.4 的原则是「**凡是涉及感知的读取，
-      都要经透明度（+信任）过滤**」，而标签器的输出正是「**玩家感知到的班级结构**」，
-      因此它天然归这条原则管辖。
-
-    于是：**低透明度的人，他的关系看不透 → 标签器不会把他归进任何簇**
-    ——「藏着的人，连标签都藏住了」，这是 §7.4 精神的自然延伸。
-
-    规格来源：`docs/design/信念矩阵.md` §11（可见性档位 / null≠0 / 只读查询）。
-    阈值来源：§11.1 复用系统已有阈值（亲近 A≥60、敌对 H≥40），**不另定**。
+    老师版删除透明度/信任后，关系矩阵对所有人可见（`visibility` 恒为 clear）：
+    标签器直接读真实 A/H。规格来源：主文档 §9.3 / §11；阈值复用系统已有阈值
+    （亲近 A≥60、敌对 H≥40），**不另定**。
     """
 
     def __init__(self, sim):
         self.s = sim
 
-    # ---------- ① 可见性档位（§11.1 / §11.3：由「被观测者」的透明度决定）----------
+    # ---------- ① 可见性档位（老师版：无透明度，恒 clear）----------
     def visibility(self, viewer, target):
-        """返回 'clear' / 'blurry' / 'sealed'。**由被观测者 O[target] 决定**，与 viewer 无关。"""
-        o = self.s.O[target]
-        if o >= 50.0:
-            return "clear"
-        if o >= 20.0:
-            return "blurry"
-        return "sealed"
+        """返回 'clear'（老师版删除透明度，关系对所有人可见）。"""
+        return "clear"
 
     # ---------- ② 该 viewer 能看见的关系矩阵 ----------
     def seen_matrix(self, viewer, axis="affinity"):
-        """返回 viewer 眼中的 axis 关系矩阵（`None` = 看不见）。
-
-        · clear  → 真值（他演出来的就是真实的）
-        · blurry → **只知「有没有变化」，不知方向**（§11.2 `null ≠ 0`）→ 用中性基准代替
-        · sealed → `None`（你看不见 → 你不知道）
-        """
+        """返回 viewer 眼中的 axis 关系矩阵（老师版：直接读真值）。"""
         n = self.s.N
-        src = {"affinity": self.s.A, "hostility": self.s.H, "trust": self.s.T}[axis]
-        base = 50.0 if axis != "hostility" else 0.0
+        src = {"affinity": self.s.A, "hostility": self.s.H}[axis]
         out = [[None] * n for _ in range(n)]
-        for k in range(n):                       # k = 被观测的「一边」
-            vis = self.visibility(viewer, k)
+        for k in range(n):
             for m in range(n):
                 if k == m:
                     continue
-                if vis == "clear":
-                    out[k][m] = src[k][m]
-                elif vis == "blurry":
-                    out[k][m] = base           # 只知「有变化」——不给方向，故取中性
-                # sealed: 保持 None
+                out[k][m] = src[k][m]
         return out
 
     # ---------- ③ 簇标签（每个角色一份视角）----------
     def cluster_tags(self, viewer):
-        """viewer 眼中的小团体：按 §11.1 的强连接阈值 A≥60 取连通分量（≥3 人成簇）。
-
-        因为关系先经透明度过滤，"看不透的人"自然落不进任何簇。
-        """
+        """viewer 眼中的小团体：按 §11.1 的强连接阈值 A≥60 取连通分量（≥3 人成簇）。"""
         n = self.s.N
         seen = self.seen_matrix(viewer, "affinity")
         # §11.1 的绝对阈值 A≥60 是**基线**；但实测好感均值已到 57，「60」在实际分布下不构成「强」连接
@@ -2740,7 +1457,6 @@ class ObserverLayer:
         """viewer 眼中的「被孤立者」：**他人→他显著低，而他→他人接近正常**。
 
         判据来自 §10.26.3：「全班都不喜欢他，而他还喜欢大家」——想融入但没人要他。
-        ⚠️ 同样只读 viewer 能看见的部分。
         """
         n = self.s.N
         seen = self.seen_matrix(viewer, "affinity")

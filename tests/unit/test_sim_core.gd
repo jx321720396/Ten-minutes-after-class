@@ -120,8 +120,6 @@ func test_couple_binding() -> void:
 	assert_true(a >= 0 and b >= 0, "seed 68 名单包含陈阳与林晚")
 	assert_almost_eq(core.affinity(a, b), 85.0, 0.001, "陈阳→林晚 好感 85")
 	assert_almost_eq(core.affinity(b, a), 85.0, 0.001, "林晚→陈阳 好感 85")
-	assert_almost_eq(core.trust(a, b), 80.0, 0.001, "陈阳→林晚 信任 80")
-	assert_almost_eq(core.trust(b, a), 80.0, 0.001, "林晚→陈阳 信任 80")
 
 
 func test_uniform_binding() -> void:
@@ -138,7 +136,6 @@ func test_accessors_bounds() -> void:
 	assert_eq(core.affinity(0, 0), 0.0, "自反好感为 0")
 	assert_eq(core.affinity(-1, 0), 0.0, "负索引为 0")
 	assert_eq(core.affinity(0, 999), 0.0, "越界为 0")
-	assert_eq(core.opacity(-1), 0.0, "透明度负索引为 0")
 	assert_eq(core.stress(core.node_count()), 0.0, "压力越界为 0")
 
 

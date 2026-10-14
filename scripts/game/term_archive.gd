@@ -36,7 +36,8 @@ static func valid(record: Dictionary) -> bool:
 	var count := int(record.get("count", 0))
 	if not bool(record.get("finished", false)) or count < 2:
 		return false
-	if record.get("names", []).size() != count or record.get("baseline", []).size() != 3:
+	# 老师版删除信任轴：baseline 只含好感／敌对两份矩阵。
+	if record.get("names", []).size() != count or record.get("baseline", []).size() != 2:
 		return false
 	for matrix in record.baseline:
 		if matrix.size() != count * count:

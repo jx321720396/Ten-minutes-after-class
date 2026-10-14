@@ -85,7 +85,7 @@ func test_preview_is_read_only_and_reports_start() -> void:
 func test_unknown_kind_and_bad_target_are_rejected() -> void:
 	var core := _core()
 	_room(core)
-	assert_eq(str(core.preview_player_interaction("tease", 0)["error"]), "unknown_kind")
+	assert_eq(str(core.preview_player_interaction("comfort", 0)["error"]), "unknown_kind")
 	assert_eq(str(core.preview_player_interaction("chat", -1)["error"]), "invalid_target")
 	assert_eq(str(core.preview_player_interaction("chat", _me(core))["error"]), "invalid_target")
 
@@ -174,7 +174,7 @@ func _npc_chat(core: SimCore) -> int:
 	return int(core.session_of(0))
 
 
-func test_preview_reports_join_and_belief_probability() -> void:
+func test_preview_reports_join_and_success_probability() -> void:
 	var core := _core()
 	_room(core)
 	var sid := _npc_chat(core)
@@ -185,7 +185,7 @@ func test_preview_reports_join_and_belief_probability() -> void:
 		float(pv["p_belief"]),
 		float(core._join_feedback(_me(core), 0)["p"]),
 		0.0001,
-		"展示用成功率来自信念，不是真值"
+		"展示用成功率读真值（与加入反馈一致）"
 	)
 
 
@@ -260,30 +260,24 @@ func _reference_like(core: SimCore, with_chat: bool) -> SimCore:
 	return ref
 
 
-## 让「加入判定」几乎必然通过：真值好感极高 + 外向度最高 + 压力为零。
+## 让「加入判定」几乎必然通过：真值好感极高 + 压力为零。
 ## 只改矩阵，不消费随机数（否则参照局的流就对不上了）。
 func _force_accept(core: SimCore, me: int) -> void:
 	var n := int(core.node_count())
 	var a := core._a
 	a[0 * n + me] = 100.0
 	core._a = a
-	var dims := core._dims
-	dims[0] = 100.0
-	core._dims = dims
 	var stress := core._stress
 	stress[0] = 0.0
 	core._stress = stress
 
 
-## 让「加入判定」几乎必然被拒：真值好感为零 + 外向度最低 + 压力满。
+## 让「加入判定」几乎必然被拒：真值好感为零 + 压力满。
 func _force_reject(core: SimCore, me: int) -> void:
 	var n := int(core.node_count())
 	var a := core._a
 	a[0 * n + me] = 0.0
 	core._a = a
-	var dims := core._dims
-	dims[0] = 0.0
-	core._dims = dims
 	var stress := core._stress
 	stress[0] = 100.0
 	core._stress = stress
@@ -410,19 +404,17 @@ func test_reject_hostility_lands_on_every_original_member() -> void:
 # ------------------------------------------------------------------ 线索（§8.4）
 
 
-func test_clue_count_follows_source_opacity_and_single_axis() -> void:
+func test_clue_count_is_fixed_and_single_axis() -> void:
 	var me := int(_core().node_count()) - 1
-	var low := _run_player_chat(_core(), 20.0)
-	assert_eq(low.size(), 1, "O < 50 只透露 1 条")
-	var high := _run_player_chat(_core(), 80.0)
-	assert_eq(high.size(), 2, "O ≥ 50 透露 2 条")
+	var high := _run_player_chat(_core())
+	assert_eq(high.size(), 2, "条数固定为高限 2（透明度已删除，§12.2 待裁定）")
 	assert_ne(int(high[0]["clue"]["subject"]), int(high[1]["clue"]["subject"]), "两条线索的对象不重复")
 	for entry in high:
 		var clue: Dictionary = entry["clue"]
 		assert_eq(int(clue["source"]), 0, "来源固定为本次闲聊对象")
 		assert_ne(int(clue["subject"]), me, "对象排除玩家")
 		assert_ne(int(clue["subject"]), 0, "对象排除 source")
-		assert_true(["affinity", "hostility", "trust"].has(str(clue["axis"])), "只透露一个轴")
+		assert_true(["affinity", "hostility"].has(str(clue["axis"])), "只透露好感/敌对单轴")
 		assert_gt(int(clue["global_tick"]), 0, "线索带获知时间")
 		assert_almost_eq(
 			float(clue["value"]),
@@ -434,11 +426,8 @@ func test_clue_count_follows_source_opacity_and_single_axis() -> void:
 
 ## 让玩家与 0 号聊一次并跑到自然完成；返回完成瞬间采集到的线索与**当刻**真值。
 ## 采集点挂在通知回调里：那正是「读取这一刻情报」的同一时刻，晚一步就会被同 tick 的后续决策改掉。
-func _run_player_chat(core: SimCore, opacity: float) -> Array:
+func _run_player_chat(core: SimCore) -> Array:
 	var me := _room(core)
-	var o := core._o
-	o[0] = opacity
-	core._o = o
 	var captured: Array = []
 	core.event_sink = func(e: Dictionary) -> void:
 		var payload: Dictionary = e["payload"]
@@ -461,8 +450,6 @@ func _axis_now(core: SimCore, clue: Dictionary) -> float:
 	match str(clue["axis"]):
 		"hostility":
 			return float(core.hostility(source, subject))
-		"trust":
-			return float(core.trust(source, subject))
 		_:
 			return float(core.affinity(source, subject))
 

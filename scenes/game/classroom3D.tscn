@@ -31,7 +31,6 @@
 [ext_resource type="Material" uid="uid://csprcagi0dg6n" path="res://resources/materials/mat_wood.tres" id="m_wood"]
 [ext_resource type="Script" uid="uid://fdcmqrufqudp" path="res://scripts/game/classroom.gd" id="navigation_script"]
 [ext_resource type="NavigationMesh" uid="uid://c67yb0pq0a4dj" path="res://resources/navigation/classroom_nav.tres" id="nav_mesh"]
-[ext_resource type="PackedScene" path="res://scenes/ui/note_prompt.tscn" id="note_prompt_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/npc_profile.tscn" id="npc_profile_scene"]
 [ext_resource type="Script" path="res://scripts/ui/study_navigation.gd" id="study_navigation"]
 [ext_resource type="PackedScene" uid="uid://ckhk7pqoo1clw" path="res://scenes/ui/pause_menu.tscn" id="pause_menu"]
@@ -828,8 +827,6 @@ script = ExtResource("player_script")
 [node name="ChatHUD" parent="." unique_id=2020022478 instance=ExtResource("chat_hud_scene")]
 
 [node name="ActionBar" parent="." unique_id=786696613 instance=ExtResource("action_bar_scene")]
-
-[node name="NotePrompt" parent="." unique_id=176049190 instance=ExtResource("note_prompt_scene")]
 
 [node name="BehaviorBadge" parent="." unique_id=62531855 instance=ExtResource("badge_scene")]
 

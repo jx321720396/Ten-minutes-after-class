@@ -7,7 +7,7 @@ const METER := preload("res://scripts/ui/emotion_meter.gd")
 const REPLAY := preload("res://scripts/game/term_replay.gd")
 const ARCHIVE := preload("res://scripts/game/term_archive.gd")
 const SETTINGS := "res://data/ui/term_report.json"
-const AXES := ["affinity", "hostility", "trust"]
+const AXES := ["affinity", "hostility"]
 
 var _cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS))
 var _record: Dictionary = {}

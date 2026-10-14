@@ -90,16 +90,13 @@ func test_absence_freezes_player_and_runs_npc_ticks() -> void:
 	assert_false(c.get_player_invitation().size() > 0)
 	var a := c._a.duplicate()
 	var h := c._h.duplicate()
-	var t := c._t.duplicate()
 	var g := c.grade(me)
 	c._volume = 100.0
-	c._transmission()
 	c._stress_drip()
 	for i in range(c.node_count()):
 		assert_eq(c.affinity(i, me), float(a[i * c.node_count() + me]))
 		assert_eq(c.affinity(me, i), float(a[me * c.node_count() + i]))
 		assert_eq(c.hostility(i, me), float(h[i * c.node_count() + me]))
-		assert_eq(c.trust(i, me), float(t[i * c.node_count() + me]))
 	assert_eq(c.stress(me), 20.0)
 	var events_before := int(c._stats["events"])
 	assert_true(clock.skip_absent_break())
@@ -122,7 +119,6 @@ func test_leave_cost_is_incoming_neighbor_affinity_via_uif() -> void:
 	assert_true(bool(c.player_action("leave_class", -1).get("ok", false)))
 	assert_eq(c._a, expected._a)
 	assert_eq(c._h, expected._h)
-	assert_eq(c._t, expected._t)
 
 
 func test_class_affinity_is_neighbor_only_and_skips_sleepers() -> void:

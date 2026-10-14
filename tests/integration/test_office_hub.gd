@@ -89,11 +89,9 @@ func _run() -> void:
 			break
 	check(picked, "禁用旧移动后仍可通过真实教室射线选择学生")
 	check(hub._return.get_global_rect().position.x > root.size.x / 2.0, "返回入口在右侧，不遮教室中央")
-	scene.get_node("NotePrompt").show_offer()
 	scene.get_node("ChatHUD")._invitation_card.show()
 	hub.set_mode("monitor")
 	hub.set_mode("classroom")
-	check(not scene.get_node("NotePrompt").is_open(), "切换清理旧纸条卡片")
 	check(not scene.get_node("ChatHUD").visible, "旧邀请即使被刷新也不能显示")
 	hub.select_observed_student(0)
 	check(teacher_ui.selected_student() == 0, "监控／现场可选择学生")

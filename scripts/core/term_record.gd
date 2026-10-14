@@ -2,7 +2,7 @@ class_name TermRecord
 extends RefCounted
 ## 本局只读历史：不拥有随机数，不回写矩阵，不持有场景节点。
 
-const AXES := ["affinity", "hostility", "trust"]
+const AXES := ["affinity", "hostility"]
 
 var _count := 0
 var _player := -1
