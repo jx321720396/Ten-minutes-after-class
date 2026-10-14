@@ -64,3 +64,16 @@ apologize,accept_theta,>=,40,道歉判定：被接受的 sigmoid 拐点
 apologize,accept_scale,>=,12,道歉判定 sigmoid 坡度
 apologize,calm_bonus,>=,20,道歉判定：对方随和系数（F_j/100 × 此值，§10.11「对方随和系数」）
 apologize,hostility_penalty,>=,0.5,道歉判定：对方敌对对接受概率的压制（§10.11「− 敌对值 ×0.5」）
+# ---- 多人聊天（2026-10-14 重构：会话 2→3→4，双向判定 + 聚合接纳 + 规模衰减）----
+#   接纳侧（22 裁定）：成员 m 对加入者 C 的欢迎 score = A[m][C] − H[m][C]，p = σ((score−θ)/scale)。
+#   意愿侧（22 裁定）：朋友在场（max A[C][m]）拉高意愿，明显敌对（H[C][m] ≥ hostility_veto）劝退。
+#   聚合（5+6 裁定）：欢迎数 > 拒绝数才放行（平票=拒绝）；任一成员 H[m][C] ≥ hostility_veto 硬否决。
+chat,welcome_theta,>=,40,多人加入：成员对加入者 score=A−H 的 sigmoid 拐点
+chat,welcome_scale,>=,12,多人加入：sigmoid 坡度
+chat,hostility_veto,>=,50,多人加入：明显敌对硬阈值（H≥50 意愿劝退 / 成员否决，双向分别判定）
+chat,desire_theta,>=,40,多人加入：加入者对在场朋友最高好感 max A 的 sigmoid 拐点
+chat,desire_scale,>=,10,多人加入：意愿 sigmoid 坡度
+chat,size_k,>=,0.3,多人加入：规模衰减系数 k（w_size(s)=1/(1+k·(s−s0))，s=加入前成员数）
+chat,size_s0,>=,4,多人加入：规模衰减参考规模 s0（s≤s0 不衰减）
+chat,duration_jitter_min,>=,0.8,聊天时长随机下限（乘 chat.duration；逐人独立计时）
+chat,duration_jitter_max,>=,1.2,聊天时长随机上限（乘 chat.duration）
