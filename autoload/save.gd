@@ -5,6 +5,9 @@ extends Node
 ## 默认写到 user://savegame.dat，单日结算点写入（架构总览 §4）。
 ## 方法名避开原生名：read / read_meta（不用 load / get_meta）。
 
+## 存档写入成功后发出（表现层据此播 save_complete 等反馈，内核不引用）。
+signal saved
+
 const DEFAULT_PATH := "user://savegame.dat"
 const SAVE_VERSION := 1
 
@@ -21,6 +24,7 @@ func save(data: Dictionary, path: String = DEFAULT_PATH) -> void:
 		push_error("Save: 无法写入 %s" % path)
 		return
 	f.store_string(JSON.stringify(payload))
+	saved.emit()
 
 
 ## 读取存档；文件缺失或损坏返回空字典。

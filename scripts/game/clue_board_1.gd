@@ -33,9 +33,11 @@ var _rest: Dictionary = {}
 var _pop_lift := 28.0
 var _pop_scale := 1.22
 var _close_button: Button
+var _sfx: Node = null
 
 
 func _ready():
+	_sfx = get_node_or_null("/root/SFX")
 	drawing_surface.z_index = 0
 	board_avatars.z_index = 1
 	chalk.z_index = 5
@@ -84,6 +86,8 @@ func _drop_transient_edit(keep_stroke: bool) -> void:
 	is_erasing = false
 	chalk.visible = false
 	eraser.visible = false
+	if _sfx != null:
+		_sfx.stop_board_loops()
 	if keep_stroke and current_line.size() >= 2:
 		lines.append({"points": current_line, "color": current_color})
 	current_line = PackedVector2Array()
@@ -295,11 +299,15 @@ func _input(event):
 					eraser.visible = true
 					_place_eraser_cursor(local)
 					_erase_at(local)
+					if _sfx != null:
+						_sfx.start_loop("EraserWipe")
 				else:
 					current_line = PackedVector2Array()
 					current_line.append(local)
 					chalk.visible = true
 					_place_chalk_cursor(local)
+					if _sfx != null:
+						_sfx.play_one_shot("ChalkTap")
 			else:
 				_finish_avatar_drag(event.position)
 				dragged_marker = null
@@ -307,6 +315,8 @@ func _input(event):
 				is_erasing = false
 				chalk.visible = false
 				eraser.visible = false
+				if _sfx != null:
+					_sfx.stop_board_loops()
 				drawing_surface.queue_redraw()
 	elif event is InputEventMouseMotion:
 		if drag_source:
@@ -320,9 +330,13 @@ func _input(event):
 				_place_eraser_cursor(local)
 				if is_erasing:
 					_erase_at(local)
+					if _sfx != null:
+						_sfx.start_loop("EraserWipe")
 			else:
 				current_line.append(local)
 				_place_chalk_cursor(local)
+				if _sfx != null:
+					_sfx.start_loop("ChalkWrite")
 			drawing_surface.queue_redraw()
 
 
@@ -392,6 +406,8 @@ func _finish_avatar_drag(pos: Vector2) -> void:
 			drag_ghost.reparent(board_avatars)
 			drag_ghost.position = drop_at
 			drag_ghost.z_index = 1
+			if _sfx != null:
+				_sfx.play_one_shot("PushpinDrop")
 	drag_source = null
 	drag_ghost = null
 
