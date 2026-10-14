@@ -21,9 +21,8 @@ extends Node3D
 ##     `move.duration`（该值目前没有表现层消费者）；
 ##   · 路线一律来自**导航网格**（`scenes/game/classroom3D.tscn` 的 NavigationRegion3D）：
 ##     取不到路线就留在原地并计数，**不用直线兜底**（直线会穿桌椅）；
-##   · **离座概率走统一公式**：`p = base_p × 外向修正(E)`，
-##     `base_p` 来自 `data/rules/behavior_probs.csv` 的 `move`（当前 0.20），
-##     外向修正（§10.4）：E≥50 → ×(1+(E−50)/100)，E<50 → ×(1−(50−E)/200)，下限 0.1；
+##   · **离座概率**：`p = base_p`（老师版删除外向修正），
+##     `base_p` 来自 `data/rules/behavior_probs.csv` 的 `move`（当前 0.20）；
 
 const MOVEMENT_TABLE := "rules/movement"
 const SPEED_PARAM := "meters_per_tick"
@@ -409,7 +408,7 @@ func _load_decide_interval() -> float:
 
 
 ## 课间一批离座决策：按角色索引升序（NPC移动决策 §9 可复现性）。
-## 离座概率走统一公式：p = base_p × 外向修正(E)
+## 离座概率：p = base_p（老师版删除外向修正）
 func _decide_batch() -> void:
 	if _decides_remaining > 0:
 		_decides_remaining -= 1
@@ -426,7 +425,7 @@ func _decide_batch() -> void:
 		var walker: ActorWalker = _walkers[i]
 		if walker == null or walker.is_moving():
 			continue
-		var p_move: float = base_p * _e_correction(i)
+		var p_move: float = base_p
 		if _rng.randf() > p_move:
 			continue
 		var point_id := _pick_point(i)
@@ -436,14 +435,6 @@ func _decide_batch() -> void:
 		moved += 1
 	if log_roam and moved > 0:
 		print("[roam] 课间第 %d 批：%d 人离座" % [_batch_count, moved])
-
-
-## 外向修正（主文档 §10.4）：E≥50 爱动，E<50 不爱动但概率永不为零（下限 0.1）。
-func _e_correction(i: int) -> float:
-	var e: float = _core.dimension(i, 0)
-	if e >= 50.0:
-		return 1.0 + (e - 50.0) / 100.0
-	return maxf(0.1, 1.0 - (50.0 - e) / 200.0)
 
 
 ## 按 §10.4 权重抽一个站立点；没有候选返回空串。

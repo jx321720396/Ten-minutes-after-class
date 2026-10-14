@@ -2,7 +2,7 @@ class_name NpcProfileData
 extends RefCounted
 ## 只读呈现模型：只接收已获得的历史；不持有SimCore，不读取隐藏关系矩阵。
 
-const AXES := ["affinity", "hostility", "trust"]
+const AXES := ["affinity", "hostility"]
 
 
 func build(records: Array, source: int, subject: int) -> Dictionary:

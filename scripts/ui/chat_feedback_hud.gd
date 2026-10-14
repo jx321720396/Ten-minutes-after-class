@@ -26,7 +26,7 @@ const COLOR_ACCEPT := Color(0.16, 0.46, 0.30)
 const COLOR_REJECT := Color(0.66, 0.30, 0.24)
 
 ## 轴的中文名（线索文案用；只三个轴）
-const AXIS_NAMES := {"affinity": "好感", "hostility": "敌对", "trust": "信任"}
+const AXIS_NAMES := {"affinity": "好感", "hostility": "敌对"}
 
 var _pen_card: PanelContainer = null
 var _pen: TextureRect = null
@@ -246,10 +246,6 @@ func format_clue(clue: Dictionary) -> String:
 	var axis := str(AXIS_NAMES.get(str(clue.get("axis", "")), "关系"))
 	var day := int(clue.get("day", 0))
 	var value := float(clue.get("value", 0.0))
-	if str(clue.get("via", "")) == "observe":
-		if bool(clue.get("belief", false)):
-			return "第 %d 天 · 你观察到：%s 以为你对他的%s是 %.0f（他可能想错了）" % [day, source, axis, value]
-		return "第 %d 天 · 你看出：%s 对你的%s是 %.0f" % [day, source, axis, value]
 	return "第 %d 天 · %s 透露：他对%s的%s是 %.0f（记录于当时，关系可能变化）" % [day, source, subject, axis, value]
 
 
@@ -332,8 +328,6 @@ func _refresh_invitation() -> void:
 	var kind := str(invitation.kind)
 	var names := {
 		"chat": "一起聊天",
-		"comfort": "聊聊心事",
-		"apologize": "和解",
 		"roughhouse": "一起打闹",
 	}
 	var seconds := maxf(

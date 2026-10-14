@@ -2,8 +2,7 @@ class_name PlayerChatIntel
 extends RefCounted
 ## 玩家闲聊线索（内核侧）：**自然完成**的一次玩家闲聊，才读取当刻真值透露单轴信息。
 ##
-## 依据：主文档 §10.5 第 5 条（玩家专属的关系透露：O < 50 透露 1 条、O ≥ 50 透露 2 条，
-##      每条只属于本次情报、不写回关系矩阵）；
+## 依据：主文档 §10.5 第 5 条（玩家专属的关系透露：每条只属于本次情报、不写回关系矩阵）；
 ##      docs/superpowers/plans/2026-10-07-chat-playable-loop.md §8.4。
 ##
 ## 三条硬约束：
@@ -11,17 +10,19 @@ extends RefCounted
 ##      因此显示 / 隐藏 UI、跳过动画、改帧率都不会改变抽样结果；
 ##   ② **只拷贝被抽中的那一个轴**，且读取的是「自然完成这一刻」的真值；
 ##      历史卡片不跟着矩阵实时刷新（记录 ≠ 实时视图）；
-##   ③ **不预设虚构对白**，也不把真值写回信念矩阵（当前信念结构也存不了第三人关系）。
+##   ③ **不预设虚构对白**，也不把真值写回任何矩阵。
+##
+## 老师版（2026-10-14）：删除透明度/信任轴——线索条数不再随透明度分档（§12.2 待裁定），
+##   暂固定为高限；单条线索只透露好感/敌对。
 
-## 单条线索只透露一个轴：好感 / 敌对 / 信任。
-const AXES: Array[String] = ["affinity", "hostility", "trust"]
+## 单条线索只透露一个轴：好感 / 敌对。
+const AXES: Array[String] = ["affinity", "hostility"]
 
 var _rng := RandomNumberGenerator.new()
 ## 历史日志（本局顺序，只增不改）
 var _history: Array = []
 var _next_clue_id := 1
 ## 呈现口径（来自 data/rules/player_interaction.csv，不落脚本魔法数字）
-var _opacity_split := 50.0
 var _count_low := 1
 var _count_high := 2
 
@@ -30,9 +31,8 @@ func _init(seed: int) -> void:
 	_rng.seed = seed
 
 
-## 注入配置：透明度分界与两档条数。
+## 注入配置：两档条数。
 func configure(params: Dictionary) -> void:
-	_opacity_split = float(params.get("clue_opacity_split", _opacity_split))
 	_count_low = int(params.get("clue_count_low", _count_low))
 	_count_high = int(params.get("clue_count_high", _count_high))
 
@@ -54,22 +54,22 @@ func clue_count() -> int:
 	return _history.size()
 
 
-## 应透露几条：由**闲聊对象当时的透明度**决定（与 §9.2 的透明度分界同一口径）。
-func clue_count_for(opacity_value: float) -> int:
-	return _count_high if opacity_value >= _opacity_split else _count_low
+## 应透露几条：透明度已删除，暂固定为高限（§12.2 打听信息量策略待裁定）。
+func clue_count_for() -> int:
+	return _count_high
 
 
 ## 抽样：从候选对象里选（不重复）subject，并为每条独立抽一个轴。
 ## candidates 必须是**已经排好序**的角色索引（排除玩家与 source，由调用方保证）。
 ## 返回 [{"subject": int, "axis": String}]，长度即本次透露条数。
-func draw_subjects(opacity_value: float, candidates: Array) -> Array:
+func draw_subjects(candidates: Array) -> Array:
 	var out: Array = []
 	var pool: Array = []
 	for c in candidates:
 		pool.append(int(c))
 	if pool.is_empty():
 		return out
-	var want := clue_count_for(opacity_value)
+	var want := clue_count_for()
 	for _k in range(want):
 		if pool.is_empty():
 			break

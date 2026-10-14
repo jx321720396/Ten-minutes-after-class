@@ -7,9 +7,7 @@ func test_non_chat_actions_display_progress_from_busy_ticks() -> void:
 	var hud := ChatFeedbackHUD.new()
 	add_child_autofree(hud)
 	hud.bind_core(core)
-	for kind in [
-		"study", "observe", "pass_note", "report", "roughhouse", "exclude", "comfort", "apologize"
-	]:
+	for kind in ["study", "roughhouse"]:
 		core._busy_act[me] = kind
 		core._busy_until[me] = core.global_tick() + 10
 		core._busy_phase[me] = core._phase_index
@@ -51,21 +49,6 @@ func test_disabled_roam_does_not_start_a_batch_at_phase_boundary() -> void:
 	roam._actor_count = 0
 	roam._on_phase_changed({"kind": "break"})
 	assert_eq(roam._batch_count, 0, "禁用走动后绑定时钟也不能隐式启动第一批")
-
-
-func test_free_join_only_decides_for_npcs() -> void:
-	var core := _core()
-	var me := core.node_count() - 1
-	core._probs["free_join_rate"] = 100.0
-	core._neighbor_idx[me] = [0]
-	core._current_act[me] = "player_choice"
-	core._current_act[0] = "study"
-	core._behaviors["study"]["join_mode"] = "free"
-	core._dims[2 * core.node_count() + me] = 100.0
-	core._dims[core.node_count() + me] = 0.0
-	core._dims[3 * core.node_count() + me] = 0.0
-	core._free_join()
-	assert_eq(core.activity_of(me), "player_choice", "跟随算法不能替玩家选择活动")
 
 
 func test_passive_chat_shows_activity_and_clears_after_completion() -> void:

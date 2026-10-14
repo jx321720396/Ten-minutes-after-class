@@ -103,7 +103,7 @@ func test_invitation_card_can_reject_without_blocking_player() -> void:
 
 
 func test_all_cooperative_behaviors_wait_for_consent() -> void:
-	for kind in ["chat", "comfort", "apologize", "roughhouse"]:
+	for kind in ["chat", "roughhouse"]:
 		var core := _core()
 		var me := core.node_count() - 1
 		var before := core.affinity(me, 0)
@@ -134,12 +134,3 @@ func test_npc_joining_player_chat_requires_player_approval() -> void:
 		assert_true(bool(result.ok))
 		assert_eq(core.session_of(1), sid if accept else -1)
 		assert_eq(core.session_of(me), sid, "拒绝不破坏玩家原会话")
-
-
-func test_external_harm_does_not_force_player_activity() -> void:
-	var core := _core()
-	var me := core.node_count() - 1
-	core._do_exclude(0, me, [1, 2, 3])
-	assert_false(core.is_busy(me), "被排挤不等于玩家选择参与活动")
-	assert_eq(core.activity_of(me), "")
-	assert_true(core.get_player_invitation().is_empty(), "外部伤害不伪装成邀请")

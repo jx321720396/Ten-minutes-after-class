@@ -3,14 +3,7 @@ extends RefCounted
 ## 固定行为注册与分发；构造不消费随机数。每个内核实例独立持有。
 
 const CHAT = preload("res://scripts/systems/behaviors/chat_behavior.gd")
-const TEASE = preload("res://scripts/systems/behaviors/tease_behavior.gd")
-const REPORT = preload("res://scripts/systems/behaviors/report_behavior.gd")
 const ROUGH_HOUSE = preload("res://scripts/systems/behaviors/roughhouse_behavior.gd")
-const EXCLUDE = preload("res://scripts/systems/behaviors/exclude_behavior.gd")
-const COMFORT = preload("res://scripts/systems/behaviors/comfort_behavior.gd")
-const APOLOGIZE = preload("res://scripts/systems/behaviors/apologize_behavior.gd")
-const PASS_NOTE = preload("res://scripts/systems/behaviors/pass_note_behavior.gd")
-const OBSERVE = preload("res://scripts/systems/behaviors/observe_behavior.gd")
 
 var _context: RefCounted
 var _components: Dictionary
@@ -20,14 +13,7 @@ func _init(context: RefCounted) -> void:
 	_context = context
 	_components = {
 		&"chat": CHAT.new(),
-		&"tease": TEASE.new(),
-		&"report": REPORT.new(),
 		&"roughhouse": ROUGH_HOUSE.new(),
-		&"exclude": EXCLUDE.new(),
-		&"comfort": COMFORT.new(),
-		&"apologize": APOLOGIZE.new(),
-		&"pass_note": PASS_NOTE.new(),
-		&"observe": OBSERVE.new(),
 	}
 	_context.bind_registry(self)
 

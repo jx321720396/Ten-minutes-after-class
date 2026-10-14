@@ -3,7 +3,7 @@ extends Control
 ## 五格图形，填充裁剪在图标内部；不以文字显示隐藏数值。
 
 const SETTINGS := "res://data/ui/term_report.json"
-const AXES := ["affinity", "hostility", "trust"]
+const AXES := ["affinity", "hostility"]
 
 var _cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS))
 var _axis := "affinity"
@@ -108,19 +108,6 @@ func _shape() -> PackedVector2Array:
 				Vector2(0.32, 1.0),
 				Vector2(0.87, 0.38),
 				Vector2(0.55, 0.38)
-			]
-		)
-	if _axis == "trust":
-		return PackedVector2Array(
-			[
-				Vector2(0.5, 0.02),
-				Vector2(0.93, 0.18),
-				Vector2(0.88, 0.62),
-				Vector2(0.74, 0.83),
-				Vector2(0.5, 1.0),
-				Vector2(0.26, 0.83),
-				Vector2(0.12, 0.62),
-				Vector2(0.07, 0.18)
 			]
 		)
 	var points := PackedVector2Array()

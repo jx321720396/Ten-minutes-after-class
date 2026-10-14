@@ -137,7 +137,6 @@ func test_completed_term_replays_to_true_final_matrices() -> void:
 		for j in core.node_count():
 			assert_eq(replay.value(0, i, j), core.affinity(i, j))
 			assert_eq(replay.value(1, i, j), core.hostility(i, j))
-			assert_eq(replay.value(2, i, j), core.trust(i, j))
 
 
 func test_rejection_interruption_and_invitation_counts_are_separate() -> void:

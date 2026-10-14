@@ -141,7 +141,6 @@ func test_player_is_a_relationship_target_with_truthful_read_only_impression() -
 	var player := core.node_count() - 1
 	core._a[player] = 90.0
 	core._h[player] = 0.0
-	core._t[player] = 55.0
 	var before := core.get_player_intel()
 	profile.bind_sources(core, null, null)
 	profile.open_profile(0)

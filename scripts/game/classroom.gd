@@ -25,7 +25,6 @@ const TERM_REPORT_SCENE := preload("res://scenes/ui/term_report.tscn")
 @onready var chat_hud: ChatFeedbackHUD = $ChatHUD
 @onready var action_bar: PlayerActionBar = $ActionBar
 @onready var interaction: PlayerInteractionController = $Interaction
-@onready var note_prompt: NotePrompt = $NotePrompt
 @onready var behavior_badge: BehaviorBadgePresenter = $BehaviorBadge
 @onready var npc_profile: NpcProfile = $UI/NpcProfile
 @onready var tutorial: TutorialOverlay = $TutorialOverlay
@@ -197,7 +196,7 @@ func _bind_feedback(core: Variant) -> void:
 	# 头顶行为徽标（§20.1.4）：本批只接「手里拿着纸条」（§21.2.9）
 	behavior_badge.bind_core(core)
 	behavior_badge.bind_actors(actors)
-	interaction.bind_feedback(action_bar, chat_hud, rings, chat_bubble, emotion, note_prompt)
+	interaction.bind_feedback(action_bar, chat_hud, rings, chat_bubble, emotion)
 	_inject_seat_zones(core)
 	interaction.bind_sources(core, player, actors, clock)
 	npc_profile.bind_sources(core, actors, interaction)

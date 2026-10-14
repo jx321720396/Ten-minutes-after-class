@@ -61,6 +61,6 @@ class TeacherPatrol:
         return True
 
     def multiplier(self, kind):
-        if self.present and kind in ("tease", "roughhouse", "exclude"):
+        if self.present and kind in ("roughhouse",):
             return self.params["suppress_behavior_mult"]
         return 1.0
