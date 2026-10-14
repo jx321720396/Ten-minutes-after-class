@@ -28,6 +28,15 @@ offset_top = 20.0
 offset_right = 1900.0
 offset_bottom = 940.0
 
+[node name="MonitorHeader" type="PanelContainer" parent="Design"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 0
+offset_left = 1450.0
+offset_top = 20.0
+offset_right = 1900.0
+offset_bottom = 118.0
+
 [node name="Rows" type="VBoxContainer" parent="Design/Frame"]
 unique_name_in_owner = true
 layout_mode = 2
