@@ -14,6 +14,10 @@ extends GutTest
 const SCENE_PATH := "res://scenes/game/classroom3D.tscn"
 const SEED := 20261007
 const NPC_COUNT := 16
+## 老师版界面接管（CHANGELOG 2026-10-14「老师版监控／现场界面清理」）后，教室场景已停用
+## 旧学生版的行为栏、点人、邀请／聊天轮询与玩家可控移动。依赖这些旧接线的场景级用例暂时
+## pending；老师版内核迁移完成后去掉 pending、恢复原断言。
+const PENDING_TEACHER_UI := "老师版界面接管后旧学生版行为／轮询已停用（见 CHANGELOG 2026-10-14），" + "待老师版内核迁移完成后恢复"
 
 
 func before_each() -> void:
@@ -234,10 +238,14 @@ func _advance_to_free(scene: Node3D) -> void:
 
 
 func test_incoming_invitation_accept_button_starts_activity() -> void:
+	pending(PENDING_TEACHER_UI)
+	return
 	await _check_incoming_invitation(true)
 
 
 func test_incoming_invitation_reject_button_keeps_player_free() -> void:
+	pending(PENDING_TEACHER_UI)
+	return
 	await _check_incoming_invitation(false)
 
 
@@ -339,6 +347,8 @@ func test_nearby_chat_runs_and_yields_intel_after_natural_completion() -> void:
 
 
 func test_profile_menu_pause_and_chat_use_existing_controller() -> void:
+	pending(PENDING_TEACHER_UI)
+	return
 	var scene: Node3D = await _open_scene()
 	var sim: Variant = _sim(scene)
 	scene.get_node("Clock").hold(&"integration_fixture")
@@ -374,6 +384,8 @@ func test_profile_menu_pause_and_chat_use_existing_controller() -> void:
 ## `monitorable` 一起关掉，Area3D 根本不进物理空间，`intersect_ray` 打不中，
 ## 点人就退化成点地面（还会顺手清掉已选中的动作）。
 func test_action_bar_then_clicking_actor_starts_chat() -> void:
+	pending(PENDING_TEACHER_UI)
+	return
 	var scene: Node3D = await _open_scene()
 	var sim: Variant = _sim(scene)
 	scene.get_node("Clock").hold(&"integration_fixture")
