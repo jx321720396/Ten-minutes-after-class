@@ -8,6 +8,10 @@ const OVERLAY = preload("res://scenes/ui/tutorial_overlay.tscn")
 const SETTINGS = preload("res://scenes/ui/settings_menu.tscn")
 const ROOM := "res://scenes/game/classroom3D.tscn"
 const ROOM_SEED := 20261013
+## 老师版界面接管（CHANGELOG 2026-10-14「老师版监控／现场界面清理」）后，教室不再接学生版教程
+## （classroom.gd 直接置 GameState.tutorial_pending = false，设置里的重看入口也禁用）。
+## 依赖教室接线的两条用例暂时 pending；老师版教程适配完成后去掉 pending、恢复原断言。
+const PENDING_TEACHER_UI := "老师版界面接管后学生版教程暂停展示（见 CHANGELOG 2026-10-14），" + "待老师版教程适配后恢复"
 
 var _seen_tmp := "user://test_tutorial_seen_tmp.dat"
 
@@ -47,6 +51,7 @@ func _close_intro(d: TutorialOverlay) -> void:
 
 # ------------------------------------------------------------------ 配置
 
+
 func test_config_loads_with_three_cards_and_five_steps() -> void:
 	var d := _overlay()
 	assert_eq(d._cfg.get("intro_cards", []).size(), 3, "开场卡 3 张")
@@ -58,6 +63,7 @@ func test_config_loads_with_three_cards_and_five_steps() -> void:
 
 
 # ------------------------------------------------------------------ 开场卡 → 步进
+
 
 func test_intro_cards_advance_then_first_step_shows() -> void:
 	var d := _overlay()
@@ -147,6 +153,7 @@ func test_skip_during_intro_releases_and_marks_seen() -> void:
 
 # ------------------------------------------------------------------ 教室接线
 
+
 func _open_room() -> Node3D:
 	var room: Node3D = load(ROOM).instantiate()
 	room.get_node("Roam").enabled = false
@@ -167,6 +174,8 @@ func test_classroom_without_pending_has_no_tutorial_and_no_freeze() -> void:
 
 
 func test_classroom_with_pending_shows_intro_and_freezes_until_skip() -> void:
+	pending(PENDING_TEACHER_UI)
+	return
 	get_node("/root/GameState").tutorial_pending = true
 	var room := await _open_room()
 	var clock: SimulationClock = room.get_node("Clock")
@@ -183,6 +192,8 @@ func test_classroom_with_pending_shows_intro_and_freezes_until_skip() -> void:
 
 
 func test_classroom_intro_close_enters_s1_with_highlight() -> void:
+	pending(PENDING_TEACHER_UI)
+	return
 	# 回归 CanvasLayer 类型错误：教室绑的是 time_hud._panel / action_bar._panel（Control），
 	# 关卡进 S1 后高亮要真的画出来，且不报「CanvasLayer → Control」类型错。
 	get_node("/root/GameState").tutorial_pending = true
@@ -201,6 +212,7 @@ func test_classroom_intro_close_enters_s1_with_highlight() -> void:
 
 # ------------------------------------------------------------------ 设置入口
 
+
 func test_settings_menu_emits_replay_request() -> void:
 	var menu: Control = SETTINGS.instantiate()
 	add_child_autofree(menu)
@@ -211,6 +223,7 @@ func test_settings_menu_emits_replay_request() -> void:
 
 
 # ------------------------------------------------------------------ 锚点高亮
+
 
 func _goto_step(d: TutorialOverlay, index: int) -> void:
 	_close_intro(d)
@@ -243,6 +256,7 @@ func test_anchor_with_control_positions_highlight() -> void:
 
 
 # ------------------------------------------------------------------ 「下一步」按钮
+
 
 func test_every_step_has_manual_next_button_and_clicking_through_finishes() -> void:
 	var d := _overlay()
