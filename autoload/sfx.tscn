@@ -1,0 +1,88 @@
+[gd_scene format=3 uid="uid://chvhi0jouk4di"]
+
+[ext_resource type="Script" uid="uid://dj46sfgft1786" path="res://autoload/sfx.gd" id="1_script"]
+[ext_resource type="AudioStream" uid="uid://tfs3dlex5leh" path="res://music/改1/ui_light_hint.mp3" id="2_dmlr5"]
+[ext_resource type="AudioStream" uid="uid://bro4i17bbc15u" path="res://music/footsteps_wood_tile.mp3" id="3_footstep"]
+[ext_resource type="AudioStream" uid="uid://c8sodykhsjuyp" path="res://music/ui_button_click.mp3" id="4_disabled"]
+[ext_resource type="AudioStream" uid="uid://be1tymjmdbs48" path="res://music/改1/chalk_tap.mp3" id="5_chalk_tap"]
+[ext_resource type="AudioStream" uid="uid://mk736p7p3mlr" path="res://music/改1/chalk_write.mp3" id="6_chalk_write"]
+[ext_resource type="AudioStream" uid="uid://cvrp6rxgfufo5" path="res://music/eraser_wipe.mp3" id="7_eraser"]
+[ext_resource type="AudioStream" uid="uid://3iorb4aip4bc" path="res://music/改1/pushpin_drop.mp3" id="8_pushpin"]
+[ext_resource type="AudioStream" uid="uid://bblidpllaum1p" path="res://music/amb_class.mp3" id="9_amb_class"]
+[ext_resource type="AudioStream" uid="uid://dpfv77sae5pgg" path="res://music/morning_birds.mp3" id="10_birds"]
+[ext_resource type="AudioStream" uid="uid://c6l0u3xebfb8o" path="res://music/after_school_settle.mp3" id="11_settle"]
+[ext_resource type="AudioStream" uid="uid://gmy3gsesthme" path="res://music/note_pass.mp3" id="12_note"]
+[ext_resource type="AudioStream" uid="uid://chag8f3larx53" path="res://music/改1/save_complete.mp3" id="13_save"]
+[ext_resource type="AudioStream" uid="uid://cfu27rci2ppek" path="res://music/act_chat_start.mp3" id="14_chat"]
+[ext_resource type="AudioStream" uid="uid://35hlwafr82j" path="res://music/改1/chase_ruckus.mp3" id="15_chase"]
+
+[node name="SFX" type="Node" unique_id=188820636]
+script = ExtResource("1_script")
+
+[node name="ButtonClick" type="AudioStreamPlayer" parent="." unique_id=671408121]
+stream = ExtResource("2_dmlr5")
+volume_db = 24.0
+bus = &"SFX"
+
+[node name="DisabledClick" type="AudioStreamPlayer" parent="." unique_id=848169990]
+stream = ExtResource("4_disabled")
+volume_db = 24.0
+bus = &"SFX"
+
+[node name="Footsteps" type="AudioStreamPlayer" parent="." unique_id=900498290]
+stream = ExtResource("3_footstep")
+volume_db = 11.965
+bus = &"SFX"
+
+[node name="ChalkTap" type="AudioStreamPlayer" parent="." unique_id=10596986]
+stream = ExtResource("5_chalk_tap")
+volume_db = 0.108
+bus = &"SFX"
+
+[node name="ChalkWrite" type="AudioStreamPlayer" parent="." unique_id=1380762962]
+stream = ExtResource("6_chalk_write")
+volume_db = 11.713
+bus = &"SFX"
+
+[node name="EraserWipe" type="AudioStreamPlayer" parent="." unique_id=703261817]
+stream = ExtResource("7_eraser")
+volume_db = 7.604
+bus = &"SFX"
+
+[node name="PushpinDrop" type="AudioStreamPlayer" parent="." unique_id=104183122]
+stream = ExtResource("8_pushpin")
+volume_db = 11.351
+bus = &"SFX"
+
+[node name="AmbClass" type="AudioStreamPlayer" parent="." unique_id=582476051]
+stream = ExtResource("9_amb_class")
+bus = &"SFX"
+
+[node name="MorningBirds" type="AudioStreamPlayer" parent="." unique_id=1953310284]
+stream = ExtResource("10_birds")
+volume_db = 5.622
+bus = &"SFX"
+
+[node name="AfterSchoolSettle" type="AudioStreamPlayer" parent="." unique_id=850555657]
+stream = ExtResource("11_settle")
+volume_db = 2.342
+bus = &"SFX"
+
+[node name="NotePass" type="AudioStreamPlayer" parent="." unique_id=1794430506]
+stream = ExtResource("12_note")
+volume_db = 5.622
+bus = &"SFX"
+
+[node name="SaveComplete" type="AudioStreamPlayer" parent="." unique_id=363811692]
+stream = ExtResource("13_save")
+volume_db = 1.874
+bus = &"SFX"
+
+[node name="ActChatStart" type="AudioStreamPlayer" parent="." unique_id=870116749]
+stream = ExtResource("14_chat")
+volume_db = 18.378
+bus = &"SFX"
+
+[node name="ChaseRuckus" type="AudioStreamPlayer" parent="." unique_id=1681363196]
+stream = ExtResource("15_chase")
+bus = &"SFX"

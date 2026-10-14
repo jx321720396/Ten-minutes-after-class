@@ -108,6 +108,10 @@ var _pick_layer := 2
 var _blocker_layer := 1
 ## 移动状态是否已写回内核（避免每帧重复调用）
 var _moving_written := false
+## 脚步声：每走 footstep_distance_m 米触发一次（data/rules/audio.csv；<=0 关闭）
+var _footstep_interval_m := 0.0
+var _footstep_travel := 0.0
+var _sfx: Node = null
 
 
 func bind_time_flow(flow: TimeFlow) -> void:
@@ -116,6 +120,7 @@ func bind_time_flow(flow: TimeFlow) -> void:
 
 func _ready() -> void:
 	_register_actions()
+	_sfx = get_node_or_null("/root/SFX")
 	# 等一帧：人物由 Actors（classroom_actors.gd）在自己的 _ready 里生成
 	await get_tree().process_frame
 	_core = _current_core()
@@ -507,6 +512,18 @@ func _step(delta: Vector3, delta_time: float) -> void:
 	if applied.length() <= 0.0:
 		return
 	_walker.move_by(applied, delta_time)
+	_step_footstep_audio(applied.length())
+
+
+## 按行走距离触发脚步声（与速度无关的节奏；手动与自动寻路共用）。
+func _step_footstep_audio(distance: float) -> void:
+	if _footstep_interval_m <= 0.0 or _sfx == null:
+		return
+	_footstep_travel += distance
+	if _footstep_travel < _footstep_interval_m:
+		return
+	_footstep_travel = fmod(_footstep_travel, _footstep_interval_m)
+	_sfx.play_footstep()
 
 
 ## 沿 delta 分步采样推进：每一步都必须可走，返回真正能到达的位置。
@@ -996,6 +1013,16 @@ func _load_config() -> void:
 		_speed = 1.6
 	if _grid <= 0.0:
 		_grid = 0.25
+	_load_footstep_config()
+
+
+## 脚步声触发距离：data/rules/audio.csv 的 footstep_distance_m。
+func _load_footstep_config() -> void:
+	for row in Config.get_table("rules/audio").get("rows", []):
+		if str(row.get("key", "")) == "footstep_distance_m":
+			_footstep_interval_m = float(str(row["value"]))
+			return
+	push_warning("PlayerController：rules/audio.csv 缺少 footstep_distance_m —— 脚步声关闭。")
 
 
 func _locate_player() -> void:

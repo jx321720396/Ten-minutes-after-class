@@ -51,6 +51,10 @@ func _ready() -> void:
 		transition.force_hide()
 		return
 	time_hud.bind_clock(clock)
+	# 相位环境声：上课循环 amb_class（每天第一节课加晨鸟叫），课间 / 放学停。
+	# bind_core 不会补发 phase_changed，所以连上后先按当前快照复查一次。
+	clock.phase_changed.connect(SFX.on_phase_changed)
+	SFX.on_phase_changed(clock.snapshot())
 	_term_report = TERM_REPORT_SCENE.instantiate()
 	add_child(_term_report)
 	_term_report.bind_sources(core, clock, actors)

@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://coaplg0jnql4x"
+path="res://.godot/imported/ui_button_click .mp3-4f4faaaaf4a6b4e0d31777b49cbc84f3.mp3str"
+
+[deps]
+
+source_file="res://music/改1/ui_button_click .mp3"
+dest_files=["res://.godot/imported/ui_button_click .mp3-4f4faaaaf4a6b4e0d31777b49cbc84f3.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
