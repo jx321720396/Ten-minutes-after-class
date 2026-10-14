@@ -1,0 +1,41 @@
+{
+  "description": "老师版左上角时间／首次周考卡片。target_mean 为可调整的 UI 试用目标，尚未接入辞退判定；分数直接读取 750 分制内核。",
+  "target_mean": 525,
+  "target_is_provisional": true,
+  "width": 340,
+  "minimum_height": 224,
+  "margin": [
+    16,
+    16
+  ],
+  "content_margins": [
+    30,
+    30,
+    24,
+    24
+  ],
+  "title_font_size": 22,
+  "detail_font_size": 20,
+  "exam_font_size": 22,
+  "goal_font_size": 18,
+  "row_gap": 6,
+  "bar_height": 10,
+  "bar_radius": 5,
+  "icon_size": 22,
+  "icon_gap": 8,
+  "phase_names": {
+    "morning_break": "第一课间",
+    "lunch_break": "第二课间",
+    "afternoon_break": "第三课间"
+  },
+  "messages": {
+    "week_future": "周考还有 %d 天",
+    "week_today": "今天周考",
+    "week_past": "首次周考已结束",
+    "week_unknown": "周考日期待设置",
+    "goal_missing": "目标均分 %s · 均分待获取",
+    "goal_gap": "目标均分 %s · [color=%s]还差 %s 分[/color]",
+    "goal_reached": "目标均分 %s · [color=%s]已达标[/color]",
+    "grade_tooltip": "学生均分 %s / %s（共 %d 人）"
+  }
+}

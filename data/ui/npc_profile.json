@@ -6,5 +6,9 @@
     {"minimum": 50, "label": "band_high"},
     {"minimum": 75, "label": "band_very_high"}
   ],
-  "encounter_limit": 3
+  "encounter_limit": 3,
+  "portrait_art_height": 300,
+  "portraits": {
+    "01": "res://assets/textures/characters/portraits/chen_yang_v01.png"
+  }
 }

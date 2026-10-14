@@ -1,6 +1,6 @@
 class_name NpcProfile
 extends CanvasLayer
-## 同学档案：原生UI + 已获知历史快照。未知不等于中立，不读NPC实时关系。
+## 同学档案：统一关系对象；对玩家显示真实分档，对其他同学只读已获知历史。
 
 signal closed
 
@@ -68,6 +68,13 @@ func open_profile(index: int) -> void:
 	%Seat.text = words("seat", {"seat": _core.seat_of(index)})
 	%RosterCount.text = "%02d / %02d" % [index + 1, int(_core.node_count()) - 1]
 	_portrait.texture = _texture_for(index)
+	var detailed: bool = _config.get("portraits", {}).has(str(_core.character_id(index)))
+	_portrait.texture_filter = (
+		Control.TEXTURE_FILTER_LINEAR if detailed else Control.TEXTURE_FILTER_NEAREST
+	)
+	_portrait.get_parent().custom_minimum_size.y = (
+		float(_config.get("portrait_art_height", 228)) if detailed else 228.0
+	)
 	%MissingPortrait.visible = _portrait.texture == null
 	_rebuild_targets()
 	_refresh_records()
@@ -130,14 +137,11 @@ func _step_person(direction: int) -> void:
 
 func _rebuild_targets() -> void:
 	_targets.clear()
-	var preferred := -1
-	for clue in _history:
-		if int(clue.get("source", -1)) == _index:
-			preferred = int(clue.get("subject", -1))
+	var preferred := int(_core.node_count()) - 1
 	for i in range(int(_core.node_count())):
-		if i == _index or _core.is_player(i):
+		if i == _index:
 			continue
-		_targets.add_item(str(_core.alias(i)), i)
+		_targets.add_item(words("me") if _core.is_player(i) else str(_core.alias(i)), i)
 	if _targets.item_count == 0:
 		_subject = -1
 		return
@@ -153,6 +157,9 @@ func _on_target_selected(item: int) -> void:
 
 func _refresh_records() -> void:
 	var result: Dictionary = _model.build(_history, _index, _subject)
+	var personal: bool = _subject >= 0 and _core.is_player(_subject)
+	%KnownNote.text = words("personal_note" if personal else "known_note")
+	%TimeHeading.text = words("current_time_label" if personal else "record_label")
 	%RelationTitle.text = words(
 		"relation", {"source": _core.alias(_index), "subject": _subject_name()}
 	)
@@ -160,6 +167,12 @@ func _refresh_records() -> void:
 		var base: String = AXIS_NODES[axis]
 		var value: Label = get_node("%" + base + "Value")
 		var stamp: Label = get_node("%" + base + "Time")
+		if personal:
+			value.text = _band(float(_core.call(axis, _index, _subject)))
+			value.add_theme_color_override("font_color", STYLE.INK)
+			stamp.text = words("current_impression")
+			stamp.tooltip_text = ""
+			continue
 		var clue: Dictionary = result.latest.get(axis, {})
 		value.text = words("unknown") if clue.is_empty() else _band(float(clue.value))
 		value.add_theme_color_override("font_color", STYLE.MUTED if clue.is_empty() else STYLE.INK)
@@ -174,6 +187,11 @@ func _refresh_records() -> void:
 	%RecordTime.text = words("empty_time") if newest.is_empty() else _date(newest)
 	%Age.text = "" if newest.is_empty() else _age(newest)
 	%StaleNote.visible = not newest.is_empty()
+	if personal:
+		%Source.text = words("direct_impression")
+		%RecordTime.text = _date(_core.time_snapshot())
+		%Age.text = ""
+		%StaleNote.hide()
 	_render_history(result.history)
 	_render_encounters(result.encounters)
 
@@ -181,7 +199,12 @@ func _refresh_records() -> void:
 func _render_history(history: Array) -> void:
 	_clear(_history_rows)
 	if history.is_empty():
-		_history_rows.add_child(_label(words("history_empty"), 28, STYLE.MUTED))
+		var personal: bool = _subject >= 0 and _core.is_player(_subject)
+		_history_rows.add_child(
+			_label(
+				words("personal_history_empty" if personal else "history_empty"), 28, STYLE.MUTED
+			)
+		)
 	for clue in history:
 		var row := PanelContainer.new()
 		row.add_theme_stylebox_override("panel", STYLE.box(Color(1, 1, 1, 0.2), STYLE.LINE, 6, 1))
@@ -241,6 +264,9 @@ func _on_chat() -> void:
 
 
 func _texture_for(index: int) -> Texture2D:
+	var path := str(_config.get("portraits", {}).get(str(_core.character_id(index)), ""))
+	if not path.is_empty() and ResourceLoader.exists(path):
+		return load(path) as Texture2D
 	if _actors == null:
 		return null
 	var actor: Node3D = _actors.actor_for(index)
@@ -251,6 +277,8 @@ func _texture_for(index: int) -> Texture2D:
 
 
 func _subject_name() -> String:
+	if _subject >= 0 and _core.is_player(_subject):
+		return words("me")
 	return str(_core.alias(_subject)) if _subject >= 0 else words("none")
 
 
@@ -290,10 +318,6 @@ func _set_static_text() -> void:
 		"HistoryTitle": "history_title",
 		"HistoryNote": "history_note",
 		"EncountersTitle": "encounters_title",
-		"JudgmentTitle": "judgment_title",
-		"JudgmentValue": "judgment_empty",
-		"JudgmentNote": "judgment_note",
-		"UnknownNote": "unknown_note",
 		"Footer": "footer",
 		"SourceHeading": "source_label",
 		"TimeHeading": "record_label",

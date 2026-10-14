@@ -13,19 +13,19 @@ func test_live_volume_and_threshold_are_read_only() -> void:
 	var volume_before := core.volume()
 	assert_eq(float(clock.snapshot().get("volume", -1)), volume_before)
 	assert_eq(float(clock.snapshot().get("volume_threshold", -1)), 20.0)
-	assert_not_null(hud.get_node_or_null("VolumeCard"))
+	assert_not_null(hud.get_node_or_null("ClassOverviewCard"))
 	clock.pump(1.0)
 	assert_eq(float(clock.snapshot().get("volume", -1)), core.volume())
-	assert_eq(hud.get_node("VolumeCard").value, core.volume())
+	assert_almost_eq(float(clock.snapshot().get("volume", -1)), core.volume(), 0.001)
 	var after := core.volume()
-	hud.get_node("VolumeCard").queue_redraw()
+	hud.get_node("ClassOverviewCard").refresh(clock.snapshot())
 	assert_eq(core.volume(), after)
 
 
-func test_unbound_hud_does_not_invent_volume() -> void:
+func test_unbound_hud_does_not_invent_class_grade() -> void:
 	var hud := TimeHUD.new()
 	add_child_autofree(hud)
-	assert_false(hud.get_node("VolumeCard").visible)
+	assert_eq(hud.get_node("ClassOverviewCard").find_child("GradeValue", true, false).text, "—")
 
 
 func test_display_uses_snapshot_scale_and_clamps_only_its_copy() -> void:

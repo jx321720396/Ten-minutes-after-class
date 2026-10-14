@@ -1,0 +1,141 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/teacher_classroom.gd" id="1"]
+
+[node name="TeacherClassroom" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture_filter = 2
+script = ExtResource("1")
+
+[node name="Design" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+mouse_filter = 2
+
+[node name="Frame" type="PanelContainer" parent="Design"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 1450.0
+offset_top = 20.0
+offset_right = 1900.0
+offset_bottom = 940.0
+
+[node name="Rows" type="VBoxContainer" parent="Design/Frame"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ModeRow" type="HBoxContainer" parent="Design/Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ModeBadge" type="PanelContainer" parent="Design/Frame/Rows/ModeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Mode" type="Label" parent="Design/Frame/Rows/ModeRow/ModeBadge"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+vertical_alignment = 1
+horizontal_alignment = 1
+
+[node name="ReturnOffice" type="Button" parent="Design/Frame/Rows/ModeRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Design/Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Patrol" type="Button" parent="Design/Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 0
+
+[node name="PrivateChat" type="Button" parent="Design/Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 0
+
+[node name="Seats" type="Button" parent="Design/Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 0
+
+[node name="Conflict" type="Button" parent="Design/Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 0
+
+[node name="Hint" type="Label" parent="Design/Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="Separator" type="HSeparator" parent="Design/Frame/Rows"]
+layout_mode = 2
+
+[node name="TargetHeading" type="Label" parent="Design/Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Target" type="Label" parent="Design/Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 86)
+autowrap_mode = 3
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Profile" type="Button" parent="Design/Frame/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 62)
+
+[node name="StatusCard" type="PanelContainer" parent="Design"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 570.0
+offset_top = 970.0
+offset_right = 1230.0
+offset_bottom = 1052.0
+mouse_filter = 2
+
+[node name="Status" type="Label" parent="Design/StatusCard"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Tools" type="HBoxContainer" parent="Design"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 1300.0
+offset_top = 988.0
+offset_right = 1876.0
+offset_bottom = 1052.0
+
+[node name="ProfileTool" type="Button" parent="Design/Tools"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BookTool" type="Button" parent="Design/Tools"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BoardTool" type="Button" parent="Design/Tools"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3

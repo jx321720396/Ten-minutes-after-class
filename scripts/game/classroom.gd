@@ -69,7 +69,16 @@ func _ready() -> void:
 	_bind_feedback(core)
 	clock.time_updated.connect(_sync_state_mirror)
 	time_hud.continue_requested.connect(_on_continue_requested)
-	_bind_tutorial()
+	# 当前入口使用老师界面，学生版教程不能再指向已移除的行为栏。
+	GameState.tutorial_pending = false
+	_install_office()
+
+
+func _install_office() -> void:
+	var hub := preload("res://scripts/game/office_hub.gd").new()
+	hub.name = "OfficeHub"
+	add_child(hub)
+	hub.bind_classroom(self)
 
 
 ## 新手教程（28 章 P0）：只有入口（主菜单开新局）置了 tutorial_pending 才弹；
@@ -87,7 +96,9 @@ func _bind_tutorial() -> void:
 	if not tutorial.intro_closed.is_connected(_on_tutorial_intro_closed):
 		tutorial.intro_closed.connect(_on_tutorial_intro_closed, CONNECT_ONE_SHOT)
 	# 锚点必须传 Control：TimeHUD / 行为栏本体是 CanvasLayer，高亮矩形取的是它们内部的纸卡面板
-	tutorial.bind_world(clock, player, {"time_hud": time_hud._panel, "action_bar": action_bar._panel})
+	tutorial.bind_world(
+		clock, player, {"time_hud": time_hud._panel, "action_bar": action_bar._panel}
+	)
 	tutorial.start_first_run()
 
 
@@ -103,7 +114,9 @@ func _on_tutorial_replay() -> void:
 	if not tutorial.intro_closed.is_connected(_on_tutorial_intro_closed):
 		tutorial.intro_closed.connect(_on_tutorial_intro_closed, CONNECT_ONE_SHOT)
 	# 同上：锚点传内部面板，不传 CanvasLayer 本体
-	tutorial.bind_world(clock, player, {"time_hud": time_hud._panel, "action_bar": action_bar._panel})
+	tutorial.bind_world(
+		clock, player, {"time_hud": time_hud._panel, "action_bar": action_bar._panel}
+	)
 	tutorial.start_first_run()
 
 
@@ -114,7 +127,10 @@ func _on_tutorial_armed(kind: StringName) -> void:
 
 func _on_tutorial_state(state: StringName) -> void:
 	# 提交 = 行为真的开始跑（ACTIVE）；被拒（REJECTED）也算「开口了」，S4 照样完成（28 章）。
-	if state == PlayerInteractionController.STATE_ACTIVE or state == PlayerInteractionController.STATE_REJECTED:
+	if (
+		state == PlayerInteractionController.STATE_ACTIVE
+		or state == PlayerInteractionController.STATE_REJECTED
+	):
 		tutorial.notify_committed(_tutorial_armed)
 
 
@@ -187,6 +203,8 @@ func _bind_feedback(core: Variant) -> void:
 	npc_profile.bind_sources(core, actors, interaction)
 	$UI/StudyNavigation.bind_sources(core)
 	action_bar.profile_requested.connect(npc_profile.open_profile)
+	if not time_hud.student_profile_requested.is_connected(npc_profile.open_profile):
+		time_hud.student_profile_requested.connect(npc_profile.open_profile)
 
 
 ## 座位范围（§8.23 / §20.1.1）：把每个人的座位世界坐标注入内核（供「是否在自己座位上」判定），

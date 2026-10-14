@@ -1,0 +1,31 @@
+Use case: stylized-concept / ui-mockup.
+Asset type: ONE polished landscape 16:9 gameplay concept image for the mobile Chinese school social-emergence simulation game 《下课十分钟》, based on its October 14, 2026 teacher-version design. This is an art concept, not an existing engine screenshot.
+Primary request: communicate the new player role as an intern homeroom teacher remotely observing a classroom and balancing learning outcomes, student stress and real social relationships. Render a believable touch-friendly game screen with a beautiful classroom as the dominant image and a readable, restrained Chinese interface.
+
+Scene and art direction: gently elevated three-quarter monitoring camera INSIDE an ordinary contemporary Chinese high-school classroom, a complete readable 4-column by 4-row grid of EXACTLY 16 individual student desks with broad walkable aisles. Cream-white walls, warm-neutral gray lower wall panels, cream square floor tiles, honey-colored rounded wooden desks and curved plywood chairs on muted blue-gray steel legs. Large windows on the right with softly folded pale blue-gray curtains, leafy trees and another school building through the windows. Deep green chalkboard, low classroom lockers, a small wooden bookshelf with books and a plant, side door, small clock. Soft afternoon sun casts wide diffuse patches across desks. The environment is clean, economical, lovingly crafted stylized Blender/Godot 3D with slight painterly softness; natural warm lighting without heavy yellow tint.
+Characters: EXACTLY 16 students total in the classroom scene, no teacher or 17th student. High-school students in white and navy school tracksuits with different natural hair shapes, rendered as crisp charming pixel-art billboard sprites inside the softly rendered 3D room, consistent with a 2.5D game rather than realistic 3D human models. They are unsexualized, ordinary teen students, readable at mobile scale.
+Actual behavior storytelling: eight students studying quietly at their desks with open notebooks; a friendly group of three chatting in an aisle; two classmates listening to headphones or checking a phone; two students in a mild verbal disagreement beside adjacent desks, with one small amber lightning/bubble marker, no physical violence; one student at a window-side desk quietly resting. This quiet student is not labeled isolated or bullied. Leave desks visible, do not overcrowd the aisle. Tiny tasteful book, speech-bubble, headphone and amber warning icons indicate current behavior. Show just one or two transient thin friendly interaction arcs around a chatting pair, and a tiny tension accent around the arguing pair, not a room-spanning spaghetti graph. Social ties appear through proximity and behavior.
+
+Composition: the classroom takes approximately 72% of the screen; on the right, a fixed cream-paper student inspector occupies about 24%, framed by a thin dark sage border and rounded corners. No device bezel, no phone mockup frame, no empty outer space, no building cutaway. Thin top HUD and a large bottom touch action strip, keeping the classroom unobstructed. Beautiful professional game concept composition; mobile readability, generous spacing, few short labels, no wall of text.
+Interface style: warm ivory paper cards, subtle paper grain, dark green ink, restrained muted orange emphasis. Modern readable Chinese typography with small hand-drawn school stationery icon accents, slight nostalgic school atmosphere, no futuristic neon dashboard. Do not reproduce old hidden-information UI: there is NO transparency, trust, hidden personality chart or dice mechanic.
+
+Exact Chinese interface text and placement:
+Top left title: "下课十分钟"; small nearby tab: "教室监控".
+Top HUD three separated chips: "第3天 · 第二课间", "班级均分 63.2", "周考还有4天".
+Bottom of top HUD small timer chip: "课间剩余 06:40", with a simple pause icon.
+Right inspector header: "学生状态"; name: "许静"; small activity tag: "学习中".
+Right inspector clearly separated data rows:
+"压力" with muted amber progress bar and number "72".
+"动力" with sage green progress bar and number "62".
+"今日学业收益" with large signed value "+3" on its own pale card, not a 0–100 bar.
+"当前成绩 64".
+A small visible passive box: "专属被动" and "学习收益 +1".
+A small explanation beneath academic gain: "次日计入成绩".
+A clear action button in inspector: "鼓励交流".
+Under it a subtle encouragement task note: "交流目标：与陈阳聊天一次", with an empty small checkbox; this indicates a pending real chat attempt, not completed friendship, no heart-value increase from the button.
+A small amber actionable note near bottom right, away from the quiet student: "普通争吵 · 可介入".
+Bottom touch action strip, four large evenly spaced icon buttons with exact labels: "巡视", "私聊", "调座位", "调解". Privately talking and encouragement are teacher tools, not student-player activities.
+No other tiny text is necessary. Keep all listed Chinese text accurate and legible, do not add paragraphs.
+
+Design invariants: pressure and motivation are two distinct statistics; motivation governs studying, pressure indicates overload risk. Academic gain is the signed accumulated daily result distinct from current grade. Do not combine them into a single meter. Only the 16 students belong to the social graph. Teacher is observing remotely and is represented only by the interface. Encouragement creates a one-time conversation goal, not guaranteed friendship. Mood alone or briefly sitting alone does not establish bullying or isolation. Exam day-seven countdown and class average are institution-level goals. Interface numbers and character passive binding are illustrative concept data.
+Avoid: trust meters, transparency meters, hidden personality stats, all-character permanent relationship lines, 17th player desk, teacher standing in classroom in monitoring mode, violent or humiliating imagery, red failure stamp, claims of confirmed bullying from a simple argument, hyperrealism, full 3D chibi people, futuristic interfaces, illegible tiny labels, watermark.
