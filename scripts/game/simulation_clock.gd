@@ -48,6 +48,9 @@ var _max_ticks_per_frame := 1
 ## 时钟只**暴露**这个数，不自己计时 —— 停留与自动进入由表现层 HUD 倒计时（`time_hud.gd`）。
 var _report_hold_seconds := 0.0
 var _time_flow: TimeFlow = null
+var _attention_cfg: Dictionary = JSON.parse_string(
+	FileAccess.get_file_as_string("res://data/ui/attention_card.json")
+)
 
 
 func _process(delta: float) -> void:
@@ -286,6 +289,8 @@ func snapshot() -> Dictionary:
 	out["term_days"] = _term_days
 	out["report_hold_seconds"] = _report_hold_seconds
 	out["player_grade"] = int(_core.grade(_core.node_count() - 1)) if _core != null else 0
+	out.merge(_class_grade_snapshot())
+	out.merge(_attention_snapshot())
 	out["volume"] = _core.volume() if _core != null else 0.0
 	for row in _tables.get("rules/environment", {}).get("rows", []):
 		if row["param"] in ["volume_max", "volume_threshold"]:
@@ -299,6 +304,65 @@ func snapshot() -> Dictionary:
 		out["exam_banner"] = ""
 		out["exam_report"] = ""
 	return out
+
+
+## 只读班级成绩；迁移期间排除旧学生版玩家节点，不推进模拟或消耗随机数。
+func _class_grade_snapshot() -> Dictionary:
+	var total := 0.0
+	var pressure_total := 0.0
+	var count := 0
+	if _core != null:
+		for index in range(_core.node_count()):
+			if not _core.is_player(index):
+				total += _core.grade(index)
+				pressure_total += _core.stress(index)
+				count += 1
+	var first_day := 0
+	for row in _tables.get("rules/exam", {}).get("rows", []):
+		if str(row.get("param", "")).begins_with("exam_day_"):
+			var candidate := int(row.get("value", 0))
+			if candidate > 0 and (first_day == 0 or candidate < first_day):
+				first_day = candidate
+	var maximum := 0.0
+	for row in _tables.get("rules/kernel_params", {}).get("rows", []):
+		if str(row.get("param", "")) == "grade_max":
+			maximum = float(row.get("value", 0.0))
+	return {
+		"student_count": count,
+		"class_average_grade": total / count if count > 0 else null,
+		"class_average_pressure": pressure_total / count if count > 0 else null,
+		"grade_max": maximum,
+		"first_exam_day": first_day,
+	}
+
+
+## 只读活动与高压名单；不把敌对或普通娱乐推断成争吵。
+func _attention_snapshot() -> Dictionary:
+	if _core == null:
+		return {}
+	var students: Array = []
+	var counts := {"study": 0, "entertainment": 0, "other": 0}
+	for index in range(_core.node_count()):
+		if _core.is_player(index):
+			continue
+		var pressure := _core.stress(index)
+		if pressure >= float(_attention_cfg.warning_pressure):
+			students.append({"index": index, "name": _core.alias(index), "pressure": pressure})
+		var activity := _core.activity_of(index)
+		var kind := "other"
+		if _core.is_present(index) and not _core.is_moving(index):
+			if activity in _attention_cfg.study_activities:
+				kind = "study"
+			elif activity in _attention_cfg.entertainment_activities:
+				kind = "entertainment"
+		counts[kind] += 1
+	students.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			if is_equal_approx(float(a.pressure), float(b.pressure)):
+				return int(a.index) < int(b.index)
+			return float(a.pressure) > float(b.pressure)
+	)
+	return {"high_pressure_students": students, "activity_counts": counts}
 
 
 ## 存档字段（计划 §6）：mode / ended_day / 相位游标 / 配置指纹。

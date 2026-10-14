@@ -4,7 +4,7 @@ extends CanvasLayer
 ##
 ## 依据：docs/superpowers/plans/2026-10-07-time-component.md §3（UI 方案）。
 ## 铁律：HUD **不持有玩法时间、不自己减秒** —— 一切数字来自 SimulationClock.snapshot()；
-## 样式（米白纸面 / 墨绿细边 / 黑体）集中在本文件常量里，不在别处再起一套装饰。
+## 卡片尺寸、文案及试用目标集中在 data/ui/time_card.json，纸张样式复用 CampusTheme。
 ##
 ## 显示口径：
 ##   · 课间：`第 6 / 30 天 · 中午午休` + `课间剩余 01:24` + 剩余时间条；
@@ -15,6 +15,7 @@ extends CanvasLayer
 
 ## 日报组件接入用：日末停留结束（或玩家按空格提前）时发出
 signal continue_requested
+signal student_profile_requested(index: int)
 
 ## 日末停留时长来自时钟快照（`rules/time_runtime` 的 `report_hold_seconds`）；本组件只倒计时 ——
 ## 到时**自动**发出 `continue_requested`（第二章 §2.5「日末停留与自动进入」），不显示确认按钮；
@@ -34,18 +35,19 @@ const COLOR_INK := Color(0.12, 0.16, 0.14)
 const COLOR_SUB := Color(0.28, 0.33, 0.30)
 const COLOR_ACCENT := Color(0.16, 0.38, 0.26)
 const COLOR_LOCKED := Color(0.62, 0.34, 0.22)
-const CARD_MARGIN := Vector2(16.0, 16.0)
-const CARD_WIDTH := 340.0
-const TITLE_FONT_SIZE := 22
-const DETAIL_FONT_SIZE := 18
 const TOAST_SECONDS := 1.6
 
+var _card_cfg: Dictionary = JSON.parse_string(
+	FileAccess.get_file_as_string("res://data/ui/time_card.json")
+)
+var _card_margin := Vector2(float(_card_cfg.margin[0]), float(_card_cfg.margin[1]))
+var _weekly: Label
 var _clock: SimulationClock = null
 var _panel: PanelContainer = null
 var _title: Label = null
-var _grade: Label = null
-## 上一次显示的成绩（变化时轻微闪一下，§21.2.7）
-var _grade_shown := -1
+var _grade: RichTextLabel = null
+## 上一次显示的学生均分；变化时轻微闪一下。
+var _grade_shown := -1.0
 var _detail: Label = null
 var _exam: Label = null
 var _bar: ProgressBar = null
@@ -57,31 +59,60 @@ var _last: Dictionary = {}
 ## 日末自动进入倒计时剩余秒数（< 0 = 不在倒计时）
 var _report_hold_left := -1.0
 var _font: Font = null
-var _volume_card: Control
-var _volume_cfg: Dictionary = CampusTheme.settings().volume_card
+var _attention_card: Control
+var _attention_cfg: Dictionary = JSON.parse_string(
+	FileAccess.get_file_as_string("res://data/ui/attention_card.json")
+)
+var _class_card: Control
+var _overview_cfg: Dictionary = JSON.parse_string(
+	FileAccess.get_file_as_string("res://data/ui/class_overview_card.json")
+)
 
 
 func _ready() -> void:
 	_build_ui()
 	CampusTheme.apply_tree(self)
-	_volume_card = preload("res://scripts/ui/volume_card.gd").new()
-	_volume_card.name = "VolumeCard"
-	add_child(_volume_card)
+	_style_time_card()
+	_class_card = preload("res://scripts/ui/class_overview_card.gd").new()
+	_class_card.name = "ClassOverviewCard"
+	add_child(_class_card)
+	_attention_card = preload("res://scripts/ui/attention_card.gd").new()
+	_attention_card.name = "AttentionCard"
+	_attention_card.student_requested.connect(student_profile_requested.emit)
+	add_child(_attention_card)
 	_refresh({})
 
 
 func _process(delta: float) -> void:
-	_volume_card.position = Vector2(
-		_panel.position.x, _panel.position.y + _panel.size.y + _volume_cfg.gap
-	)
-	var footer_y: float = _volume_card.position.y + _volume_card.size.y + _volume_cfg.gap
-	_toast.position.y = footer_y
-	_action.position.y = footer_y + _volume_cfg.footer_gap
+	_layout_left_cards()
 	tick_report_hold(delta)
 	if _toast_left <= 0.0:
 		return
 	_toast_left = maxf(0.0, _toast_left - delta)
 	_toast.modulate.a = _toast_left / TOAST_SECONDS
+
+
+## 三张卡片按可用屏高统一缩放，详情弹层仍使用完整视口。
+func _layout_left_cards() -> void:
+	var cards := [_panel, _class_card, _attention_card]
+	var total := float(_attention_cfg.gap) * (cards.size() - 1)
+	for card in cards:
+		total += maxf(card.size.y, card.custom_minimum_size.y)
+	var height := get_viewport().get_visible_rect().size.y
+	var available := maxf(0.0, height - _card_margin.y - float(_attention_cfg.bottom_margin))
+	var factor := minf(1.0, available / total) if total > 0.0 else 1.0
+	var y := _card_margin.y
+	for card in cards:
+		card.scale = Vector2.ONE * factor
+		card.position = Vector2(_card_margin.x, y)
+		y += maxf(card.size.y, card.custom_minimum_size.y) * factor
+		y += float(_attention_cfg.gap) * factor
+	var x := _card_margin.x
+	if y + float(_attention_cfg.toast_reserve) > height:
+		x += _panel.size.x * factor + float(_attention_cfg.gap)
+		y = _card_margin.y
+	_toast.position = Vector2(x, y)
+	_action.position = Vector2(x, y + float(_attention_cfg.footer_gap))
 
 
 ## 日末停留期间的「提前进入」键：空格 / 回车（与转场黑幕的跳过键同一动作，仅 report 生效）。
@@ -211,22 +242,25 @@ func _refresh(snapshot_data: Dictionary) -> void:
 	if snapshot_data.is_empty():
 		return
 	_last = snapshot_data
-	_volume_card.refresh(snapshot_data)
+	_class_card.refresh(snapshot_data)
+	_attention_card.refresh(snapshot_data)
 	var day := int(snapshot_data.get("day", 0))
 	var term_days := int(snapshot_data.get("term_days", 0))
-	var player_grade := int(snapshot_data.get("player_grade", 0))
-	_grade.text = "成绩 %d ｜ 距期末考 %d 天" % [player_grade, maxi(0, term_days - day)]
-	# §21.2.7：**不逐分弹窗**，数字变化时轻微闪一下即可
-	if _grade_shown >= 0 and player_grade != _grade_shown:
-		_flash_grade()
-	_grade_shown = player_grade
+	_refresh_weekly_goal(snapshot_data)
 	var mode := str(snapshot_data.get("mode", SimulationClock.MODE_RUNNING))
 	var display_name := str(snapshot_data.get("display_name", ""))
+	display_name = str(
+		_card_cfg.phase_names.get(str(snapshot_data.get("phase_id", "")), display_name)
+	)
 	_title.text = "第 %d / %d 天 · %s" % [day, term_days, display_name]
 	var speed := float(snapshot_data.get("time_scale", 1.0))
 	if speed > 1.0:
 		_title.text += " · ×%s" % str(speed)
-	_bar.value = float(snapshot_data.get("progress", 0.0)) * 100.0
+	_bar.value = (
+		(1.0 - clampf(float(snapshot_data.get("progress", 0.0)), 0.0, 1.0)) * 100.0
+		if mode == SimulationClock.MODE_RUNNING
+		else 0.0
+	)
 
 	# 非日末状态一律清空停留倒计时（进入 report 时再起，见下）
 	if mode != SimulationClock.MODE_REPORT:
@@ -247,15 +281,76 @@ func _refresh(snapshot_data: Dictionary) -> void:
 		_action.visible = false
 		return
 	_action.visible = false
-	_show_exam_line(str(snapshot_data.get("exam_banner", "")))
+	_show_exam_line("")
 
 	var remaining := _seconds_text(float(snapshot_data.get("remaining_seconds", 0.0)))
 	if str(snapshot_data.get("kind", "")) == "class":
-		_detail.text = "发酵中 · 本阶段约剩余 %s 秒" % remaining
+		_detail.text = "发酵中 · 本阶段约剩余 %s" % remaining
 		_detail.modulate = COLOR_LOCKED
 		return
-	_detail.text = "课间剩余 %s 秒" % remaining
+	_detail.text = "课间剩余 %s" % remaining
 	_detail.modulate = COLOR_SUB
+
+
+func _refresh_weekly_goal(snapshot_data: Dictionary) -> void:
+	var words: Dictionary = _card_cfg.messages
+	var day := int(snapshot_data.get("day", 0))
+	if str(snapshot_data.get("mode", "")) != SimulationClock.MODE_RUNNING:
+		day = int(snapshot_data.get("ended_day", day))
+	var exam_day := int(snapshot_data.get("first_exam_day", 0))
+	_weekly.text = str(words.week_unknown)
+	if exam_day > day:
+		_weekly.text = str(words.week_future) % (exam_day - day)
+	elif exam_day == day and exam_day > 0:
+		_weekly.text = str(words.week_today)
+	elif exam_day > 0:
+		_weekly.text = str(words.week_past)
+	var target := _number_text(float(_card_cfg.target_mean))
+	var average = snapshot_data.get("class_average_grade")
+	_grade.text = str(words.goal_missing) % target
+	_grade.tooltip_text = ""
+	if average == null:
+		return
+	var mean := float(average)
+	var theme := CampusTheme.settings()
+	var gap := float(_card_cfg.target_mean) - mean
+	if gap > 0.0:
+		_grade.text = str(words.goal_gap) % [target, str(theme.warning), _number_text(gap)]
+	else:
+		_grade.text = str(words.goal_reached) % [target, str(theme.teal)]
+	_grade.tooltip_text = (
+		str(words.grade_tooltip)
+		% [
+			_number_text(mean),
+			_number_text(float(snapshot_data.get("grade_max", 0.0))),
+			int(snapshot_data.get("student_count", 0))
+		]
+	)
+	if _grade_shown >= 0.0 and not is_equal_approx(mean, _grade_shown):
+		_flash_grade()
+	_grade_shown = mean
+
+
+func _number_text(value: float) -> String:
+	return ("%.1f" % value).trim_suffix(".0")
+
+
+## 复用纸张纹理；尺寸、留白和字号由 time_card.json 定义。
+func _style_time_card() -> void:
+	var paper := CampusTheme.paper_card()
+	paper.content_margin_left = float(_card_cfg.content_margins[0])
+	paper.content_margin_top = float(_card_cfg.content_margins[1])
+	paper.content_margin_right = float(_card_cfg.content_margins[2])
+	paper.content_margin_bottom = float(_card_cfg.content_margins[3])
+	_panel.add_theme_stylebox_override("panel", paper)
+	_panel.custom_minimum_size.y = float(_card_cfg.minimum_height)
+	var theme := CampusTheme.settings()
+	for role in ["background", "fill"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(str(theme.teal if role == "fill" else theme.disabled))
+		style.set_corner_radius_all(int(_card_cfg.bar_radius))
+		style.set_content_margin_all(0.0)
+		_bar.add_theme_stylebox_override(role, style)
 
 
 func _show_exam_line(text: String) -> void:
@@ -273,10 +368,10 @@ func _show_action(text: String) -> void:
 	_action.text = text
 
 
-## 倒计时格式：**直接给剩余秒数**（向上取整、边界 0、不出现负数）。
-## 用户 2026-10-07 决策：不折算成 mm:ss —— 课间满段 100 秒就显示「100 秒」。
+## 2026-10-14 概念图口径：mm:ss；向上取整，零边界不出现负数。
 func _seconds_text(seconds: float) -> String:
-	return "%d" % int(ceilf(maxf(seconds, 0.0)))
+	var rounded := int(ceilf(maxf(seconds, 0.0)))
+	return "%02d:%02d" % [rounded / 60, rounded % 60]
 
 
 func _show_toast(text: String) -> void:
@@ -304,43 +399,60 @@ func _build_ui() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "Card"
 	_panel.add_theme_stylebox_override("panel", style)
-	_panel.position = CARD_MARGIN
-	_panel.custom_minimum_size = Vector2(CARD_WIDTH, 0.0)
+	_panel.position = _card_margin
+	_panel.custom_minimum_size = Vector2(float(_card_cfg.width), 0.0)
 	add_child(_panel)
 
 	var box := VBoxContainer.new()
 	box.name = "Rows"
-	box.add_theme_constant_override("separation", 6)
+	box.add_theme_constant_override("separation", int(_card_cfg.row_gap))
 	_panel.add_child(box)
 
-	_title = _make_label(TITLE_FONT_SIZE, COLOR_INK)
+	_title = _make_label(int(_card_cfg.title_font_size), COLOR_INK)
 	box.add_child(_title)
-	_detail = _make_label(DETAIL_FONT_SIZE, COLOR_SUB)
+	_detail = _make_label(int(_card_cfg.detail_font_size), COLOR_SUB)
 	box.add_child(_detail)
-	_exam = _make_label(DETAIL_FONT_SIZE, COLOR_ACCENT)
-	_exam.name = "ExamLine"
-	_exam.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_exam.custom_minimum_size = Vector2(CARD_WIDTH - 28.0, 0.0)
-	_exam.visible = false
-	box.add_child(_exam)
-
 	_bar = ProgressBar.new()
 	_bar.name = "Remaining"
 	_bar.show_percentage = false
-	_bar.custom_minimum_size = Vector2(CARD_WIDTH - 28.0, 8.0)
+	_bar.custom_minimum_size = Vector2(0.0, float(_card_cfg.bar_height))
 	_bar.max_value = 100.0
 	_bar.value = 0.0
 	box.add_child(_bar)
 	var separator := HSeparator.new()
 	separator.name = "GradeSeparator"
 	box.add_child(separator)
-	_grade = _make_label(DETAIL_FONT_SIZE, COLOR_ACCENT)
+	var weekly_row := HBoxContainer.new()
+	weekly_row.name = "WeeklyExamRow"
+	weekly_row.add_theme_constant_override("separation", int(_card_cfg.icon_gap))
+	box.add_child(weekly_row)
+	var icon := TextureRect.new()
+	icon.texture = load("res://assets/icons/ui/calendar.svg")
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.custom_minimum_size = Vector2.ONE * float(_card_cfg.icon_size)
+	weekly_row.add_child(icon)
+	_weekly = _make_label(int(_card_cfg.exam_font_size), Color(CampusTheme.settings().teal))
+	_weekly.name = "WeeklyExamLabel"
+	weekly_row.add_child(_weekly)
+	_grade = RichTextLabel.new()
 	_grade.name = "GradeLabel"
+	_grade.bbcode_enabled = true
+	_grade.fit_content = true
+	_grade.scroll_active = false
+	_grade.add_theme_font_override("normal_font", _ui_font())
+	_grade.add_theme_font_size_override("normal_font_size", int(_card_cfg.goal_font_size))
+	_grade.add_theme_color_override("default_color", Color(CampusTheme.settings().teal))
 	box.add_child(_grade)
+	_exam = _make_label(int(_card_cfg.detail_font_size), COLOR_ACCENT)
+	_exam.name = "ExamLine"
+	_exam.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_exam.visible = false
+	box.add_child(_exam)
 
-	_toast = _make_label(DETAIL_FONT_SIZE, COLOR_ACCENT)
+	_toast = _make_label(int(_card_cfg.detail_font_size), COLOR_ACCENT)
 	_toast.name = "PhaseToast"
-	_toast.position = CARD_MARGIN + Vector2(0.0, CampusTheme.settings().time_card_height)
+	_toast.position = _card_margin + Vector2(0.0, CampusTheme.settings().time_card_height)
 	_toast.modulate.a = 0.0
 	add_child(_toast)
 
@@ -348,9 +460,9 @@ func _build_ui() -> void:
 	_action = Button.new()
 	_action.name = "NextDayButton"
 	_action.add_theme_font_override("font", _ui_font())
-	_action.add_theme_font_size_override("font_size", DETAIL_FONT_SIZE)
+	_action.add_theme_font_size_override("font_size", int(_card_cfg.detail_font_size))
 	_action.visible = false
-	_action.position = CARD_MARGIN + Vector2(0.0, CampusTheme.settings().time_card_height + 28)
+	_action.position = _card_margin + Vector2(0.0, CampusTheme.settings().time_card_height + 28)
 	_action.pressed.connect(func() -> void: continue_requested.emit())
 	add_child(_action)
 

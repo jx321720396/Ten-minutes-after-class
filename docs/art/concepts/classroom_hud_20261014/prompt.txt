@@ -1,0 +1,39 @@
+Use case: ui-mockup / targeted edit. Edit the supplied actual Godot classroom screenshot into a proposed TEACHER-VERSION IN-SCENE HUD concept for the mobile Chinese game 下课十分钟. The user wants a few class statistics visible DIRECTLY WHILE WATCHING THE CLASSROOM, like the existing screenshot, not a full-screen dashboard or modal.
+Keep the screenshot's exact landscape composition, 3D classroom camera, warm lighting, desk/environment models, classroom perspective, existing anime billboard student sprite style and overall dark-teal framed cream paper stationery UI. Preserve the central classroom as a large visible live scene, with no darkened/blurred overlay. Do not turn it into the previous full-screen class-overview panel. No device frame.
+PRIMARY CHANGE: replace the LEFT old student score/noise/chat-invitation UI with three compact stacked paper cards in the existing left margin, approximately the same width as existing left cards (~340px on this 1920px-wide screen). Keep them within the left 20% of the screen. Use large legible Chinese typography, dark teal ink and small amber warning accents. Do not cover the central named students.
+
+LEFT TOP CARD, compact time and exam:
+"第3 / 30天 · 第二课间"
+"课间剩余 06:40" with a simple thin timer bar.
+"周考还有4天"
+"目标均分 70 · 还差6.8分"
+Remove the obsolete personal "成绩250" and end-of-term countdown.
+LEFT MIDDLE CARD, main class statistics, header "班级概况":
+Use a clear 2×2 grid of four simple mini cells:
+"平均成绩" / large "63.2"
+"平均压力" / large "48"
+"平均动力" / large "54"
+"今日平均学业收益" / large "+2.1"
+Give the signed academic gain enough width or slightly smaller label type to remain readable, no 0–100 bar for academic gain. Tiny footer "全班16人 · 收益次日结算".
+A subtle outlined text button "查看全部概况" below the values.
+Remove the obsolete noise card; do not add new noise mechanics.
+LEFT LOWER CARD, compact overview only, header "需要关注":
+Two actionable rows: amber warning icon "高压预警 3人" with a small right arrow; speech/lightning icon "普通争吵 1起" with a small right arrow.
+One short neutral line underneath "学习8人 · 娱乐6人 · 其他2人".
+Remove the old student chat invitation with accept/reject controls. These warnings are not automatic failure or confirmed bullying.
+
+SECONDARY UPDATE, existing RIGHT action card:
+Retain its width, position and paper style. Change title to "老师行动", replace student-player actions with four vertically stacked large touch entries: "巡视教室", "办公室私聊", "调座位", "处理冲突".
+Keep the bottom target area titled "当前对象"; show "点击同学查看档案" and an outlined "查看档案" button. No student trust or affection toward the teacher.
+Remove student inventory row and obsolete student chat/question/exercise actions.
+
+BOTTOM:
+Change the existing center player-status card into a slimmer teacher-status strip reading "老师当前：空闲" and "正在查看教室监控". Remove its blond student-player portrait.
+At bottom right retain three outline navigation buttons in the current screenshot style with labels "同学档案", "全班概况", "推理板"; replace the obsolete student backpack button.
+Add a tiny unobtrusive caption "界面概念 · 数值示例" near the lower left safe margin.
+
+CLASSROOM INVARIANTS:
+Preserve the environment, existing NPC designs and their named positions as much as possible. Remove only the blond student labelled "我" and that red "我" label from the front-left player desk; leave that desk empty as a legacy scene placeholder instead of adding a teacher social node. All other visible students are NPC students. This is only a HUD concept on the user's current scene, not a finalized scene remodelling or a promise that all UI is implemented. Do not restructure the desk grid or invent additional people.
+Do not render the teacher standing in the classroom while this is remote monitoring. Do not display trust, transparency, personality, student-to-teacher relation stats, a full class relationship graph, a full-screen overview modal, or a selected-student detail sidebar that replaces the action card.
+The sample values (63.2 current mean, target70, gap6.8, motivation54, stress48, daily mean gain+2.1) are illustrative. The counts 8+6+2=16 are internally consistent. Ordinary disagreement is not automatically bullying; high-pressure counts are prewarnings, not dismissal.
+Aim for a faithful proposed UI iteration on the supplied REAL SCREENSHOT, with restrained permanently visible metrics and maximal central classroom readability. No watermark.
