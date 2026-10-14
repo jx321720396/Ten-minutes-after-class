@@ -1,4 +1,14 @@
 # 变更记录
+- **聊天机制重构：多人会话 2→3→4（2026-10-14，内核）**：`tools/core_sim.py` 把两人固定闲聊改为多人会话——`start_conversation` 两人成会、`try_join_conversation` 双向判定（意愿侧「朋友在场拉高、明显敌对 H≥50 劝退」+ 接纳侧「σ((A−H−θ)/scale) × 规模衰减 w_size=1/(1+k(s−s0))」）+ 聚合（欢迎>拒绝才放行，平票拒绝，H≥50 硬否决）+ 逐人独立计时离场 + 铃响打断；`do_study` 置占用，学习中的学生不再被聊天/搭话强行拉走；搭话判定 `join_score`/`join_feedback` 删除性格四维项。
+  - **配置**：新增 `behavior_thresholds.csv` 的 `chat.welcome_theta/scale`、`hostility_veto`、`desire_theta/scale`、`size_k/s0`、`duration_jitter_min/max` 与 `behavior_probs.csv` 的 `chat_join_p`（数值集中）。
+  - **只读观察**：`join_log` 记录谁欢迎、谁拒绝、拒绝原因。
+  - **验证**：check_config 323 / test_core 61 / verify_formula 11 / check_docs 全绿；check_metrics 与 diversity_report 为既有标定欠账（改动前即未达标），重构后好感均值 30→49（入目标区）、爆发上场率 78%→100%，但压力爆发均值越上界、排挤/羞辱上场率下滑，待后续标定。
+- **老师版主文档落定（2026-10-14，策划/文档）**：`docs/gdd/core-gameplay-v3.1.md` 由学生版切换为老师版唯一事实源——玩家改为实习老师／班主任，管理 16 名学生（16×16 好感/敌对矩阵，老师非第十七个节点）。
+  - **数值**：删除透明度、信任度、隐藏性格四维；新增压力／动力／今日学业收益／当前成绩（§4）；角色差异改由开局公开专属被动提供（专注／健谈／乐观／自律候选，§10）。
+  - **关系基线**：每课间一次座位结算——正交邻座 +1、对角不加、圈外 −1、学习者对娱乐邻座敌对 +5（§8.2）。
+  - **老师操作**：监控／巡视／安抚／训斥／打听／鼓励／调座位／搜包没收／调解（§6）；鼓励 = 一次临时交流目标（鼓励交流／鼓励指定交流），两人配对、允许他人加入（§7）。
+  - **迁移**：旧学生版主文档快照至 `docs/references/core-gameplay-v3.1-student-20261014.md`；§13.4 工作目录按用户确认为 `D:/Ten-minutes-after-class`。
+  - **范围**：本轮仅策划与文档，未改代码／配置／场景／测试；老师版尚未实现。
 - **新手教程 P0 实装（2026-10-13，UI）**：按 28 章 P0 范围落地——开场 3 张纸卡（此期间 `clock.hold(&"tutorial")` 冻结世界，玩家零损失）→ 首课间 5 步提示（条件触发、超时放行、课间结束静默收尾，不暂停不锁输入）→ 跳过 / 重看。
   - **新增**：`data/ui/tutorial.json`（文案全外置）、`scenes/ui/tutorial_overlay.tscn` + `scripts/ui/tutorial_overlay.gd`（CanvasLayer 压在转场之上；锚点高亮传内部面板而非 CanvasLayer 本体、跳过按钮、已看标记写 `user://tutorial_seen.dat`）；五步提示每步附「下一步」按钮，可手动推进（完成条件 / 超时仍自动推进），条身不拦截鼠标、只有按钮接输入。
   - **接线**：`classroom.gd` 新增 `_bind_tutorial()`——教程由入口驱动（主菜单开新局置 `GameState.tutorial_pending`，教室只认标记；直接实例化教室的测试 / 调试零教程零冻结）；行为栏选中 / 交互提交（含被拒）转发给覆盖层；Esc 口径：开场卡期间跳过，步进阶段归暂停菜单。`settings_menu` 加「重看教程」（教室里直接重放，主菜单记标记下局生效）；`SimulationClock` 加 `is_held_by()` 查询。

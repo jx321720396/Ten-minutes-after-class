@@ -261,7 +261,9 @@ class Sim:
                       "roughhouse": 0, "sleeps": 0,
                       "comforts": 0,
                       "apologizes": 0, "apologize_rejects": 0,
-                      "notes_written": 0, "notes_read": 0, "notes_destroyed": 0}
+                      "notes_written": 0, "notes_read": 0, "notes_destroyed": 0,
+                      "chat_joins": 0, "join_vetoes": 0, "chat_leaves": 0,
+                      "chat_max_size": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
         self.settled = set()
         self.phase_index = 0
@@ -305,6 +307,10 @@ class Sim:
         self.neighbors = self._build_neighbors()
         self.assign_seats()               # 必须在 seats/neighbors 定义之后
         self.in_conversation = [False] * n
+        # 多人聊天（2026-10-14 重构）：会话 = 成员集合，逐人计时，2→3→4 递进加入。
+        self.conversations = []          # 会话列表：{"members": set}
+        self.conv_of = [None] * n        # 节点 -> 所在会话（None = 不在会话）
+        self.join_log = []               # 加入判定日志（谁欢迎/谁拒绝/原因，只读观察）
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
         self.day_events = {}            # (i,j) -> 当天事件类结算次数，用于「有互动」判定
@@ -773,8 +779,11 @@ class Sim:
 
         压力是程度不是闸门：`hot ∈ [0,1]` 乘上 `chat_join_stress_penalty` 压低 score，
         而不是把 p 归零。
+
+        ⚠️ 2026-10-14 删四维外向项（老师版删除隐藏性格四维，聊天机制规格 I）：
+        `base` 不再含 `(dims[j][0]−50)·0.3`。
         """
-        base = self.A[j][i] + (self.dims[j][0] - 50.0) * 0.3
+        base = self.A[j][i]
         hot = max(0.0, self.Stress[j] - 50.0) / 50.0
         penalty = self.thresholds_lookup.get("chat_join_stress_penalty", 12.0)
         return base - penalty * hot
@@ -797,7 +806,8 @@ class Sim:
         """
         th = self.thresholds_lookup
         hot = max(0.0, self.Stress[j] - 50.0) / 50.0
-        score = (self.B["affinity"][i][j] + (self.dims[j][0] - 50.0) * 0.3
+        # 2026-10-14 删四维外向项（与 join_score 同口径）
+        score = (self.B["affinity"][i][j]
                  - th.get("chat_join_stress_penalty", 12.0) * hot)
         theta = th.get("chat_join_affinity", 45.0)
         scale = th.get("chat_join_scale", 10.0)
@@ -933,6 +943,12 @@ class Sim:
                     self.do_chat(i, j)
                     busy.add(i)
                     busy.add(j)
+                    continue
+            # 环境类：加入群聊（2026-10-14 重构）—— 空闲者尝试加入一场正在进行的 NPC 会话
+            # （双向判定 + 聚合接纳 + 规模衰减，见 try_join_conversation；含玩家的会话不参与自主加入）
+            if self.allowed("chat") and self.conversations and self.rng.random() < self.probs.get("chat_join_p", 0.0):
+                if self.try_join_conversation(i):
+                    busy.add(i)
                     continue
             # 环境类：传纸条（§8.6 纸条链）—— 写一张纸条，投给相邻或走近的人
             # 纸条本身不做判定；接收者的「看不看 / 销毁 / 继传」由 process_notes() 走 §4.5 选择侧公式
@@ -1210,30 +1226,17 @@ class Sim:
 
     @invitation_behavior("chat")
     def do_chat(self, i, j):
-        """闲聊：话题共鸣事件 + 双方观测"""
-        self.in_conversation[i] = True
-        self.in_conversation[j] = True
-        self.occupy(i, j, "chat", quiet=True)   # 同一场对话：只计一个声源
-        self.apply_event(i, j, "topic_affinity")
-        self.apply_event(i, j, "topic_trust")
-        self.apply_event(i, j, "topic_stress")
-        self.apply_event(j, i, "topic_affinity")
-        self.apply_event(j, i, "topic_trust")
-        self.observe(i, j, "affinity")
-        self.observe(j, i, "affinity")
-        self.stats["chats"] += 1
-        self._record_book_gift_chat(i, j)
+        """闲聊（会话种子，规格 B）：i 与 j 开聊，形成二人会话，他人可随后加入。"""
+        self.start_conversation(i, j)
 
     @invitation_behavior("chat")
     def do_chat_join(self, i, j, roll=None):
-        """加入闲聊判定侧：**p = σ((score − θ)/scale) 掷骰**（§6.4）。
+        """搭话（二人会话种子，含接纳判定，规格 E/I）：i 接近 j，j 按 p=σ((score−θ)/scale)
+        接纳则开聊（score 已删四维项）；拒绝则记单向拒绝事件，不占时间槽。
 
         没有硬闸门：概率低也可能被接纳、概率高也可能被拒。
         `roll` 可由调用方（玩家 UI）预先掷好，保证「三拍展示」与实际结算一致。
         """
-        self.in_conversation[i] = True
-        self.in_conversation[j] = True
-        self.occupy(i, j, "chat", quiet=True)   # 同一场对话：只计一个声源
         p = self.join_probability(i, j)
         choice = self.player_invitations.choice_for(i)
         if choice is not None:
@@ -1241,7 +1244,7 @@ class Sim:
         elif roll is None:
             roll = self.rng.random()
         if roll < p:
-            self.do_chat(i, j)
+            self.start_conversation(i, j)
             self.stats["joins"] += 1
             self.stats["join_accepts"] = self.stats.get("join_accepts", 0) + 1
         else:
@@ -1252,6 +1255,168 @@ class Sim:
             self.stats["joins"] += 1
             self.stats["join_rejects"] = self.stats.get("join_rejects", 0) + 1
             self.stats["skipped_events"] += 1
+
+    # ---------- 多人聊天会话子系统（2026-10-14 重构：2→3→4 递进加入）----------
+
+    def start_conversation(self, i, j):
+        """二人开聊（会话种子，规格 B）：形成会话 {i,j}，逐人独立计时，他人可随后加入。"""
+        conv = {"members": {i, j}}
+        self.conversations.append(conv)
+        self.conv_of[i] = conv
+        self.conv_of[j] = conv
+        self.in_conversation[i] = True
+        self.in_conversation[j] = True
+        self._occupy_chat(i)
+        self._occupy_chat(j)
+        self._settle_chat_pair(i, j)
+        self.stats["chats"] += 1
+        self._record_book_gift_chat((i, j))
+
+    def _chat_duration(self):
+        """聊天时长：base × uniform[jitter_min, jitter_max]，逐人独立（规格 ③）。"""
+        base = self.behaviors.get("chat", {}).get("duration", 30)
+        lo = self.thresholds_lookup.get("chat_duration_jitter_min", 0.8)
+        hi = self.thresholds_lookup.get("chat_duration_jitter_max", 1.2)
+        return max(1, int(base * self.rng.uniform(lo, hi)))
+
+    def _occupy_chat(self, i):
+        """把 i 置为聊天占用（独立时长）。不写 busy_phase —— 聊天由 settle_conversations /
+        _interrupt_conversations 专责，不经过「到期结算 / 被打断」两套通用协议。"""
+        self.current_act[i] = "chat"
+        self.busy_until[i] = max(self.busy_until[i], self.global_tick + self._chat_duration())
+        self.busy_act[i] = "chat"
+
+    def _settle_chat_pair(self, initiator, existing):
+        """initiator 与 existing 之间的聊天结算。与旧 do_chat 同口径：发起方多一次 topic_stress 减压。"""
+        self.apply_event(initiator, existing, "topic_affinity")
+        self.apply_event(initiator, existing, "topic_trust")
+        self.apply_event(initiator, existing, "topic_stress")
+        self.apply_event(existing, initiator, "topic_affinity")
+        self.apply_event(existing, initiator, "topic_trust")
+        self.observe(initiator, existing, "affinity")
+        self.observe(existing, initiator, "affinity")
+
+    def _joinable_conversations(self, i):
+        """i 可加入的会话：不含玩家（玩家交互走邀请机制）、且至少一名成员是 i 的邻居（邻域）。"""
+        out = []
+        for conv in self.conversations:
+            if self.N - 1 in conv["members"]:
+                continue
+            if any(m in self.neighbor_idx[i] for m in conv["members"]):
+                out.append(conv)
+        return out
+
+    def _desire_join(self, i, members):
+        """意愿侧（加入者想不想进）：朋友在场（max A[i][m]）拉高意愿；明显敌对（H[i][m] ≥ veto）劝退。"""
+        veto = self.thresholds_lookup.get("chat_hostility_veto", 50.0)
+        if max(self.H[i][m] for m in members) >= veto:
+            return False
+        max_a = max(self.A[i][m] for m in members)
+        theta = self.thresholds_lookup.get("chat_desire_theta", 40.0)
+        scale = self.thresholds_lookup.get("chat_desire_scale", 10.0)
+        return self.rng.random() < sigmoid((max_a - theta) / scale)
+
+    def _welcome_probability(self, m, i, size):
+        """接纳侧：成员 m 对加入者 i 的欢迎概率 = σ((A[m][i] − H[m][i] − θ)/scale) × w_size(size)。
+        w_size(s) = 1/(1 + k·(s − s0))，s = 加入前成员数（规格 ② 有理衰减）。"""
+        th = self.thresholds_lookup
+        theta = th.get("chat_welcome_theta", 40.0)
+        scale = th.get("chat_welcome_scale", 12.0)
+        k = th.get("chat_size_k", 0.3)
+        s0 = th.get("chat_size_s0", 4.0)
+        w = 1.0 if size <= s0 else 1.0 / (1.0 + k * (size - s0))
+        p = sigmoid((self.A[m][i] - self.H[m][i] - theta) / scale)
+        return clamp(p * w, 0.0, 1.0)
+
+    def try_join_conversation(self, i):
+        """空闲者 i 尝试加入一场正在进行的 NPC 会话（双向判定 + 聚合接纳 + 规模衰减）。
+
+        规格 B–I：意愿侧（想不想进）+ 接纳侧（成员欢不欢迎）；聚合 = 欢迎数 > 拒绝数
+        （平票=拒绝）；任一成员 H[m][i] ≥ veto 硬否决。返回是否成功加入。
+        """
+        cands = self._joinable_conversations(i)
+        if not cands:
+            return False
+        conv = self.rng.choice(cands)
+        members = sorted(conv["members"])
+        size = len(members)
+        if not self._desire_join(i, members):
+            return False
+        veto = self.thresholds_lookup.get("chat_hostility_veto", 50.0)
+        welcomed, rejected = [], []
+        hard_veto = None
+        for m in members:
+            if self.H[m][i] >= veto:
+                hard_veto = m
+                break
+            if self.rng.random() < self._welcome_probability(m, i, size):
+                welcomed.append(m)
+            else:
+                rejected.append(m)
+        if hard_veto is not None:
+            self.stats["join_vetoes"] = self.stats.get("join_vetoes", 0) + 1
+            self._log_join(i, members, "veto", welcomed, rejected, hard_veto)
+            return False
+        if len(welcomed) <= len(rejected):
+            self._log_join(i, members, "rejected", welcomed, rejected, None)
+            return False
+        self._add_member_to_conversation(i, conv)
+        self._log_join(i, members, "joined", welcomed, rejected, None)
+        return True
+
+    def _log_join(self, i, members, stage, welcomed, rejected, veto):
+        """只读观察：记录一次加入尝试的判定（谁欢迎、谁拒绝、原因），供表现层 / 验收使用。"""
+        self.join_log.append(dict(
+            tick=self.global_tick, joiner=i, members=list(members),
+            stage=stage, welcomed=list(welcomed), rejected=list(rejected), veto=veto))
+
+    def _add_member_to_conversation(self, k, conv):
+        """k 成功加入：加入者作为本次「发起」方，对每位现有成员做一次定向聊天结算。"""
+        conv["members"].add(k)
+        self.conv_of[k] = conv
+        self.in_conversation[k] = True
+        self._occupy_chat(k)
+        for m in sorted(conv["members"]):
+            if m != k:
+                self._settle_chat_pair(k, m)
+        self.stats["chat_joins"] = self.stats.get("chat_joins", 0) + 1
+        self.stats["chat_max_size"] = max(self.stats.get("chat_max_size", 0), len(conv["members"]))
+        self._record_book_gift_chat(conv["members"])
+
+    def _leave_conversation(self, m, conv):
+        """m 离开会话（自然到期或解散）。"""
+        conv["members"].discard(m)
+        self.conv_of[m] = None
+        self.in_conversation[m] = False
+        self.current_act[m] = None
+        self.busy_act[m] = None
+        self.stats["chat_leaves"] = self.stats.get("chat_leaves", 0) + 1
+
+    def settle_conversations(self):
+        """逐人离场（规格 G）：每人独立计时，到期即离场；成员 < 2 则会话解散。"""
+        for conv in list(self.conversations):
+            for m in list(conv["members"]):
+                if self.busy_until[m] <= self.global_tick:
+                    self._leave_conversation(m, conv)
+            if len(conv["members"]) < 2:
+                for m in list(conv["members"]):
+                    self._leave_conversation(m, conv)
+                self.conversations.remove(conv)
+
+    def _interrupt_conversations(self):
+        """铃响打断（规格 A/G）：结束所有未完成会话；仍在聊的人付中断代价。"""
+        cost = self.probs.get("interrupted_stress", 0.0)
+        for conv in list(self.conversations):
+            for m in list(conv["members"]):
+                if self.busy_until[m] > self.global_tick and cost > 0:
+                    self.Stress[m] = clamp100(self.Stress[m] + cost)
+                    self.stats["interrupts"] = self.stats.get("interrupts", 0) + 1
+                self.conv_of[m] = None
+                self.in_conversation[m] = False
+                self.current_act[m] = None
+                self.busy_act[m] = None
+                self.busy_until[m] = 0
+            self.conversations.remove(conv)
 
     def do_report(self, i, j):
         """举报（§10.2）：**i = 举报者，j = 被举报者**。
@@ -1489,10 +1654,13 @@ class Sim:
         self.stats["study_circles"] = self.stats.get("study_circles", 0) + 1
 
     def do_study(self, i):
-        """学习（§8.23）：进入学习态（参考实现）。不占时间槽，靠 current_act 表达；
-        成绩累积在 _study_accumulate，每满一展给成绩 +1 与自身压力 +3。
+        """学习（§8.23）：进入学习态。学习是**占用态**（2026-10-14 修）——
+        置 busy_until 覆盖本段剩余时间，把「学习中」衔接进 can_interact_with ↔ busy_until，
+        否则会被聊天／搭话强行拉走（聊天机制规格 A 验收点）。不设 busy_phase，故不计「被打断」。
         """
         self.current_act[i] = "study"
+        remaining = self.day_phases[self.phase_index][1] - self.tick_in_phase
+        self.busy_until[i] = self.global_tick + remaining
         self.stats["studies"] = self.stats.get("studies", 0) + 1
 
     def do_sleep(self, i):
@@ -2053,10 +2221,10 @@ class Sim:
                 interrupted.append(i)
         return interrupted
 
-    def _record_book_gift_chat(self, i, j):
+    def _record_book_gift_chat(self, members):
         # 合并共享成员的同场闲聊，不以同时到期推断共同活动。
-        members = {i, j}
-        end_tick = max(self.busy_until[i], self.busy_until[j])
+        members = set(members)
+        end_tick = max(self.busy_until[m] for m in members)
         for chat in self.book_gift_chats:
             if members.intersection(chat["members"]):
                 chat["members"] = sorted(set(chat["members"]) | members)
@@ -2121,6 +2289,7 @@ class Sim:
     def tick(self):
         self.global_tick += 1
         self.settle_finished_actions()
+        self.settle_conversations()      # 多人聊天：逐人离场 / 解散（2026-10-14）
         self.teacher.step(self)
         self.decide_and_act()
         self.process_notes()          # 纸条链（§8.6）：每 tick 处理一张纸条
@@ -2275,6 +2444,7 @@ class Sim:
         不消耗 RNG。被打断节点的 `busy_until`/`busy_phase` 已由 ③ 清掉，这里清掉仍残留的
         `current_act`/`busy_act`/`in_conversation`，让新段判定看到一致的空闲状态。
         """
+        self._interrupt_conversations()   # 铃响打断所有未结束会话（2026-10-14 多人聊天）
         for i in range(self.N):
             if self.current_act[i] == "study":
                 self.current_act[i] = None
