@@ -1,0 +1,39 @@
+{
+  "design_size": [
+    1920,
+    1080
+  ],
+  "font_size": 28,
+  "heading_size": 32,
+  "small_size": 22,
+  "return_size": 22,
+  "button_height": 96,
+  "paper_top": 64,
+  "utility_height": 66,
+  "icon_size": 44,
+  "gap": 14,
+  "padding": 16,
+  "touch_drag_threshold": 12,
+  "copy": {
+    "monitor_title": "教室监控",
+    "classroom_title": "教室现场",
+    "monitor_return": "关闭监控",
+    "classroom_return": "返回办公室",
+    "heading": "老师行动",
+    "target_heading": "当前对象",
+    "no_target": "点击同学查看档案",
+    "target": "%s",
+    "profile": "查看档案",
+    "monitor_status": "老师当前：空闲  ｜  正在查看教室监控",
+    "classroom_status": "老师当前：空闲  ｜  已进入教室",
+    "patrol": "巡视教室",
+    "private_chat": "办公室私聊",
+    "seats": "调座位 · 待开放",
+    "conflict": "处理冲突 · 待开放",
+    "pending_hint": "待开放：调座位、处理冲突",
+    "profile_tool": "同学档案",
+    "book_tool": "百科全书",
+    "board_tool": "推理板",
+    "disabled_tutorial": "老师版教程待更新"
+  }
+}

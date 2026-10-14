@@ -1,0 +1,46 @@
+Use case: ui-mockup.
+Asset type: ONE polished 16:9 landscape mobile-game CLASS OVERVIEW screen concept for the Chinese teacher-management social simulation game 《下课十分钟》. This is a proposed UI concept, not an engine screenshot.
+Primary request: visualize the class overview discussed with the user so they can gradually implement and adjust the UI. Make four class averages, exam target gap, actual activity counts, individual warning counts and finite intervention time immediately readable.
+
+Art direction: warm ivory school stationery, dark sage green ink, thin green borders, subtle paper texture, small hand-drawn school icon accents, rounded cards, generous touch-target sizes. A warm, softly rendered 3D Chinese classroom is visible only as a dimmed softly blurred BACKGROUND around the central large overview panel: cream walls, honey wooden desks, pale blue curtains, green chalkboard, sunlight from windows at right. No need to show students in this decorative background. The UI is the subject. Match a cozy but practical school management game, not an enterprise analytics dashboard. No phone bezel, no device frame, no perspective skew, no watermark.
+Composition: screenshot-like straight-on wide horizontal interface. Keep content in a 90% central safe area. One large cream-paper overview panel, elegant header, four equally sized numeric cards in ONE horizontal row, then two columns of larger supporting sections. Use a modern highly legible Chinese font. All labels large, few short lines, easy to inspect on mobile. Green/sage positive emphasis, muted amber warnings, restrained rust-orange urgent action, neutral grey for other states; icons and text distinguish states in addition to color. No dense charts, no graph with invented historical data, no clutter, no full relationship matrix.
+
+Exact Chinese text:
+HEADER:
+Large left title "全班概况" with small book/classroom icon.
+Small subtitle "下课十分钟".
+Right-side two large chips "第3天 · 第二课间" and "课间剩余 06:40" with a small pause icon.
+A discreet top-right close X.
+
+FOUR SUMMARY CARDS across the upper third, with the exact labels and numbers below:
+1) label "班级平均成绩"; large number "63.2"; small caption "全班16人".
+2) label "平均压力"; large number "48"; small caption "高压预警3人"; amber icon.
+3) label "平均动力"; large number "54"; small caption "查看个体分布".
+4) label "今日平均学业收益"; large signed number "+2.1"; small caption "次日计入成绩". This academic gain is a signed accumulated total PER STUDENT, not a rate, not a 0–100 progress bar, and separate from motivation and current grade.
+
+LOWER LEFT COLUMN, roughly 58% of panel width:
+Upper section header "周考目标".
+A clear sentence "周考还有4天".
+One clean horizontal progress track with a current-position marker "当前 63.2" and a target marker "目标 70".
+Separate orange-emphasis chip "还差6.8分".
+Do not say the accumulated gain guarantees a forecast of exam performance.
+Below this, another section header "当前行为".
+Three clear, evenly spaced icon/count tiles: book icon "学习 8人"; speech/headphone icon "娱乐 6人"; neutral clock/person icon "其他 2人".
+A single understated segmented band can encode 8/16, 6/16 and 2/16. The count sums to exactly 16; do not add separate students to the class roster.
+Small caption "按实际活动统计".
+Keep motivation averages and actual activity counts distinct; do not imply the average determines all individual states.
+
+LOWER RIGHT COLUMN, roughly 38%:
+Header "需要关注".
+Three actionable alert rows, each with an icon, a short label and large readable count on the left and an outlined compact button on the right:
+Row 1: "高压预警" and "3人"; button "查看学生".
+Row 2: "普通争吵" and "1起"; button "定位现场".
+Row 3: "学业收益为负" and "4人"; button "查看档案".
+The third row is a study-management reminder, not a safety failure; use softer neutral/sage styling than the warning rows. An ordinary argument is not bullying, and a high-pressure warning is not automatic dismissal. Do not label briefly resting or sitting alone as isolation.
+A slim status strip below: "老师当前：空闲".
+
+FOOTER:
+Three large touch buttons "返回监控", "查看学生", "每日简报", with simple matching icons. Use "返回监控" as the solid sage primary button, others outlined cream.
+A small discreet bottom note "概念示例 · 数值待调整" to make illustrative values clear.
+
+Constraints: precise readable Chinese text, the four averages must each appear exactly once as the main summary card; signs on academic gain visible; current average 63.2, target 70 and gap 6.8 consistent. All class statistics cover 16 students, not a 17th teacher social node. Do not add trust, transparency, student-to-teacher affection, personality stats, average affection, average hostility, guaranteed next-day/exam predictions, hidden-information meters or a selected student's portrait. No giant decorative illustration competing with the UI. This is a clean modular mobile game concept ready for visual review and gradual UI implementation.

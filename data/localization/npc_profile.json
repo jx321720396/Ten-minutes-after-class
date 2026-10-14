@@ -30,9 +30,12 @@
   "encounters_title": "我们的交集",
   "encounters_empty": "还没有留下闲聊记录。\n从一句问候开始吧。",
   "encounter": "完成闲聊 · 获得{count}条线索",
-  "judgment_title": "对我的态度 · 我的判断",
-  "judgment_empty": "还不够了解",
-  "judgment_note": "这里不把对其他同学的关系，当作对我的态度。",
+  "me": "我",
+  "personal_note": "对我的真实印象始终可见；选择其他同学可查看已获知的关系。",
+  "current_impression": "当前印象",
+  "current_time_label": "查看时间",
+  "direct_impression": "当前真实印象",
+  "personal_history_empty": "还没有关于这段关系的历史记录。",
   "chat": "发起闲聊",
   "join": "加入闲聊",
   "chat_hint": "关闭档案后，按当前距离与状态尝试闲聊。",
@@ -44,6 +47,6 @@
   "next": "下一位同学",
   "relation": "{source}  →  {subject}",
   "relationship_target": "关系对象",
-  "footer": "只记录你已获知的事 · Esc 返回教室",
+  "footer": "未知不代表中立 · Esc 返回教室",
   "none": "暂无其他同学"
 }

@@ -2,6 +2,7 @@ extends GutTest
 ## 回归重点：方向/逐轴时间/未知/只读；模型仅接收已获得历史，不接收SimCore。
 
 const MODEL_PATH := "res://scripts/ui/npc_profile_data.gd"
+const PROFILE_PATH := "res://scenes/ui/npc_profile.tscn"
 
 
 func _clue(id: int, source: int, subject: int, axis: String, value: Variant) -> Dictionary:
@@ -62,7 +63,7 @@ func test_unknown_duplicates_and_shared_chat_request() -> void:
 
 
 func test_profile_pause_empty_state_switch_and_escape() -> void:
-	var path := "res://scenes/ui/npc_profile.tscn"
+	var path := PROFILE_PATH
 	assert_true(ResourceLoader.exists(path), "应有可复用的原生UI场景")
 	if not ResourceLoader.exists(path):
 		return
@@ -74,6 +75,8 @@ func test_profile_pause_empty_state_switch_and_escape() -> void:
 	profile.open_profile(0)
 	assert_true(profile.is_open())
 	assert_true(get_tree().paused)
+	var targets: OptionButton = profile.get_node("%Targets")
+	profile._on_target_selected(targets.get_item_index(1))
 	assert_eq(profile.get_node("%TrustValue").text, "未知")
 	assert_eq(profile.get_node("%PersonName").text, core.alias(0))
 	profile.open_profile(1)
@@ -93,7 +96,7 @@ func test_profile_pause_empty_state_switch_and_escape() -> void:
 
 
 func test_profile_uses_snapshot_even_after_live_relationship_changes() -> void:
-	var profile = load("res://scenes/ui/npc_profile.tscn").instantiate()
+	var profile = load(PROFILE_PATH).instantiate()
 	add_child_autofree(profile)
 	var core := SimCore.new(12345, 16)
 	(
@@ -115,16 +118,47 @@ func test_profile_uses_snapshot_even_after_live_relationship_changes() -> void:
 	)
 	profile.bind_sources(core, null, null)
 	profile.open_profile(0)
+	var targets: OptionButton = profile.get_node("%Targets")
+	profile._on_target_selected(targets.get_item_index(1))
 	assert_eq(profile.get_node("%AffinityValue").text, "较低")
 	assert_eq(profile.get_node("%HostilityValue").text, "未知")
 	var before := core.get_player_intel()
 	core._a[1] = 100.0  # 测试夹具：后台已变化，但玩家没有获取新线索。
 	profile.close()
 	profile.open_profile(0)
+	profile._on_target_selected(targets.get_item_index(1))
 	assert_eq(core.affinity(0, 1), 100.0)
 	assert_eq(profile.get_node("%AffinityValue").text, "较低")
 	assert_eq(core.get_player_intel(), before)
 	assert_eq(profile.get_node("%StaleNote").text, "此后关系可能变化")
+	profile.close()
+
+
+func test_player_is_a_relationship_target_with_truthful_read_only_impression() -> void:
+	var profile = load(PROFILE_PATH).instantiate()
+	add_child_autofree(profile)
+	var core := SimCore.new(12345, 16)
+	var player := core.node_count() - 1
+	core._a[player] = 90.0
+	core._h[player] = 0.0
+	core._t[player] = 55.0
+	var before := core.get_player_intel()
+	profile.bind_sources(core, null, null)
+	profile.open_profile(0)
+	var targets: OptionButton = profile.get_node("%Targets")
+	assert_eq(targets.item_count, core.node_count() - 1)
+	assert_ne(targets.get_item_index(player), -1, "玩家也在同学关系对象里")
+	assert_eq(targets.get_selected_id(), player, "默认展示该同学对我的印象")
+	assert_eq(profile.get_node("%AffinityValue").text, "很高")
+	assert_eq(profile.get_node("%HostilityValue").text, "较低")
+	assert_eq(profile.get_node("%TrustValue").text, "较高")
+	assert_null(profile.get_node_or_null("%JudgmentCard"), "不再单独分出对我的态度区")
+	profile._on_target_selected(targets.get_item_index(1))
+	assert_eq(profile.get_node("%AffinityValue").text, "未知", "其他同学仍只显示已获得情报")
+	profile._on_target_selected(targets.get_item_index(player))
+	assert_eq(profile.get_node("%AffinityValue").text, "很高")
+	assert_eq(core.get_player_intel(), before)
+	assert_eq(core.affinity(0, player), 90.0)
 	profile.close()
 
 

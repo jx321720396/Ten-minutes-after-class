@@ -1,0 +1,70 @@
+{
+  "width": 340,
+  "height": 304,
+  "gap": 8,
+  "footer_gap": 28,
+  "margins": [
+    30,
+    46,
+    24,
+    24
+  ],
+  "row_gap": 6,
+  "cell_padding": 6,
+  "cell_radius": 5,
+  "cell_border": 1,
+  "title_size": 24,
+  "label_size": 13,
+  "value_size": 32,
+  "maximum_size": 14,
+  "footer_size": 15,
+  "button_size": 18,
+  "button_height": 36,
+  "icon_size": 14,
+  "heading_icon_size": 24,
+  "icon_gap": 4,
+  "detail_width": 620,
+  "detail_layer": 30,
+  "detail_title_size": 28,
+  "detail_font_size": 22,
+  "detail_button_height": 46,
+  "backdrop_alpha": 0.35,
+  "title": "班级概况",
+  "unknown": "—",
+  "unknown_hint": "暂无记录",
+  "footer": "全班 %s 人 · 收益次日结算",
+  "button": "查看全部概况  ›",
+  "close": "返回教室",
+  "metrics": [
+    {
+      "key": "class_average_grade",
+      "name": "Grade",
+      "label": "平均成绩",
+      "icon": "study"
+    },
+    {
+      "key": "class_average_pressure",
+      "name": "Pressure",
+      "label": "平均压力",
+      "icon": "sleep"
+    },
+    {
+      "key": "class_average_motivation",
+      "name": "Motivation",
+      "label": "平均动力",
+      "icon": "observe"
+    },
+    {
+      "key": "class_average_academic_gain",
+      "name": "AcademicGain",
+      "label": "今日平均学业收益",
+      "icon": "study"
+    }
+  ],
+  "detail_margins": [
+    50,
+    62,
+    44,
+    38
+  ]
+}

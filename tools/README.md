@@ -101,3 +101,6 @@ Blender 书架小样 v2：`build_school_bookshelf_blender.py` 由独立 JSON 配
 对话气泡：`build_chat_bubble_blender.py` 从 `data/ui/chat_bubble_blender.json` 渲染头顶气泡的 pop（10）/ idle（9，循环）/ fade（5）序列帧与 512² 静帧到 `assets/textures/ui/speech_bubble/`；拼版预览、可编辑 `.blend` 与 `build_report.json` 写在本目录同级的小样目录。[小样说明](../docs/art/concepts/chat_bubble/README.md)。无描边版本在浅背景上不可辨，故资产统一带墨线；**本机 Blender 只启用 EEVEE（无 Cycles）**，脚本按配置选引擎、不可用时回退并在报告里标记，既有 `build_*_blender.py` 写死的 CYCLES 在本机跑不了。
 
 行为符号位图字形：`build_symbol_bitmaps_blender.py` 从 `data/ui/behavior_particles_blender.json` 把闲聊符号（`?` `!` `★` `~`）烘焙成立体白字形贴图到 `assets/textures/ui/behavior_particles/`；运行时经 `data/ui/behavior_particles.json` 的 `bitmaps` 字段按各自 style 配色 modulate，**字段为空或贴图缺失即回退字体字形**（可撤回开关）。实测在默认 `font_size 34` 下立体感不可见，见 [符号气泡说明](../docs/art/concepts/behavior_particles/README.md)。
+
+
+左上角时间／首次周考卡片截图：godot --path . -s tests/integration/capture_time_card.gd 使用真实教室和真实均分，输出 tools/out/time_card 中 1920×1080、1280×720 的教室及卡片截图，不修改正式存档。见 [验收说明](../docs/qa/时间周考卡片验收-2026-10-14.md)。

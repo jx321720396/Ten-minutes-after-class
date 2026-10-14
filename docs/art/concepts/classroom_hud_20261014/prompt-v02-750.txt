@@ -1,0 +1,5 @@
+Edit this classroom HUD concept with ONLY the grade scale correction requested by the user. Keep all layout, colors, classroom scene, students, teacher buttons, icons, paper cards, time, warnings, pressure, motivation and all other information exactly unchanged.
+1. In the left top card replace "目标均分70 · 还差6.8分" with the exact text "目标均分525 · 还差51分".
+2. In the left middle class overview's "平均成绩" cell replace "63.2" with large "474", and add a small readable denominator "/750" alongside or underneath within that SAME cell. It means the class average uses a 750-point high-school exam total. Do not change average pressure "48" or average motivation "54"; these remain 0–100.
+3. Preserve "今日平均学业收益 +2.1" exactly. It is a signed gain in exam-score points, not a percentage or a 0–100 grade that should be multiplied by 7.5.
+All numbers are illustrative concept data; target525 and current474 imply gap51. Do not introduce new information or restructure any UI. No watermark.
