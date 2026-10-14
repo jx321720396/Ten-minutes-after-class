@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://kongvmw7kuj2"]
+
+[ext_resource type="AudioStream" uid="uid://bbfjrufvn4v1x" path="res://music/bgm_classroom.ogg" id="1_lif0m"]
+[ext_resource type="Script" uid="uid://d3gl5b1aj71vc" path="res://autoload/bgm.gd" id="1_script"]
+
+[node name="BGM" type="AudioStreamPlayer" unique_id=1553037142]
+stream = ExtResource("1_lif0m")
+volume_db = 5.396
+bus = &"Music"
+script = ExtResource("1_script")

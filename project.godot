@@ -21,6 +21,8 @@ EventBus="*res://autoload/event_bus.gd"
 Config="*res://autoload/config.gd"
 Save="*res://autoload/save.gd"
 GameState="*res://autoload/game_state.gd"
+BGM="*res://autoload/bgm.tscn"
+SFX="*res://autoload/sfx.tscn"
 
 [display]
 

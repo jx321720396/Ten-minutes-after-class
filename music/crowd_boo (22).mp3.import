@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cr2tols8wx4e7"
+path="res://.godot/imported/crowd_boo (22).mp3-062bf9fccc202f5489bc64333bec0dc5.mp3str"
+
+[deps]
+
+source_file="res://music/crowd_boo (22).mp3"
+dest_files=["res://.godot/imported/crowd_boo (22).mp3-062bf9fccc202f5489bc64333bec0dc5.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
