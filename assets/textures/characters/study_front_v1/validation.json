@@ -1,0 +1,258 @@
+[
+  {
+    "id": "01",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      0,
+      17,
+      1006,
+      1512
+    ],
+    "transparent_fraction": 0.6824,
+    "sha256": "93e031debaace78b6864d64646a4a119a3f597a8717c4d1321747f2dcd262790"
+  },
+  {
+    "id": "02",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      53,
+      15,
+      970,
+      1536
+    ],
+    "transparent_fraction": 0.6601,
+    "sha256": "0c663efdecaa2b1252039b2121eadba5bdb034078c159f18a7f161d8c688be0c"
+  },
+  {
+    "id": "03",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      41,
+      18,
+      1004,
+      1520
+    ],
+    "transparent_fraction": 0.6354,
+    "sha256": "dc4cc0d21c2a8bc40013c71354d6e9d43d7d10ce4f6a3aada7c01ef205eff309"
+  },
+  {
+    "id": "04",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      41,
+      19,
+      978,
+      1498
+    ],
+    "transparent_fraction": 0.6672,
+    "sha256": "1f78a6637ffcd6471d3da4a591171435dcfd4974db30f9f9f9f8a746ae4d7ea6"
+  },
+  {
+    "id": "05",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      229,
+      0,
+      1002,
+      1536
+    ],
+    "transparent_fraction": 0.6665,
+    "sha256": "0462bccbdc42baccd27f1eb4581cdb55f498b041c49cd676149ff9858e41a640"
+  },
+  {
+    "id": "06",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      81,
+      14,
+      1002,
+      1497
+    ],
+    "transparent_fraction": 0.6679,
+    "sha256": "d0efc8888e9e353e959ef47592e2aaba12c0a9a44e924466782bd65fc9628ee1"
+  },
+  {
+    "id": "07",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      25,
+      17,
+      950,
+      1506
+    ],
+    "transparent_fraction": 0.6328,
+    "sha256": "f6df60070e52adfafacfb66a152b2dccf9ef45c0cca94f54a40644ab7af18dff"
+  },
+  {
+    "id": "08",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      57,
+      17,
+      854,
+      1504
+    ],
+    "transparent_fraction": 0.6517,
+    "sha256": "da427a7a44f7f80fe213b2e6817669008540126bdd9bc0d07dd57c66e3a3ee98"
+  },
+  {
+    "id": "09",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      0,
+      14,
+      854,
+      1491
+    ],
+    "transparent_fraction": 0.6552,
+    "sha256": "d0a431646f7ac9fdb0debba6de299763b4bc84aab80d63f6b1991e96ff2ffc94"
+  },
+  {
+    "id": "10",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      51,
+      0,
+      966,
+      1514
+    ],
+    "transparent_fraction": 0.65,
+    "sha256": "c1852b1afa72673ac274d87cfbfb85446735dfb94724b326c13a7b9413b88169"
+  },
+  {
+    "id": "11",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      49,
+      0,
+      989,
+      1522
+    ],
+    "transparent_fraction": 0.6503,
+    "sha256": "2f68d9bce6fea45c53d463c06b9202057a180c059b266aedb8e7ecc7a8654819"
+  },
+  {
+    "id": "12",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      65,
+      15,
+      1010,
+      1504
+    ],
+    "transparent_fraction": 0.6417,
+    "sha256": "04d79d878f81ae68e60c6f1be291c944f57494190d4ee6d5c7cbf016df9a5cb3"
+  },
+  {
+    "id": "13",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      33,
+      0,
+      972,
+      1512
+    ],
+    "transparent_fraction": 0.6613,
+    "sha256": "c7542469003da7b929a80e503132c4ead6958eea7e18f707ae4715860b47d0ef"
+  },
+  {
+    "id": "14",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      65,
+      10,
+      972,
+      1509
+    ],
+    "transparent_fraction": 0.6474,
+    "sha256": "849783e37eb41daa08eb5f633a78d3a024863042d225bc0d2c2abcf1f2a89301"
+  },
+  {
+    "id": "15",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      73,
+      5,
+      996,
+      1491
+    ],
+    "transparent_fraction": 0.6607,
+    "sha256": "db47e09e4dcc080974b8e34bfe993632c7af0f36e1edf941f3a9d4764bf1e490"
+  },
+  {
+    "id": "16",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "alpha_bbox": [
+      0,
+      24,
+      862,
+      1512
+    ],
+    "transparent_fraction": 0.6555,
+    "sha256": "f7b62f3cb76581bfa08ad3ec4d47cfc07daef25294ebd02ac3aff125ffa3cdef"
+  }
+]

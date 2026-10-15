@@ -81,7 +81,7 @@ def run_one(seed, days, npc):
         "listen_music": s.stats.get("listen_music", 0),
         "eat_snack": s.stats.get("eat_snack", 0),
         "read_book": s.stats.get("read_book", 0),
-        "deep_max": max(s.H_deep[i][j] for i in range(n) for j in range(n) if i != j),
+        "deep_max": max(s.H[i][j] for i in range(n) for j in range(n) if i != j),
         "sat": 100.0 * sum(1 for x in aff if x >= 95) / len(aff),
         "A": aff,
     }

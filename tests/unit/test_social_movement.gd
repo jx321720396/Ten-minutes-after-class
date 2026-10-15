@@ -39,13 +39,6 @@ func test_walking_actor_cannot_start_or_receive_chat() -> void:
 		assert_eq(core.session_of(0), -1, "聊天双方都必须停止移动")
 
 
-func test_player_cannot_chat_with_moving_target() -> void:
-	var core := _core()
-	core.set_moving(0, true)
-	var preview := core.preview_player_interaction("chat", 0)
-	assert_false(bool(preview.eligible), "玩家不能拉正在走动的 NPC 聊天")
-
-
 func test_moving_actor_does_not_start_sleeping_at_phase_setup() -> void:
 	var core := _core()
 	core._probs["sleep"] = 100.0
@@ -81,17 +74,15 @@ func test_front_back_seated_neighbors_can_chat_but_not_sideways() -> void:
 	assert_false(core.chat_pair_in_range(0, 1), "离开座位后恢复实际距离判定")
 
 
-func test_player_seated_front_back_neighbor_uses_same_rule() -> void:
+func test_seated_front_back_neighbor_uses_the_same_rule() -> void:
 	var core := _core()
-	var me := core.node_count() - 1
-	core._seat_of[me] = "P1"
-	core._seat_of[0] = "P5"
-	core.set_position(me, 0, 0)
-	core.set_position(0, 0, 1.6)
-	core.call("set_seat_position", me, Vector2.ZERO)
-	core.call("set_seat_position", 0, Vector2(0, 1.6))
-	var preview := core.preview_player_interaction("chat", 0)
-	assert_true(bool(preview.in_range), "玩家和 NPC 使用同一座位规则")
+	core._seat_of[0] = "P1"
+	core._seat_of[1] = "P5"
+	core.set_position(0, 0, 0)
+	core.set_position(1, 0, 1.6)
+	core.call("set_seat_position", 0, Vector2.ZERO)
+	core.call("set_seat_position", 1, Vector2(0, 1.6))
+	assert_true(core.chat_pair_in_range(0, 1), "前后紧邻且都在本座位可转身聊天（同一座位规则）")
 
 
 func test_desk_blocks_chat_after_leaving_seats() -> void:

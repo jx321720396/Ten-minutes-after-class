@@ -5,6 +5,7 @@ signal close_requested
 signal day_requested(day: int)
 signal person_selected(index: int)
 
+const PORTRAITS = preload("res://scripts/ui/student_portraits.gd")
 const SETTINGS = preload("res://scripts/ui/clue_board_settings.gd")
 const DASH = preload("res://assets/textures/ui/clue_board/pencil-dash.svg")
 var config: Dictionary = SETTINGS.read()
@@ -383,19 +384,9 @@ func _name(index: int) -> String:
 
 
 func _portrait(index: int) -> Texture2D:
-	if _core != null:
-		var path := str(
-			_profile_config.get("portraits", {}).get(str(_core.character_id(index)), "")
-		)
-		if not path.is_empty() and ResourceLoader.exists(path):
-			return load(path) as Texture2D
-	if is_instance_valid(_actors) and _actors.has_method("actor_for"):
-		var actor: Node = _actors.actor_for(index)
-		if actor != null:
-			var sprite := actor.get_node_or_null("Sprite") as Sprite3D
-			if sprite != null:
-				return sprite.texture
-	return null
+	if _core == null:
+		return null
+	return PORTRAITS.texture_for(str(_core.character_id(index)), _profile_config)
 
 
 func _pair_key(a: int, b: int) -> String:

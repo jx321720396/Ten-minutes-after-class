@@ -121,7 +121,7 @@ def structural_roles(sim):
     liked.sort(key=lambda t: (-t[0], t[1]))
     out["人气中心"][liked[0][1]] += 1
 
-    hated = [(sum(sim.H_deep[i][j] for i in cls if i != j) / (n - 1), j) for j in cand]
+    hated = [(sum(sim.H[i][j] for i in cls if i != j) / (n - 1), j) for j in cand]
     hated.sort(key=lambda t: (-t[0], t[1]))
     out["众矢之的"][hated[0][1]] += 1
     return out

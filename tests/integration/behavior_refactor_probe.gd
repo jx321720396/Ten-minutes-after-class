@@ -78,9 +78,11 @@ func _initialize() -> void:
 		var c: Variant = _new_core(core_script, 12345, tables)
 		var events: Array = []
 		c.event_sink = func(e: Dictionary): events.append(e)
-		var result: Dictionary = c.player_action(kind, 0)
-		var player_row := _snapshot(c, events, "player_" + kind)
-		player_row["result"] = result
+		if kind == "chat":
+			c._do_chat(0, 1)
+		else:
+			c._do_roughhouse(0, 1)
+		var player_row := _snapshot(c, events, "npc_" + kind)
 		rows.append(player_row)
 	for seed_value in [12345, 42, 2024]:
 		var c: Variant = _new_core(core_script, seed_value, tables)

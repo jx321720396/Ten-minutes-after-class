@@ -306,17 +306,16 @@ func snapshot() -> Dictionary:
 	return out
 
 
-## 只读班级成绩；迁移期间排除旧学生版玩家节点，不推进模拟或消耗随机数。
+## 只读班级成绩（2026-10-16 起本局全部节点都是学生，无需再排除玩家）。
 func _class_grade_snapshot() -> Dictionary:
 	var total := 0.0
 	var pressure_total := 0.0
 	var count := 0
 	if _core != null:
 		for index in range(_core.node_count()):
-			if not _core.is_player(index):
-				total += _core.grade(index)
-				pressure_total += _core.stress(index)
-				count += 1
+			total += _core.grade(index)
+			pressure_total += _core.stress(index)
+			count += 1
 	var first_day := 0
 	for row in _tables.get("rules/exam", {}).get("rows", []):
 		if str(row.get("param", "")).begins_with("exam_day_"):
@@ -343,8 +342,6 @@ func _attention_snapshot() -> Dictionary:
 	var students: Array = []
 	var counts := {"study": 0, "entertainment": 0, "other": 0}
 	for index in range(_core.node_count()):
-		if _core.is_player(index):
-			continue
 		var pressure := _core.stress(index)
 		if pressure >= float(_attention_cfg.warning_pressure):
 			students.append({"index": index, "name": _core.alias(index), "pressure": pressure})

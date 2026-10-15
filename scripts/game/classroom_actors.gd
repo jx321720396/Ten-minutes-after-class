@@ -3,7 +3,7 @@ extends Node3D
 ##
 ## 数据流（单向、只读）：
 ##   GameState.sim_core（本局唯一内核实例）
-##     → 只读访问器 node_count() / seat_of(i) / character_id(i) / alias(i) / is_player(i)
+##     → 只读访问器 node_count() / seat_of(i) / character_id(i) / alias(i)
 ##     → 座位节点 Seats/<seat_id>（scenes/game/classroom3D.tscn，与 data/rules/seats.csv 同名）
 ##     → 立绘 scenes/characters/<sprite>.tscn（sprite 名查 data/characters/appearance.csv）
 ##
@@ -14,9 +14,12 @@ extends Node3D
 ##    走动 / 聚散是后续可视化层的事（§15.1），本脚本只负责「坐在自己的座位上」。
 
 const APPEARANCE_TABLE := "characters/appearance"
-const PICK_TABLE := "rules/player_interaction"
+const PICK_TABLE := "ui/pick_layers"
 const CHARACTER_SCENE_DIR := "res://scenes/characters/"
 const PLAYER_LABEL := "我"
+const POSE_SETTINGS := "res://data/ui/student_poses.json"
+const SEATED_POSE := preload("res://scenes/components/layered_student_pose.tscn")
+const POSE_PICKER := preload("res://scripts/game/student_pose_picker.gd")
 ## 座位**可走站位**（desk_chair.tscn 的 Marker3D）：落位与站位唯一来源
 const STAND_SPOT_NAME := "StandSpot"
 ## 座位**坐姿锚点**（desk_chair.tscn 的 Marker3D）：坐下帧动画预留，本轮只读不驱动
@@ -72,7 +75,7 @@ const NAME_FONTS: Array[String] = [
 @export var walker_scene: PackedScene = preload("res://scenes/components/actor_walker.tscn")
 
 @export_group("拾取与反馈锚点")
-## 人物拾取体所在 3D 物理层（位掩码，来自 data/rules/player_interaction.csv）；0 = 不建拾取体
+## 人物拾取体所在 3D 物理层（位掩码，来自 data/ui/pick_layers.csv）；0 = 不建拾取体
 @export var pick_layer: int = 0
 ## 拾取体厚度（米）：射线要能稳定命中纸片人
 @export var pick_depth: float = 0.36
@@ -95,6 +98,9 @@ var _name_font_cache: Font = null
 var _actor_by_index: Array[Node3D] = []
 ## 索引 → 座位节点：坐姿锚点等"回到自己的座位"的表现都从它取（不许按名字猜座位）
 var _seat_of_actor: Array[Node3D] = []
+var _pose_settings: Dictionary = {}
+var _pose_core: Variant
+var _seated_poses: Dictionary = {}
 
 
 func _ready() -> void:
@@ -116,6 +122,23 @@ func actor_for(i: int) -> Node3D:
 
 func actor_count() -> int:
 	return _actor_by_index.size()
+
+
+func reserves_desktop(seat: Node3D) -> bool:
+	if not bool(_pose_settings.get("clear_desk_props", false)):
+		return false
+	for index in _seated_poses:
+		if seat_node_of(index) == seat:
+			return true
+	return false
+
+
+func pick_seated_pose(
+	camera: Camera3D, origin: Vector3, direction: Vector3, blockers: int, limit: float
+) -> Dictionary:
+	return POSE_PICKER.pick(
+		_seated_poses, _actor_by_index, camera, origin, direction, blockers, limit
+	)
 
 
 ## 从节点自身的元数据反查索引（拾取射线命中后使用）；不是人物返回 -1。
@@ -174,6 +197,9 @@ func build(core: Variant) -> int:
 		push_error("ClassroomActors：找不到座位父节点 %s" % str(seat_root_path))
 		return 0
 	_appearances = _load_appearances()
+	_pose_settings = JSON.parse_string(FileAccess.get_file_as_string(POSE_SETTINGS))
+	_pose_core = core
+	process_priority = 10
 	_load_pick_layer()
 
 	var count := int(core.node_count())
@@ -195,10 +221,48 @@ func build(core: Variant) -> int:
 		_attach_walker(actor)
 		_actor_by_index.append(actor)
 		_seat_of_actor.append(seat)
+		_attach_seated_pose(core, i, actor)
 		placed += 1
 	if placed != count:
 		push_warning("ClassroomActors：内核 %d 个节点，实际落位 %d 个" % [count, placed])
 	return placed
+
+
+func _attach_seated_pose(core: Variant, index: int, actor: Node3D) -> void:
+	var sprite_name := str(_appearances.get(str(core.character_id(index)), ""))
+	var binding: Dictionary = _pose_settings["bindings"].get(sprite_name, {})
+	if binding.is_empty():
+		return
+	var pose := SEATED_POSE.instantiate()
+	actor.add_child(pose)
+	pose.configure(_pose_settings, binding)
+	_seated_poses[index] = pose
+
+
+func _process(_delta: float) -> void:
+	if _pose_core == null:
+		return
+	var kind := str(_pose_core.time_snapshot().get("kind", ""))
+	for index in _seated_poses:
+		var actor := actor_for(int(index))
+		var seat := seat_node_of(int(index))
+		var pose: Node3D = _seated_poses[index]
+		var walker := actor.get_node_or_null("Walker")
+		var moving: bool = walker != null and walker.is_moving()
+		var at_home := (
+			actor.global_position.distance_to(_stand_position(seat))
+			<= float(_pose_settings["at_home_radius"])
+		)
+		pose.global_transform = seat.global_transform
+		var mode: String = pose.pose_for(
+			str(_pose_core.activity_of(index)),
+			kind,
+			at_home,
+			moving,
+			bool(_pose_core.is_present(index))
+		)
+		pose.show_pose(mode)
+		actor.get_node("Sprite").visible = mode == "stand"
 
 
 ## 落位点 = 座位的**可走站位**（desk_chair.tscn 的 StandSpot）。
@@ -238,7 +302,7 @@ func sit_position_of(index: int) -> Vector3:
 	return point.global_position + Vector3(0.0, foot_offset, 0.0)
 
 
-## 拾取层：数值来自 data/rules/player_interaction.csv（位掩码）；导出属性优先。
+## 拾取层：数值来自 data/ui/pick_layers.csv（位掩码）；导出属性优先。
 func _load_pick_layer() -> void:
 	if pick_layer > 0:
 		return
@@ -258,7 +322,7 @@ func _attach_pick_body(actor: Node3D, index: int) -> void:
 	var sprite := actor.get_node_or_null("Sprite") as Sprite3D
 	if sprite != null and sprite.texture != null:
 		width = float(sprite.texture.get_width()) * sprite.pixel_size
-		height = character_height
+		height = float(sprite.texture.get_height()) * sprite.pixel_size
 	width = clampf(width, 0.2, max_pick_width)
 	var area := Area3D.new()
 	area.name = "PickBody"
@@ -295,6 +359,8 @@ func _attach_walker(actor: Node3D) -> void:
 
 ## 清掉上一次生成的人物（重复 build / 热重载时不会叠人）。
 func _clear_actors() -> void:
+	_seated_poses.clear()
+	_pose_core = null
 	_actor_by_index.clear()
 	_seat_of_actor.clear()
 	for child in get_children():
@@ -304,22 +370,13 @@ func _clear_actors() -> void:
 
 func _build_actor(core: Variant, i: int) -> Node3D:
 	var actor := Node3D.new()
-	if bool(core.is_player(i)):
-		actor.name = "Player"
-		# 玩家立绘按性别取 —— 玩家不是 NPC，不在 appearance.csv 里，走单独一条路。
-		# 这里**不再挂标记球**（原来那个浮空的金色小球）：玩家靠立绘 + 头顶「我」标签辨认。
-		# 注：外观未命中时的占位球（missing_marker_color）仍保留，两者用途不同。
-		var player_texture := _load_player_texture()
-		if player_texture != null:
-			actor.add_child(_build_sprite(player_texture))
-		if show_name_tags:
-			actor.add_child(_build_name_tag(PLAYER_LABEL, player_name_color))
-		return actor
-
 	var character_id := str(core.character_id(i))
 	actor.name = "Actor_%s" % (character_id if not character_id.is_empty() else str(i))
 	var sprite_name := str(_appearances.get(character_id, ""))
 	var texture := _load_texture(sprite_name)
+	var pose_binding: Dictionary = _pose_settings.get("bindings", {}).get(sprite_name, {})
+	if not pose_binding.is_empty():
+		texture = load(str(pose_binding["standing"])) as Texture2D
 	if texture == null:
 		push_warning(
 			(
@@ -329,9 +386,14 @@ func _build_actor(core: Variant, i: int) -> Node3D:
 		)
 		actor.add_child(_build_marker(missing_marker_color))
 	else:
-		actor.add_child(_build_sprite(texture))
+		var height_scale := float(_pose_settings.get("standing_scale", 1.0))
+		actor.add_child(_build_sprite(texture, height_scale))
 	if show_name_tags:
-		actor.add_child(_build_name_tag(str(core.alias(i)), name_color))
+		var tag := _build_name_tag(str(core.alias(i)), name_color)
+		var sprite := actor.get_node_or_null("Sprite") as Sprite3D
+		if sprite != null:
+			tag.position.y = sprite.position.y * 2.0 + name_gap
+		actor.add_child(tag)
 	return actor
 
 
@@ -348,7 +410,7 @@ func _load_player_texture() -> Texture2D:
 
 
 ## 立绘（纸片人）：高度统一到 character_height，宽度按素材比例。
-func _build_sprite(texture: Texture2D) -> Sprite3D:
+func _build_sprite(texture: Texture2D, height_scale: float = 1.0) -> Sprite3D:
 	var sprite := Sprite3D.new()
 	sprite.name = "Sprite"
 	sprite.texture = texture
@@ -357,9 +419,11 @@ func _build_sprite(texture: Texture2D) -> Sprite3D:
 	if keep_pixel_edges:
 		sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	var pixel_height := maxi(texture.get_height(), 1)
-	sprite.pixel_size = character_height / float(pixel_height)
+	sprite.pixel_size = character_height * height_scale / float(pixel_height)
 	# Sprite3D 默认以自身中心为原点（centered）→ 抬高半个身高，底部落在脚底
-	sprite.position = Vector3(0.0, character_height * 0.5, 0.0)
+	sprite.position = Vector3(0.0, character_height * height_scale * 0.5, 0.0)
+	if height_scale != 1.0:
+		sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
 	return sprite
 
 

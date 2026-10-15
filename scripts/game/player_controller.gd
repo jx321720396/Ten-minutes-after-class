@@ -34,7 +34,7 @@ signal request_cancelled(request_id: int, reason: StringName)
 signal request_failed(request_id: int, reason: StringName)
 
 const MOVEMENT_TABLE := "rules/movement"
-const PICK_TABLE := "rules/player_interaction"
+const PICK_TABLE := "ui/pick_layers"
 ## 拾取射线长度（米）：教室尺度远小于它
 const PICK_DISTANCE := 100.0
 
@@ -103,7 +103,7 @@ var _has_destination := false
 var _manual := false
 ## 当前接近请求编号（-1 = 普通地面点击，没有请求）
 var _active_request := -1
-## 拾取 / 遮挡层（来自 data/rules/player_interaction.csv）
+## 拾取 / 遮挡层（来自 data/ui/pick_layers.csv）
 var _pick_layer := 2
 var _blocker_layer := 1
 ## 移动状态是否已写回内核（避免每帧重复调用）
@@ -242,6 +242,13 @@ func pick_actor(screen_pos: Vector2) -> int:
 		return -1
 	var origin := camera.project_ray_origin(screen_pos)
 	var direction := camera.project_ray_normal(screen_pos)
+	var actors := get_node_or_null(actors_path)
+	if actors != null and actors.has_method("pick_seated_pose"):
+		var refined: Dictionary = actors.pick_seated_pose(
+			camera, origin, direction, _blocker_layer, PICK_DISTANCE
+		)
+		if bool(refined.get("handled", false)):
+			return int(refined["index"])
 	var params := PhysicsRayQueryParameters3D.create(
 		origin, origin + direction * PICK_DISTANCE, _pick_layer | _blocker_layer
 	)
@@ -784,7 +791,7 @@ func _static_obstacle_sources(top: Node) -> Array[Node]:
 	return out
 
 
-## 拾取层与遮挡层：数值来自 data/rules/player_interaction.csv（位掩码），导出属性优先。
+## 拾取层与遮挡层：数值来自 data/ui/pick_layers.csv（位掩码），导出属性优先。
 func _load_pick_config() -> void:
 	var rows: Array = ConfigLoader.new().get_table(PICK_TABLE).get("rows", [])
 	for row in rows:

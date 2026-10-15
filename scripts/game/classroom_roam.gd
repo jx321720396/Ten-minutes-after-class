@@ -111,7 +111,8 @@ func _ready() -> void:
 		push_warning("ClassroomRoam：没有本局内核实例 —— 走动演示关闭（请从主菜单「新游戏」进教室）。")
 		return
 	_actor_count = int(_core.node_count())
-	_player_index = _actor_count - 1
+	# 2026-10-16 起本局没有玩家节点：全部 16 名同学都由 Roam 驱动（原先的“末位是玩家”已废除）。
+	_player_index = -1
 	_speed = _load_speed()
 	decide_interval = _load_decide_interval()
 	_collect_points()
@@ -419,8 +420,6 @@ func _decide_batch() -> void:
 		if i == _player_index:
 			continue
 		if _core.is_busy(i) or _core.session_of(i) >= 0 or _core._sleeping[i]:
-			continue
-		if _core.is_waiting_for_player(i):
 			continue
 		var walker: ActorWalker = _walkers[i]
 		if walker == null or walker.is_moving():

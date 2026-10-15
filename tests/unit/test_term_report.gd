@@ -48,20 +48,9 @@ func test_recording_captures_actual_changes_and_is_readonly() -> void:
 	assert_ne(core.call("term_record").baseline[0][1], -1.0, "导出不允许改记录")
 
 
-func test_player_completion_is_not_global_or_per_target() -> void:
-	var core := _core()
-	assert_true(core.has_method("term_record"))
-	if not core.has_method("term_record"):
-		return
-	var me := core.node_count() - 1
-	core._do_chat(0, 1)
-	assert_eq(core.call("term_record").actions.get("chat", {}).get("completed", 0), 0)
-	core._do_chat(me, 2)
-	core._global_tick = core._busy_until[me]
-	core._settle_finished_actions()
-	core._settle_finished_actions()
-	assert_eq(core.call("term_record").actions.chat.completed, 1)
-	assert_eq(core.call("term_record").actions.chat.initiated, 1)
+## 2026-10-16：原先的 `test_player_completion_is_not_global_or_per_target` 验证玩家动作记录
+## （term_record 的 actions.chat.completed / initiated）只记到本人身上。玩家节点删除后不再产生
+## 这类记录，用例失去对象，随玩家子系统一并删除。
 
 
 func test_playback_keeps_each_event_and_seek_does_not_accumulate() -> void:
@@ -122,8 +111,8 @@ func test_finished_report_is_automatic_and_world_stays_frozen() -> void:
 	clock.pump(100.0)
 	assert_eq(core.global_tick(), tick, "回放与期末界面不得推进世界")
 	assert_false(clock.continue_after_report())
-	report.show_matrix(2)
-	assert_eq(report.matrix_cell_count(), 272, "17节点排除17个对角线")
+	report.show_matrix(1)
+	assert_eq(report.matrix_cell_count(), 240, "16节点排除16个对角线")
 
 
 func test_completed_term_replays_to_true_final_matrices() -> void:
@@ -139,26 +128,6 @@ func test_completed_term_replays_to_true_final_matrices() -> void:
 			assert_eq(replay.value(1, i, j), core.hostility(i, j))
 
 
-func test_rejection_interruption_and_invitation_counts_are_separate() -> void:
-	var core := _core()
-	var me := core.node_count() - 1
-	core._occupy(me, 0, "chat", true)
-	core._emit("event_happened", {"kind": "chat", "i": me, "accepted": false})
-	core._global_tick = core._busy_until[me]
-	core._settle_finished_actions()
-	assert_eq(core.term_record().actions.chat.rejected, 1)
-	assert_eq(core.term_record().actions.chat.completed, 0)
-	core._occupy(me, me, "listen_music")
-	core._check_interrupt()
-	core._cleanup_phase()
-	assert_eq(core.term_record().actions.listen_music.interrupted, 1)
-	assert_eq(core.term_record().actions.listen_music.completed, 0)
-	core._do_chat(1, me)
-	var invitation: Dictionary = core.get_player_invitation()
-	assert_false(invitation.is_empty())
-	core.respond_player_invitation(int(invitation.id), true)
-	core._global_tick = core._busy_until[me]
-	core._settle_finished_actions()
-	assert_eq(core.term_record().actions.chat.completed, 1)
-	assert_eq(core.term_record().actions.chat.invited, 1)
-	assert_eq(core.term_record().actions.chat.initiated, 0)
+## 2026-10-16：原先的 `test_rejection_interruption_and_invitation_counts_are_separate` 验证的是
+## 玩家动作记录（term_record 的 begin_action / end_action / invitation 计数）。玩家节点删除后这些
+## 记录不再产生，用例失去对象，随玩家子系统一并删除；日结与事件回放仍由上面的用例覆盖。

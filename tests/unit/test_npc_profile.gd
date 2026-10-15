@@ -12,8 +12,8 @@ func test_teacher_targets_exclude_player_and_switch_without_effects() -> void:
 	var before := [core._a.duplicate(), core._h.duplicate(), core._rng._mti]
 	profile.open_profile(0)
 	var targets: OptionButton = profile.get_node("%Targets")
-	assert_eq(targets.get_item_index(core.node_count() - 1), -1)
-	assert_eq(targets.item_count, 15)
+	assert_gte(targets.get_item_index(core.node_count() - 1), 0, "位次下拉框包含全部 16 名学生")
+	assert_eq(targets.item_count, 15, "下拉框排除当前打开的这位学生本人")
 	assert_null(profile.get_node_or_null("%TrustValue"))
 	assert_true(get_tree().paused)
 	profile.open_profile(1)

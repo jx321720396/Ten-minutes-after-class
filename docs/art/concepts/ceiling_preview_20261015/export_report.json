@@ -1,0 +1,9 @@
+{
+	"export_error": 0,
+	"lights": 9,
+	"meshes": 730,
+	"multimesh_instances": 235,
+	"seed": 20261015,
+	"source": "scenes/game/classroom3D.tscn (runtime snapshot)",
+	"sprites": 16
+}

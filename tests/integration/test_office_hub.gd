@@ -22,7 +22,6 @@ func _run() -> void:
 	root.add_child(scene)
 	current_scene = scene
 	scene.get_node("Player").enabled = false
-	scene.get_node("Interaction").set_process(false)
 	for frame in range(180):
 		if scene.has_node("OfficeHub"):
 			break
@@ -33,22 +32,13 @@ func _run() -> void:
 		quit(1)
 		return
 	check(not scene.get_node("Player").enabled, "安装办公室不得解除原有输入禁用")
-	check(not scene.get_node("Interaction").is_processing(), "安装办公室不得解除原有处理禁用")
 	check(hub.mode_name() == "monitor", "开局教室默认监控视角")
 	check(not hub.teacher_view().get_node("%Frame").visible, "监控不显示老师行动和当前对象面板")
 	check(hub._return.is_visible_in_tree(), "监控仍有关闭入口")
 	check(not scene.get_node("ActionBar").visible, "老师教室不显示学生行为栏")
 	check(not scene.get_node("ChatHUD").visible, "老师界面移除旧学生事件反馈")
 	check(not scene.get_node("ChatHUD").is_processing(), "旧邀请不能继续刷新弹窗")
-	for index in range(core.node_count()):
-		if core.is_player(index):
-			check(not scene.get_node("Actors").actor_for(index).visible, "不显示旧玩家为第17名学生")
-			check(
-				scene.get_node("Actors").actor_for(index).get_node("PickBody").collision_layer == 0,
-				"隐藏的旧玩家不拦截学生拾取"
-			)
 	scene.get_node("Player").enabled = true
-	scene.get_node("Interaction").set_process(true)
 	scene.get_node("TransitionOverlay").force_hide()
 	scene.get_node("TimeFlow").refresh()
 	hub.set_mode("office")
@@ -68,15 +58,12 @@ func _run() -> void:
 	check(not scene.get_node("Player").enabled, "进入教室也不恢复旧学生移动")
 	check(not scene.get_node("ActionBar").visible, "实际教室使用老师操作而非学生行为")
 	check(not scene.get_node("ChatHUD").visible, "实际教室不恢复旧邀请")
-	check(not scene.get_node("Interaction").is_processing(), "实际教室不再轮询学生纸条")
 	var teacher_ui: Control = hub.teacher_view()
 	check(teacher_ui.visible, "显示原生老师操作面板")
 	check(teacher_ui.get_node("%Frame").visible, "实际进入教室才显示老师行动")
 	var camera: Camera3D = root.get_camera_3d()
 	var picked := false
 	for index in range(core.node_count()):
-		if core.is_player(index):
-			continue
 		var actor: Node3D = scene.get_node("Actors").actor_for(index)
 		var shape: CollisionShape3D = actor.get_node("PickBody").get_child(0)
 		var point := camera.unproject_position(shape.global_position)

@@ -1,0 +1,9 @@
+{
+  "assets": [
+    {
+      "source": "res://assets/models/classroom_ceiling/ceiling_recessed.glb",
+      "name": "ClassroomCeilingRecessed",
+      "scene": "res://scenes/components/classroom_ceiling_recessed.tscn"
+    }
+  ]
+}

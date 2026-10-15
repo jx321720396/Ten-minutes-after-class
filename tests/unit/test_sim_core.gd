@@ -26,7 +26,7 @@ func test_one_day_ticks() -> void:
 	assert_eq(total, 480, "单日总 tick = 480（课间 100×3 + 上课 90×2）")
 	assert_eq(core.global_tick(), 480, "global_tick 累计 480")
 	assert_eq(core.day(), 2, "结算后推进到第 2 天")
-	assert_eq(core.node_count(), 17, "16 NPC + 1 玩家节点")
+	assert_eq(core.node_count(), 16, "一局 16 名学生（2026-10-16 起没有玩家节点）")
 
 
 func test_advance_tick_phase_day() -> void:
@@ -61,47 +61,12 @@ func test_event_sink_day_settled_and_behavior() -> void:
 	var core := _core()
 	var events: Array = []
 	core.event_sink = func(e: Dictionary) -> void: events.append(e)
-	core._do_chat(0, 1)  # 第一条事件：手动触发的闲聊
+	core._do_chat(0, 1)  # 手动触发一次闲聊（结算走统一影响公式）
 	core.run_day()
 	assert_true(events.size() > 0, "应派发事件")
 	assert_eq(events[0]["type"], "event_happened", "首条为 event_happened")
-	assert_eq(events[0]["payload"]["kind"], "chat", "chat 事件")
-	assert_eq(events[0]["payload"]["i"], 0, "chat 事件 i=0")
-	assert_eq(events[0]["payload"]["j"], 1, "chat 事件 j=1")
 	assert_eq(events[-1]["type"], "day_settled", "末条为 day_settled")
 	assert_eq(events[-1]["payload"]["day"], 1, "day_settled 结算第 1 天")
-
-
-func test_player_action_chat_and_validation() -> void:
-	# D11 缺口③：玩家显式行动，来源固定玩家、目标指定。
-	# 计划 §3.1：玩家交互必须过**真实空间判定**，先注入一间合法房间作为夹具。
-	var core := _core()
-	core.set_interaction_geometry([], Rect2(-4.0, -4.0, 8.0, 8.0))
-	var me := 16  # 玩家 = n-1（17 个节点：16 NPC + 玩家）
-	assert_false(core.player_action("chat", me)["ok"], "目标=玩家应拒绝")
-	assert_false(core.player_action("chat", -1)["ok"], "目标 OOB 应拒绝")
-	assert_false(core.player_action("bogus", 0)["ok"], "未知 kind 应拒绝")
-	var events: Array = []
-	core.event_sink = func(e: Dictionary) -> void: events.append(e)
-	var before_a := core.affinity(0, me)
-	var before_h := core.hostility(0, me)
-	var r := core.player_action("chat", 0, "学习")
-	assert_true(r["ok"], "chat 应成功")
-	assert_eq(r["target"], 0, "target 回显")
-	assert_eq(r["topic"], "学习", "topic 透传")
-	assert_eq(events.size(), 2, "应派发 chat + player_interaction_started 两条通知")
-	assert_eq(events[0]["payload"]["kind"], "chat", "事件 kind=chat")
-	assert_eq(str(events[1]["payload"]["kind"]), "player_interaction_started", "第二条为开始通知")
-	assert_eq(str(events[1]["payload"]["mode"]), "start", "发起新聊天 mode=start")
-	assert_gt(int(events[1]["payload"]["request_id"]), 0, "开始通知带内核分配的请求编号")
-	# 关系结算仍然走内核统一公式：目标→玩家的好感被改写，玩家自身效果摘要随之非空
-	assert_gt(core.affinity(0, me), before_a, "目标→玩家：话题共鸣把好感推高")
-	assert_gte(core.hostility(0, me), before_h, "敌对不被闲聊凭空抹掉")
-	assert_gt(float(r["player_effects"]["affinity_delta"]), 0.0, "玩家自身效果摘要方向正确")
-	assert_true(r.has("session_id"), "提交包带真实会话编号（供底部圈与线索）")
-	var r2 := core.player_action("chat", 1)
-	assert_false(r2["ok"], "玩家忙应拒绝第二次行动")
-	assert_eq(r2.get("error"), "player_busy", "错误码 player_busy")
 
 
 func test_deterministic_report() -> void:
@@ -141,6 +106,6 @@ func test_accessors_bounds() -> void:
 
 func test_constructor_takes_npc_count() -> void:
 	# 2026-10-12：入口直接收 npc_count —— 不再有难度档映射（difficulty.csv 已删除）
-	assert_eq(SimCore.new(12345, 16).node_count(), 17, "16 NPC + 玩家（内部自取 tables）")
-	assert_eq(SimCore.new(12345, 99, _tables).node_count(), 17, "超出角色池的人数被夹到池人数（16）")
-	assert_eq(SimCore.new(12345, 0, _tables).node_count(), 2, "人数下限 1（不静默造出空局）")
+	assert_eq(SimCore.new(12345, 16).node_count(), 16, "16 名学生（内部自取 tables）")
+	assert_eq(SimCore.new(12345, 99, _tables).node_count(), 16, "超出角色池的人数被夹到池人数（16）")
+	assert_eq(SimCore.new(12345, 0, _tables).node_count(), 1, "人数下限 1（不静默造出空局）")

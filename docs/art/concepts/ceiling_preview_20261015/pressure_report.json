@@ -1,0 +1,17 @@
+[
+	{
+		"ambient_color": "fff4e5ff",
+		"ambient_energy": 0.649999976158142,
+		"pressure": 0.0
+	},
+	{
+		"ambient_color": "e5c7b7ff",
+		"ambient_energy": 0.620000004768372,
+		"pressure": 50.0
+	},
+	{
+		"ambient_color": "df8d82ff",
+		"ambient_energy": 0.620000004768372,
+		"pressure": 100.0
+	}
+]

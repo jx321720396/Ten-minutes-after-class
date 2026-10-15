@@ -62,3 +62,8 @@ assets/textures/characters/fullbody_v1/ 共 26 张，由内置 imagegen 根据�
 人物简化小样：assets/textures/characters/simple_samples/char_01_body_simple_v1.png，2026-10-12 内置 imagegen 根据本项目陈阳全身稿进行风格转换生成。说明见同目录 README.md，尚未接入游戏。
 
 人物方向动作对比：assets/textures/characters/motion_compare_v1/ 的 Q 版与正常比例陈阳图集，2026-10-12 内置 imagegen 以本项目原创人物稿生成。每套 32 帧，方向索引、动作预览及生成局限见同目录 README.md、frames.json、index.html。尚未接入游戏。
+
+
+## 2026-10-15 内嵌天花板
+
+assets/models/classroom_ceiling/ceiling_recessed.glb 为本项目使用 Blender 脚本原创建模的开槽天花板、收边与九组内嵌灯具，无新增第三方纹理。源工程与接入记录见 docs/art/concepts/ceiling_preview_20261015/README.md。

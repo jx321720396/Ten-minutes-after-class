@@ -1,4 +1,0 @@
-# 需要玩家同意参与的已实现行为；外部伤害不作为邀请，也不占用玩家。
-behavior,requires_choice
-chat,1
-roughhouse,1

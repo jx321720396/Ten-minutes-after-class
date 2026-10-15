@@ -9,7 +9,8 @@ var npc_count: int = 0
 var day: int = 0
 var phase: String = ""
 ## SimCore 实例（D8 落地后赋值）；用 Variant 避免提前锁定类型。
-## 玩家选定的性别（"male" / "female"）；**只在本次游戏内有效**，不写存档。
+## 玩家性别（"male" / "female"）：学生版运行时残留，立绘/表情仍按它取图；
+## 老师版已删除选角色界面，不再有入口改写，固定默认 "male"，不写存档。
 var player_gender: String = "male"
 
 var sim_core: Variant = null
@@ -17,7 +18,7 @@ var sim_core: Variant = null
 var profile_notebook: Dictionary = {"current": {}, "history": [], "seen": {}}
 ## 本局按日观察归档，不属于学生关系矩阵；新局重置。
 var clue_board_journal: Dictionary = {"days": {}, "sealed": {}}
-## 期末「再玩一局」交回主菜单已有的性别选择流程。
+## 期末「再玩一局」交回主菜单直接开新局（不弹选角色）。
 var new_game_requested := false
 ## 设置菜单「重看教程」请求（2026-10-13）：主菜单开新局时并入 tutorial_pending，消费后清零。
 var replay_tutorial := false

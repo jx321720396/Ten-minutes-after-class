@@ -9,6 +9,5 @@ book_duration,40,课外书占用
 music_noise,0,耳机无声
 snack_noise,1,零食噪声
 book_noise,0,看书无声
-snack_count_per_run,5,玩家每局份数
 book_count,5,本局持书 NPC 数（= 池内 book=1 的角色数：陈阳 / 张渊 / 孙悦 / 许静 / 顾言）
 interrupted_stress,0.5,减压动作被铃声打断的压力代价

@@ -4,7 +4,8 @@ extends GutTest
 ## 三条口径：
 ##   · 未注入时不拦行为（离线 / 无场景）；
 ##   · 落在自己那张桌椅的占位矩形内 = 「在自己的座位上」；
-##   · 离座时学习被明确拒绝并给原因；睡觉不受此限。
+##   · 「学习必须在自己座位上」由内核决策前置把关（2026-10-16 随玩家节点删除后补回，
+##     见 `sim_core._decide_and_act` 与 `tools/core_sim.py` 的同一处判断）—— 本文件只验证判定本身。
 
 const NODES := 8
 ## 测试用的占位矩形半边长（对应场景里桌椅的尺度）
@@ -15,13 +16,15 @@ func _core(seed_num: int = 12345) -> SimCore:
 	return SimCore.new(seed_num, NODES, ConfigLoader.new().load_all())
 
 
-func _player(c: SimCore) -> int:
-	return int(c.node_count()) - 1
+## 一局里任意一位学生（老师版没有玩家节点，索引 0..n-1 都是学生）
+func _student(c: SimCore) -> int:
+	assert_gt(c.node_count(), 0)
+	return 0
 
 
-## 给玩家注入一个以他当前位置为中心的占位矩形
+## 给该学生注入一个以他当前位置为中心的占位矩形
 func _pin(c: SimCore) -> int:
-	var me := _player(c)
+	var me := _student(c)
 	c.set_seat_zones({me: Rect2(c._pos_x[me] - HALF, c._pos_z[me] - HALF, HALF * 2.0, HALF * 2.0)})
 	return me
 
@@ -51,26 +54,3 @@ func test_the_zone_is_a_rect_not_a_circle() -> void:
 	c._pos_x[me] += 0.45
 	c._pos_z[me] += 0.45
 	assert_true(c.in_own_seat(me), "范围是桌椅的占位矩形，不是圆")
-
-
-func test_study_is_refused_away_from_your_seat() -> void:
-	var c := _core()
-	var me := _pin(c)
-	c._pos_x[me] += 5.0
-	var result: Dictionary = c.player_action("study", -1)
-	assert_false(bool(result.get("ok", false)), "离座不能开始学习")
-	assert_eq(str(result.get("error", "")), "not_in_seat", "原因要说清（§8.23）")
-
-
-func test_study_works_back_on_your_seat() -> void:
-	var c := _core()
-	var me := _pin(c)
-	assert_true(bool(c.player_action("study", -1).get("ok", false)), "回到座位就能学")
-	assert_eq(str(c._current_act[me]), "study")
-
-
-func test_sleep_does_not_require_the_seat() -> void:
-	var c := _core()
-	var me := _pin(c)
-	c._pos_x[me] += 5.0
-	assert_true(bool(c.player_action("sleep", -1).get("ok", false)), "睡觉不受座位范围限制（§8.8）")

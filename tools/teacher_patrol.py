@@ -6,15 +6,12 @@ class TeacherPatrol:
         self.visited = False
         self.leave_tick = -1
         self.confiscated = [0] * count
-        self.exemption_tokens = [0] * count
-        self.exempt_this_visit = [False] * count
         self.events = []
 
     def begin_phase(self, core):
         self.present = core.phase == "class"
         self.visited = False
         self.leave_tick = -1
-        self.exempt_this_visit = [False] * core.N
 
     def step(self, core):
         if core.phase != "break":
@@ -31,7 +28,7 @@ class TeacherPatrol:
         self.leave_tick = core.global_tick + int(self.params["stay_ticks"])
         self.events.append(dict(kind="teacher_arrived"))
         for i in range(core.N):
-            if not core.is_present(i) or core.sleeping[i] or core.current_act[i] == "study":
+            if core.sleeping[i] or core.current_act[i] == "study":
                 continue
             core.apply_event(i, i, "teacher_visit_stress")
             if core.busy_act[i] in ("listen_music", "eat_snack"):
@@ -39,14 +36,9 @@ class TeacherPatrol:
             self.catch_reader(core, i)
 
     def catch_reader(self, core, i):
-        if not self.present or core.phase != "break" or not core.is_present(i) or core.sleeping[i]:
+        if not self.present or core.phase != "break" or core.sleeping[i]:
             return False
-        if core.busy_act[i] != "read_book" or core.book[i] <= 0 or self.exempt_this_visit[i]:
-            return False
-        if self.exemption_tokens[i] > 0:
-            self.exemption_tokens[i] -= 1
-            self.exempt_this_visit[i] = True
-            self.events.append(dict(kind="book_confiscation_exempted", i=i))
+        if core.busy_act[i] != "read_book" or core.book[i] <= 0:
             return False
         amount = min(int(self.params["confiscate_books_per_catch"]), core.book[i])
         core.book[i] -= amount

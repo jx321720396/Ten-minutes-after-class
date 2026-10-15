@@ -102,6 +102,10 @@
     "grout": {
       "color": "#cabeaa",
       "roughness": 0.9
+    },
+    "podium_body": {
+      "color": "#c1beb3",
+      "roughness": 0.82
     }
   },
   "material_replacements": {
@@ -4683,38 +4687,76 @@
       },
       {
         "path": "Room/CeilingFixtures/Lamp1",
-        "energy": 0.18,
+        "energy": 0.12,
         "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp2",
-        "energy": 0.18,
+        "energy": 0.12,
         "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp3",
-        "energy": 0.18,
+        "energy": 0.12,
         "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp4",
-        "energy": 0.18,
+        "energy": 0.12,
         "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp5",
-        "energy": 0.18,
+        "energy": 0.12,
         "color": "#fff7eb"
       },
       {
         "path": "Room/CeilingFixtures/Lamp6",
-        "energy": 0.18,
+        "energy": 0.12,
+        "color": "#fff7eb"
+      },
+      {
+        "path": "Room/CeilingFixtures/Lamp7",
+        "energy": 0.12,
+        "color": "#fff7eb"
+      },
+      {
+        "path": "Room/CeilingFixtures/Lamp8",
+        "energy": 0.12,
+        "color": "#fff7eb"
+      },
+      {
+        "path": "Room/CeilingFixtures/Lamp9",
+        "energy": 0.12,
         "color": "#fff7eb"
       }
     ],
     "sun_shadows": true,
     "shadow_distance": 28,
     "shadow_mode": "orthogonal"
+  },
+  "pressure_light": {
+    "transition_seconds": 3.0,
+    "stops": [
+      {
+        "pressure": 0,
+        "ambient_color": "#fff4e5",
+        "ambient_energy": 0.65,
+        "lamp_color": "#ffffff"
+      },
+      {
+        "pressure": 50,
+        "ambient_color": "#e5c7b7",
+        "ambient_energy": 0.62,
+        "lamp_color": "#f4ddd2"
+      },
+      {
+        "pressure": 100,
+        "ambient_color": "#df8d82",
+        "ambient_energy": 0.62,
+        "lamp_color": "#edafa1"
+      }
+    ]
   },
   "phase_light": {
     "morning_break": {
@@ -4885,17 +4927,6 @@
         0.88,
         -5.75
       ]
-    },
-    {
-      "name": "DeskSideBag0",
-      "scene": "res://scenes/components/schoolbag_warm.tscn",
-      "anchor_node": "Seats/P0",
-      "position": [
-        0.43,
-        0.26,
-        0.035
-      ],
-      "yaw": -90
     },
     {
       "name": "DeskSideBag1",
@@ -5072,6 +5103,10 @@
         0.035
       ],
       "yaw": -90
+    },
+    {
+      "name": "RecessedCeiling",
+      "scene": "res://scenes/components/classroom_ceiling_recessed.tscn"
     }
   ],
   "capture_views": {
@@ -5123,5 +5158,8 @@
       "max_offset": 0.8,
       "speed": 5.0
     }
+  },
+  "node_material_overrides": {
+    "Podium/Lectern/Body": "podium_body"
   }
 }

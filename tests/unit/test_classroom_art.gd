@@ -5,6 +5,31 @@ const ROOM := "res://scenes/game/classroom3D.tscn"
 const SEED := 20261011
 
 
+func test_stress_light_updates_with_fixed_camera_without_mutating_core() -> void:
+	var room := await _open_room()
+	var art = room.get_node("ClassroomArt")
+	art.set_camera_follow_enabled(false)
+	var core = get_node("/root/GameState").sim_core
+	for index in range(core.node_count()):
+		core._stress[index] = 0.0
+	art._process(100.0)
+	var environment: Environment = room.get_node("WorldEnvironment").environment
+	var warm := environment.ambient_light_color
+	var phase_color: Color = room.get_node("WindowDaylight").light_color
+	for index in range(core.node_count()):
+		core._stress[index] = 100.0
+	var before: PackedFloat64Array = core._stress.duplicate()
+	art._process(0.1)
+	var transition := environment.ambient_light_color
+	art._process(100.0)
+	var hot := environment.ambient_light_color
+	assert_gt(warm.g, hot.g, "高压环境明显偏红")
+	assert_gt(transition.g, hot.g, "压力骤变时逐渐过渡")
+	assert_lt(transition.g, warm.g, "固定镜头时灯光仍然更新")
+	assert_eq(core._stress, before, "灯光只读，不回写压力")
+	assert_eq(room.get_node("WindowDaylight").light_color, phase_color, "保留时段日光")
+
+
 func before_each() -> void:
 	get_node("/root/GameState").start_game(SEED, 16)
 

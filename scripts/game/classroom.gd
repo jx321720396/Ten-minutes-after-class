@@ -24,7 +24,6 @@ const TERM_REPORT_SCENE := preload("res://scenes/ui/term_report.tscn")
 @onready var emotion: PlayerEmotionFeedback = $Emotion
 @onready var chat_hud: ChatFeedbackHUD = $ChatHUD
 @onready var action_bar: PlayerActionBar = $ActionBar
-@onready var interaction: PlayerInteractionController = $Interaction
 @onready var behavior_badge: BehaviorBadgePresenter = $BehaviorBadge
 @onready var npc_profile: NpcProfile = $UI/NpcProfile
 @onready var tutorial: TutorialOverlay = $TutorialOverlay
@@ -91,7 +90,6 @@ func _bind_tutorial() -> void:
 	if settings != null and settings.has_signal("replay_requested"):
 		settings.replay_requested.connect(_on_tutorial_replay)
 	action_bar.behavior_armed.connect(_on_tutorial_armed)
-	interaction.state_changed.connect(_on_tutorial_state)
 	if not GameState.tutorial_pending:
 		return
 	GameState.tutorial_pending = false
@@ -126,15 +124,6 @@ func _on_tutorial_replay() -> void:
 func _on_tutorial_armed(kind: StringName) -> void:
 	_tutorial_armed = kind
 	tutorial.notify_armed(kind)
-
-
-func _on_tutorial_state(state: StringName) -> void:
-	# 提交 = 行为真的开始跑（ACTIVE）；被拒（REJECTED）也算「开口了」，S4 照样完成（28 章）。
-	if (
-		state == PlayerInteractionController.STATE_ACTIVE
-		or state == PlayerInteractionController.STATE_REJECTED
-	):
-		tutorial.notify_committed(_tutorial_armed)
 
 
 ## 老师版手记按日归档；本局历史保留，新局由 GameState 重置。
@@ -199,10 +188,8 @@ func _bind_feedback(core: Variant) -> void:
 	# 头顶行为徽标（§20.1.4）：本批只接「手里拿着纸条」（§21.2.9）
 	behavior_badge.bind_core(core)
 	behavior_badge.bind_actors(actors)
-	interaction.bind_feedback(action_bar, chat_hud, rings, chat_bubble, emotion)
 	_inject_seat_zones(core)
-	interaction.bind_sources(core, player, actors, clock)
-	npc_profile.bind_sources(core, actors, interaction)
+	npc_profile.bind_sources(core, actors, null)
 	$UI/StudyNavigation.bind_sources(core)
 	action_bar.profile_requested.connect(npc_profile.open_profile)
 	if not time_hud.student_profile_requested.is_connected(npc_profile.open_profile):

@@ -46,7 +46,7 @@ func test_all_six_routes_keep_one_window_and_resume_on_close() -> void:
 	if _nav == null:
 		return
 	_profile.open_profile(1)
-	var before: Array = _profile._core.get_player_intel()
+	var before: Dictionary = _profile._model.state.duplicate(true)
 	_board.record_observed_event({"kind": "chat", "i": 0, "j": 1}, {"day": 1, "global_tick": 1})
 	for route in [
 		[_profile, _board, "OpenBoard"],
@@ -71,7 +71,7 @@ func test_all_six_routes_keep_one_window_and_resume_on_close() -> void:
 		assert_true(get_tree().paused, "查看资料始终暂停")
 	assert_eq(_profile.selected_index(), 1, "跨界面保留当前人物")
 	assert_eq(_board.get_node("Board").displayed_page().events.size(), 1, "互通不清除当天观察")
-	assert_eq(_profile._core.get_player_intel(), before, "导航不改写情报")
+	assert_eq(_profile._model.state, before, "导航不改写档案笔记")
 	_profile.close()
 	assert_false(get_tree().paused, "最后一个窗口关闭后恢复游戏")
 

@@ -16,22 +16,27 @@ func _core() -> SimCore:
 
 func test_finished_action_clears_occupancy_and_is_observable() -> void:
 	var core := _core()
-	core._occupy(0, 1, "chat", true)
+	# 让其余同学整段睡觉：否则 0 号会被他们的共同活动拉走（聊天占用走 _occupy_chat，
+	# 不写 _busy_phase，见 scripts/core/sim_core.gd 的注释），本用例要验的是通用占用协议。
+	for i in range(1, core.node_count()):
+		core._sleeping[i] = true
+	var duration: int = int(core._behaviors["eat_snack"]["duration"])
+	core._occupy(0, 0, "eat_snack")
 	var until: int = core._busy_until[0]
-	assert_eq(until, core.global_tick() + CHAT_DURATION, "闲聊占用 %d tick" % CHAT_DURATION)
+	assert_eq(until, core.global_tick() + duration, "娱乐占用 %d tick" % duration)
 
 	# 占用期内：记录仍在、也没有「刚完成」
 	while core.global_tick() < until - 1:
 		core.advance_tick()
 	assert_eq(int(core._busy_phase[0]), core.phase_index(), "未到期：占用记录仍在")
-	assert_eq(core._current_act[0], "chat", "未到期：当前动作仍在")
+	assert_eq(core._current_act[0], "eat_snack", "未到期：当前动作仍在")
 	assert_eq(core._last_finished[0], null, "未到期不算完成")
 
 	# 跨过到期点：本 tick 的收尾把行为标记为完成
 	core.advance_tick()
 	assert_eq(int(core._busy_phase[0]), -1, "到期后占用记录被清理")
-	assert_ne(core._current_act[0], "chat", "到期后不再是被占用的行为（空闲可能立刻转入学习）")
-	assert_eq(core._last_finished[0], "chat", "刚完成的行为可被观测（供「完成才发信息」挂载）")
+	assert_ne(core._current_act[0], "eat_snack", "到期后不再是被占用的行为（空闲可能立刻转入学习）")
+	assert_eq(core._last_finished[0], "eat_snack", "刚完成的行为可被观测（供「完成才发信息」挂载）")
 
 	# 只在本 tick 有效：下一 tick 清空
 	core.advance_tick()

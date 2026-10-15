@@ -5,7 +5,6 @@ const SCENE_ABOUT = preload("res://scenes/ui/about_menu.tscn")
 const SCENE_CONFIRM = preload("res://scenes/ui/confirm_dialog.tscn")
 const SCENE_ENCYCLOPEDIA = preload("res://scenes/ui/encyclopedia.tscn")
 const SCENE_CLASSROOM := "res://scenes/game/classroom3D.tscn"
-const SCENE_GENDER_SELECT = preload("res://scenes/ui/gender_select.tscn")
 const CAMPUS_THEME = preload("res://scripts/ui/campus_theme.gd")
 
 @onready var continue_btn: Button = $VBoxContainer/ContinueGame
@@ -19,7 +18,6 @@ var settings_panel: Control
 var about_panel: Control
 var confirm_dialog: Control
 var encyclopedia_panel: Control
-var gender_select_panel: Control
 
 
 func _ready():
@@ -56,14 +54,9 @@ func _ready():
 	encyclopedia_panel.closed.connect(_on_close_encyclopedia)
 	add_child(encyclopedia_panel)
 
-	gender_select_panel = SCENE_GENDER_SELECT.instantiate()
-	gender_select_panel.visible = false
-	gender_select_panel.chosen.connect(_on_gender_chosen)
-	gender_select_panel.closed.connect(_on_close_gender_select)
-	add_child(gender_select_panel)
 	if GameState.new_game_requested:
 		GameState.new_game_requested = false
-		_ask_gender.call_deferred()
+		_start_new_game.call_deferred()
 
 
 func _has_save() -> bool:
@@ -73,23 +66,8 @@ func _has_save() -> bool:
 func _on_new_game():
 	# 2026-10-13：点「新游戏」一律先过确认面板——
 	# 有存档走「检测到存档」三键；无存档仅确认「开始新游戏？」。
-	# 确认（清除 / 保留 / 确定）都进性别选择，取消留在主菜单。
+	# 确认（清除 / 保留 / 确定）都直接开局；老师版不选角色，取消留在主菜单。
 	confirm_dialog.open(_has_save())
-
-
-## 进教室之前先问性别。每次新游戏都问；性别只在本局内有效（写 GameState，不落盘）。
-func _ask_gender() -> void:
-	gender_select_panel.visible = true
-
-
-func _on_gender_chosen(gender: String) -> void:
-	GameState.player_gender = gender
-	gender_select_panel.visible = false
-	_start_new_game()
-
-
-func _on_close_gender_select() -> void:
-	gender_select_panel.visible = false
 
 
 func _start_new_game() -> void:
@@ -155,12 +133,12 @@ func _on_confirm_clear():
 	# 无存档口径的「确定」也走本信号：删除有 file_exists 守卫，但这里再挡一层。
 	if Save.has_save():
 		Save.delete()
-	_ask_gender()
+	_start_new_game()
 
 
 func _on_confirm_keep():
 	confirm_dialog.visible = false
-	_ask_gender()
+	_start_new_game()
 
 
 func _on_cancel_confirm():

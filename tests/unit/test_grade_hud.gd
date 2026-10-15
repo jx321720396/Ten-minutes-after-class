@@ -6,7 +6,7 @@ func _stack() -> Array:
 	var tables := ConfigLoader.new().load_all()
 	var core := SimCore.new(20261014, 16, tables)
 	for index in range(core.node_count()):
-		core._grade[index] = 750.0 if core.is_player(index) else 470.0
+		core._grade[index] = 470.0
 	var clock := SimulationClock.new()
 	add_child_autofree(clock)
 	assert_true(clock.bind_core(core, tables))
@@ -39,8 +39,7 @@ func test_goal_gap_tracks_student_grades() -> void:
 	var hud: TimeHUD = parts[2]
 	assert_true(_goal_text(hud).contains("还差 55 分"), _goal_text(hud))
 	for index in range(core.node_count()):
-		if not core.is_player(index):
-			core._grade[index] = 500.0
+		core._grade[index] = 500.0
 	clock.time_updated.emit(clock.snapshot())
 	assert_true(_goal_text(hud).contains("还差 25 分"), _goal_text(hud))
 

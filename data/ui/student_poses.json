@@ -1,0 +1,1547 @@
+{
+  "bindings": {
+    "warm_male": {
+      "study": "res://assets/textures/characters/study_front_v1/char_01_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_01_body_base_v1.png",
+      "layout": {
+        "split_y": 730,
+        "upper_height_gain": 0.026449999999999863,
+        "lower_height_gain": -0.10748678082191787,
+        "notebook_bounds": [
+          285,
+          644,
+          746,
+          725
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              520
+            ],
+            [
+              330,
+              520
+            ],
+            [
+              365,
+              565
+            ],
+            [
+              445,
+              640
+            ],
+            [
+              450,
+              705
+            ],
+            [
+              285,
+              727
+            ],
+            [
+              0,
+              727
+            ]
+          ],
+          [
+            [
+              680,
+              520
+            ],
+            [
+              1024,
+              520
+            ],
+            [
+              1024,
+              727
+            ],
+            [
+              560,
+              727
+            ],
+            [
+              560,
+              650
+            ],
+            [
+              660,
+              605
+            ]
+          ],
+          [
+            [
+              285,
+              644
+            ],
+            [
+              746,
+              644
+            ],
+            [
+              746,
+              727
+            ],
+            [
+              285,
+              727
+            ]
+          ]
+        ]
+      }
+    },
+    "sensitive_female": {
+      "study": "res://assets/textures/characters/study_front_v1/char_02_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_02_body_base_v1.png",
+      "layout": {
+        "split_y": 732,
+        "upper_height_gain": 0.02652246575342452,
+        "lower_height_gain": -0.10550303082191792,
+        "notebook_bounds": [
+          283,
+          643,
+          743,
+          727
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              522
+            ],
+            [
+              330,
+              522
+            ],
+            [
+              365,
+              567
+            ],
+            [
+              445,
+              642
+            ],
+            [
+              450,
+              707
+            ],
+            [
+              283,
+              729
+            ],
+            [
+              0,
+              729
+            ]
+          ],
+          [
+            [
+              680,
+              522
+            ],
+            [
+              1024,
+              522
+            ],
+            [
+              1024,
+              729
+            ],
+            [
+              560,
+              729
+            ],
+            [
+              560,
+              652
+            ],
+            [
+              660,
+              607
+            ]
+          ],
+          [
+            [
+              283,
+              643
+            ],
+            [
+              743,
+              643
+            ],
+            [
+              743,
+              729
+            ],
+            [
+              283,
+              729
+            ]
+          ]
+        ]
+      }
+    },
+    "quiet_male": {
+      "study": "res://assets/textures/characters/study_front_v1/char_03_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_03_body_base_v1.png",
+      "layout": {
+        "split_y": 768,
+        "upper_height_gain": 0.027826849315068347,
+        "lower_height_gain": -0.06979553082191792,
+        "notebook_bounds": [
+          263,
+          674,
+          758,
+          763
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              558
+            ],
+            [
+              330,
+              558
+            ],
+            [
+              365,
+              603
+            ],
+            [
+              445,
+              678
+            ],
+            [
+              450,
+              743
+            ],
+            [
+              263,
+              765
+            ],
+            [
+              0,
+              765
+            ]
+          ],
+          [
+            [
+              680,
+              558
+            ],
+            [
+              1024,
+              558
+            ],
+            [
+              1024,
+              765
+            ],
+            [
+              560,
+              765
+            ],
+            [
+              560,
+              688
+            ],
+            [
+              660,
+              643
+            ]
+          ],
+          [
+            [
+              263,
+              674
+            ],
+            [
+              758,
+              674
+            ],
+            [
+              758,
+              765
+            ],
+            [
+              263,
+              765
+            ]
+          ]
+        ]
+      }
+    },
+    "stern_female": {
+      "study": "res://assets/textures/characters/study_front_v1/char_04_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_04_body_base_v1.png",
+      "layout": {
+        "split_y": 736,
+        "upper_height_gain": 0.026667397260273833,
+        "lower_height_gain": -0.10153553082191791,
+        "notebook_bounds": [
+          284,
+          646,
+          742,
+          731
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              526
+            ],
+            [
+              330,
+              526
+            ],
+            [
+              365,
+              571
+            ],
+            [
+              445,
+              646
+            ],
+            [
+              450,
+              711
+            ],
+            [
+              284,
+              733
+            ],
+            [
+              0,
+              733
+            ]
+          ],
+          [
+            [
+              680,
+              526
+            ],
+            [
+              1024,
+              526
+            ],
+            [
+              1024,
+              733
+            ],
+            [
+              560,
+              733
+            ],
+            [
+              560,
+              656
+            ],
+            [
+              660,
+              611
+            ]
+          ],
+          [
+            [
+              284,
+              646
+            ],
+            [
+              742,
+              646
+            ],
+            [
+              742,
+              733
+            ],
+            [
+              284,
+              733
+            ]
+          ]
+        ]
+      }
+    },
+    "lively_female": {
+      "study": "res://assets/textures/characters/study_front_v1/char_05_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_06_body_base_v1.png",
+      "layout": {
+        "split_y": 759,
+        "upper_height_gain": 0.02750075342465739,
+        "lower_height_gain": -0.07872240582191792,
+        "notebook_bounds": [
+          291,
+          660,
+          747,
+          754
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              549
+            ],
+            [
+              330,
+              549
+            ],
+            [
+              365,
+              594
+            ],
+            [
+              445,
+              669
+            ],
+            [
+              450,
+              734
+            ],
+            [
+              291,
+              756
+            ],
+            [
+              0,
+              756
+            ]
+          ],
+          [
+            [
+              680,
+              549
+            ],
+            [
+              1024,
+              549
+            ],
+            [
+              1024,
+              756
+            ],
+            [
+              560,
+              756
+            ],
+            [
+              560,
+              679
+            ],
+            [
+              660,
+              634
+            ]
+          ],
+          [
+            [
+              291,
+              660
+            ],
+            [
+              747,
+              660
+            ],
+            [
+              747,
+              756
+            ],
+            [
+              291,
+              756
+            ]
+          ]
+        ]
+      }
+    },
+    "warm_female": {
+      "study": "res://assets/textures/characters/study_front_v1/char_06_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_07_body_base_v1.png",
+      "layout": {
+        "split_y": 716,
+        "upper_height_gain": 0.025942739726027262,
+        "lower_height_gain": -0.12137303082191797,
+        "notebook_bounds": [
+          295,
+          624,
+          752,
+          711
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              506
+            ],
+            [
+              330,
+              506
+            ],
+            [
+              365,
+              551
+            ],
+            [
+              445,
+              626
+            ],
+            [
+              450,
+              691
+            ],
+            [
+              295,
+              713
+            ],
+            [
+              0,
+              713
+            ]
+          ],
+          [
+            [
+              680,
+              506
+            ],
+            [
+              1024,
+              506
+            ],
+            [
+              1024,
+              713
+            ],
+            [
+              560,
+              713
+            ],
+            [
+              560,
+              636
+            ],
+            [
+              660,
+              591
+            ]
+          ],
+          [
+            [
+              295,
+              624
+            ],
+            [
+              752,
+              624
+            ],
+            [
+              752,
+              713
+            ],
+            [
+              295,
+              713
+            ]
+          ]
+        ]
+      }
+    },
+    "blunt_male": {
+      "study": "res://assets/textures/characters/study_front_v1/char_07_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_08_body_base_v1.png",
+      "layout": {
+        "split_y": 741,
+        "upper_height_gain": 0.026848561643835474,
+        "lower_height_gain": -0.09657615582191792,
+        "notebook_bounds": [
+          273,
+          646,
+          779,
+          736
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              531
+            ],
+            [
+              330,
+              531
+            ],
+            [
+              365,
+              576
+            ],
+            [
+              445,
+              651
+            ],
+            [
+              450,
+              716
+            ],
+            [
+              273,
+              738
+            ],
+            [
+              0,
+              738
+            ]
+          ],
+          [
+            [
+              680,
+              531
+            ],
+            [
+              1024,
+              531
+            ],
+            [
+              1024,
+              738
+            ],
+            [
+              560,
+              738
+            ],
+            [
+              560,
+              661
+            ],
+            [
+              660,
+              616
+            ]
+          ],
+          [
+            [
+              273,
+              646
+            ],
+            [
+              779,
+              646
+            ],
+            [
+              779,
+              738
+            ],
+            [
+              273,
+              738
+            ]
+          ]
+        ]
+      }
+    },
+    "shy_female": {
+      "study": "res://assets/textures/characters/study_front_v1/char_08_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_09_body_base_v1.png",
+      "layout": {
+        "split_y": 729,
+        "upper_height_gain": 0.026413767123287534,
+        "lower_height_gain": -0.10847865582191796,
+        "notebook_bounds": [
+          282,
+          638,
+          749,
+          724
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              519
+            ],
+            [
+              330,
+              519
+            ],
+            [
+              365,
+              564
+            ],
+            [
+              445,
+              639
+            ],
+            [
+              450,
+              704
+            ],
+            [
+              282,
+              726
+            ],
+            [
+              0,
+              726
+            ]
+          ],
+          [
+            [
+              680,
+              519
+            ],
+            [
+              1024,
+              519
+            ],
+            [
+              1024,
+              726
+            ],
+            [
+              560,
+              726
+            ],
+            [
+              560,
+              649
+            ],
+            [
+              660,
+              604
+            ]
+          ],
+          [
+            [
+              282,
+              638
+            ],
+            [
+              749,
+              638
+            ],
+            [
+              749,
+              726
+            ],
+            [
+              282,
+              726
+            ]
+          ]
+        ]
+      }
+    },
+    "sensitive_male": {
+      "study": "res://assets/textures/characters/study_front_v1/char_09_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_10_body_base_v1.png",
+      "layout": {
+        "split_y": 730,
+        "upper_height_gain": 0.026449999999999863,
+        "lower_height_gain": -0.10748678082191787,
+        "notebook_bounds": [
+          282,
+          643,
+          746,
+          725
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              520
+            ],
+            [
+              330,
+              520
+            ],
+            [
+              365,
+              565
+            ],
+            [
+              445,
+              640
+            ],
+            [
+              450,
+              705
+            ],
+            [
+              282,
+              727
+            ],
+            [
+              0,
+              727
+            ]
+          ],
+          [
+            [
+              680,
+              520
+            ],
+            [
+              1024,
+              520
+            ],
+            [
+              1024,
+              727
+            ],
+            [
+              560,
+              727
+            ],
+            [
+              560,
+              650
+            ],
+            [
+              660,
+              605
+            ]
+          ],
+          [
+            [
+              282,
+              643
+            ],
+            [
+              746,
+              643
+            ],
+            [
+              746,
+              727
+            ],
+            [
+              282,
+              727
+            ]
+          ]
+        ]
+      }
+    },
+    "blunt_female": {
+      "study": "res://assets/textures/characters/study_front_v1/char_10_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_14_body_base_v1.png",
+      "layout": {
+        "split_y": 730,
+        "upper_height_gain": 0.026449999999999863,
+        "lower_height_gain": -0.10748678082191787,
+        "notebook_bounds": [
+          282,
+          642,
+          746,
+          725
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              520
+            ],
+            [
+              330,
+              520
+            ],
+            [
+              365,
+              565
+            ],
+            [
+              445,
+              640
+            ],
+            [
+              450,
+              705
+            ],
+            [
+              282,
+              727
+            ],
+            [
+              0,
+              727
+            ]
+          ],
+          [
+            [
+              680,
+              520
+            ],
+            [
+              1024,
+              520
+            ],
+            [
+              1024,
+              727
+            ],
+            [
+              560,
+              727
+            ],
+            [
+              560,
+              650
+            ],
+            [
+              660,
+              605
+            ]
+          ],
+          [
+            [
+              282,
+              642
+            ],
+            [
+              746,
+              642
+            ],
+            [
+              746,
+              727
+            ],
+            [
+              282,
+              727
+            ]
+          ]
+        ]
+      }
+    },
+    "shy_male": {
+      "study": "res://assets/textures/characters/study_front_v1/char_11_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_16_body_base_v1.png",
+      "layout": {
+        "split_y": 721,
+        "upper_height_gain": 0.026123904109588904,
+        "lower_height_gain": -0.11641365582191787,
+        "notebook_bounds": [
+          271,
+          634,
+          752,
+          716
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              511
+            ],
+            [
+              330,
+              511
+            ],
+            [
+              365,
+              556
+            ],
+            [
+              445,
+              631
+            ],
+            [
+              450,
+              696
+            ],
+            [
+              271,
+              718
+            ],
+            [
+              0,
+              718
+            ]
+          ],
+          [
+            [
+              680,
+              511
+            ],
+            [
+              1024,
+              511
+            ],
+            [
+              1024,
+              718
+            ],
+            [
+              560,
+              718
+            ],
+            [
+              560,
+              641
+            ],
+            [
+              660,
+              596
+            ]
+          ],
+          [
+            [
+              271,
+              634
+            ],
+            [
+              752,
+              634
+            ],
+            [
+              752,
+              718
+            ],
+            [
+              271,
+              718
+            ]
+          ]
+        ]
+      }
+    },
+    "tsundere_male": {
+      "study": "res://assets/textures/characters/study_front_v1/char_12_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_17_body_base_v1.png",
+      "layout": {
+        "split_y": 731,
+        "upper_height_gain": 0.02648623287671219,
+        "lower_height_gain": -0.1064949058219179,
+        "notebook_bounds": [
+          261,
+          638,
+          765,
+          726
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              521
+            ],
+            [
+              330,
+              521
+            ],
+            [
+              365,
+              566
+            ],
+            [
+              445,
+              641
+            ],
+            [
+              450,
+              706
+            ],
+            [
+              261,
+              728
+            ],
+            [
+              0,
+              728
+            ]
+          ],
+          [
+            [
+              680,
+              521
+            ],
+            [
+              1024,
+              521
+            ],
+            [
+              1024,
+              728
+            ],
+            [
+              560,
+              728
+            ],
+            [
+              560,
+              651
+            ],
+            [
+              660,
+              606
+            ]
+          ],
+          [
+            [
+              261,
+              638
+            ],
+            [
+              765,
+              638
+            ],
+            [
+              765,
+              728
+            ],
+            [
+              261,
+              728
+            ]
+          ]
+        ]
+      }
+    },
+    "quiet_female": {
+      "study": "res://assets/textures/characters/study_front_v1/char_13_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_20_body_base_v1.png",
+      "layout": {
+        "split_y": 707,
+        "upper_height_gain": 0.025616643835616303,
+        "lower_height_gain": -0.13029990582191797,
+        "notebook_bounds": [
+          284,
+          618,
+          746,
+          702
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              497
+            ],
+            [
+              330,
+              497
+            ],
+            [
+              365,
+              542
+            ],
+            [
+              445,
+              617
+            ],
+            [
+              450,
+              682
+            ],
+            [
+              284,
+              704
+            ],
+            [
+              0,
+              704
+            ]
+          ],
+          [
+            [
+              680,
+              497
+            ],
+            [
+              1024,
+              497
+            ],
+            [
+              1024,
+              704
+            ],
+            [
+              560,
+              704
+            ],
+            [
+              560,
+              627
+            ],
+            [
+              660,
+              582
+            ]
+          ],
+          [
+            [
+              284,
+              618
+            ],
+            [
+              746,
+              618
+            ],
+            [
+              746,
+              704
+            ],
+            [
+              284,
+              704
+            ]
+          ]
+        ]
+      }
+    },
+    "lively_male": {
+      "study": "res://assets/textures/characters/study_front_v1/char_14_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_21_body_base_v1.png",
+      "layout": {
+        "split_y": 733,
+        "upper_height_gain": 0.026558698630136848,
+        "lower_height_gain": -0.10451115582191794,
+        "notebook_bounds": [
+          280,
+          641,
+          751,
+          728
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              523
+            ],
+            [
+              330,
+              523
+            ],
+            [
+              365,
+              568
+            ],
+            [
+              445,
+              643
+            ],
+            [
+              450,
+              708
+            ],
+            [
+              280,
+              730
+            ],
+            [
+              0,
+              730
+            ]
+          ],
+          [
+            [
+              680,
+              523
+            ],
+            [
+              1024,
+              523
+            ],
+            [
+              1024,
+              730
+            ],
+            [
+              560,
+              730
+            ],
+            [
+              560,
+              653
+            ],
+            [
+              660,
+              608
+            ]
+          ],
+          [
+            [
+              280,
+              641
+            ],
+            [
+              751,
+              641
+            ],
+            [
+              751,
+              730
+            ],
+            [
+              280,
+              730
+            ]
+          ]
+        ]
+      }
+    },
+    "tsundere_female": {
+      "study": "res://assets/textures/characters/study_front_v1/char_15_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_23_body_base_v1.png",
+      "layout": {
+        "split_y": 729,
+        "upper_height_gain": 0.026413767123287534,
+        "lower_height_gain": -0.10847865582191796,
+        "notebook_bounds": [
+          285,
+          639,
+          742,
+          724
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              519
+            ],
+            [
+              330,
+              519
+            ],
+            [
+              365,
+              564
+            ],
+            [
+              445,
+              639
+            ],
+            [
+              450,
+              704
+            ],
+            [
+              285,
+              726
+            ],
+            [
+              0,
+              726
+            ]
+          ],
+          [
+            [
+              680,
+              519
+            ],
+            [
+              1024,
+              519
+            ],
+            [
+              1024,
+              726
+            ],
+            [
+              560,
+              726
+            ],
+            [
+              560,
+              649
+            ],
+            [
+              660,
+              604
+            ]
+          ],
+          [
+            [
+              285,
+              639
+            ],
+            [
+              742,
+              639
+            ],
+            [
+              742,
+              726
+            ],
+            [
+              285,
+              726
+            ]
+          ]
+        ]
+      }
+    },
+    "stern_male": {
+      "study": "res://assets/textures/characters/study_front_v1/char_16_study_down_v1.png",
+      "standing": "res://assets/textures/characters/fullbody_v1/char_24_body_base_v1.png",
+      "layout": {
+        "split_y": 726,
+        "upper_height_gain": 0.026305068493150546,
+        "lower_height_gain": -0.11145428082191788,
+        "notebook_bounds": [
+          273,
+          637,
+          750,
+          721
+        ],
+        "foreground_polygons": [
+          [
+            [
+              0,
+              516
+            ],
+            [
+              330,
+              516
+            ],
+            [
+              365,
+              561
+            ],
+            [
+              445,
+              636
+            ],
+            [
+              450,
+              701
+            ],
+            [
+              273,
+              723
+            ],
+            [
+              0,
+              723
+            ]
+          ],
+          [
+            [
+              680,
+              516
+            ],
+            [
+              1024,
+              516
+            ],
+            [
+              1024,
+              723
+            ],
+            [
+              560,
+              723
+            ],
+            [
+              560,
+              646
+            ],
+            [
+              660,
+              601
+            ]
+          ],
+          [
+            [
+              273,
+              637
+            ],
+            [
+              750,
+              637
+            ],
+            [
+              750,
+              723
+            ],
+            [
+              273,
+              723
+            ]
+          ]
+        ]
+      }
+    }
+  },
+  "split_y": 730,
+  "upper_height_gain": 0.02,
+  "lower_height_gain": 0.1,
+  "pixel_size": 0.0009918750000000001,
+  "floor_y": -0.015,
+  "body_depth": -0.1,
+  "foreground_depth": 0.27,
+  "alpha_threshold": 0.7,
+  "at_home_radius": 0.2,
+  "foreground_polygons": [
+    [
+      [
+        0,
+        520
+      ],
+      [
+        330,
+        520
+      ],
+      [
+        365,
+        565
+      ],
+      [
+        445,
+        640
+      ],
+      [
+        450,
+        705
+      ],
+      [
+        280,
+        730
+      ],
+      [
+        0,
+        730
+      ]
+    ],
+    [
+      [
+        680,
+        520
+      ],
+      [
+        1024,
+        520
+      ],
+      [
+        1024,
+        730
+      ],
+      [
+        560,
+        730
+      ],
+      [
+        560,
+        650
+      ],
+      [
+        660,
+        605
+      ]
+    ],
+    [
+      [
+        280,
+        645
+      ],
+      [
+        750,
+        645
+      ],
+      [
+        750,
+        730
+      ],
+      [
+        280,
+        730
+      ]
+    ]
+  ],
+  "clear_desk_props": true,
+  "standing_scale": 1.3225
+}

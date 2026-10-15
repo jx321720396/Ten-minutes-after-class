@@ -35,12 +35,14 @@ func node_count() -> int:
 	return _core_ref.get_ref().node_count()
 
 
-func defer_for_player(kind: String, actor: int, target: int, options: Dictionary) -> bool:
-	return _core_ref.get_ref()._player_invitations.intercept(kind, actor, target, options)
+## 老师版没有玩家节点：不再存在「把决策交给玩家」的路径，恒为 false（2026-10-16 移除玩家子系统）。
+func defer_for_player(_kind: String, _actor: int, _target: int, _options: Dictionary) -> bool:
+	return false
 
 
-func player_choice(actor: int) -> Variant:
-	return _core_ref.get_ref()._player_invitations.choice_for(actor)
+## 老师版没有玩家选择：恒为 null，调用方回落到内核自己掷骰。
+func player_choice(_actor: int) -> Variant:
+	return null
 
 
 func can_chat_in_space(i: int, j: int) -> bool:
