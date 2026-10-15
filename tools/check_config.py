@@ -347,19 +347,28 @@ check("时间流速：行动倍率有限且不小于正常倍率",
       and _time_flow.get("player_action_scale", 0.0) >= _time_flow.get("normal_scale", 1.0),
       _time_flow.get("player_action_scale"))
 
-# 14. 学业系统（§17.1）：成绩轴初始化常量 + 涓流分段表（2026-10-16：玩家成绩初值随玩家节点删除）
+# 14. 学业系统（§17.1）：成绩轴初始化常量 + 涓流分段表（2026-10-16：分布改由 rules/psyche.csv 给出）
 _kp = params("rules/kernel_params.csv")
-_grade_keys = ("grade_max", "grade_init_npc_min", "grade_init_npc_max")
-check("kernel_params：成绩初始化常量齐全", all(k in _kp for k in _grade_keys),
-      "缺失: %s" % sorted(set(_grade_keys) - set(_kp)))
-if all(k in _kp for k in _grade_keys):
-    check("grade_max 为正", _kp["grade_max"] > 0, _kp["grade_max"])
-    check("grade_init_npc_min ≤ grade_init_npc_max",
-          _kp["grade_init_npc_min"] <= _kp["grade_init_npc_max"],
-          "%s / %s" % (_kp["grade_init_npc_min"], _kp["grade_init_npc_max"]))
-    check("NPC 初始区间 ⊆ [0, grade_max]",
-          0 <= _kp["grade_init_npc_min"] and _kp["grade_init_npc_max"] <= _kp["grade_max"],
-          "%s / %s" % (_kp["grade_init_npc_min"], _kp["grade_init_npc_max"]))
+_ps = params("rules/psyche.csv")
+_grade_keys = ("grade_init_min", "grade_init_max")
+check("psyche：开局成绩分布常量齐全", all(k in _ps for k in _grade_keys),
+      "缺失: %s" % sorted(set(_grade_keys) - set(_ps)))
+if all(k in _ps for k in _grade_keys):
+    check("grade_init_min ≤ grade_init_max", _ps["grade_init_min"] <= _ps["grade_init_max"],
+          "%s / %s" % (_ps["grade_init_min"], _ps["grade_init_max"]))
+    check("开局成绩区间 ⊆ [0, grade_max]",
+          0 <= _ps["grade_init_min"] and _ps["grade_init_max"] <= _kp["grade_max"],
+          "%s / %s" % (_ps["grade_init_min"], _ps["grade_init_max"]))
+    check("开局成绩均值 = (min+max)/2",
+          abs((_ps["grade_init_min"] + _ps["grade_init_max"]) / 2.0 - 300.0) <= 1.0,
+          (float(_ps["grade_init_min"]) + float(_ps["grade_init_max"])) / 2.0)
+check("psych：压力 / 动力范围与阈值合法",
+      0 <= _ps["stress_init_min"] <= _ps["stress_init_max"] <= _ps["stat_max"]
+      and _ps["stat_min"] == 0 and _ps["stat_max"] == 100
+      and _ps["vitality_play_threshold"] < _ps["vitality_study_threshold"]
+      and _ps["breakdown_exit_stress"] < _ps["breakdown_enter_stress"])
+check("psyche：跨天继承与联动标志存在",
+      all(k in _ps for k in ("carry_stress_cut", "carry_vitality_cut", "vitality_equals_stress")))
 _grows = load("rules/grade_table.csv")
 _guppers = [float(r["band_upper"]) for r in _grows]
 _gtpp = [float(r["ticks_per_point"]) for r in _grows]

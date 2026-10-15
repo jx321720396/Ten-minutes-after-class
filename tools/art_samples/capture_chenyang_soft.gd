@@ -84,7 +84,7 @@ func _classroom_capture() -> void:
 	# Select Chen Yang by asset binding only in this offline art fixture.
 	var selected := -1
 	for index in actors._seated_poses:
-		if actors._seated_poses[index]._binding.standing.ends_with("char_01_body_base_v1.png"):
+		if actors._seated_poses[index]._binding.standing.ends_with("char_01_stand_natural_v2.png"):
 			selected = index
 	assert(selected >= 0)
 	actors.set_process(false)

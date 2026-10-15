@@ -42,7 +42,7 @@ func capture() -> void:
 		if walker != null:
 			walker.set_process(false)
 			walker.set_physics_process(false)
-		if actors._seated_poses[index]._binding.standing.ends_with("char_01_body_base_v1.png"):
+		if actors._seated_poses[index]._binding.standing.ends_with("char_01_stand_natural_v2.png"):
 			selected = index
 	assert(selected >= 0)
 	actors._process(0.0)

@@ -7,7 +7,7 @@ const BOARD = preload("res://scenes/ui/clue_board.tscn")
 func test_all_students_share_manifest_portraits_without_classroom_actors() -> void:
 	var manifest: Array = JSON.parse_string(
 		FileAccess.get_file_as_string(
-			"res://assets/textures/characters/study_front_v1/manifest.json"
+			"res://assets/textures/characters/standing_front_v2/manifest.json"
 		)
 	)
 	var config: Dictionary = JSON.parse_string(

@@ -1,0 +1,7 @@
+{
+  "blender_only": true,
+  "right_wall_shift_m": 0.75,
+  "desk_positions_unchanged": true,
+  "right_desk_to_wall_gap_approx_m": 0.54,
+  "changed_meshes": 111
+}

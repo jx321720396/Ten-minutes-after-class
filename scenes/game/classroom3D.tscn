@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cvvi06b7bmdyn"]
 
-[ext_resource type="PackedScene" uid="uid://lq7nghi63vmu" path="res://scenes/components/desk_chair.tscn" id="1_desk"]
+[ext_resource type="PackedScene" path="res://scenes/components/desk_chair_compact.tscn" id="1_desk"]
 [ext_resource type="PackedScene" uid="uid://veknwyi71j7a" path="res://scenes/components/podium.tscn" id="2_podium"]
 [ext_resource type="PackedScene" path="res://scenes/components/window_tall.tscn" id="3_win_tall"]
 [ext_resource type="PackedScene" path="res://scenes/components/window_high.tscn" id="4_win_high"]
@@ -29,7 +29,7 @@
 [ext_resource type="Material" path="res://resources/materials/mat_wall_upper.tres" id="m_upper"]
 [ext_resource type="Material" uid="uid://csprcagi0dg6n" path="res://resources/materials/mat_wood.tres" id="m_wood"]
 [ext_resource type="Script" uid="uid://fdcmqrufqudp" path="res://scripts/game/classroom.gd" id="navigation_script"]
-[ext_resource type="NavigationMesh" uid="uid://c67yb0pq0a4dj" path="res://resources/navigation/classroom_nav.tres" id="nav_mesh"]
+[ext_resource type="NavigationMesh" path="res://resources/navigation/classroom_nav.tres" id="nav_mesh"]
 [ext_resource type="PackedScene" path="res://scenes/ui/npc_profile.tscn" id="npc_profile_scene"]
 [ext_resource type="Script" path="res://scripts/ui/study_navigation.gd" id="study_navigation"]
 [ext_resource type="PackedScene" uid="uid://ckhk7pqoo1clw" path="res://scenes/ui/pause_menu.tscn" id="pause_menu"]
@@ -40,6 +40,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/time_hud.tscn" id="time_hud_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/transition_overlay.tscn" id="transition_scene"]
 [ext_resource type="Script" path="res://scripts/game/classroom_art.gd" id="classroom_art_script"]
+
+[ext_resource type="PackedScene" path="res://scenes/components/desk_chair_compact_window.tscn" id="desk_window"]
 
 [sub_resource type="Environment" id="Env_room"]
 background_mode = 1
@@ -242,19 +244,22 @@ material = ExtResource("m_metal")
 size = Vector3(0.03, 0.03, 12)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nav_floor"]
-size = Vector3(10, 0.2, 12)
+size = Vector3(5.85, 0.2, 10.56)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nav_wall_back"]
-size = Vector3(9.2, 0.8, 0.73)
+size = Vector3(5.85, 0.8, 0.73)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nav_wall_front"]
-size = Vector3(10.4, 0.8, 0.24)
+size = Vector3(5.85, 0.8, 0.24)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nav_wall_left"]
-size = Vector3(0.29, 0.8, 12.4)
+size = Vector3(0.29,  0.8, 10.56)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_nav_wall_right"]
-size = Vector3(0.43, 0.8, 12.4)
+size = Vector3(0.43,  0.8, 10.56)
+
+[sub_resource type="BoxShape3D" id="BoxShape_left_cabinets"]
+size = Vector3(0.16, 0.88, 4.8)
 
 [node name="Classroom3D" type="Node3D" unique_id=1586539727]
 script = ExtResource("navigation_script")
@@ -295,8 +300,13 @@ fov = 42.0
 
 [node name="Room" type="Node3D" parent="." unique_id=1644555143]
 
+scale = Vector3(0.72, 1, 0.88)
+
 [node name="Floor" type="MeshInstance3D" parent="Room" unique_id=2034789048]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.1041666666666663, 0.0, 0.0)
 mesh = SubResource("Plane_floor")
+
+scale = Vector3(0.8125, 1, 1)
 
 [node name="Ceiling" type="MeshInstance3D" parent="Room" unique_id=583476449]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.46, 0)
@@ -304,7 +314,9 @@ visible = false
 mesh = SubResource("Box_ceiling")
 
 [node name="BackWall" type="Node3D" parent="Room" unique_id=1467996042]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.64516973, 0, 0)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.4200337387632826, 0.0, 0.0)
+
+scale = Vector3(0.8125, 1, 1)
 
 [node name="Lower" type="MeshInstance3D" parent="Room/BackWall" unique_id=1888977248]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -6.1)
@@ -319,7 +331,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -6.1)
 mesh = SubResource("Box_trim_x")
 
 [node name="NewsBoard" type="Node3D" parent="Room/BackWall" unique_id=126792380]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.95, -5.98)
+transform = Transform3D(1,  0,  0,  0,  1,  0,  0,  0,  1, -0.538053,  1.95,  -5.98)
+scale = Vector3(1.9, 1, 1)
 
 [node name="Frame" type="MeshInstance3D" parent="Room/BackWall/NewsBoard" unique_id=1242699466]
 mesh = SubResource("Box_news_frame")
@@ -431,7 +444,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 6.1)
 mesh = SubResource("Box_trim_x")
 
 [node name="LeftWall" type="Node3D" parent="Room" unique_id=877678647]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.64526415, 0, 0)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.061930816666667, 0.0, 0.0)
 
 [node name="LowerA" type="MeshInstance3D" parent="Room/LeftWall" unique_id=1477584239]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.1, 0.5, 0.9)
@@ -520,6 +533,33 @@ mesh = SubResource("Box_door_glass")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.07, 1, 0.4)
 mesh = SubResource("Box_door_handle")
 
+[node name="FrontDoor" type="Node3D" parent="Room/LeftWall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.96, 0, 4.8)
+
+[node name="JambL" type="MeshInstance3D" parent="Room/LeftWall/FrontDoor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, -0.57)
+mesh = SubResource("Box_jamb")
+
+[node name="JambR" type="MeshInstance3D" parent="Room/LeftWall/FrontDoor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0.57)
+mesh = SubResource("Box_jamb")
+
+[node name="Header" type="MeshInstance3D" parent="Room/LeftWall/FrontDoor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.37, 0)
+mesh = SubResource("Box_header")
+
+[node name="Leaf" type="MeshInstance3D" parent="Room/LeftWall/FrontDoor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 1.15, 0)
+mesh = SubResource("Box_door")
+
+[node name="LeafWindow" type="MeshInstance3D" parent="Room/LeftWall/FrontDoor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 1.65, -0.2)
+mesh = SubResource("Box_door_glass")
+
+[node name="Handle" type="MeshInstance3D" parent="Room/LeftWall/FrontDoor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.07, 1, 0.4)
+mesh = SubResource("Box_door_handle")
+
 [node name="BulletinBoard" type="Node3D" parent="Room/LeftWall" unique_id=2005450099]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.96, 1.65, 0.6)
 
@@ -531,27 +571,33 @@ mesh = SubResource("Box_cork_frame")
 mesh = SubResource("Box_cork")
 
 [node name="Paper01" type="MeshInstance3D" parent="Room/LeftWall/BulletinBoard" unique_id=443692959]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.025, 0.28, -3.2)
+scale = Vector3(1, 1.25, 1.25)
+transform = Transform3D(0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.035, 0.28, -2)
 mesh = SubResource("Quad_paper_big")
 
 [node name="Paper02" type="MeshInstance3D" parent="Room/LeftWall/BulletinBoard" unique_id=1380395327]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.025, 0.24, -2.35)
+scale = Vector3(1, 1.25, 1.25)
+transform = Transform3D(0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.035, 0.28, 0)
 mesh = SubResource("Quad_paper_big_y")
 
 [node name="Paper03" type="MeshInstance3D" parent="Room/LeftWall/BulletinBoard" unique_id=1916154683]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.025, 0.3, -1.45)
+scale = Vector3(1, 1.25, 1.25)
+transform = Transform3D(0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.035, 0.28, 2)
 mesh = SubResource("Quad_paper_big")
 
 [node name="Paper04" type="MeshInstance3D" parent="Room/LeftWall/BulletinBoard" unique_id=1814804629]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.025, 0.25, -0.55)
+scale = Vector3(1, 1.25, 1.25)
+transform = Transform3D(0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.035, -0.28, -2)
 mesh = SubResource("Quad_paper_big")
 
 [node name="Paper05" type="MeshInstance3D" parent="Room/LeftWall/BulletinBoard" unique_id=2040792921]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.025, 0.29, 0.35)
+scale = Vector3(1, 1.25, 1.25)
+transform = Transform3D(0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.035, -0.28, 0)
 mesh = SubResource("Quad_paper_big_y")
 
 [node name="Paper06" type="MeshInstance3D" parent="Room/LeftWall/BulletinBoard" unique_id=1562551405]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.025, 0.24, 1.25)
+scale = Vector3(1, 1.25, 1.25)
+transform = Transform3D(0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.035, -0.28, 2)
 mesh = SubResource("Quad_paper_big")
 
 [node name="Paper07" type="MeshInstance3D" parent="Room/LeftWall/BulletinBoard" unique_id=1204701394]
@@ -579,7 +625,7 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0.025, -0.28, 2.6)
 mesh = SubResource("Quad_paper_big")
 
 [node name="RightWall" type="Node3D" parent="Room" unique_id=1328314372]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.59984684, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0416666666666667, 0, 0)
 
 [node name="Lower" type="MeshInstance3D" parent="Room/RightWall" unique_id=224147637]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.1, 0.45, 0)
@@ -637,53 +683,53 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 4.84, 2.95, 5.2)
 [node name="CeilingFixtures" type="Node3D" parent="Room" unique_id=2072343822]
 
 [node name="Lamp1" type="OmniLight3D" parent="Room/CeilingFixtures" unique_id=1661177790]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 3.38, -3.6)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -2.135416666666667, 3.38, -3.6)
 light_color = Color(1, 0.97, 0.9, 1)
 light_energy = 0.6
 omni_range = 5.5
 
 [node name="Lamp2" type="OmniLight3D" parent="Room/CeilingFixtures" unique_id=1629848547]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 3.38, -3.6)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.9270833333333337, 3.38, -3.6)
 light_color = Color(1, 0.97, 0.9, 1)
 light_energy = 0.6
 omni_range = 5.5
 
 [node name="Lamp3" type="OmniLight3D" parent="Room/CeilingFixtures" unique_id=1261273579]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 3.38, 0)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -2.135416666666667, 3.38, 0.0)
 light_color = Color(1, 0.97, 0.9, 1)
 light_energy = 0.6
 omni_range = 5.5
 
 [node name="Lamp4" type="OmniLight3D" parent="Room/CeilingFixtures" unique_id=450762137]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 3.38, 0)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.9270833333333337, 3.38, 0.0)
 light_color = Color(1, 0.97, 0.9, 1)
 light_energy = 0.6
 omni_range = 5.5
 
 [node name="Lamp5" type="OmniLight3D" parent="Room/CeilingFixtures" unique_id=2107065]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 3.38, 3.6)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -2.135416666666667, 3.38, 3.6)
 light_color = Color(1, 0.97, 0.9, 1)
 omni_range = 5.5
 
 [node name="Lamp6" type="OmniLight3D" parent="Room/CeilingFixtures" unique_id=175467361]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 3.38, 3.6)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.9270833333333337, 3.38, 3.6)
 light_color = Color(1, 0.97, 0.9, 1)
 omni_range = 5.5
 
 [node name="Lamp7" type="OmniLight3D" parent="Room/CeilingFixtures"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.38, -3.6)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.1041666666666663, 3.38, -3.6)
 light_color = Color(1, 0.97, 0.9, 1)
 light_energy = 0.12
 omni_range = 5.5
 
 [node name="Lamp8" type="OmniLight3D" parent="Room/CeilingFixtures"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.38, 0)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.1041666666666663, 3.38, 0.0)
 light_color = Color(1, 0.97, 0.9, 1)
 light_energy = 0.12
 omni_range = 5.5
 
 [node name="Lamp9" type="OmniLight3D" parent="Room/CeilingFixtures"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.38, 3.6)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.1041666666666663, 3.38, 3.6)
 light_color = Color(1, 0.97, 0.9, 1)
 light_energy = 0.12
 omni_range = 5.5
@@ -693,82 +739,88 @@ omni_range = 5.5
 [node name="FloorShape" type="StaticBody3D" parent="NavGeometry" unique_id=1951000002 groups=["nav_geometry"]]
 
 [node name="Shape" type="CollisionShape3D" parent="NavGeometry/FloorShape" unique_id=1951000003]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.07499999999999973, -0.1, 0.0)
 shape = SubResource("BoxShape3D_nav_floor")
 
 [node name="WallShapes" type="StaticBody3D" parent="NavGeometry" unique_id=1354855672 groups=["nav_geometry"]]
 
 [node name="BackWallShape" type="CollisionShape3D" parent="NavGeometry/WallShapes" unique_id=789938673]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.02, 0.4, -5.855)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.07499999999999973, 0.4, -5.15)
 shape = SubResource("BoxShape3D_nav_wall_back")
 
 [node name="FrontWallShape" type="CollisionShape3D" parent="NavGeometry/WallShapes" unique_id=758390370]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 6.1)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.07499999999999973, 0.4, 5.36)
 shape = SubResource("BoxShape3D_nav_wall_front")
 
 [node name="LeftWallShape" type="CollisionShape3D" parent="NavGeometry/WallShapes" unique_id=71934343]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.435, 0.4, 0)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -2.9074000000000004, 0.4, 0.0)
 shape = SubResource("BoxShape3D_nav_wall_left")
 
 [node name="RightWallShape" type="CollisionShape3D" parent="NavGeometry/WallShapes" unique_id=291877239]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.405, 0.4, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.85, 0.4, 0)
 shape = SubResource("BoxShape3D_nav_wall_right")
 
 [node name="Navigation" type="NavigationRegion3D" parent="." unique_id=1951000004]
 navigation_mesh = ExtResource("nav_mesh")
 
 [node name="Podium" parent="." unique_id=2119042006 instance=ExtResource("2_podium")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4.4)
+transform = Transform3D(1,  0,  0,  0,  1,  0,  0,  0,  1, 0.3,  0,  4.3)
+
+[node name="LeftCabinetBlocker" type="StaticBody3D" parent="NavGeometry" groups=["nav_geometry"]]
+
+[node name="Shape" type="CollisionShape3D" parent="NavGeometry/LeftCabinetBlocker"]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -2.73, 0.44, 0.0)
+shape = SubResource("BoxShape_left_cabinets")
 
 [node name="Seats" type="Node3D" parent="." unique_id=1567372302]
 
-[node name="P1" parent="Seats" unique_id=810406609 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8412278, 0, 2.5609262)
+[node name="P1" parent="Seats" unique_id=810406609 instance=ExtResource("desk_window")]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 2.46, 0.0, 3.0)
 
 [node name="P2" parent="Seats" unique_id=396991584 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98127556, 0, 2.5223446)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.21, 0.0, 3.0)
 
 [node name="P3" parent="Seats" unique_id=1327349806 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.918118, 0, 2.5781307)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.040000000000000036, 0.0, 3.0)
 
 [node name="P4" parent="Seats" unique_id=1721377294 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7680268, 0, 2.528865)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -1.29, 0.0, 3.0)
 
-[node name="P5" parent="Seats" unique_id=1288442634 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8412278, 0, 0.96092623)
+[node name="P5" parent="Seats" unique_id=1288442634 instance=ExtResource("desk_window")]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 2.46, 0.0, 1.0)
 
 [node name="P6" parent="Seats" unique_id=1447478459 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98127556, 0, 0.9223446)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.21, 0.0, 1.0)
 
 [node name="P7" parent="Seats" unique_id=1265518028 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.918118, 0, 0.97813076)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.040000000000000036, 0.0, 1.0)
 
 [node name="P8" parent="Seats" unique_id=21969260 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7680268, 0, 0.92886513)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -1.29, 0.0, 1.0)
 
-[node name="P9" parent="Seats" unique_id=1234271433 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8412278, 0, -0.6390737)
+[node name="P9" parent="Seats" unique_id=1234271433 instance=ExtResource("desk_window")]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 2.46, 0.0, -1.0)
 
 [node name="P10" parent="Seats" unique_id=1994422226 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98127556, 0, -0.67765534)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.21, 0.0, -1.0)
 
 [node name="P11" parent="Seats" unique_id=809587741 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.918118, 0, -0.6218692)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.040000000000000036, 0.0, -1.0)
 
 [node name="P12" parent="Seats" unique_id=759439152 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7680268, 0, -0.6711348)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -1.29, 0.0, -1.0)
 
-[node name="P13" parent="Seats" unique_id=1200928334 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8412278, 0, -2.2390738)
+[node name="P13" parent="Seats" unique_id=1200928334 instance=ExtResource("desk_window")]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 2.46, 0.0, -3.0)
 
 [node name="P14" parent="Seats" unique_id=247124514 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.98127556, 0, -2.2776554)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.21, 0.0, -3.0)
 
 [node name="P15" parent="Seats" unique_id=997270038 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.918118, 0, -2.2218692)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.040000000000000036, 0.0, -3.0)
 
 [node name="P16" parent="Seats" unique_id=1445026452 instance=ExtResource("1_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7680268, 0, -2.2711349)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -1.29, 0.0, -3.0)
 
 [node name="Actors" type="Node3D" parent="." unique_id=1369921869]
 script = ExtResource("actors_script")
@@ -779,43 +831,43 @@ script = ExtResource("classroom_art_script")
 [node name="StandPoints" type="Node3D" parent="." unique_id=1528135870]
 
 [node name="AISLE_R1_C1" type="Marker3D" parent="StandPoints" unique_id=98792851]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9112, 0, 1.7609)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.835, 0.0, 2.0)
 
 [node name="AISLE_R1_C2" type="Marker3D" parent="StandPoints" unique_id=2121333893]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0313, 0, 1.7609)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.585, 0.0, 2.0)
 
 [node name="AISLE_R1_C3" type="Marker3D" parent="StandPoints" unique_id=580104875]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8431, 0, 1.7609)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.665, 0.0, 2.0)
 
 [node name="AISLE_R2_C1" type="Marker3D" parent="StandPoints" unique_id=613674839]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9112, 0, -1.4391)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.835, 0.0, 0.0)
 
 [node name="AISLE_R2_C2" type="Marker3D" parent="StandPoints" unique_id=2040165046]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0313, 0, -1.4391)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.585, 0.0, 0.0)
 
 [node name="AISLE_R2_C3" type="Marker3D" parent="StandPoints" unique_id=1643127569]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8431, 0, -1.4391)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -0.665, 0.0, 0.0)
 
 [node name="BACK_LEFT" type="Marker3D" parent="StandPoints" unique_id=1305677476]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.6, 0, -4.3)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -2, 0.0, -4.4)
 
 [node name="BACK_MID" type="Marker3D" parent="StandPoints" unique_id=416262303]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03, 0, -4.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -4.4)
 
 [node name="BACK_RIGHT" type="Marker3D" parent="StandPoints" unique_id=1189036971]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6, 0, -4.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3, 0, -4.4)
 
 [node name="SIDE_LEFT" type="Marker3D" parent="StandPoints" unique_id=1261028244]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, 0, 0.2)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -2.05, 0.0, 0)
 
 [node name="SIDE_RIGHT" type="Marker3D" parent="StandPoints" unique_id=311348496]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 0, 0.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.15, 0, 0)
 
 [node name="PODIUM_LEFT" type="Marker3D" parent="StandPoints" unique_id=2054352489]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9, 0, 5.4)
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, -2.05, 0.0, 2.0)
 
 [node name="PODIUM_RIGHT" type="Marker3D" parent="StandPoints" unique_id=1616093840]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9, 0, 5.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.15, 0, 2.0)
 
 [node name="Roam" type="Node3D" parent="." unique_id=1970508598]
 script = ExtResource("roam_script")

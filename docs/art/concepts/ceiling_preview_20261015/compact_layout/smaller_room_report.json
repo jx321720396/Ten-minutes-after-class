@@ -1,0 +1,9 @@
+{
+  "blender_only": true,
+  "room_width_m": 7.2,
+  "room_depth_m": 10.56,
+  "desk_grid_unchanged": true,
+  "characters_unchanged": true,
+  "camera_unchanged": true,
+  "lectern_forward_shift_m": 0.3
+}

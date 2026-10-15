@@ -22,146 +22,146 @@
   "portrait_art_height": 340,
   "portraits": {
     "01": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_01_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_01_stand_natural_v2.png",
       "region": [
-        284,
+        258,
         0,
-        479,
+        502,
         700
       ]
     },
     "02": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_02_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_02_stand_natural_v2.png",
       "region": [
-        271,
+        247,
         0,
-        489,
+        524,
         700
       ]
     },
     "03": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_03_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_03_stand_natural_v2.png",
       "region": [
-        249,
+        256,
         0,
-        530,
+        512,
         700
       ]
     },
     "04": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_04_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_04_stand_natural_v2.png",
       "region": [
-        258,
+        272,
         0,
-        500,
+        483,
         700
       ]
     },
     "05": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_06_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_05_stand_natural_v2.png",
       "region": [
-        238,
+        282,
         0,
-        555,
+        482,
         700
       ]
     },
     "06": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_07_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_06_stand_natural_v2.png",
       "region": [
-        294,
+        285,
         0,
-        450,
+        473,
         700
       ]
     },
     "07": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_08_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_07_stand_natural_v2.png",
       "region": [
-        269,
+        258,
         0,
-        547,
+        510,
         700
       ]
     },
     "08": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_09_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_08_stand_natural_v2.png",
       "region": [
-        293,
+        255,
         0,
-        485,
+        525,
         700
       ]
     },
     "09": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_10_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_09_stand_natural_v2.png",
       "region": [
-        277,
+        256,
         0,
-        498,
+        514,
         700
       ]
     },
     "10": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_14_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_10_stand_natural_v2.png",
       "region": [
-        302,
-        0,
-        469,
-        700
-      ]
-    },
-    "11": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_16_body_base_v1.png",
-      "region": [
-        296,
+        273,
         0,
         480,
         700
       ]
     },
-    "12": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_17_body_base_v1.png",
+    "11": {
+      "path": "res://assets/textures/characters/standing_front_v2/char_11_stand_natural_v2.png",
       "region": [
-        253,
+        258,
         0,
-        536,
+        504,
+        700
+      ]
+    },
+    "12": {
+      "path": "res://assets/textures/characters/standing_front_v2/char_12_stand_natural_v2.png",
+      "region": [
+        249,
+        0,
+        512,
         700
       ]
     },
     "13": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_20_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_13_stand_natural_v2.png",
       "region": [
-        328,
+        274,
         0,
-        444,
+        477,
         700
       ]
     },
     "14": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_21_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_14_stand_natural_v2.png",
       "region": [
-        210,
+        261,
         0,
-        588,
+        509,
         700
       ]
     },
     "15": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_23_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_15_stand_natural_v2.png",
       "region": [
-        251,
+        260,
         0,
-        493,
+        512,
         700
       ]
     },
     "16": {
-      "path": "res://assets/textures/characters/fullbody_v1/char_24_body_base_v1.png",
+      "path": "res://assets/textures/characters/standing_front_v2/char_16_stand_natural_v2.png",
       "region": [
-        306,
+        264,
         0,
-        471,
+        502,
         700
       ]
     }

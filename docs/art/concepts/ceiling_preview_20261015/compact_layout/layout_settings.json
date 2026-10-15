@@ -1,0 +1,7 @@
+{
+  "column_pitch": 1.25,
+  "row_pitch": 2.0,
+  "furniture_scale": 1.12,
+  "room_width_scale": 0.8,
+  "render_samples": 40
+}

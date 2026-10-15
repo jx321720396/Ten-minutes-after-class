@@ -62,10 +62,23 @@ func test_apply_event_chain() -> void:
 
 
 func test_study_drip_raises_stress() -> void:
+	# 《老师版规则合并稿》D01 / D04：涓流 = 课间末读一次状态，周围（前后左右，不含对角）
+	# 有人学习 → 压力 +5、可叠加。跨天固定 −20 与初始 0–20 让「跑完一天压力是否上升」不再是稳定
+	# 断言，所以这里直接验证涓流机制本身。
 	var core := _core()
-	core.run_day()
-	var any_positive := false
-	for i in range(_n(core)):
-		if core.stress(i) > 0.0:
-			any_positive = true
-	assert_true(any_positive, "涓流结算后压力已上升（study drip）")
+	core._stress[0] = 0.0
+	core._stress[1] = 0.0
+	core._begin_phase_state()
+	core._phase_state[0] = "study"
+	core._phase_state[1] = "free"
+	var seat0: String = str(core._seat_of[0])
+	var neighbor_seat := ""
+	for seat_id in core._neighbors[seat0]:
+		neighbor_seat = str(seat_id)
+		break
+	assert_ne(neighbor_seat, "", "4×4 网格里每个座位都有邻座")
+	core._seat_of[1] = neighbor_seat
+	core._build_neighbor_idx()
+	core._settle_neighbor_drip()
+	assert_gt(core.stress(1), 0.0, "邻座在学 → 压力 +5（D01 涓流）")
+	assert_true(core.phase_state_of(0) == "study", "学习状态用于判定涓流来源")
