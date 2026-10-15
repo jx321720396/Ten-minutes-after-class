@@ -1,14 +1,9 @@
 class_name ObserverLayer
 extends RefCounted
-## 观察层（§11）：**只读**、**按透明度过滤**、**每个角色一份视角**的标签器。
+## 观察层（§11）：**只读**、**每个角色一份视角**的标签器。
 ##
-## 为什么是「透明度的下属」（用户判断 + §7.4）：
-##   「只读」只保证标签不干扰模拟；但若直接读真值矩阵，它对玩家就是上帝视角。
-##   低透明度角色的「藏」会在标签层被绕过。故凡是涉及感知的读取，都要经透明度过滤，
-##   而标签器的输出正是「玩家感知到的班级结构」。
-##
-## 于是：低透明度的人，关系看不透 → 标签器不会把他归进任何簇。
-## 规格：docs/design/信念矩阵.md §11；阈值 §11.1 复用系统已有阈值（亲近 A≥60），不另定。
+## 老师版（2026-10-14）：透明度已删除，不再按透明度过滤，可见性恒为 'clear'；
+##   标签器直接读真值 A/H，只读不回写任何矩阵。
 ##
 ## 与 Python 参考 `tools/core_sim.py` 的 `ObserverLayer` 逐字一致（只读：不写任何矩阵）。
 
@@ -19,20 +14,13 @@ func _init(core) -> void:
 	_core = core
 
 
-# ---------- ① 可见性档位（§11.1 / §11.3：由「被观测者」的透明度决定）----------
-## 返回 'clear' / 'blurry' / 'sealed'。由被观测者 O[target] 决定，与 viewer 无关。
-func visibility(_viewer: int, target: int) -> String:
-	var o: float = _core.opacity(target)
-	if o >= 50.0:
-		return "clear"
-	if o >= 20.0:
-		return "blurry"
-	return "sealed"
+# ---------- ① 可见性档位（老师版：透明度已删除，恒为 'clear'）----------
+func visibility(_viewer: int, _target: int) -> String:
+	return "clear"
 
 
 # ---------- ② 该 viewer 能看见的关系矩阵 ----------
-## viewer 眼中的 axis 关系矩阵（null = 看不见）。
-##   clear  → 真值；blurry → 只知「有没有变化」不给方向，取中性基准；sealed → null。
+## viewer 眼中的 axis 关系矩阵（null = 看不见）。老师版恒为真值。
 func seen_matrix(viewer: int, axis: String = "affinity") -> Array:
 	var n: int = _core.node_count()
 	var base := 50.0 if axis != "hostility" else 0.0
@@ -61,9 +49,7 @@ func _null_row(n: int) -> Array:
 func _src(axis: String, k: int, m: int) -> float:
 	if axis == "affinity":
 		return _core.affinity(k, m)
-	if axis == "hostility":
-		return _core.hostility(k, m)
-	return _core.trust(k, m)
+	return _core.hostility(k, m)
 
 
 # ---------- ③ 簇标签（每个角色一份视角）----------

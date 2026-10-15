@@ -51,18 +51,14 @@ func _parse_user_args() -> Dictionary:
 func _snapshot(core: SimCore, n: int) -> Dictionary:
 	var a: Array[float] = []
 	var h: Array[float] = []
-	var t: Array[float] = []
 	for i in range(n):
 		for j in range(n):
 			a.append(core.affinity(i, j))
 			h.append(core.hostility(i, j))
-			t.append(core.trust(i, j))
-	var o: Array[float] = []
 	var s: Array[float] = []
 	var g: Array[float] = []
 	var sa: Array[float] = []
 	for i in range(n):
-		o.append(core.opacity(i))
 		s.append(core.stress(i))
 		g.append(core.grade(i))
 		sa.append(core.study_acc(i))
@@ -74,18 +70,14 @@ func _snapshot(core: SimCore, n: int) -> Dictionary:
 		"tick_in_phase": core.tick_in_phase(),
 		"A_mean": _mean(a),
 		"H_mean": _mean(h),
-		"T_mean": _mean(t),
-		"O_mean": _mean(o),
 		"stress_mean": _mean(s),
 		"grade_mean": _mean(g),
 		"A_hash": _digest(a),
 		"H_hash": _digest(h),
-		"T_hash": _digest(t),
 		"grade_hash": _digest(g),
 		"study_acc_hash": _digest(sa),
 		"events": int(core._stats.get("events", 0)),
 		"bursts": int(core._stats.get("bursts", 0)),
-		"transmits": int(core._stats.get("transmission_ticks", 0)),
 	}
 
 

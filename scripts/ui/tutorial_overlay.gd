@@ -21,7 +21,7 @@ const UI_LAYER := 45
 const MOVE_DONE_METERS := 1.2
 const HINT_WIDTH := 640.0
 ## 步骤 id → 该步等待的提交行为（动作栏 kind）
-const COMMIT_KIND_OF := {&"s4_chat": &"chat", &"s5_observe": &"observe"}
+const COMMIT_KIND_OF := {&"s4_chat": &"chat"}
 ## 提示条内「下一步」按钮的尺寸（热区 ≥44，§20.0.4）
 const HINT_NEXT_MIN := Vector2(96, 44)
 
@@ -76,6 +76,7 @@ func _load_cfg() -> Dictionary:
 
 # ------------------------------------------------------------------ 绑定
 
+
 ## 注入运行期依赖：时钟（阶段守卫用）、玩家（位移判定用）、界面锚点（高亮用）。
 func bind_world(clock: SimulationClock, player: Node3D, anchors: Dictionary) -> void:
 	_clock = clock
@@ -84,6 +85,7 @@ func bind_world(clock: SimulationClock, player: Node3D, anchors: Dictionary) -> 
 
 
 # ------------------------------------------------------------------ 对外状态
+
 
 static func is_seen() -> bool:
 	return FileAccess.file_exists(DEFAULT_SEEN_PATH)
@@ -111,6 +113,7 @@ func skip() -> void:
 
 # ------------------------------------------------------------------ 事件入口（由教室转发）
 
+
 ## 行为栏任意按钮被选中（S3 的完成条件）。
 func notify_armed(_kind: StringName) -> void:
 	if _running and _current_step_id() == &"s3_action":
@@ -128,6 +131,7 @@ func notify_committed(kind: StringName) -> void:
 
 
 # ------------------------------------------------------------------ 每帧推进
+
 
 func _process(delta: float) -> void:
 	if not visible:
@@ -155,6 +159,7 @@ func _process(delta: float) -> void:
 
 
 # ------------------------------------------------------------------ 开场卡
+
 
 func _show_card(i: int) -> void:
 	var cards: Array = _cfg.get("intro_cards", [])
@@ -194,6 +199,7 @@ func _close_intro() -> void:
 
 
 # ------------------------------------------------------------------ 步进提示
+
 
 func _apply_step() -> void:
 	var step := _current_step()
@@ -290,6 +296,7 @@ func is_intro_open() -> bool:
 
 
 # ------------------------------------------------------------------ UI 搭建（样式同纸面基线 §20.0.3）
+
 
 func _build_ui() -> void:
 	_root = Control.new()

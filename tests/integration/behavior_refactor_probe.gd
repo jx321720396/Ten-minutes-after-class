@@ -1,19 +1,13 @@
 extends SceneTree
-## 独立记录重构前/后的完整内核状态、RNG 和事件顺序；不改模拟实现。
-## --out=<路径>；--core-script=<独立旧版脚本路径> 可比较原版，不切换工作区文件。
-## 外部旧版副本去掉 class_name 注册行，直接调用构造器；基线不提交为数值金样。
+## 记录老师版内核（A/H + 压力/成绩）的完整状态、RNG 和事件顺序；不改模拟实现。
+## --out=<路径> 指定输出；--core-script=<脚本路径> 可换源内核脚本（默认当前 sim_core）。
+## 基线不提交为数值金样，只作跨次重构的对拍快照。
 
 const FIELDS := [
 	"_a",
 	"_h",
-	"_h_deep",
-	"_t",
-	"_o",
 	"_stress",
-	"_dims",
-	"_b_a",
-	"_b_h",
-	"_b_t",
+	"_grade",
 	"_day",
 	"_phase",
 	"_tick_in_phase",
@@ -35,9 +29,6 @@ const FIELDS := [
 	"_day_events",
 	"_settled",
 	"_stats",
-	"_hurt_day",
-	"_exclude_last_day",
-	"_witness_day",
 	"_volume",
 	"_seat_of"
 ]
@@ -59,16 +50,7 @@ func _initialize() -> void:
 		"join_accept",
 		"join_reject",
 		"join_random",
-		"tease_laugh",
-		"tease_taunt",
-		"tease_neutral",
-		"report",
-		"pass_note",
-		"roughhouse",
-		"exclude",
-		"comfort",
-		"apologize_accept",
-		"apologize_reject"
+		"roughhouse"
 	]:
 		var c: Variant = _new_core(core_script, 12345, tables)
 		var events: Array = []
@@ -84,39 +66,15 @@ func _initialize() -> void:
 				c._do_chat_join(0, 1, 1.0)
 			"join_random":
 				c._do_chat_join(0, 1)
-			"tease_laugh":
-				c._do_tease(0, 1, [2, 3, 4, 5])
-			"tease_taunt":
-				c._a[1] = 20.0
-				c._h[1] = 80.0
-				c._do_tease(0, 1, [5, 2, 4, 3])
-			"tease_neutral":
-				c._a[1] = 30.0
-				c._do_tease(0, 1, [])
-			"report":
-				c._do_report(0, 1)
-			"pass_note":
-				c._do_pass_note(0, 1)
 			"roughhouse":
-				c._do_roughhouse(0, 1, [4, 2, 3])
-			"exclude":
-				c._do_exclude(0, 1, [0, 4, 2, 3])
-			"comfort":
-				c._do_comfort(0, 1)
-			"apologize_accept", "apologize_reject":
-				c._h[1] = 50.0
-				c._h[c.node_count()] = 50.0
-				c._thresholds_lookup["apologize_accept_theta"] = (
-					-1000.0 if scenario == "apologize_accept" else 1000.0
-				)
-				c._do_apologize(0, 1)
+				c._do_roughhouse(0, 1)
 		rows.append(_snapshot(c, events, scenario))
 		# 同对子重复调用与完成/相位边界也需保持原样。
 		c._do_chat(0, 1)
 		c.advance_phase()
 		c.advance_tick()
 		rows.append(_snapshot(c, events, scenario + "_boundary"))
-	for kind in ["chat", "chat_join", "tease", "pass_note", "report", "roughhouse", "exclude"]:
+	for kind in ["chat", "roughhouse"]:
 		var c: Variant = _new_core(core_script, 12345, tables)
 		var events: Array = []
 		c.event_sink = func(e: Dictionary): events.append(e)

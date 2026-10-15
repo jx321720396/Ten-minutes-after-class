@@ -86,7 +86,7 @@ func catch_reader(c: SimCore, i: int) -> bool:
 
 
 func multiplier(kind: String) -> float:
-	if present and kind in ["tease", "roughhouse", "exclude"]:
+	if present and kind in ["roughhouse"]:
 		return float(params["suppress_behavior_mult"])
 	return 1.0
 

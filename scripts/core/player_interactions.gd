@@ -411,20 +411,18 @@ func _packet(
 
 
 # ------------------------------------------------------------------ 玩家自身效果摘要
-## 只统计**玩家自己这一侧**的变化（自身压力 + 玩家→他人三轴合计），供情绪反馈使用。
+## 只统计**玩家自己这一侧**的变化（自身压力 + 玩家→他人双轴合计），供情绪反馈使用。
 ## 不扫 NPC 内心，也不泄露他人对玩家的真值。
 func _player_snapshot(core: Variant, me: int) -> Dictionary:
 	var n: int = int(core.node_count())
 	var aff := 0.0
 	var hos := 0.0
-	var tru := 0.0
 	for j in range(n):
 		if j == me:
 			continue
 		aff += float(core._a[me * n + j])
 		hos += float(core._h[me * n + j])
-		tru += float(core._t[me * n + j])
-	return {"stress": float(core._stress[me]), "a": aff, "h": hos, "t": tru}
+	return {"stress": float(core._stress[me]), "a": aff, "h": hos}
 
 
 func _player_effects(core: Variant, me: int, before: Dictionary) -> Dictionary:
@@ -433,7 +431,6 @@ func _player_effects(core: Variant, me: int, before: Dictionary) -> Dictionary:
 		"stress_delta": snapped(float(after["stress"]) - float(before["stress"]), 0.1),
 		"affinity_delta": snapped(float(after["a"]) - float(before["a"]), 0.1),
 		"hostility_delta": snapped(float(after["h"]) - float(before["h"]), 0.1),
-		"trust_delta": snapped(float(after["t"]) - float(before["t"]), 0.1),
 	}
 
 
@@ -513,7 +510,7 @@ func _complete_request(rec: Dictionary, session_id: int, _snap: Dictionary) -> A
 	return out
 
 
-## 抽取线索：条数由**闲聊对象当时的透明度**决定，候选排除玩家与 source，
+## 抽取线索：条数暂固定（§12.2 打听信息量策略待裁定），候选排除玩家与 source，
 ## 每条只透露一个轴，取值来自自然完成这一刻的真值矩阵。
 func _draw_clues(core: Variant, request_id: int, session_id: int, source: int) -> Array:
 	var me := _player_index()
@@ -524,7 +521,7 @@ func _draw_clues(core: Variant, request_id: int, session_id: int, source: int) -
 			continue
 		candidates.append(j)
 	candidates.sort()
-	var drawn := _intel.draw_subjects(float(core._o[source]), candidates)
+	var drawn := _intel.draw_subjects(candidates)
 	var at := {
 		"day": int(core.day()),
 		"phase_id": str(core.time_snapshot().get("phase_id", "")),
@@ -553,8 +550,6 @@ func _axis_value(core: Variant, source: int, subject: int, axis: String) -> floa
 	match axis:
 		"hostility":
 			return float(core.hostility(source, subject))
-		"trust":
-			return float(core.trust(source, subject))
 		_:
 			return float(core.affinity(source, subject))
 

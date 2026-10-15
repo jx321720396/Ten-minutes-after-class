@@ -47,12 +47,6 @@
       "text": "走近一个同学，点「闲聊」，再点他。聊什么都行。",
       "anchor": "",
       "timeout_seconds": 0.0
-    },
-    {
-      "id": "s5_observe",
-      "text": "想知道谁怎么看你，就「观察」他——只看，不会被发觉。",
-      "anchor": "",
-      "timeout_seconds": 0.0
     }
   ]
 }

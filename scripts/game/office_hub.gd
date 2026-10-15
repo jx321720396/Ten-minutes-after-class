@@ -89,7 +89,6 @@ func set_mode(next: String) -> void:
 	interaction.set_process_unhandled_input(false)
 	interaction.set_process_input(false)
 	_room.get_node("ChatHUD").set_process(false)
-	_room.get_node("NotePrompt").close()
 	for path in _saved_visible:
 		var node: Node = _room.get_node(path)
 		node.visible = _saved_visible[path] if path == "TimeHUD" and next != "office" else false
@@ -104,7 +103,6 @@ func _capture_classroom_state() -> void:
 		"ActionBar",
 		"ActionBar/BackpackEntry/BackpackButton",
 		"ChatHUD",
-		"NotePrompt",
 		"UI/EncyclopediaEntry/EncyclopediaButton",
 		"UI/ClueBoardEntry/BoardButton"
 	]:

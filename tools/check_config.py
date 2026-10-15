@@ -5,18 +5,16 @@
 
 校验清单（依据各表内的「启动校验」注释与 UIF §2.5 / §2.6）：
   1. w_events：`tier` 与 `base` 档位一致（normal ∈ [1,3]、major ∈ [4,5]）；`class` ∈ A–E
-  2. transmission：`feedback` ∈ [0,1]；`settle_interval` > 0；`beta_*` > 0
-  3. decay：所有 value ∈ (0,1]；`decay_a_interact` ≥ `decay_a_no_interact`
-  4. belief：`prior_*` ∈ (0,100]；`eta0_*` > 0
-  5. behavior_thresholds：① 阈值键格式（行为名不得自带轴后缀，否则查表键会重复拼接）
-     ② `chat_join_affinity` 必须 **严格大于** `prior_a`（否则搭话永远通过 → 关系只涨不跌）
-  6. behavior_probs：概率类 ∈ [0,1]
-  7. phases：课间 + 上课 tick 合计 = 480；`player_control` = 1 当且仅当 `kind` = break
-  8. status_tags：`days` ≥ 1
-  9. behaviors：`duration ≥ 0`、`|payoff| ∈ [1,5]`、**按 |payoff| 分组后平均耗时呈上升趋势**（效果越强耗时越长）
- 10. social_event_triggers：metric / op / value 不得含日期类记号（不变式 1）
- 11. 配置键存在性：`core_sim.py` 引用的阈值键必须真的在 behavior_thresholds.csv 里
- 12. 玩家交互 / 闲聊反馈（2026-10-07 完整可玩流程）：
+  2. transmission：`feedback` ∈ [0,1]；`settle_interval` > 0
+  3. decay：`decay_a_*` / `decay_h` / `retain_s` ∈ (0,1]；`decay_a_interact` ≥ `decay_a_no_interact`
+  4. behavior_thresholds：阈值键格式（行为名不得自带轴后缀，否则查表键会重复拼接）
+  5. behavior_probs：概率类 ∈ [0,1]
+  6. phases：课间 + 上课 tick 合计 = 480；`player_control` = 1 当且仅当 `kind` = break
+  7. status_tags：`days` ≥ 1
+  8. behaviors：`duration ≥ 0`、`|payoff| ∈ [1,5]`、**按 |payoff| 分组后平均耗时呈上升趋势**（效果越强耗时越长）
+  9. social_event_triggers：metric / op / value 不得含日期类记号（不变式 1）
+ 10. 配置键存在性：`core_sim.py` 引用的阈值键必须真的在 behavior_thresholds.csv 里
+ 11. 玩家交互 / 闲聊反馈（2026-10-07 完整可玩流程）：
      `rules/player_interaction.csv` 与 `ui/chat_feedback_style.csv` 的必需键、值域，
      以及**表 ↔ 消费者**双向一致（写了没人读 / 读了没写都要报）
 """
@@ -35,7 +33,7 @@ DATA = os.path.join(ROOT, "data")
 def read(path):
     with open(path, encoding="utf-8") as f:
         return f.read()
-AXES_WORDS = ("affinity", "hostility", "trust", "stress")
+AXES_WORDS = ("affinity", "hostility", "stress")
 DATE_WORDS = ("day", "week", "month", "term_", "第", "天", "周", "month")
 
 FAILED = []
@@ -72,32 +70,19 @@ print("=== 2. transmission ===")
 tp = params("rules/transmission.csv")
 check("feedback ∈ [0,1]", 0.0 <= tp["feedback"] <= 1.0, tp["feedback"])
 check("settle_interval > 0", tp["settle_interval"] > 0, tp["settle_interval"])
-check("beta_* > 0", all(tp[k] > 0 for k in ("beta_a", "beta_h", "beta_t")))
 
 print("=== 3. decay ===")
 dc = params("rules/decay.csv")
-for k in ("decay_a_no_interact", "decay_a_interact", "decay_h", "decay_t", "retain_s"):
+for k in ("decay_a_no_interact", "decay_a_interact", "decay_h", "retain_s"):
     check("%s ∈ (0,1]" % k, 0.0 < dc[k] <= 1.0, dc[k])
 check("decay_a_interact ≥ decay_a_no_interact", dc["decay_a_interact"] >= dc["decay_a_no_interact"])
 
-print("=== 4. belief ===")
-bp = params("rules/belief.csv")
-check("prior_* ∈ (0,100]", all(0 < bp[k] <= 100 for k in ("prior_a", "prior_h", "prior_t")))
-check("eta0_* > 0", all(bp[k] > 0 for k in ("eta0_a", "eta0_h", "eta0_t")))
-
-print("=== 5. behavior_thresholds ===")
+print("=== 4. behavior_thresholds ===")
 rows = load("rules/behavior_thresholds.csv")
 for r in rows:
     bad = [w for w in AXES_WORDS if any(r["behavior"].endswith("_" + w) for w in AXES_WORDS)]
     check("%s: 行为名不得自带轴后缀（会与 metric 重复拼接）" % r["behavior"], not bad, r["behavior"])
-th = {"%s_%s" % (r["behavior"], r["metric"]): float(r["value"]) for r in rows}
-if "chat_join_affinity" in th:
-    check("加入闲聊门槛 > prior_a（否则永远通过）", th["chat_join_affinity"] > bp["prior_a"],
-          "门槛 %s vs 先验 %s" % (th["chat_join_affinity"], bp["prior_a"]))
-for k in ("tease_laugh_affinity", "tease_taunt_hostility", "tease_stand_affinity", "tease_sneer_hostility"):
-    check("阈值键存在：%s" % k, k in th)
-
-print("=== 6. behavior_probs ===")
+print("=== 5. behavior_probs ===")
 # 本表混有两类行：① 行为概率（行为名与 behaviors.csv 一致）→ 必须在 [0,1]；
 #                  ② 数值参数（涓流值 / 减压幅度 / 发生概率上限等）→ 只要求是有限数。
 # （曾把 sleep_relief=8.0 当概率校验而误报，故按"是否为行为名"分流。）
@@ -230,7 +215,6 @@ _pi_required = [
     "seated_tolerance_m",
     "seated_chat_range_m",
     "range_step_m",
-    "clue_opacity_split",
     "clue_count_low",
     "clue_count_high",
     "actor_pick_layer",
@@ -247,8 +231,6 @@ if all(k in _pi for k in _pi_required):
           float(_pi["seated_chat_range_m"]) >= float(_pi["chat_range_m"]),
           _pi["seated_chat_range_m"])
     check("range_step_m 为正", float(_pi["range_step_m"]) > 0, _pi["range_step_m"])
-    check("clue_opacity_split ∈ (0,100]", 0 < float(_pi["clue_opacity_split"]) <= 100,
-          _pi["clue_opacity_split"])
     check("clue_count_low / high 为正整数且 low ≤ high",
           int(_pi["clue_count_low"]) >= 1 and int(_pi["clue_count_high"]) >= int(_pi["clue_count_low"]),
           "%s / %s" % (_pi["clue_count_low"], _pi["clue_count_high"]))
@@ -275,7 +257,7 @@ check("符号粒子：透明度、缩放和淡出起点合法",
       and _ps["minimum_view_scale"] <= _ps["maximum_view_scale"])
 check("符号粒子：容量和圆形分段为整数",
       all(int(_ps[k]) == _ps[k] for k in ("max_per_actor", "halo_segments")))
-_particle_kinds = {"chat", "study", "listen_music", "eat_snack", "read_book", "comfort"}
+_particle_kinds = {"chat", "study", "listen_music", "eat_snack", "read_book"}
 check("符号粒子：六种公开行为样式齐全", set(_particles["styles"]) == _particle_kinds)
 check("符号粒子：各样式符号与颜色有效",
       all(s["symbols"] and all(isinstance(v, str) and v for v in s["symbols"])
@@ -401,9 +383,6 @@ check("grade_table：末档上界 = grade_max",
       "末档 %s vs grade_max %s" % (_guppers[-1] if _guppers else "无", _kp.get("grade_max")))
 check("grade_table：上界与 ticks 均为正",
       all(u > 0 and t > 0 for u, t in zip(_guppers, _gtpp)))
-for _lesson_key in ("ask_question_bonus_ticks", "teach_lesson_bonus_ticks", "emperor_bonus", "grade_gap_blur"):
-    check("kernel_params：%s 为正" % _lesson_key, _kp.get(_lesson_key, 0.0) > 0, _kp.get(_lesson_key))
-
 _exam_rows = load("rules/exam.csv")
 _exam = {r["param"]: r["value"] for r in _exam_rows}
 _exam_days = sorted(int(float(v)) for k, v in _exam.items() if k.startswith("exam_day_"))
@@ -426,16 +405,6 @@ check("玩家邀请：行为存在于 behaviors", all(r["behavior"] in {r["behav
 _invite_params = params("rules/player_interaction.csv")
 check("玩家邀请：有效期与再次邀请间隔为正整数", all(_invite_params.get(k, 0) > 0 and int(_invite_params[k]) == _invite_params[k] for k in ("invitation_timeout_ticks", "invitation_cooldown_ticks")))
 _leisure = params("rules/leisure.csv")
-for key in ("book_gift_affinity_threshold", "book_gift_trust_threshold"):
-    check("P3：赠书门槛在 [0,100]",
-          math.isfinite(_leisure.get(key, -1)) and 0 <= _leisure.get(key, -1) <= 100)
-check("P3：赠书概率在 [0,1]",
-      math.isfinite(_leisure.get("book_gift_probability", -1))
-      and 0 <= _leisure.get("book_gift_probability", -1) <= 1)
-check("P3：课间赠书上限为正整数",
-      math.isfinite(_leisure.get("book_gift_max_per_break", 0))
-      and _leisure.get("book_gift_max_per_break", 0) > 0
-      and _leisure["book_gift_max_per_break"] == int(_leisure["book_gift_max_per_break"]))
 for prefix in ("music", "snack", "book"):
     check("P0-3 %s：减压与时长为正" % prefix,
           all(math.isfinite(_leisure.get(prefix + suffix, 0)) and _leisure.get(prefix + suffix, 0) > 0
