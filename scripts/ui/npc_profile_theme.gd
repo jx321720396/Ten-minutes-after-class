@@ -68,21 +68,12 @@ static func box(fill: Color, border: Color, radius: int, width: int) -> StyleBox
 
 static func apply(view: Node) -> void:
 	view.get_node("%Design").theme = make_theme()
-	var frame := box(PAPER, INK, 18, 3)
-	frame.shadow_color = Color(0.05, 0.1, 0.07, 0.3)
-	frame.shadow_size = 24
-	view.get_node("%Frame").add_theme_stylebox_override("panel", frame)
-	for name in ["RelationCard", "HistoryCard"]:
-		view.get_node("%" + name).add_theme_stylebox_override(
-			"panel", box(Color(1, 0.98, 0.91, 0.4), LINE, 10, 1)
-		)
+	view.get_node("%Frame").add_theme_stylebox_override("panel", box(PAPER, INK, 18, 3))
 	view.get_node("%PortraitFrame").add_theme_stylebox_override(
-		"panel", box(Color("ece5d1"), Color("e4d8bc"), 4, 1)
+		"panel", box(Color("ece5d1"), LINE, 8, 1)
 	)
-	for name in ["Subtitle", "KnownNote", "Seat", "HistoryNote", "Footer"]:
+	for name in [
+		"Subtitle", "Seat", "Footer", "Settlement", "StaleNote", "AffinityTime", "HostilityTime"
+	]:
 		view.get_node("%" + name).add_theme_color_override("font_color", MUTED)
-	view.get_node("%StaleNote").add_theme_color_override("font_color", GOLD)
-	var title_font := GameFonts.regular()
-
-	for name in ["Title", "PersonName", "KnownTitle", "HistoryTitle", "EncountersTitle"]:
-		view.get_node("%" + name).add_theme_font_override("font", title_font)
+	view.get_node("%PressureValue").add_theme_color_override("font_color", GOLD)

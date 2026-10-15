@@ -26,6 +26,7 @@ func before_each() -> void:
 	_book = _ui.get_node("EncyclopediaEntry")
 	var core := SimCore.new(12345, 16)
 	_profile.bind_sources(core, null, null)
+	_board.bind_sources(core, null, null)
 	if ResourceLoader.exists(NAV_PATH):
 		_nav = load(NAV_PATH).new()
 		_ui.add_child(_nav)
@@ -46,9 +47,7 @@ func test_all_six_routes_keep_one_window_and_resume_on_close() -> void:
 		return
 	_profile.open_profile(1)
 	var before: Array = _profile._core.get_player_intel()
-	_board._board.lines = [
-		{"points": PackedVector2Array([Vector2(20, 30), Vector2(40, 50)]), "color": Color.WHITE}
-	]
+	_board.record_observed_event({"kind": "chat", "i": 0, "j": 1}, {"day": 1, "global_tick": 1})
 	for route in [
 		[_profile, _board, "OpenBoard"],
 		[_board, _book, "OpenEncyclopedia"],
@@ -71,7 +70,7 @@ func test_all_six_routes_keep_one_window_and_resume_on_close() -> void:
 		assert_true(route[1].is_open(), "目标界面应显示")
 		assert_true(get_tree().paused, "查看资料始终暂停")
 	assert_eq(_profile.selected_index(), 1, "跨界面保留当前人物")
-	assert_eq(_board._board.lines.size(), 1, "互通不清除推理板笔迹")
+	assert_eq(_board.get_node("Board").displayed_page().events.size(), 1, "互通不清除当天观察")
 	assert_eq(_profile._core.get_player_intel(), before, "导航不改写情报")
 	_profile.close()
 	assert_false(get_tree().paused, "最后一个窗口关闭后恢复游戏")
@@ -83,33 +82,23 @@ func test_board_roster_opens_chosen_person_and_keeps_external_pause() -> void:
 		return
 	get_tree().paused = true
 	_board.open()
-	var picker: OptionButton = _board._board.find_child("StudyPerson", true, false)
+	var picker: OptionButton = _board.get_node("Board").find_child("StudyPerson", true, false)
 	assert_not_null(picker)
 	if picker == null:
 		return
 	var item := picker.get_item_index(2)
 	picker.select(item)
 	picker.item_selected.emit(item)
-	_board._board.find_child("OpenProfile", true, false).pressed.emit()
+	_board.get_node("Board").find_child("OpenProfile", true, false).pressed.emit()
 	assert_eq(_profile.selected_index(), 2, "按人物栏选择打开对应资料")
 	_profile.get_node("Root").find_child("OpenEncyclopedia", true, false).pressed.emit()
 	_book.close()
 	assert_true(get_tree().paused, "不能释放其他来源持有的暂停")
 
 
-func test_navigation_clicks_do_not_start_chalk_strokes() -> void:
-	assert_not_null(_nav)
-	if _nav == null:
-		return
+func test_native_scene_navigation_has_no_drawing_input() -> void:
 	_board.open()
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var board: Control = _board.get_node("ClueBoard1")
-	var button: Button = board.find_child("OpenProfile", true, false)
-	var press := InputEventMouseButton.new()
-	press.button_index = MOUSE_BUTTON_LEFT
-	press.pressed = true
-	press.position = button.get_global_rect().get_center()
-	board.input_enabled = true
-	board._input(press)
-	assert_false(board.is_drawing, "资料按钮不能被黑板当作笔画")
+	var board: Control = _board.get_node("Board")
+	assert_not_null(board.find_child("OpenProfile", true, false))
+	assert_false(board.has_method("_input"), "推理板不再把按钮触摸当作画笔")
+	assert_eq(board.get_node("Design/Graph/Cards").get_child_count(), 16)

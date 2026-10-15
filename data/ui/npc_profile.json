@@ -1,14 +1,78 @@
 {
-  "description": "同学档案纯显示档位；只用于已获得的单轴历史快照，不参与任何玩法判定。",
+  "description": "老师版档案：公开状态与独立观察笔记；档位只用于呈现，不参与玩法判定。",
   "bands": [
-    {"minimum": 0, "label": "band_low"},
-    {"minimum": 25, "label": "band_medium"},
-    {"minimum": 50, "label": "band_high"},
-    {"minimum": 75, "label": "band_very_high"}
+    {
+      "minimum": 0,
+      "label": "band_low"
+    },
+    {
+      "minimum": 25,
+      "label": "band_medium"
+    },
+    {
+      "minimum": 50,
+      "label": "band_high"
+    },
+    {
+      "minimum": 75,
+      "label": "band_very_high"
+    }
   ],
   "encounter_limit": 3,
-  "portrait_art_height": 300,
+  "portrait_art_height": 340,
   "portraits": {
     "01": "res://assets/textures/characters/portraits/chen_yang_v01.png"
+  },
+  "grade_max": 750,
+  "state_max": 100,
+  "layout": {
+    "margin": 32,
+    "sidebar_width": 350,
+    "metric_height": 170
+  },
+  "judgment_bands": [
+    "unknown",
+    "band_low",
+    "band_medium",
+    "band_high",
+    "band_very_high"
+  ],
+  "metrics": [
+    {
+      "node": "Grade",
+      "label": "当前成绩"
+    },
+    {
+      "node": "Pressure",
+      "label": "压力"
+    },
+    {
+      "node": "Motivation",
+      "label": "动力"
+    },
+    {
+      "node": "Gain",
+      "label": "今日学业收益"
+    }
+  ],
+  "activities": {
+    "": "空闲",
+    "study": "学习",
+    "review": "复习",
+    "homework": "做作业",
+    "chat": "聊天",
+    "roughhouse": "打闹",
+    "phone": "玩手机",
+    "music": "听歌",
+    "snack": "吃零食",
+    "read_book": "看书",
+    "moving": "移动中",
+    "absent": "不在教室"
+  },
+  "target_picker": {
+    "width": 900,
+    "columns": 3,
+    "capacity": 16,
+    "button_height": 64
   }
 }

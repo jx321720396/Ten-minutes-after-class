@@ -1,186 +1,163 @@
 extends CanvasLayer
-## 教室里的「黑板」入口（表现层）
-##
-## 位置：百科全书按钮正下方，样式与它同一套纸感按钮。
-## 点开后黑板像弹窗盖住教室，教室压上一层半透明的黑，并把游戏暂停；
-## 左上角「退出」或 Esc 关掉。
-## 关掉只是藏起来，粉笔和放下的头像都留着。
-## 清掉内容只有两处：本局学期结束，或玩家新开一局（新教室场景本身就是空板）。
+## 原生场景入口；按日收集可见事件、日末归档，不创建任何界面节点。
 
-const SCENE_BOARD := preload("res://scenes/game/clue_board_1.tscn")
-
-const FONT_FAMILIES: Array[String] = [
-	"Microsoft YaHei",
-	"微软雅黑",
-	"SimHei",
-	"Noto Sans CJK SC",
-	"PingFang SC",
-	"sans-serif",
-]
-const COLOR_PAPER := Color(0.98, 0.96, 0.90, 0.92)
-const COLOR_INK := Color(0.12, 0.16, 0.14)
-const COLOR_ACCENT := Color(0.16, 0.38, 0.26)
-## 百科全书按钮在 (16, 152)、高 38；这里隔 8px 排在它下面。
-const BUTTON_POS := Vector2(16.0, 198.0)
-const BUTTON_SIZE := Vector2(140.0, 38.0)
-## 弹出后黑板略小于画面，四周露出变暗的教室。
-const POP_FROM := 0.84
-const POP_SCALE := 0.92
-## 教室上的黑幕：够黑，又还透得见教室。
-const SHADE_ALPHA := 0.75
-const POP_TIME := 0.18
-
-var _board: Control
-var _shade: ColorRect
-var _pop: Tween
-var _paused_by_board := false
-var _font_cache: Font
+const DATA = preload("res://scripts/ui/clue_board_data.gd")
+var _model: RefCounted = DATA.new()
+var _core: Variant
+var _actors: Node
+var _clock: Node
+var _students: Array = []
+var _owns_pause := false
+var _shown_day := 1
+var _latest_day := 1
+var _daily_report := false
 
 
 func _ready() -> void:
-	layer = 3  # 盖过时间 HUD / 百科（层 2），仍在转场黑幕（层 10）下面
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	_build_button()
-	_shade = ColorRect.new()
-	_shade.name = "Shade"
-	_shade.color = Color(0, 0, 0, 0)
-	_shade.mouse_filter = Control.MOUSE_FILTER_STOP
-	_shade.visible = false
-	add_child(_shade)
-	_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_board = SCENE_BOARD.instantiate()
-	_board.visible = false
-	_board.process_mode = Node.PROCESS_MODE_ALWAYS
-	_board.close_requested.connect(_close)
-	add_child(_board)
+	$Board.close_requested.connect(close)
+	$Board.day_requested.connect(show_day)
+	$BoardButton.pressed.connect(open)
+	EventBus.event_happened.connect(_on_event)
+	EventBus.day_settled.connect(_on_settled)
 
 
-func is_open() -> bool:
-	return _board != null and _board.visible
+func bind_sources(core: Variant, clock: Node, actors: Node) -> void:
+	if is_instance_valid(_clock):
+		if _clock.report_ready.is_connected(_on_report):
+			_clock.report_ready.disconnect(_on_report)
+		if _clock.term_finished.is_connected(_on_report):
+			_clock.term_finished.disconnect(_on_report)
+	_core = core
+	_clock = clock
+	_actors = actors
+	_students.clear()
+	if core == null:
+		return
+	for index in range(core.node_count()):
+		if not core.is_player(index):
+			_students.append(index)
+	_model = DATA.new()
+	if GameState.sim_core == core:
+		_model.state = GameState.clue_board_journal
+	_latest_day = maxi(1, int(core.time_snapshot().day))
+	if is_instance_valid(_clock):
+		_clock.report_ready.connect(_on_report)
+		_clock.term_finished.connect(_on_report)
+
+
+func record_observed_event(payload: Dictionary, stamp: Dictionary = {}) -> void:
+	if _core == null:
+		return
+	var time: Dictionary = stamp if not stamp.is_empty() else _core.time_snapshot()
+	_latest_day = maxi(_latest_day, int(time.get("day", 1)))
+	_model.record_event(payload, time, _students)
+
+
+func _on_event(payload: Dictionary) -> void:
+	if _core == null or GameState.sim_core != _core:
+		return
+	# 未观察办公室外的活动不补录；不把秘密行为、后台矩阵变化当作目击。
+	var room := get_parent().get_parent()
+	var hub := room.get_node_or_null("OfficeHub")
+	if hub == null or hub.mode_name() not in ["monitor", "classroom"]:
+		return
+	record_observed_event(payload)
+
+
+func _on_settled(summary: Dictionary) -> void:
+	if _core == null or GameState.sim_core != _core:
+		return
+	var ended := int(summary.get("day", 0))
+	if ended > 0:
+		_model.seal(ended, GameState.profile_notebook, _students)
+
+
+func _on_report(ended: int) -> void:
+	_model.seal(ended, GameState.profile_notebook, _students)
+	_latest_day = maxi(_latest_day, ended)
+	_daily_report = true
+	var room := get_parent().get_parent()
+	var transition := room.get_node_or_null("TransitionOverlay") if room != null else null
+	if transition != null:
+		transition.force_hide()
+		transition.hide()
+	if is_instance_valid(_clock) and str(_clock.snapshot().mode) == "finished":
+		layer = int($Board.config.final_report_layer)
+	_open_day(ended)
 
 
 func open() -> void:
-	_open()
+	if _core == null:
+		return
+	if not _daily_report:
+		_latest_day = maxi(_latest_day, int(_core.time_snapshot().day))
+	_open_day(_shown_day if _daily_report else _latest_day)
+
+
+func _open_day(day: int) -> void:
+	if not is_open():
+		_owns_pause = not get_tree().paused
+		get_tree().paused = true
+	$Board.show()
+	show_day(day)
+
+
+func show_day(day: int) -> void:
+	_shown_day = clampi(day, 1, _latest_day)
+	var page: Dictionary = _model.page(_shown_day, GameState.profile_notebook, _students)
+	page["sealed"] = _model.state.sealed.has(str(_shown_day))
+	$Board.show_page(page, _core, _actors, _latest_day)
+	$Board.get_node("%Done").text = "继续下一天" if _daily_report else "收起手记"
+	if _daily_report and is_instance_valid(_clock) and str(_clock.snapshot().mode) == "finished":
+		$Board.get_node("%Done").text = "查看学期报告"
+	for name in ["OpenProfile", "OpenEncyclopedia"]:
+		$Board.get_node("Design/" + name).disabled = _daily_report
+
+
+func is_open() -> bool:
+	return is_inside_tree() and $Board.visible
 
 
 func close() -> void:
-	_close()
+	if not is_open():
+		return
+	$Board.hide()
+	layer = 6
+	_release_pause()
+	if _daily_report:
+		_daily_report = false
+		var room := get_parent().get_parent()
+		if (
+			room != null
+			and room.has_method("_on_continue_requested")
+			and str(_clock.snapshot().mode) != "finished"
+		):
+			room._on_continue_requested()
 
 
-## 学期结束时由教室接上。参数是时钟信号带来的结束日，这里用不到。
 func clear_board(_ended_day: int = 0) -> void:
-	if _board != null and _board.has_method("clear_contents"):
-		_board.clear_contents()
+	_model.state = {"days": {}, "sealed": {}}
+	if _core == GameState.sim_core:
+		GameState.clue_board_journal = _model.state
 
 
-func _build_button() -> void:
-	var btn := Button.new()
-	btn.name = "BoardButton"
-	btn.text = "推理板"
-	btn.process_mode = Node.PROCESS_MODE_ALWAYS
-	btn.focus_mode = Control.FOCUS_NONE
-	btn.add_theme_font_override("font", _ui_font())
-	btn.add_theme_font_size_override("font_size", 18)
-	btn.add_theme_color_override("font_color", COLOR_INK)
-	btn.add_theme_color_override("font_hover_color", COLOR_ACCENT)
-	btn.add_theme_stylebox_override("normal", _button_style())
-	btn.add_theme_stylebox_override("hover", _button_style())
-	btn.add_theme_stylebox_override("pressed", _button_style())
-	btn.pressed.connect(_open)
-	add_child(btn)
-	preload("res://scripts/ui/campus_theme.gd").utility_button(btn, 0)
-
-
-func _button_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = COLOR_PAPER
-	style.border_color = COLOR_ACCENT
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(6)
-	style.content_margin_left = 12.0
-	style.content_margin_right = 12.0
-	style.content_margin_top = 6.0
-	style.content_margin_bottom = 6.0
-	return style
-
-
-func _ui_font() -> Font:
-	if _font_cache == null:
-		var font := preload("res://scripts/ui/game_fonts.gd").regular()
-
-		_font_cache = font
-	return _font_cache
-
-
-func _open() -> void:
-	if _board == null or _board.visible:
+func _release_pause() -> void:
+	if not _owns_pause:
 		return
-	_shade.color = Color(0, 0, 0, 0)
-	_shade.visible = true
-	_board.visible = true
-	_board.input_enabled = false
-	_board.modulate.a = 0.0
-	_board.scale = Vector2(POP_FROM, POP_FROM)
-	var view_size := get_viewport().get_visible_rect().size
-	_board.pivot_offset = view_size * 0.5
-	if _pop != null and _pop.is_valid():
-		_pop.kill()
-	_pop = create_tween()
-	_pop.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-	_pop.set_parallel(true)
-	(
-		_pop
-		. tween_property(_board, "scale", Vector2(POP_SCALE, POP_SCALE), POP_TIME)
-		. set_trans(Tween.TRANS_BACK)
-		. set_ease(Tween.EASE_OUT)
-	)
-	_pop.tween_property(_board, "modulate:a", 1.0, 0.12)
-	_pop.tween_property(_shade, "color:a", SHADE_ALPHA, POP_TIME)
-	_pop.chain().tween_callback(_enable_board_input)
-	if not get_tree().paused:
-		get_tree().paused = true
-		_paused_by_board = true
+	_owns_pause = false
+	for sibling in get_parent().get_children():
+		if sibling != self and sibling.has_method("is_open") and sibling.is_open():
+			return
+		if sibling.name == "PauseMenu" and sibling is Control and sibling.visible:
+			return
+	get_tree().paused = false
 
 
-func _enable_board_input() -> void:
-	if _board != null and _board.visible:
-		_board.input_enabled = true
-		_board.scale = Vector2(POP_SCALE, POP_SCALE)
-
-
-func _close() -> void:
-	if _board == null or not _board.visible:
-		return
-	if _pop != null and _pop.is_valid():
-		_pop.kill()
-	_board.input_enabled = false
-	if _board.has_method("release_editing"):
-		_board.release_editing()
-	_board.visible = false
-	_board.scale = Vector2.ONE
-	_board.modulate.a = 1.0
-	_shade.visible = false
-	_shade.color = Color(0, 0, 0, 0)
-	if _paused_by_board:
-		_paused_by_board = false
-		if not _other_pause_open():
-			get_tree().paused = false
-
-
-func _other_pause_open() -> bool:
-	var profile := get_node_or_null("../NpcProfile")
-	if profile != null and profile.has_method("is_open") and profile.is_open():
-		return true
-	var encyclopedia := get_node_or_null("../EncyclopediaEntry")
-	if encyclopedia != null and encyclopedia.has_method("is_open") and encyclopedia.is_open():
-		return true
-	var pause_menu := get_node_or_null("../PauseMenu")
-	return pause_menu != null and pause_menu.visible
+func _exit_tree() -> void:
+	_release_pause()
 
 
 func _input(event: InputEvent) -> void:
-	if not is_open():
-		return
-	if event.is_action_pressed("ui_cancel"):
-		_close()
+	if is_open() and event.is_action_pressed("ui_cancel"):
+		close()
 		get_viewport().set_input_as_handled()

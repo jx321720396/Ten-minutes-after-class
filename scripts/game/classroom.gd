@@ -138,10 +138,9 @@ func _on_tutorial_state(state: StringName) -> void:
 		tutorial.notify_committed(_tutorial_armed)
 
 
-## 黑板跟这一局走：学期结束才清板。新开一局会换一间教室，板面本来就是空的。
+## 老师版手记按日归档；本局历史保留，新局由 GameState 重置。
 func _bind_clue_board() -> void:
-	# 期末保留本局推理板供回顾；新局换场景时自然得到空板。
-	pass
+	$UI/ClueBoardEntry.bind_sources(_core_from_state(), clock, actors)
 
 
 func _bind_time_flow(core: SimCore) -> bool:

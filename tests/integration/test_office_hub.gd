@@ -102,22 +102,53 @@ func _run() -> void:
 	check(teacher_ui.selected_student() == 0, "监控／现场可选择学生")
 	teacher_ui.profile_requested.emit(0)
 	check(scene.get_node("UI/NpcProfile").is_open(), "老师面板可查看选中学生档案")
-	check(scene.get_node("UI/NpcProfile")._chat.disabled, "老师档案禁止旧学生闲聊")
-	scene.get_node("UI/NpcProfile").close()
+	await process_frame
+	await process_frame
+	var profile_targets: OptionButton = scene.get_node("UI/NpcProfile").get_node("%Targets")
+	var target_press := InputEventScreenTouch.new()
+	target_press.index = 0
+	target_press.pressed = true
+	target_press.position = profile_targets.size / 2.0
+	profile_targets.gui_input.emit(target_press)
+	var target_release := target_press.duplicate() as InputEventScreenTouch
+	target_release.pressed = false
+	profile_targets.gui_input.emit(target_release)
+	var profile_picker: Control = scene.get_node("UI/NpcProfile").get_node("%TargetPicker")
+	check(profile_picker.visible, "Touch opens relationship picker")
+	await process_frame
+	var slot: Button = scene.get_node("UI/NpcProfile").get_node("%TargetSlot1")
+	var item_touch := InputEventScreenTouch.new()
+	item_touch.index = 0
+	item_touch.pressed = true
+	item_touch.position = slot.size / 2.0
+	slot.gui_input.emit(item_touch)
+	var item_release := item_touch.duplicate() as InputEventScreenTouch
+	item_release.pressed = false
+	slot.gui_input.emit(item_release)
+	check(profile_targets.selected == 1, "Touch chooses relationship target")
+	check(not profile_picker.visible, "Picking closes target picker")
+	check(scene.get_node("UI/NpcProfile").get_node("%Chat").text == "叫来办公室", "老师档案禁止旧学生闲聊")
+	scene.get_node("UI/NpcProfile").get_node("%Chat").pressed.emit()
+	check(hub.mode_name() == "office" and hub.picker_visible(), "档案叫来办公室跳转真实办公室入口")
+	check(not scene.get_node("UI/NpcProfile").is_open(), "办公室入口关闭档案")
+	hub.close_picker()
+	check(not paused, "关闭办公室选择器后释放导航暂停")
 	check(state.sim_core == core, "往返不重建内核")
 	hub.set_mode("office")
 	hub.open_tool("board")
 	var board_entry: Node = scene.get_node("UI/ClueBoardEntry")
 	check(board_entry.is_open(), "办公室可打开已有推理板")
-	var board: Node = board_entry.get_node("ClueBoard1")
-	board.lines.append(
-		{"points": PackedVector2Array([Vector2(20, 20), Vector2(40, 40)]), "color": Color.WHITE}
+	var board: Node = board_entry.get_node("Board")
+	board_entry.record_observed_event(
+		{"kind": "chat", "i": 0, "j": 1}, {"day": int(core.time_snapshot().day), "global_tick": 42}
 	)
+	board_entry.open()
+	var board_count: int = board.displayed_page().events.size()
 	board_entry.close()
 	hub.set_mode("classroom")
 	hub.set_mode("office")
 	hub.open_tool("board")
-	check(board.lines.size() == 1, "切场景保留推理板")
+	check(board.displayed_page().events.size() == board_count, "切场景保留当天推理板")
 	board_entry.close()
 	hub.open_tool("encyclopedia")
 	var book: Node = scene.get_node("UI/EncyclopediaEntry")
@@ -127,7 +158,7 @@ func _run() -> void:
 	check(hub.picker_visible(), "档案入口先选择学生")
 	hub.select_student(0)
 	check(scene.get_node("UI/NpcProfile").is_open(), "选择学生打开原档案")
-	check(scene.get_node("UI/NpcProfile")._chat.disabled, "办公室档案不得触发旧现场聊天")
+	check(scene.get_node("UI/NpcProfile").get_node("%Chat").text == "叫来办公室", "办公室档案不得触发旧现场聊天")
 	scene.get_node("UI/NpcProfile").close()
 	paused = true
 	hub.open_tool("encyclopedia")

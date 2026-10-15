@@ -13,6 +13,10 @@ var phase: String = ""
 var player_gender: String = "male"
 
 var sim_core: Variant = null
+## 本局观察笔记；与真实关系矩阵隔离，供存档层独立打包。
+var profile_notebook: Dictionary = {"current": {}, "history": [], "seen": {}}
+## 本局按日观察归档，不属于学生关系矩阵；新局重置。
+var clue_board_journal: Dictionary = {"days": {}, "sealed": {}}
 ## 期末「再玩一局」交回主菜单已有的性别选择流程。
 var new_game_requested := false
 ## 设置菜单「重看教程」请求（2026-10-13）：主菜单开新局时并入 tutorial_pending，消费后清零。
@@ -23,6 +27,8 @@ var tutorial_pending := false
 
 
 func start_game(new_seed: int, new_npc_count: int) -> void:
+	clue_board_journal = {"days": {}, "sealed": {}}
+	profile_notebook = {"current": {}, "history": [], "seen": {}}
 	seed = new_seed
 	npc_count = new_npc_count
 	day = 0
