@@ -209,8 +209,9 @@ class Sim:
                       "interrupts": 0,
                       "skipped_events": 0, "dedup_skips": 0,
                       "roughhouse": 0, "sleeps": 0,
-                      "chat_joins": 0, "join_vetoes": 0, "chat_leaves": 0,
-                      "chat_max_size": 0}
+                      "chat_joins": 0, "join_accepts": 0, "join_rejects": 0,
+                      "chat_leaves": 0, "chat_max_size": 0,
+                      "invite_friends": 0, "share_units": 0}
         # 事件去重：同一对子同一规则每课间段只结算一次（统一影响公式 §2.5.4）
         self.settled = set()
         self.phase_index = 0
@@ -255,7 +256,17 @@ class Sim:
         # 多人聊天（2026-10-14 重构）：会话 = 成员集合，逐人计时，2→3→4 递进加入。
         self.conversations = []          # 会话列表：{"members": set}
         self.conv_of = [None] * n        # 节点 -> 所在会话（None = 不在会话）
-        self.join_log = []               # 加入判定日志（谁欢迎/谁拒绝/原因，只读观察）
+        self.join_log = []               # 通用加入日志（投票/跟随/不合流/满员，只读观察，§9.1.4 交接 3）
+        # 通用加入（§9.1.4，2026-10-15）：活动组（打闹/学习/零食分享）+ 带朋友冷却 + 分享去重
+        self.rough_groups = []          # 打闹组：{"members": set}
+        self.rough_of = [None] * n
+        self.study_groups = []          # 学习组：{"members": set}（一起学习：各自按真实单位结算）
+        self.study_of = [None] * n
+        self.snack_groups = []          # 零食分享组：{"members": set, "provider": int}
+        self.snack_of = [None] * n
+        self.snack_provider = [None] * n  # 加入者 -> 分享者（自然完成单位后结算分享好感）
+        self.share_units = {}           # (provider, receiver) -> 已结算分享单位数（去重，只读观察）
+        self.joined_tick = [-1] * n     # 最近一次加入活动的 tick（本决策点新加入者不带朋友，§9.1.4）
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
         self.day_events = {}            # (i,j) -> 当天事件类结算次数，用于「有互动」判定
@@ -423,22 +434,6 @@ class Sim:
             t *= self.nw["tau_stress_mult"]
         return max(t, 0.01)
 
-    def join_gate_utility(self, i, j):
-        """决策侧软门槛：低于门槛只降低概率，不把候选排除（§6.4）。
-
-        硬门槛曾被写成 `A[i][j] >= 30 and Stress[i] <= 80`，于是「概率低也想试一把」
-        的戏剧性被消灭。改为两个 sigmoid 之和再减 1，落在 (−1, +1)：
-        越过门槛给正分、低于门槛给负分，乘以 `chat_join_gate_weight` 后加进 U_b。
-        """
-        th = self.thresholds_lookup
-        ga = th.get("chat_join_gate_affinity", 30.0)
-        gs = th.get("chat_join_gate_stress", 80.0)
-        scale = th.get("chat_join_gate_scale", 8.0)
-        w = th.get("chat_join_gate_weight", 4.0)
-        za = (self.A[i][j] - ga) / scale
-        zs = (gs - self.Stress[i]) / scale
-        return w * (sigmoid(za) + sigmoid(zs) - 1.0)
-
     # ---------- 只读查询（供 UI 画圈 / 上绿红，零副作用）----------
     def activity_of(self, i):
         """某人此刻在做什么（UI 用）。"""
@@ -567,53 +562,32 @@ class Sim:
                 self.do_study(i)
                 busy.add(i)
                 continue
-            # 环境类：闲聊（概率触发）—— 上课段禁用（§3.3）
+            # 环境类：闲聊 —— 通用加入（§9.1.4）：找伴 → 提议 / 加入 / 跟随（确定投票 §9.1.2）
             # 标签调制（§11、§18.9）：爱学习 → 更少闲聊；爱聊天 → 更多闲聊
             chat_gain = 1.0 + self.tag_bias(i, "chat_bias") - self.tag_bias(i, "study_bias")
             chat_gain = max(0.1, chat_gain)
             if self.allowed("chat") and self.rng.random() < self.probs["chat"] * chat_gain:
-                j = self.pick_target(i)
+                j = self._find_partner(i, "chat")
                 if j is not None:
-                    self.do_chat(i, j)
-                    busy.add(i)
-                    busy.add(j)
-                    continue
-            # 环境类：加入群聊（2026-10-14 重构）—— 空闲者尝试加入一场正在进行的 NPC 会话
-            # （双向判定 + 聚合接纳 + 规模衰减，见 try_join_conversation；含玩家的会话不参与自主加入）
-            if self.allowed("chat") and self.conversations and self.rng.random() < self.probs.get("chat_join_p", 0.0):
-                if self.try_join_conversation(i):
+                    # 一个决策点只发起一次伙伴尝试：成败都到此为止（§9.1.4 循环与时序）
+                    self._propose_activity(i, j, "chat")
                     busy.add(i)
                     continue
-            # 意向类：追逐打闹 —— 参与者互相好感↑（老师版 §9.2，去四维门槛与旁观者敌对）
+            # 意向类：追逐打闹（§9.2）—— 同走通用加入找伴；场地条件沿用旁观者门槛
             th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
             if self.allowed("roughhouse") and self.rng.random() < self.probs.get("roughhouse_p", 0.05) * self.teacher.multiplier("roughhouse"):
-                others = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)]
-                if others:
-                    j = self.rng.choice(others)
-                    bys = [k for k in range(n) if k not in (i, j) and k not in busy]
+                j = self._find_partner(i, "roughhouse")
+                if j is not None:
+                    bys = [k for k in range(n) if k not in (i, j) and k not in busy
+                           and self.is_present(k) and not self.sleeping[k]]
                     if len(bys) >= th_rc:
-                        self.do_roughhouse(i, j)
+                        self._propose_activity(i, j, "roughhouse")
                         busy.add(i)
-                        busy.add(j)
                         continue
-            # 意向类：搭话（老师版 §9.2）—— 决策读「我对他」的 A/H（§18.7 不变式 3）
-            cands = [j for j in range(n) if j != i and j not in busy and self.can_interact_with(j)]
-            if cands:
-                alpha = self.alpha(i)
-                scores = []
-                for j in cands:
-                    gain_a = self.A[i][j] / 100.0 * 3.0  # 预期收益（读我对他好感）
-                    risk_h = self.H[i][j] / 100.0 * 2.0
-                    u = alpha["affinity"] * gain_a - alpha["hostility"] * risk_h
-                    u += self.tag_bias(i, "chat_bias") - self.tag_bias(i, "alone_bias")  # 标签项
-                    u += self.join_gate_utility(i, j)   # 软门槛：低门槛仍可有小概率发起（§6.4）
-                    scores.append(u)
-                if scores:
-                    k = softmax(scores, self.tau(i), self.rng)
-                    j = cands[k]
-                    self.do_chat_join(i, j)
-                    busy.add(i)
-                    busy.add(j)
+
+        # 带朋友（§9.1.3/§9.1.4）：活动组成员的邀请 pass；
+        # 随机数顺序固定（组按创建序、成员按节点号升序），同种子可复现。
+        self._invite_friends_pass()
 
     def is_present(self, i):
         return not (i == self.N - 1 and self.player_absent)
@@ -805,80 +779,6 @@ class Sim:
         self.apply_event(initiator, existing, "topic_stress")
         self.apply_event(existing, initiator, "topic_affinity")
 
-    def _joinable_conversations(self, i):
-        """i 可加入的会话：不含玩家（玩家交互走邀请机制）、且至少一名成员是 i 的邻居（邻域）。"""
-        out = []
-        for conv in self.conversations:
-            if self.N - 1 in conv["members"]:
-                continue
-            if any(m in self.neighbor_idx[i] for m in conv["members"]):
-                out.append(conv)
-        return out
-
-    def _desire_join(self, i, members):
-        """意愿侧（加入者想不想进）：朋友在场（max A[i][m]）拉高意愿；明显敌对（H[i][m] ≥ veto）劝退。"""
-        veto = self.thresholds_lookup.get("chat_hostility_veto", 50.0)
-        if max(self.H[i][m] for m in members) >= veto:
-            return False
-        max_a = max(self.A[i][m] for m in members)
-        theta = self.thresholds_lookup.get("chat_desire_theta", 40.0)
-        scale = self.thresholds_lookup.get("chat_desire_scale", 10.0)
-        return self.rng.random() < sigmoid((max_a - theta) / scale)
-
-    def _welcome_probability(self, m, i, size):
-        """接纳侧：成员 m 对加入者 i 的欢迎概率 = σ((A[m][i] − H[m][i] − θ)/scale) × w_size(size)。
-        w_size(s) = 1/(1 + k·(s − s0))，s = 加入前成员数（规格 ② 有理衰减）。"""
-        th = self.thresholds_lookup
-        theta = th.get("chat_welcome_theta", 40.0)
-        scale = th.get("chat_welcome_scale", 12.0)
-        k = th.get("chat_size_k", 0.3)
-        s0 = th.get("chat_size_s0", 4.0)
-        w = 1.0 if size <= s0 else 1.0 / (1.0 + k * (size - s0))
-        p = sigmoid((self.A[m][i] - self.H[m][i] - theta) / scale)
-        return clamp(p * w, 0.0, 1.0)
-
-    def try_join_conversation(self, i):
-        """空闲者 i 尝试加入一场正在进行的 NPC 会话（双向判定 + 聚合接纳 + 规模衰减）。
-
-        规格 B–I：意愿侧（想不想进）+ 接纳侧（成员欢不欢迎）；聚合 = 欢迎数 > 拒绝数
-        （平票=拒绝）；任一成员 H[m][i] ≥ veto 硬否决。返回是否成功加入。
-        """
-        cands = self._joinable_conversations(i)
-        if not cands:
-            return False
-        conv = self.rng.choice(cands)
-        members = sorted(conv["members"])
-        size = len(members)
-        if not self._desire_join(i, members):
-            return False
-        veto = self.thresholds_lookup.get("chat_hostility_veto", 50.0)
-        welcomed, rejected = [], []
-        hard_veto = None
-        for m in members:
-            if self.H[m][i] >= veto:
-                hard_veto = m
-                break
-            if self.rng.random() < self._welcome_probability(m, i, size):
-                welcomed.append(m)
-            else:
-                rejected.append(m)
-        if hard_veto is not None:
-            self.stats["join_vetoes"] = self.stats.get("join_vetoes", 0) + 1
-            self._log_join(i, members, "veto", welcomed, rejected, hard_veto)
-            return False
-        if len(welcomed) <= len(rejected):
-            self._log_join(i, members, "rejected", welcomed, rejected, None)
-            return False
-        self._add_member_to_conversation(i, conv)
-        self._log_join(i, members, "joined", welcomed, rejected, None)
-        return True
-
-    def _log_join(self, i, members, stage, welcomed, rejected, veto):
-        """只读观察：记录一次加入尝试的判定（谁欢迎、谁拒绝、原因），供表现层 / 验收使用。"""
-        self.join_log.append(dict(
-            tick=self.global_tick, joiner=i, members=list(members),
-            stage=stage, welcomed=list(welcomed), rejected=list(rejected), veto=veto))
-
     def _add_member_to_conversation(self, k, conv):
         """k 成功加入：加入者作为本次「发起」方，对每位现有成员做一次定向聊天结算。"""
         conv["members"].add(k)
@@ -926,6 +826,360 @@ class Sim:
                 self.busy_until[m] = 0
             self.conversations.remove(conv)
 
+    # ---------- 通用加入（§9.1.1–§9.1.4，2026-10-15）：找伴 → 接受 → 跟随 → 加入 → 带朋友 ----------
+    #
+    # 找伴、接受、加入与带朋友共用一套规则，不限于聊天（主文档 §9.1.4）：
+    #   · 找伴：发起者读「我对他」的有向好感，选最高且可参与者；正在活动也可以被邀请；
+    #   · 接受：现有成员逐人确定投票（好感−敌对 ≥ join_vote_margin 投同意，严格过半，平票拒绝）；
+    #   · 决定做什么：活动相同就合流；不同时好感更高的一方跟随另一方（相等不合流）；
+    #   · 加入：参与同一活动，按实际参与时间获得效果，原活动已产生的收益保留；
+    #   · 带朋友：成员按找伴规则邀请朋友，仍走同一套接受规则。
+    # 铁律：投票只读真值有向关系（§9.1.2 判定路径），不掷概率、不叠隐藏修正；
+    # 拒绝 / 满员 / 相等不合流都不占用发起者（拒绝不代表活动已经发生）。
+
+    def _join_margin(self):
+        """§9.1.2 个人同意门槛（data：join_vote_margin；不得硬编码）。"""
+        return float(self.thresholds_lookup.get("join_vote_margin", 10.0))
+
+    def _join_cap(self):
+        """同一场活动的人数上限（data：join_max_members；防同一决策点无限连锁邀请）。"""
+        return int(self.thresholds_lookup.get("join_max_members", 4))
+
+    def _invite_friend_p(self):
+        """带朋友：活动组成员每决策点尝试邀请朋友的概率（data：invite_friend_p）。"""
+        return float(self.probs.get("invite_friend_p", 0.0))
+
+    def _join_blocked(self, j):
+        """j 此刻不可被邀请（**条件不满足**，不算关系拒绝，§9.1.2/§9.1.4）：
+        睡觉、不在场、出门、正在走动；崩溃等不可中断状态同理。"""
+        return (
+            self.sleeping[j]
+            or not self.is_present(j)
+            or self.current_act[j] == "leave_class"
+            or (self.busy_act[j] == "move" and self.global_tick < self.busy_until[j])
+        )
+
+    def _find_partner(self, i, kind):
+        """找伴（§9.1.1/§9.1.4）：自己对其好感最高、且可参与的人；正在活动也可以被邀请。
+
+        读「发起者 → 候选者」的有向好感，不取双向平均；并列取最低节点号
+        （data：join_tie_break = 0，同种子可复现）。不消耗随机数。
+        """
+        best, best_a = None, None
+        for j in range(self.N):
+            if j == i or self._join_blocked(j):
+                continue
+            a = self.A[i][j]
+            if best_a is None or a > best_a:
+                best, best_a = j, a
+        return best
+
+    def _join_activity_of(self, j):
+        """j 的当前活动（只读，通用加入视角）。返回 (kind, group)；group 为 None 表示独自活动。
+
+        ("idle", None) = 空闲；("solo", None) = 独自的不可共享活动（听歌 / 读课外书，
+        §9.1.4：共享方式未裁定，不自动开放加入；本人仍可在决策边界切换）。
+        """
+        if self.conv_of[j] is not None:
+            return ("chat", self.conv_of[j])
+        if self.rough_of[j] is not None:
+            return ("roughhouse", self.rough_of[j])
+        if self.busy_act[j] == "eat_snack" and self.global_tick < self.busy_until[j]:
+            return ("snack", self.snack_of[j])
+        if self.current_act[j] == "study" and self.global_tick < self.busy_until[j]:
+            return ("study", self.study_of[j])
+        if self.busy_act[j] in ("listen_music", "read_book") and self.global_tick < self.busy_until[j]:
+            return ("solo", None)
+        return ("idle", None)
+
+    def _vote_accept(self, members, joiner):
+        """§9.1.2 确定投票：成员 m 读自己对加入者的有向关系，好感−敌对 ≥ 门槛投同意；
+        同意票严格超过现有成员总数的一半才接受（平票拒绝）。不掷概率、不叠隐藏修正。"""
+        margin = self._join_margin()
+        yes, no = [], []
+        for m in members:
+            (yes if self.A[m][joiner] - self.H[m][joiner] >= margin else no).append(m)
+        return len(yes) * 2 > len(members), yes, no
+
+    def _log_join_event(self, joiner, members, stage, activity, yes=(), no=(), extra=None):
+        """只读观察（§9.1.4 交接 3）：区分条件不满足 / 关系拒绝 / 相等不合流 / 跟随 / 成功加入，
+        记录投票方向；观察层仅展示，不写矩阵。"""
+        self.join_log.append(dict(
+            tick=self.global_tick, joiner=joiner, members=list(members), stage=stage,
+            activity=activity, yes=list(yes), no=list(no), extra=dict(extra or {})))
+
+    def _reject_join(self, i, anchor, members, activity, yes, no):
+        """投票被拒（关系拒绝）：对齐旧搭话拒绝口径 —— 亲和/压力记在发起者→锚点，
+        敌对反馈对全体现有成员（§10.7）。拒绝不占用发起者。"""
+        self.apply_event(i, anchor, "reject_affinity")
+        for m in members:
+            self.apply_event(i, m, "reject_hostility")
+        self.apply_event(i, anchor, "reject_stress")
+        self.stats["join_rejects"] = self.stats.get("join_rejects", 0) + 1
+        self._log_join_event(i, members, "vote_reject", activity, yes, no, {"anchor": anchor})
+
+    def _propose_activity(self, i, j, kind):
+        """i（空闲发起者）向 j 提议 / 申请加入活动 kind（§9.1.4 决策树）。
+
+        返回 True = i 已被占用（成事）；False = 未占用（条件不满足 / 关系拒绝 / 相等不合流）。
+        玩家伙伴走既有邀请机制（玩家自己决定是否接受），不进入投票。
+        """
+        self.stats["joins"] = self.stats.get("joins", 0) + 1
+        if j == self.N - 1:
+            if kind == "chat":
+                self.do_chat(i, j)
+            else:
+                self.do_roughhouse(i, j)
+            return True
+        akind, group = self._join_activity_of(j)
+        if akind == "idle":
+            # 两人新建活动：被邀请者是唯一现有成员，投票定夺（§9.1.2）
+            ok, yes, no = self._vote_accept([j], i)
+            if not ok:
+                self._reject_join(i, j, [j], kind, yes, no)
+                return False
+            if kind == "chat":
+                self.do_chat(i, j)
+            else:
+                self.do_roughhouse(i, j)
+            self.stats["join_accepts"] = self.stats.get("join_accepts", 0) + 1
+            self._log_join_event(i, [j], "joined", kind, yes, no)
+            return True
+        if akind == kind:
+            # 活动相同就合流：申请加入原活动（全体成员投票）
+            return self._apply_join_group(i, j, akind, group)
+        members = sorted(group["members"]) if group else [j]
+        if len(members) >= 2:
+            # 已有多人活动：新人跟随原活动，不重新比较好感改变整组活动（§9.1.4）
+            return self._apply_join_group(i, j, akind, group)
+        # j 独自活动且活动不同：先接纳，再比较单向好感决定谁跟随（§9.1.4 表）
+        ok, yes, no = self._vote_accept([j], i)
+        if not ok:
+            self._reject_join(i, j, [j], kind, yes, no)
+            return False
+        a_i, a_j = self.A[i][j], self.A[j][i]
+        if a_i == a_j:
+            # 两个方向好感相等：各自保持活动，本次不合流
+            self._log_join_event(i, [j], "tie_no_merge", kind, yes, no)
+            return False
+        if a_j > a_i:
+            # j 更在意 i：j 跟随 i 的活动（放弃原活动；学业收益保留）
+            self._switch_activity(j, kind, i)
+            self.stats["join_accepts"] = self.stats.get("join_accepts", 0) + 1
+            self._log_join_event(i, [j], "follow", kind, yes, no, {"follower": j})
+            return True
+        # i 更在意 j：i 加入 j 的原活动（原活动须可加入；听歌/读书未开放共享）
+        if akind not in ("chat", "roughhouse", "study", "snack"):
+            self._log_join_event(i, [j], "condition_fail", kind, yes, no, {"reason": "unshared"})
+            return False
+        return self._apply_join_group(i, j, akind, group)
+
+    def _apply_join_group(self, i, anchor, akind, group):
+        """i 加入 anchor 所在的活动组（§9.1.4 加入）：全体成员确定投票；满员属条件不满足。
+
+        加入后与原成员做同一活动：按实际参与时间获得效果；不重置老成员计时、
+        不补发新人加入前的收益、不重复结算旧成员互动（交接 2）。
+        """
+        if group is None:
+            group = self._ensure_group(akind, anchor)
+            if group is None:
+                return False
+        members = sorted(group["members"])
+        if self.N - 1 in group["members"]:
+            # 含玩家的活动不参与 NPC 自主加入（玩家交互走邀请机制，§9.4 同口径）
+            self._log_join_event(i, members, "condition_fail", akind, extra={"reason": "player_session"})
+            return False
+        if len(members) >= self._join_cap():
+            self._log_join_event(i, members, "condition_fail", akind, extra={"reason": "full"})
+            return False
+        ok, yes, no = self._vote_accept(members, i)
+        if not ok:
+            self._reject_join(i, anchor, members, akind, yes, no)
+            return False
+        # 加入前先脱离当前独自活动（占用被新活动接管；未完成单位不结算，学业收益保留）
+        self._leave_solo_activity(i)
+        if akind == "chat":
+            self._add_member_to_conversation(i, group)
+        elif akind == "roughhouse":
+            self._join_roughhouse(i, group)
+        elif akind == "study":
+            self._join_study(i, group)
+        else:  # snack
+            self._join_snack(i, group)
+        self.joined_tick[i] = self.global_tick
+        self.stats["join_accepts"] = self.stats.get("join_accepts", 0) + 1
+        self._log_join_event(i, members, "joined", akind, yes, no, {"anchor": anchor})
+        return True
+
+    def _ensure_group(self, akind, j):
+        """j 独自做 akind 活动时，为其补建活动组（通用加入的成员管理载体；只登记不结算）。"""
+        if akind == "chat":
+            return self.conv_of[j]
+        if akind == "study":
+            if self.study_of[j] is None:
+                grp = {"members": {j}}
+                self.study_groups.append(grp)
+                self.study_of[j] = grp
+            return self.study_of[j]
+        if akind == "snack":
+            if self.snack_of[j] is None:
+                grp = {"members": {j}, "provider": j}
+                self.snack_groups.append(grp)
+                self.snack_of[j] = grp
+            return self.snack_of[j]
+        if akind == "roughhouse":
+            if self.rough_of[j] is None:
+                grp = {"members": {j}}
+                self.rough_groups.append(grp)
+                self.rough_of[j] = grp
+            return self.rough_of[j]
+        return None
+
+    def _join_roughhouse(self, i, group):
+        """加入打闹组：与每位现有成员互相结算一次打闹好感（旧成员之间不重算）。"""
+        for m in sorted(group["members"]):
+            self.apply_event(i, m, "roughhouse_affinity")
+            self.apply_event(m, i, "roughhouse_affinity")
+        self.occupy(i, i, "roughhouse")
+        group["members"].add(i)
+        self.rough_of[i] = group
+        self.stats["roughhouse"] += 1
+
+    def _join_study(self, i, group):
+        """加入学习组：进入学习态（各自按真实学习单位结算，不新增讲题加成，§9.1.4 表）。"""
+        self.do_study(i)
+        group["members"].add(i)
+        self.study_of[i] = group
+
+    def _join_snack(self, i, group):
+        """加入零食分享（§9.1.4 表）：加入者无需自带零食；正常娱乐效果；
+        自然完成一个共同进食单位后，对分享者结算一次分享好感（见 settle_finished_actions）。"""
+        self.occupy(i, i, "eat_snack")
+        self.snack_provider[i] = group["provider"]
+        group["members"].add(i)
+        self.snack_of[i] = group
+
+    def _switch_activity(self, j, kind, i):
+        """j 放弃当前独自活动、跟随 i 的新活动（§9.1.4 不同活动跟随）。
+
+        活动切换不清空既有学业收益（§9.1.4）：StudyAcc 原样保留；未完成的娱乐单位不结算。
+        """
+        acc = self.StudyAcc[j]
+        self._leave_solo_activity(j)
+        self.StudyAcc[j] = acc
+        if kind == "chat":
+            self.do_chat(i, j)
+        else:
+            self.do_roughhouse(i, j)
+
+    def _leave_solo_activity(self, f):
+        """f 在决策边界放弃当前独自活动（跟随 / 被带入新活动，§9.1.4）：
+        清占用与未完成进度；组内成员不走此路径（不同时参与多个活动）。"""
+        if self.study_of[f] is not None:
+            grp = self.study_of[f]
+            grp["members"].discard(f)
+            self.study_of[f] = None
+            if len(grp["members"]) < 2:
+                for m in list(grp["members"]):
+                    self.study_of[m] = None
+                if grp in self.study_groups:
+                    self.study_groups.remove(grp)
+        if self.snack_of[f] is not None:
+            grp = self.snack_of[f]
+            grp["members"].discard(f)
+            self.snack_of[f] = None
+            if len(grp["members"]) < 2:
+                for m in list(grp["members"]):
+                    self.snack_of[m] = None
+                if grp in self.snack_groups:
+                    self.snack_groups.remove(grp)
+        self.snack_provider[f] = None   # 未完成的进食单位不结算分享好感
+        self.busy_until[f] = 0
+        self.busy_phase[f] = -1
+        self.busy_act[f] = None
+        self.current_act[f] = None
+
+    def _invite_friends_pass(self):
+        """带朋友（§9.1.3/§9.1.4）：活动组成员按找伴规则邀请朋友加入当前活动。
+
+        每人每个决策点最多发起一次邀请；本决策点新加入者从下一决策点起才能带朋友；
+        朋友仍须满足活动参与条件，并由全部现有成员按同一套规则投票（邀请者不能替
+        其他成员保证接纳）。随机数顺序固定（组按创建序、成员按节点号升序）。
+        """
+        p = self._invite_friend_p()
+        if p <= 0.0:
+            return
+        cap = self._join_cap()
+        for akind, grp in self._iter_join_groups():
+            if (self.N - 1) in grp["members"] or len(grp["members"]) >= cap:
+                continue
+            for m in sorted(grp["members"]):
+                if self.joined_tick[m] >= self.global_tick:
+                    continue
+                if self.rng.random() >= p:
+                    continue
+                f = self._find_friend_outside(m, grp)
+                if f is None:
+                    continue
+                if self._apply_join_group(f, m, akind, grp):
+                    self.stats["invite_friends"] = self.stats.get("invite_friends", 0) + 1
+
+    def _iter_join_groups(self):
+        """当前全部活动组（按创建序）：聊天会话 + 打闹组 + 学习组 + 零食分享组。"""
+        for grp in self.conversations:
+            yield "chat", grp
+        for grp in self.rough_groups:
+            yield "roughhouse", grp
+        for grp in self.study_groups:
+            yield "study", grp
+        for grp in self.snack_groups:
+            yield "snack", grp
+
+    def _find_friend_outside(self, m, grp):
+        """m 的组外最佳朋友（§9.1.1 找伴规则）：不邀请组内成员、不拉正在别组的人
+        （不同时参与多个活动）、不邀请玩家（玩家走邀请 UI）。并列取最低节点号。"""
+        best, best_a = None, None
+        for f in range(self.N - 1):
+            if f == m or f in grp["members"] or self._join_blocked(f):
+                continue
+            if (self.conv_of[f] is not None or self.rough_of[f] is not None
+                    or self.study_of[f] is not None or self.snack_of[f] is not None):
+                continue
+            a = self.A[m][f]
+            if best_a is None or a > best_a:
+                best, best_a = f, a
+        return best
+
+    def _settle_groups(self):
+        """活动组维护（每 tick，只读 busy 状态）：成员活动到期即离组；少于 2 人解散。
+        统一管理成员但保留逐人加入时间与退出（§9.1.4 交接 2）—— 不重置老成员计时。"""
+        def prune(groups, of, active):
+            for grp in list(groups):
+                for m in list(grp["members"]):
+                    if not active(m):
+                        grp["members"].discard(m)
+                        of[m] = None
+                if len(grp["members"]) < 2:
+                    for m in list(grp["members"]):
+                        of[m] = None
+                    groups.remove(grp)
+        prune(self.rough_groups, self.rough_of,
+              lambda m: self.busy_act[m] == "roughhouse" and self.busy_until[m] > self.global_tick)
+        prune(self.study_groups, self.study_of,
+              lambda m: self.current_act[m] == "study" and self.busy_until[m] > self.global_tick)
+        prune(self.snack_groups, self.snack_of,
+              lambda m: self.busy_act[m] == "eat_snack" and self.busy_until[m] > self.global_tick)
+
+    def _clear_join_groups(self):
+        """相位边界：清空全部活动组与未完成的分享关联（未完成单位不结算，§9.1.4）。"""
+        self.rough_groups = []
+        self.study_groups = []
+        self.snack_groups = []
+        self.rough_of = [None] * self.N
+        self.study_of = [None] * self.N
+        self.snack_of = [None] * self.N
+        self.snack_provider = [None] * self.N
+
     @invitation_behavior("roughhouse")
     def do_roughhouse(self, i, j):
         """【追逐打闹】（§10.18）—— 参与者互相好感↑（A 类效果）。
@@ -936,6 +1190,15 @@ class Sim:
         self.occupy(i, j, "roughhouse")
         self.apply_event(i, j, "roughhouse_affinity")
         self.apply_event(j, i, "roughhouse_affinity")
+        # 通用加入（§9.1.4，2026-10-15）：登记打闹组，后续加入者与全体成员互相结算
+        grp = self.rough_of[i] or self.rough_of[j]
+        if grp is None:
+            grp = {"members": {i, j}}
+            self.rough_groups.append(grp)
+        grp["members"].add(i)
+        grp["members"].add(j)
+        self.rough_of[i] = grp
+        self.rough_of[j] = grp
         self.stats["roughhouse"] += 1
 
     def set_seat_zones(self, positions):
@@ -1132,6 +1395,14 @@ class Sim:
             if self.busy_act[i] in LEISURE_KINDS:
                 prefix = LEISURE_KINDS[self.busy_act[i]]
                 self.Stress[i] = clamp100(self.Stress[i] - self.leisure[prefix + "_relief"])
+                if self.busy_act[i] == "eat_snack" and self.snack_provider[i] is not None:
+                    # 分享零食（§9.1.4）：自然完成一个共同进食单位 → 对分享者结算一次分享好感；
+                    # 中断 / 退出不结算；同一对子每课间段至多一次（沿用事件去重，防退出重入刷收益）
+                    provider = self.snack_provider[i]
+                    self.apply_event(i, provider, "snack_share_affinity")
+                    self.share_units[(provider, i)] = self.share_units.get((provider, i), 0) + 1
+                    self.snack_provider[i] = None
+                    self.stats["share_units"] = self.stats.get("share_units", 0) + 1
             self.current_act[i] = None
             self.busy_act[i] = None
             self.busy_phase[i] = -1
@@ -1140,6 +1411,7 @@ class Sim:
         self.global_tick += 1
         self.settle_finished_actions()
         self.settle_conversations()      # 多人聊天：逐人离场 / 解散（2026-10-14）
+        self._settle_groups()            # 通用加入：活动组成员到期离组 / 解散（§9.1.4，2026-10-15）
         self.teacher.step(self)
         self.decide_and_act()
         self.study_accumulate()
@@ -1238,6 +1510,7 @@ class Sim:
         `current_act`/`busy_act`/`in_conversation`，让新段判定看到一致的空闲状态。
         """
         self._interrupt_conversations()   # 铃响打断所有未结束会话（2026-10-14 多人聊天）
+        self._clear_join_groups()         # 通用加入：清活动组与未完成分享（§9.1.4，2026-10-15）
         for i in range(self.N):
             if self.current_act[i] == "study":
                 self.current_act[i] = None

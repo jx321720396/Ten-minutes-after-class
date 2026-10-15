@@ -9,21 +9,13 @@ chat,join_affinity,>=,43,加入闲聊被接纳的 sigmoid 拐点
 chat,join_duration,>=,10,加入尝试本身的耗时（tick）；成功后的持续聊天按 chat.duration=30 计
 chat,join_scale,>=,10,加入判定 sigmoid 坡度（score−θ 除以它；越大越缓）
 chat,join_stress_penalty,>=,12,对方压力对 score 的压制（压力是程度不是闸门）
-chat,join_gate_affinity,>=,30,决策侧软门槛：我对他好感低于此值仍有小概率发起
-chat,join_gate_stress,>=,80,决策侧软门槛：我压力高于此值仍有小概率发起
-chat,join_gate_scale,>=,8,决策侧软门槛 sigmoid 坡度
-chat,join_gate_weight,>=,4,决策侧软门槛在 U_b 中的权重
-# ---- 多人聊天（2026-10-14 重构：会话 2→3→4，双向判定 + 聚合接纳 + 规模衰减）----
-#   接纳侧：成员 m 对加入者 C 的欢迎 score = A[m][C] − H[m][C]，p = σ((score−θ)/scale)。
-#   意愿侧：朋友在场（max A[C][m]）拉高意愿，明显敌对（H[C][m] ≥ hostility_veto）劝退。
-#   聚合：欢迎数 > 拒绝数才放行（平票=拒绝）；任一成员 H[m][C] ≥ hostility_veto 硬否决。
-chat,welcome_theta,>=,40,多人加入：成员对加入者 score=A−H 的 sigmoid 拐点
-chat,welcome_scale,>=,12,多人加入：sigmoid 坡度
-chat,hostility_veto,>=,50,多人加入：明显敌对硬阈值（H≥50 意愿劝退 / 成员否决，双向分别判定）
-chat,desire_theta,>=,40,多人加入：加入者对在场朋友最高好感 max A 的 sigmoid 拐点
-chat,desire_scale,>=,10,多人加入：意愿 sigmoid 坡度
-chat,size_k,>=,0.3,多人加入：规模衰减系数 k（w_size(s)=1/(1+k·(s−s0))，s=加入前成员数）
-chat,size_s0,>=,4,多人加入：规模衰减参考规模 s0（s≤s0 不衰减）
+# ---- 通用加入（主文档 §9.1.1–§9.1.4，2026-10-15 实装；多人聊天加入改走确定投票）----
+#   找伴：发起者读自己对他人的有向好感，选最高且可参与者；并列取最低节点号（tie_break=0，同种子可复现）。
+#   接受：现有成员逐人确定投票 —— 好感−敌对 ≥ vote_margin 投同意；同意严格过半才接受，平票拒绝；不掷概率。
+#   人数上限：同一场活动（含会话）至多 max_members 人；满员属条件不满足，不算关系拒绝。
+join,vote_margin,>=,10,通用加入：成员对加入者「好感−敌对」同意票门槛（恰好等于也同意）
+join,max_members,>=,4,通用加入：同一场活动的人数上限（防同一决策点无限连锁邀请）
+join,tie_break,>=,0,通用加入：好感并列选人方式（0 = 最低节点号；同种子可复现）
 chat,duration_jitter_min,>=,0.8,聊天时长随机下限（乘 chat.duration；逐人独立计时）
 chat,duration_jitter_max,>=,1.2,聊天时长随机上限（乘 chat.duration）
 # 【追逐打闹】门槛：要有人在场当旁观者

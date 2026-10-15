@@ -161,6 +161,227 @@ study.cleanup_phase([])
 check("铃声退出学习且保留已结算成绩", study.current_act[me] is None and study.Grade[me] == earned)
 check("铃声清除未结算进度", study.StudyAcc[me] == 0.0)
 
+print("=== 8. 通用加入（§9.1.4：找伴 / 确定 / 跟随 / 加入 / 带朋友）===")
+join_sim = Sim(seed=20261015, npc_count=8)
+
+# —— 8.1 找伴：最高有向好感优先；正在活动也可以被邀请 ——
+for i in range(join_sim.N):
+    for j in range(join_sim.N):
+        join_sim.A[i][j] = 20.0
+        join_sim.H[i][j] = 0.0
+join_sim.A[0][3] = 80.0
+check("找伴：选自己好感最高的人", join_sim._find_partner(0, "chat") == 3)
+join_sim.A[0][3] = 20.0
+join_sim.A[0][5] = 80.0
+join_sim.A[0][7] = 80.0  # 与 5 并列 → 取最低节点号（join_tie_break = 0）
+check("找伴：好感并列取最低节点号（可复现）", join_sim._find_partner(0, "chat") == 5)
+# 正在学习的人可被邀请（§9.1.4：正在活动也可以被邀请）
+study_sim = Sim(seed=20261015, npc_count=8)
+for i in range(study_sim.N):
+    for j in range(study_sim.N):
+        study_sim.A[i][j] = 20.0
+        study_sim.H[i][j] = 0.0
+for k in range(study_sim.N):
+    if k != 2:
+        study_sim.sleeping[k] = True   # 只留 2 号醒着（正在学习）
+study_sim.do_study(2)
+study_sim.A[0][2] = 60.0
+check("找伴：正在学习的人可被邀请", study_sim._find_partner(0, "chat") == 2)
+check("找伴：睡觉的人不可被邀请（条件不满足）", study_sim._find_partner(0, "chat") != 1)
+
+# —— 8.2 接受：好感−敌对 ≥ 10 投同意；严格过半；平票拒绝 ——
+vote_sim = Sim(seed=20261015, npc_count=8)
+vote_sim.A[1][0] = 25.0
+vote_sim.H[1][0] = 15.0   # 25 − 15 = 10，恰好等于门槛 → 同意
+ok, yes, no = vote_sim._vote_accept([1], 0)
+check("投票：好感−敌对恰好 10 投同意", ok and yes == [1])
+vote_sim.H[1][0] = 15.5   # 9.5 < 10 → 拒绝
+ok, yes, no = vote_sim._vote_accept([1], 0)
+check("投票：好感−敌对低于 10 投拒绝", not ok)
+vote_sim.A[1][0], vote_sim.H[1][0] = 50.0, 0.0
+vote_sim.A[2][0], vote_sim.H[2][0] = 0.0, 0.0
+ok, yes, no = vote_sim._vote_accept([1, 2], 0)   # 1 同意 1 拒绝 → 平票拒绝
+check("投票：两人团体平票拒绝", not ok and yes == [1] and no == [2])
+vote_sim.A[3][0], vote_sim.H[3][0] = 50.0, 0.0
+ok, yes, no = vote_sim._vote_accept([1, 2, 3], 0)  # 三人两票同意 → 通过
+check("投票：三人团体至少两票同意才接受", ok and len(yes) == 2)
+
+# —— 8.3 同活动合流：申请加入既有会话（全体成员投票） ——
+conv_sim = Sim(seed=20261015, npc_count=8)
+for i in range(conv_sim.N):
+    for j in range(conv_sim.N):
+        conv_sim.A[i][j] = 20.0
+        conv_sim.H[i][j] = 0.0
+conv_sim.A[1][0] = 60.0   # 成员 1 欢迎加入者 0
+conv_sim.A[2][0] = 60.0   # 成员 2 欢迎加入者 0
+conv_sim.do_chat(1, 2)    # 1 与 2 成会
+check("合流前会话为两人", len(conv_sim.conversations) == 1 and conv_sim.conversations[0]["members"] == {1, 2})
+conv_sim._propose_activity(0, 1, "chat")
+check("同活动合流：申请加入既有会话成功", conv_sim.conv_of[0] is conv_sim.conversations[0])
+check("同活动合流：不另开重复活动", len(conv_sim.conversations) == 1)
+# 拒绝路径：成员对加入者好感不足 → 关系拒绝，不占用发起者
+conv_sim2 = Sim(seed=20261015, npc_count=8)
+for i in range(conv_sim2.N):
+    for j in range(conv_sim2.N):
+        conv_sim2.A[i][j] = 20.0
+        conv_sim2.H[i][j] = 0.0
+conv_sim2.A[1][0] = 5.0    # 两位成员都对加入者不足门槛 → 关系拒绝
+conv_sim2.A[2][0] = 5.0
+conv_sim2.do_chat(1, 2)
+conv_sim2._propose_activity(0, 1, "chat")
+check("合流被拒：关系拒绝不占用发起者", conv_sim2.conv_of[0] is None)
+check("合流被拒：日志记 vote_reject", conv_sim2.join_log[-1]["stage"] == "vote_reject")
+
+# —— 8.4 不同活动跟随：好感更高的一方跟随另一方；相等不合流 ——
+follow_sim = Sim(seed=20261015, npc_count=8)
+for i in range(follow_sim.N):
+    for j in range(follow_sim.N):
+        follow_sim.A[i][j] = 20.0
+        follow_sim.H[i][j] = 0.0
+for k in range(follow_sim.N):
+    if k not in (0, 1):
+        follow_sim.sleeping[k] = True
+follow_sim.do_study(1)             # 1 在学习
+follow_sim.StudyAcc[1] = 3.5       # 已有学业收益
+follow_sim.A[1][0] = 70.0          # 1 更在意 0 → 1 跟随 0 的闲聊
+follow_sim.A[0][1] = 30.0
+follow_sim._propose_activity(0, 1, "chat")
+check("跟随：更在意对方的人放弃原活动跟随（1 → 闲聊）",
+      follow_sim.conv_of[1] is not None and follow_sim.current_act[1] == "chat")
+check("跟随：活动切换不清空既有学业收益", abs(follow_sim.StudyAcc[1] - 3.5) < 1e-9)
+follow_sim2 = Sim(seed=20261015, npc_count=8)
+for i in range(follow_sim2.N):
+    for j in range(follow_sim2.N):
+        follow_sim2.A[i][j] = 20.0
+        follow_sim2.H[i][j] = 0.0
+for k in range(follow_sim2.N):
+    if k not in (0, 1):
+        follow_sim2.sleeping[k] = True
+follow_sim2.do_study(1)
+follow_sim2.A[0][1] = 70.0          # 0 更在意 1 → 0 加入 1 的学习
+follow_sim2.A[1][0] = 30.0
+follow_sim2._propose_activity(0, 1, "chat")
+check("跟随：发起者更在意对方时加入对方活动（0 → 一起学习）",
+      follow_sim2.current_act[0] == "study" and follow_sim2.study_of[0] is follow_sim2.study_of[1])
+follow_sim3 = Sim(seed=20261015, npc_count=8)
+for i in range(follow_sim3.N):
+    for j in range(follow_sim3.N):
+        follow_sim3.A[i][j] = 20.0
+        follow_sim3.H[i][j] = 0.0
+for k in range(follow_sim3.N):
+    if k not in (0, 1):
+        follow_sim3.sleeping[k] = True
+follow_sim3.do_study(1)
+follow_sim3.A[0][1] = 42.0
+follow_sim3.A[1][0] = 42.0          # 相等 → 不合流
+follow_sim3._propose_activity(0, 1, "chat")
+check("跟随：两个方向好感相等各自保持活动（不合流）",
+      follow_sim3.conv_of[0] is None and follow_sim3.current_act[1] == "study")
+check("跟随：日志记 tie_no_merge", follow_sim3.join_log[-1]["stage"] == "tie_no_merge")
+
+# —— 8.5 零食分享：加入者无需自带；完成单位后对分享者好感 ↑（去重） ——
+snack_sim = Sim(seed=20261015, npc_count=8)
+for i in range(snack_sim.N):
+    for j in range(snack_sim.N):
+        snack_sim.A[i][j] = 20.0
+        snack_sim.H[i][j] = 0.0
+for k in range(snack_sim.N):
+    if k not in (0, 1):
+        snack_sim.sleeping[k] = True
+snack_sim.start_leisure(1, "eat_snack")   # 1 独自吃零食
+snack_sim.A[0][1] = 70.0                  # 0 更在意 1 → 0 加入 1 的零食分享
+snack_sim.A[1][0] = 30.0
+snack_sim._propose_activity(0, 1, "chat")
+check("零食分享：加入者并入分享活动（无需自带零食）",
+      snack_sim.snack_of[0] is snack_sim.snack_of[1] and snack_sim.busy_act[0] == "eat_snack")
+snack_sim.A[0][1] = 20.0                  # 重置，看事件带来的增量
+before_share = snack_sim.A[0][1]
+snack_sim.busy_until[0] = snack_sim.global_tick   # 让 0 的进食单位到期
+snack_sim.settle_finished_actions()
+check("零食分享：完成单位后对分享者好感 ↑", snack_sim.A[0][1] > before_share)
+check("零食分享：分享单位计数去重（每对子记 1 次）", snack_sim.share_units.get((1, 0)) == 1)
+
+# —— 8.6 带朋友：成员邀请朋友，仍走全体成员投票；A 拒 C 则不成 ——
+friend_sim = Sim(seed=20261015, npc_count=8)
+for i in range(friend_sim.N):
+    for j in range(friend_sim.N):
+        friend_sim.A[i][j] = 20.0
+        friend_sim.H[i][j] = 0.0
+for k in range(friend_sim.N):
+    if k not in (0, 1, 2, 3):
+        friend_sim.sleeping[k] = True
+friend_sim.A[1][0] = 60.0
+friend_sim.A[2][0] = 60.0
+friend_sim.do_chat(1, 2)            # A=1, B=2 成会
+friend_sim.A[2][3] = 75.0           # B(2) 最想带 C(3)
+friend_sim.A[1][3] = 60.0           # A(1) 也同意 C
+friend_sim.A[3][1] = 20.0
+friend_sim.A[3][2] = 20.0
+friend_sim.probs["invite_friend_p"] = 1.0   # 邀请必然尝试
+friend_sim._invite_friends_pass()
+check("带朋友：B 带 C 加入原会话（全体投票通过）", 3 in friend_sim.conversations[0]["members"])
+check("带朋友：不另开重复活动", len(friend_sim.conversations) == 1)
+# A 拒 C：A 对 C 好感不足 → C 进不来
+friend_sim2 = Sim(seed=20261015, npc_count=8)
+for i in range(friend_sim2.N):
+    for j in range(friend_sim2.N):
+        friend_sim2.A[i][j] = 20.0
+        friend_sim2.H[i][j] = 0.0
+for k in range(friend_sim2.N):
+    if k not in (1, 2, 3):
+        friend_sim2.sleeping[k] = True   # 只留 A、B、C 在场，避免第四人连环邀请放行
+friend_sim2.do_chat(1, 2)
+friend_sim2.A[2][3] = 75.0
+friend_sim2.A[1][3] = 5.0            # A 拒 C（5 − 0 < 10）
+friend_sim2.probs["invite_friend_p"] = 1.0
+friend_sim2._invite_friends_pass()
+check("带朋友：A 拒 C 时 C 不能加入（邀请者不能替别人保证接纳）",
+      3 not in friend_sim2.conversations[0]["members"])
+check("带朋友：被拒不占用被邀请者", friend_sim2.busy_until[3] == 0)
+
+# —— 8.7 满员与同刻竞争 ——
+cap_sim = Sim(seed=20261015, npc_count=8)
+for i in range(cap_sim.N):
+    for j in range(cap_sim.N):
+        cap_sim.A[i][j] = 80.0
+        cap_sim.H[i][j] = 0.0
+for k in range(cap_sim.N):
+    if k > 4:
+        cap_sim.sleeping[k] = True
+cap_sim.do_chat(1, 2)
+cap_sim._apply_join_group(3, 1, "chat", cap_sim.conversations[0])   # 3 人
+ok4 = cap_sim._apply_join_group(4, 1, "chat", cap_sim.conversations[0])  # 4 人（= max_members）
+check("满员：人数上限内可加入（4 人）", ok4 and len(cap_sim.conversations[0]["members"]) == 4)
+check("满员：超过上限属条件不满足（不算关系拒绝）",
+      cap_sim._apply_join_group(0, 1, "chat", cap_sim.conversations[0]) is False
+      and cap_sim.join_log[-1]["stage"] == "condition_fail")
+
+# —— 8.8 新加入者本决策点不能带朋友；每人每决策点最多一次邀请 ——
+cd_sim = Sim(seed=20261015, npc_count=8)
+for i in range(cd_sim.N):
+    for j in range(cd_sim.N):
+        cd_sim.A[i][j] = 60.0
+        cd_sim.H[i][j] = 0.0
+for k in range(cd_sim.N):
+    if k not in (0, 1, 2, 3):
+        cd_sim.sleeping[k] = True
+cd_sim.do_chat(1, 2)
+cd_sim.global_tick = 5
+cd_sim._apply_join_group(3, 1, "chat", cd_sim.conversations[0])
+check("冷却：本决策点新加入者（joined_tick = 当前 tick）暂不能带朋友", cd_sim.joined_tick[3] == 5)
+cd_sim.A[2][0] = 90.0
+cd_sim.probs["invite_friend_p"] = 1.0
+cd_sim._invite_friends_pass()
+check("冷却：老成员（2 号）仍可带 0 号入会", 0 in cd_sim.conversations[0]["members"])
+
+# —— 8.9 同种子复现（新路径全量运行） ——
+sim_a = Sim(seed=777, npc_count=16)
+sim_b = Sim(seed=777, npc_count=16)
+for _ in range(2):
+    sim_a.run_day()
+    sim_b.run_day()
+check("通用加入：同种子同结果（可复现）", sim_a.stats == sim_b.stats and sim_a.A == sim_b.A)
+
 print("  通过 %d 项，失败 %d 项" % (len(PASSED), len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)
