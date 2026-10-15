@@ -119,6 +119,11 @@ func join_probability(i: int, j: int) -> float:
 	return _core_ref.get_ref()._join_probability(i, j)
 
 
+func register_rough_pair(i: int, j: int) -> void:
+	## 通用加入（§9.1.4）：打闹结组登记（表现层不感知，仅内核成员管理）。
+	_core_ref.get_ref()._register_rough_pair(i, j)
+
+
 func increment_stat(key: String) -> void:
 	var stats: Dictionary = _core_ref.get_ref()._stats
 	stats[key] = int(stats.get(key, 0)) + 1

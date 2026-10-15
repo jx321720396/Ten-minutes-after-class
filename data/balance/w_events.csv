@@ -9,6 +9,7 @@ reject_stress,stress,2,normal,C,被拒绝搭话（判定改读真值后拒绝次
 reject_hostility,hostility,3,normal,C,被拒绝搭话
 reject_affinity,affinity,-3,normal,C,被拒绝搭话
 roughhouse_affinity,affinity,2,normal,A,追逐打闹：参与者互相好感↑
+snack_share_affinity,affinity,2,normal,A,分享零食：加入者自然完成一个共同进食单位后对分享者的好感（§9.1.4；每对子每课间段至多一次，沿用事件去重）
 topic_affinity,affinity,3,normal,A,话题共鸣
 topic_stress,stress,-2,normal,A,话题共鸣
 study_stress,stress,3,normal,A,主动学习：每满一档给自身压力 +3（§8.23）
