@@ -235,6 +235,24 @@ func _attach_seated_pose(core: Variant, index: int, actor: Node3D) -> void:
 		return
 	var pose := SEATED_POSE.instantiate()
 	actor.add_child(pose)
+	# Per-image calibration is relative to the original desk; resolve current geometry.
+	var geometry: Dictionary = _pose_settings.get("geometry_reference", {})
+	if not geometry.is_empty():
+		binding = binding.duplicate(true)
+		var layout: Dictionary = _pose_settings.duplicate(true)
+		layout.merge(binding.get("layout", {}), true)
+		var seat := seat_node_of(index)
+		var desktop := seat.get_node("Desk/Top") as MeshInstance3D
+		var height := seat.to_local(desktop.to_global(desktop.get_aabb().end)).y
+		layout["lower_height_gain"] = (
+			float(layout["lower_height_gain"]) + height - float(geometry["desktop_top"])
+		)
+		layout["foreground_depth"] = (
+			float(layout["foreground_depth"])
+			* desktop.get_aabb().size.z
+			/ float(geometry["desktop_depth"])
+		)
+		binding["layout"] = layout
 	pose.configure(_pose_settings, binding)
 	_seated_poses[index] = pose
 
@@ -263,6 +281,30 @@ func _process(_delta: float) -> void:
 		)
 		pose.show_pose(mode)
 		actor.get_node("Sprite").visible = mode == "stand"
+		_update_chair_depth(seat, mode == "stand" and at_home and not moving)
+
+
+func _update_chair_depth(seat: Node3D, standing_at_seat: bool) -> void:
+	var chair := seat.get_node_or_null("Chair") as Node3D
+	if chair == null or not _pose_settings.has("standing_chair_clearance"):
+		return
+	if not chair.has_meta("rest_position"):
+		chair.set_meta("rest_position", chair.position)
+	var rest: Vector3 = chair.get_meta("rest_position")
+	chair.position = rest
+	if not standing_at_seat:
+		return
+	var front := -INF
+	for child in chair.find_children("*", "MeshInstance3D", true, false):
+		var mesh := child as MeshInstance3D
+		var bounds: AABB = (
+			chair.global_transform.affine_inverse() * mesh.global_transform * mesh.get_aabb()
+		)
+		front = maxf(front, bounds.end.z)
+	var stand := seat.get_node("StandSpot") as Node3D
+	chair.position.z = minf(
+		rest.z, stand.position.z - float(_pose_settings["standing_chair_clearance"]) - front
+	)
 
 
 ## 落位点 = 座位的**可走站位**（desk_chair.tscn 的 StandSpot）。
@@ -387,7 +429,10 @@ func _build_actor(core: Variant, i: int) -> Node3D:
 		actor.add_child(_build_marker(missing_marker_color))
 	else:
 		var height_scale := float(_pose_settings.get("standing_scale", 1.0))
-		actor.add_child(_build_sprite(texture, height_scale))
+		var standing := _build_sprite(texture, height_scale)
+		var floor_pixel := float(pose_binding.get("standing_floor_pixel", texture.get_height()))
+		standing.position.y -= (texture.get_height() - floor_pixel) * standing.pixel_size
+		actor.add_child(standing)
 	if show_name_tags:
 		var tag := _build_name_tag(str(core.alias(i)), name_color)
 		var sprite := actor.get_node_or_null("Sprite") as Sprite3D

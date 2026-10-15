@@ -27,6 +27,10 @@ const ACTIVITY_SESSIONS = preload("res://scripts/core/activity_sessions.gd")
 const INTERACTION_SPACE = preload("res://scripts/core/interaction_space.gd")
 ## 闲聊空间几何（2026-10-16 从已删的 rules/player_interaction.csv 迁出，见 rules/chat_space.csv）
 const CHAT_SPACE_TABLE := "rules/chat_space"
+## 老师版状态与结算配置（2026-10-16，《老师版规则合并稿 D01至D07》D01 / D02 / D03）
+const PSYCHE_TABLE := "rules/psyche"
+const ACTIVITIES_TABLE := "rules/activities"
+const TEACHER_COMMANDS_TABLE := "rules/teacher_commands"
 const EXAM_SETTLE := preload("res://scripts/core/exam_settle.gd")
 const TERM_RECORD := preload("res://scripts/core/term_record.gd")
 
@@ -136,6 +140,22 @@ var _seat_world: Dictionary = {}
 var _leisure: Dictionary = {}
 var _book: Array = []
 var _teacher := TeacherPatrol.new()
+## 老师命令与时间规则（D03）：召唤 / 遣返 / 办公室聊天 / 去教室 / 调座位 + 上课延后
+var _teacher_commands := TeacherCommands.new()
+# —— 老师版状态层（《老师版规则合并稿 D01至D07》D01 / D02）——
+## 动力（0–100）：>60 进入学习状态、<30 进入游戏状态，之间为自由状态（D01）
+var _vitality := PackedFloat64Array()
+## 今日学业收益（有符号；按整数单位累计，跨天并入成绩后清零，D01/D02）
+var _gain_today := PackedFloat64Array()
+## 崩溃标记：压力 >90 进入，<70 恢复；一次连续崩溃只计一次（D01 / D06）
+var _broken: Array = []
+## 本课间状态："study" / "play" / "free"（段首按动力决定，持续一个课间；D01）
+var _phase_state: Array = []
+## 学习／娱乐／游戏的结算游标（按秒累计，每满一个单位结算一次；D02）
+var _settle_acc: Array = []
+## 配置：rules/psyche.csv（心理状态与跨天）、rules/activities.csv（单位与结算）
+var _psyche: Dictionary = {}
+var _acts: Dictionary = {}
 
 
 func _init(seed: int, npc_count: int, tables: Dictionary = {}) -> void:
@@ -203,12 +223,15 @@ func _init(seed: int, npc_count: int, tables: Dictionary = {}) -> void:
 	_space = INTERACTION_SPACE.new()
 	_term_record = TERM_RECORD.new()
 	_term_record.configure(self, tables)
+	_teacher_commands.configure(_params(tables, TEACHER_COMMANDS_TABLE), _acts)
 
 
 func _load_config(tables: Dictionary) -> void:
 	_teacher.configure(_params(tables, "rules/teacher"), _n)
 	_leisure = _params(tables, "rules/leisure")
 	_chat_space = _params(tables, CHAT_SPACE_TABLE)
+	_psyche = _params(tables, PSYCHE_TABLE)
+	_acts = _params(tables, ACTIVITIES_TABLE)
 	_p = _params(tables, "rules/transmission")
 	_kp = _params(tables, "rules/kernel_params")
 	_grade_bands = _build_grade_bands(tables)
@@ -247,6 +270,8 @@ func _alloc(n: int) -> void:
 	_stress.resize(n)
 	_grade.resize(n)
 	_study_acc.resize(n)
+	_vitality.resize(n)
+	_gain_today.resize(n)
 
 
 func _reset_runtime(n: int) -> void:
@@ -365,11 +390,22 @@ func _apply_bindings() -> void:
 
 ## 成绩初始化（§17.1.1）：NPC 种子化均匀 [min,max)，玩家固定。消费 len(chars) 次 RNG。
 ## ⚠️ 必须紧跟 _init_relations() 之后调用，与 Python 同一点插入，保同种子 RNG 流不漂移。
+## 开局状态（《老师版规则合并稿》D01）：压力 0–20 随机、动力 = 该生压力、成绩 150–450 随机（均值 300）。
+## ⚠️ 随机数顺序固定（每名学生两次 random：压力、成绩），Python 参考实现需同序。
 func _init_grade() -> void:
-	var gmin := float(_kp["grade_init_npc_min"])
-	var gmax := float(_kp["grade_init_npc_max"])
+	var smin := float(_psyche["stress_init_min"])
+	var smax := float(_psyche["stress_init_max"])
+	var gmin := float(_psyche["grade_init_min"])
+	var gmax := float(_psyche["grade_init_max"])
+	var vitality_pins_stress := int(_psyche["vitality_equals_stress"]) == 1
+	_broken = []
 	for i in range(_chars.size()):
+		var stress := _clamp100(smin + _rng.random() * (smax - smin))
+		_stress[i] = stress
+		_vitality[i] = stress if vitality_pins_stress else 0.0
+		_gain_today[i] = 0.0
 		_grade[i] = gmin + _rng.random() * (gmax - gmin)
+		_broken.append(false)
 
 
 # ------------------------------------------------------------------ 空间层
@@ -429,6 +465,9 @@ func _end_phase() -> void:
 		return
 	_settled_boundary = key
 	_settle_finished_actions()
+	# D04：课间末读一次状态，结算邻座学习涓流（同一时点一次性处理，不每秒重复累加）
+	if _phase == "break":
+		_settle_neighbor_drip()
 	if _phase == "class":
 		_class_affinity_settle()
 	_settle_sleep()
@@ -444,9 +483,37 @@ func _begin_phase() -> void:
 	var row: Dictionary = _active_phases[_phase_index]
 	_phase = str(row["kind"])
 	_tick_in_phase = 0
+	# D03：课间开始恢复挂起命令与「首次进教室」机会；上课开始则把未完成命令挂起。
+	if _phase == "break":
+		_teacher_commands.begin_break()
+	else:
+		_teacher_commands.begin_class(self)
 	_teacher.begin_phase(self)
 	_roll_sleep()
+	_begin_phase_state()
 	_phase_setup_done = true
+
+
+## 段首状态判定（《老师版规则合并稿》D01）：动力 >60 → 学习状态、<30 → 游戏状态，
+## 之间为自由状态；状态持续一个课间，不因同学拉朋友而改变（D01 第 2 条）。
+## 崩溃者的状态为 "broken"（D06：不能互动、不参加座位结算，由老师安抚恢复）。
+func _begin_phase_state() -> void:
+	_phase_state = []
+	_settle_acc = []
+	var study_threshold := float(_psyche["vitality_study_threshold"])
+	var play_threshold := float(_psyche["vitality_play_threshold"])
+	for i in range(_n):
+		_settle_acc.append(0.0)
+		if _broken[i]:
+			_phase_state.append("broken")
+		elif _phase != "break":
+			_phase_state.append("free")
+		elif _vitality[i] > study_threshold:
+			_phase_state.append("study")
+		elif _vitality[i] < play_threshold:
+			_phase_state.append("play")
+		else:
+			_phase_state.append("free")
 
 
 ## 推进一个 tick（D11 单步粒度）。段未开始则先跑段首结算。
@@ -576,6 +643,8 @@ func _settle_finished_actions() -> void:
 		if _busy_phase[i] < 0 or _busy_until[i] > _global_tick:
 			continue
 		_last_finished[i] = _busy_act[i]
+		# D02 第 4 条：未满一个单位的部分按时间比例折算（压力按 2 秒 1 点；收益只按整数单位）。
+		_fold_pending_unit(i)
 		if LEISURE_KINDS.has(_busy_act[i]):
 			var prefix: String = LEISURE_KINDS[_busy_act[i]]
 			_stress[i] = _clamp100(_stress[i] - float(_leisure[prefix + "_relief"]))
@@ -608,46 +677,211 @@ func _tick() -> void:
 	_settle_conversations()
 	_settle_groups()
 	_teacher.step(self)
+	# D03：老师命令按秒推进（上课期间由 TeacherCommands 自行挂起，不产生效果）。
+	if _phase == "break":
+		_teacher_commands.tick(self)
 	_decide_and_act()
 	_term_record.tick_state(self)
-	_study_accumulate()
+	_settle_units()
+	_check_breakdown()
 	_update_environment()
 	if _global_tick % int(_p["settle_interval"]) == 0:
 		_stress_drip()
 
 
-## 成绩涓流（§17.1.2）：每 tick 处于「学习状态」（默认空闲 = 无行为且不忙碌）时累积 study_acc，
-## 满档 +1 分。上课段不累积；跨天保留（_settle_day 不清 study_acc）。不消耗 RNG。
-func _study_accumulate() -> void:
+## 单位结算（《老师版规则合并稿》D02）：按秒累计，每满一个单位结算一次；只对课间生效。
+## · 学习：每 20 秒 +1 学业收益、-5 动力（不直接加成绩 —— 跨天由 _settle_day 把当日收益并入成绩）
+## · 娱乐（吃零食 / 聊天 / 打闹 / 听歌 / 看课外书）：每 10 秒 -5 压力
+## · 游戏状态：每 20 秒 -1 学业收益、-5 压力（不减少动力）
+## 未完成的余额不在这里结算：自然完成 / 被打断时由 _fold_pending_unit 按 D02 第 4 条折算。
+func _settle_units() -> void:
 	if _phase != "break":
 		return
-	var gmax := float(_kp["grade_max"])
+	var study_seconds := float(_acts["study_settle_seconds"])
+	var play_seconds := float(_acts["play_settle_seconds"])
+	var unit_seconds := float(_acts["unit_seconds"])
 	for i in range(_n):
-		if not is_present(i):
+		var kind := _unit_kind(i)
+		if kind == "":
+			_settle_acc[i] = 0.0
 			continue
-		if _grade[i] >= gmax:
-			_study_acc[i] = 0.0
-			continue
-		# §8.23：学习是**主动行为** —— 玩家与 NPC 都必须处于学习态才累积成绩
-		if _current_act[i] != "study":
-			continue
-		_study_acc[i] += 1.0
-		var tpp := _grade_ticks_per_point(_grade[i])
-		if tpp <= 0.0:
-			continue
-		_fold_study_acc(i)
+		_settle_acc[i] += 1.0
+		if kind == "study":
+			while _settle_acc[i] >= study_seconds:
+				_settle_acc[i] -= study_seconds
+				_gain_today[i] += float(_acts["study_gain"])
+				_vitality[i] = _clamp100(_vitality[i] - float(_acts["study_vitality_cost"]))
+		elif kind == "play":
+			while _settle_acc[i] >= play_seconds:
+				_settle_acc[i] -= play_seconds
+				_gain_today[i] += float(_acts["play_gain"])
+				_stress[i] = _clamp100(_stress[i] - float(_acts["play_relief"]))
+		else:
+			while _settle_acc[i] >= unit_seconds:
+				_settle_acc[i] -= unit_seconds
+				_stress[i] = _clamp100(_stress[i] - float(_acts["relief_per_unit"]))
 
 
-## 把已经灌进 study_acc 的时长折成分数。满档 +1，并给自身压力（§8.23）。
-func _fold_study_acc(i: int) -> void:
-	var gmax := float(_kp["grade_max"])
-	while _grade[i] < gmax:
-		var tpp := _grade_ticks_per_point(_grade[i])
-		if tpp <= 0.0 or _study_acc[i] < tpp:
-			return
-		_study_acc[i] -= tpp
-		_grade[i] += 1.0
-		_apply_event(i, i, "study_stress")
+## 该生此刻按哪一类结算："" = 不结算｜"study"｜"play"｜"leisure"。
+## 学习状态与游戏状态来自段首判定（D01），自由状态则看当前动作（D02）。
+func _unit_kind(i: int) -> String:
+	if _broken[i] or _sleeping[i] or not is_present(i):
+		return ""
+	if _phase_state.size() > i and str(_phase_state[i]) == "study":
+		return "study"
+	if _phase_state.size() > i and str(_phase_state[i]) == "play":
+		return "play"
+	var act: Variant = _current_act[i]
+	if act == "study":
+		return "study"
+	if act != null and LEISURE_KINDS.has(act):
+		return "leisure"
+	return ""
+
+
+## 未完成单位的折算（D02 第 4 条）：压力按每 2 秒 1 点折算，学业收益只按整数单位计（不足不计）。
+func _fold_pending_unit(i: int) -> void:
+	if _settle_acc.size() <= i:
+		return
+	var pending := float(_settle_acc[i])
+	_settle_acc[i] = 0.0
+	if pending <= 0.0:
+		return
+	var per_point := float(_acts["interrupt_stress_per_point_seconds"])
+	if per_point <= 0.0:
+		return
+	var relief := floorf(pending / per_point)
+	if relief > 0.0:
+		_stress[i] = _clamp100(_stress[i] - relief)
+
+
+## 崩溃判定（D01 / D06）：压力 >90 → 崩溃（立即中断活动、保留已得收益）；
+## 压力 <70 → 恢复，下一个正常决策点按动力选择活动。一次连续崩溃只计一次。
+## 待确认（合并稿未定）：自然恢复方式、安抚幅度与耗时 —— 本实现不额外减压。
+func _check_breakdown() -> void:
+	var enter := float(_psyche["breakdown_enter_stress"])
+	var recover := float(_psyche["breakdown_exit_stress"])
+	for i in range(_n):
+		if not _broken[i] and _stress[i] > enter:
+			_broken[i] = true
+			_fold_pending_unit(i)
+			_current_act[i] = null
+			_busy_act[i] = null
+			_busy_phase[i] = -1
+			_busy_until[i] = 0
+			_sleeping[i] = false
+			if _phase_state.size() > i:
+				_phase_state[i] = "broken"
+			_stats["breakdowns"] = int(_stats.get("breakdowns", 0)) + 1
+			_emit("event_happened", {"kind": "breakdown", "i": i})
+		elif _broken[i] and _stress[i] < recover:
+			_broken[i] = false
+			if _phase_state.size() > i:
+				_phase_state[i] = "free"
+			_emit("event_happened", {"kind": "breakdown_recovered", "i": i})
+
+
+## 邻座涓流（D01「周围有人学习 +5 压力」/ D04「每课间末读一次状态结算一次」）：
+## 周围 = 前后左右邻座（不含对角），效果可叠加；同一时点一次处理，不每秒重复累加。
+func _settle_neighbor_drip() -> void:
+	var drip := float(_acts["neighbor_study_stress"])
+	for i in range(_n):
+		if _broken[i] or not is_present(i):
+			continue
+		# D03 第 5 条：换座期间的学生不参加课间涓流（既不作接收者也不作来源）。
+		if _teacher_commands.is_seat_changing(i):
+			continue
+		var studying := 0
+		for j in _neighbor_idx[i]:
+			if _teacher_commands.is_seat_changing(int(j)):
+				continue
+			if _unit_kind(int(j)) == "study":
+				studying += 1
+		if studying > 0:
+			_stress[i] = _clamp100(_stress[i] + drip * studying)
+			_stats["neighbor_drip"] = int(_stats.get("neighbor_drip", 0)) + studying
+
+
+## 游戏状态（D01 / D02）：动力 <30 的学生整课间做娱乐活动，减少学业收益。
+## 可选活动 = LEISURE_KINDS 中当前相位允许、且条件满足者（看课外书需要手上有书）。
+## 待确认（合并稿未定）：游戏状态是否必须包含「聊天 / 打闹」这类需要伙伴的活动。
+func _start_play_activity(i: int) -> bool:
+	var kinds: Array = []
+	for kind in LEISURE_KINDS:
+		if not _allowed(kind):
+			continue
+		if kind == "read_book" and _book[i] <= 0:
+			continue
+		kinds.append(kind)
+	if kinds.is_empty():
+		return false
+	var pick := clampi(int(_rng.random() * float(kinds.size())), 0, kinds.size() - 1)
+	return _start_leisure(i, str(kinds[pick]))
+
+
+## 动力（0–100，D01）：>60 进入学习状态、<30 进入游戏状态。
+func vitality(i: int) -> float:
+	if i < 0 or i >= _n:
+		return 0.0
+	return _vitality[i]
+
+
+## 今日学业收益（D01 / D02）：跨天并入成绩后清零，可为负。
+func gain_today(i: int) -> float:
+	if i < 0 or i >= _n:
+		return 0.0
+	return _gain_today[i]
+
+
+## 是否处于崩溃（D01 / D06）。
+func is_broken(i: int) -> bool:
+	return i >= 0 and i < _n and bool(_broken[i])
+
+
+## 老师命令服务（D03）：表现层通过它发意图、读只读快照。
+func teacher_commands() -> TeacherCommands:
+	return _teacher_commands
+
+
+## 直接加压（老师命令用；钳制在 0–100，D01 范围）。不消耗随机数。
+func add_stress(i: int, delta: float) -> void:
+	if i < 0 or i >= _n:
+		return
+	_stress[i] = _clamp100(_stress[i] + delta)
+
+
+## 调座位发起时打断参与者当前行为（D03 第 6 / 7 条）：保留已得收益、不发放完成奖励；
+## 处在共同活动里则从该活动移出（其他人不自动停下，人数不足时活动自然结束）。
+func interrupt_for_seat_change(i: int) -> void:
+	if i < 0 or i >= _n:
+		return
+	_fold_pending_unit(i)
+	_current_act[i] = null
+	_busy_act[i] = null
+	_busy_phase[i] = -1
+	_busy_until[i] = 0
+	_leave_solo_activity(i)
+	var sid := _sessions.session_of(i)
+	if sid >= 0:
+		_sessions.end(int(sid))
+
+
+## 调座位生效（D03 第 4 条）：交换两人的座位号并重算邻接；不写任何关系矩阵。
+func apply_seat_change(a: int, b: int) -> void:
+	if a < 0 or b < 0 or a >= _n or b >= _n or a == b:
+		return
+	var tmp: Variant = _seat_of[a]
+	_seat_of[a] = _seat_of[b]
+	_seat_of[b] = tmp
+	_build_neighbor_idx()
+	_emit("event_happened", {"kind": "seat_changed", "a": a, "b": b})
+
+
+## 本课间的段首状态："study" / "play" / "free" / "broken"。
+func phase_state_of(i: int) -> String:
+	if i < 0 or i >= _phase_state.size():
+		return ""
+	return str(_phase_state[i])
 
 
 ## 当前成绩档的「每 +1 分所需 tick」（§17.1.2 分段表）；越界返回 0。
@@ -727,8 +961,17 @@ func _spread_knot(i: int, severity: float) -> void:
 		_emit("tag_changed", {"id": j, "tag": "heart_knot"})
 
 
-## 跨天结算（§3.5）：压力爆发概率判定 → 心结每日加压 → 各轴衰减。
+## 跨天结算（§3.5 + 《老师版规则合并稿》D01）：压力/动力的固定继承 → 爆发判定 → 心结加压 → 各轴衰减。
+## D01：「跨天压力单独减少 20 点，动力单独减少 10 点，成绩提升数值为学业收益。」
 func _settle_day() -> void:
+	var carry_stress := float(_psyche["carry_stress_cut"])
+	var carry_vitality := float(_psyche["carry_vitality_cut"])
+	var grade_max := float(_kp["grade_max"])
+	for i in range(_n):
+		_stress[i] = _clamp100(_stress[i] - carry_stress)
+		_vitality[i] = _clamp100(_vitality[i] - carry_vitality)
+		_grade[i] = clampf(_grade[i] + _gain_today[i], 0.0, grade_max)
+		_gain_today[i] = 0.0
 	_try_burst()
 	# 「心结」：爆发后的几天里，每天先加压（长线心理创伤，§3.5）。
 	for i in range(_n):
@@ -749,7 +992,7 @@ func _settle_day() -> void:
 			var interacted := float(_day_events.get("%d,%d" % [i, j], 0)) >= interact_min
 			_a[idx] *= decay_a_interact if interacted else decay_a_no_interact
 			_h[idx] *= decay_h
-		_stress[i] *= retain_s
+		# D01：压力按固定 −20 继承（不再按 retain_s 比例保留；旧口径见 CHANGELOG 的冲突清单）。
 	_day_events.clear()
 	if _exam != null:
 		_exam.settle(_day, _grade, _stress, _alias_list())
@@ -979,6 +1222,8 @@ func _check_interrupt() -> void:
 		if _busy_phase[i] < 0:
 			continue
 		if _busy_until[i] > _global_tick:
+			# D02 第 4 条：被打断的活动按时间比例结算，保留已得收益、不发放完成奖励。
+			_fold_pending_unit(i)
 			_busy_until[i] = 0
 			_busy_phase[i] = -1
 			var action_cost := (
@@ -1153,6 +1398,18 @@ func _decide_and_act() -> void:
 		if _sleeping[i] or busy[i] or _global_tick < _busy_until[i] or is_moving(i):
 			continue
 		_in_conversation[i] = false
+		# 段首状态（D01）：学习状态整课间学习、游戏状态整课间娱乐，且不被拉朋友规则改变；
+		# 崩溃者不参与决策（D06：不能互动、找伴、加入或带朋友）。
+		var state := str(_phase_state[i]) if _phase_state.size() > i else "free"
+		if state == "broken":
+			continue
+		if state == "study":
+			_do_study(i)
+			busy[i] = true
+			continue
+		if state == "play" and _start_play_activity(i):
+			busy[i] = true
+			continue
 		var leisure_started := false
 		for kind in LEISURE_KINDS:
 			var prefix: String = LEISURE_KINDS[kind]

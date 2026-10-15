@@ -18,8 +18,12 @@ func test_finished_action_clears_occupancy_and_is_observable() -> void:
 	var core := _core()
 	# 让其余同学整段睡觉：否则 0 号会被他们的共同活动拉走（聊天占用走 _occupy_chat，
 	# 不写 _busy_phase，见 scripts/core/sim_core.gd 的注释），本用例要验的是通用占用协议。
-	for i in range(1, core.node_count()):
+	for i in range(core.node_count()):
 		core._sleeping[i] = true
+	# 0 号自己也要隔离：否则「到期」的那一刻段首状态（动力 >60 → 学习）会立刻接手，
+	# 占用记录看起来像没被清理。本用例只验通用占用协议的到期语义。
+	core._begin_phase_state()
+	core._phase_state[0] = "broken"
 	var duration: int = int(core._behaviors["eat_snack"]["duration"])
 	core._occupy(0, 0, "eat_snack")
 	var until: int = core._busy_until[0]

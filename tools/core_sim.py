@@ -158,6 +158,7 @@ class Sim:
         self.nw = load_params("balance/npc_weight" + "s.csv")
         # 内核硬编码系数（grade 等初始化常量）—— 从 kernel_params.csv 读，与 GDScript 内核同源。
         self.kp = load_params("rules/kernel_params.csv")
+        self.psyche = load_params("rules/psyche.csv")
         # 成绩涓流分段表（§17.1.2）：band_upper 升序。
         self.grade_bands = sorted(
             [(float(r["band_upper"]), float(r["ticks_per_point"]))
@@ -320,12 +321,15 @@ class Sim:
                     self.A[g][j] = 50.0
 
     def _init_grade(self):
-        """成绩初始化（§17.1.1）：NPC 种子化均匀 [min,max)，玩家固定。消费 len(chars) 次 RNG。
+        """成绩初始化（§17.1.1）：NPC 种子化均匀 [min,max)。
 
         ⚠️ 必须紧跟 `_init_relations()` 之后调用，与 GDScript 同一点插入，保同种子 RNG 流不漂移。
+        2026-10-16：开局成绩分布改由 rules/psyche.csv 给出（D01：150–450，均值 300）。
+        ⚠️ 压力 / 动力 / 学业收益的完整 D01 口径尚未在本参考实现中同步（见
+        docs/production/老师版待确认参数.md「本轮未做」第 3 条）。
         """
-        gmin = self.kp["grade_init_npc_min"]
-        gmax = self.kp["grade_init_npc_max"]
+        gmin = self.psyche["grade_init_min"]
+        gmax = self.psyche["grade_init_max"]
         for i in range(len(self.chars)):
             self.Grade[i] = gmin + self.rng.random() * (gmax - gmin)
 

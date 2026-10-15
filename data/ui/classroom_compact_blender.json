@@ -1,0 +1,9 @@
+{
+  "assets": [
+    {
+      "source": "res://assets/models/classroom_compact/bag_left_hook.glb",
+      "name": "BagLeftHook",
+      "scene": "res://scenes/components/bag_left_hook.tscn"
+    }
+  ]
+}

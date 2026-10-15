@@ -7,11 +7,11 @@ extends CanvasLayer
 ## 卡片尺寸、文案及试用目标集中在 data/ui/time_card.json，纸张样式复用 CampusTheme。
 ##
 ## 显示口径：
-##   · 课间：`第 6 / 30 天 · 中午午休` + `课间剩余 01:24` + 剩余时间条；
-##   · 上课：`第 6 / 30 天 · 上午课堂` + `发酵中 · 本阶段约剩余 00:12`（玩家操作被锁）；
+##   · 课间／上课：天数与阶段 + 剩余时间条，不显示具体分秒；
+##   · 临近结束变暖橙色，暂停时冻结并显示「已暂停」；
 ##   · 日末：第二行改为 `第 6 天结束 · 晚自习与夜晚悄然过去……`，停留 `report_hold_seconds` 秒后
 ##     **自动进入次日**（空格可提前）；第 30 天结束显示「查看学期报告」按钮；
-##   · 倒计时**向上取整**，边界显示 00:00，不出现负数；阶段名提示在边界只弹一次。
+##   · 剩余比例钳制在 0–1；阶段名提示在边界只弹一次。
 
 ## 日报组件接入用：日末停留结束（或玩家按空格提前）时发出
 signal continue_requested
@@ -49,6 +49,8 @@ var _grade: RichTextLabel = null
 ## 上一次显示的学生均分；变化时轻微闪一下。
 var _grade_shown := -1.0
 var _detail: Label = null
+var _time_status: Label
+var _time_icon: TextureRect
 var _exam: Label = null
 var _bar: ProgressBar = null
 var _toast: Label = null
@@ -84,6 +86,9 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# hold/release 不发 time_updated；只读同步暂停变化，不推进模拟时间。
+	if is_instance_valid(_clock) and _clock.is_paused() != bool(_last.get("paused", false)):
+		_refresh(_clock.snapshot())
 	_layout_left_cards()
 	tick_report_hold(delta)
 	if _toast_left <= 0.0:
@@ -261,6 +266,9 @@ func _refresh(snapshot_data: Dictionary) -> void:
 		if mode == SimulationClock.MODE_RUNNING
 		else 0.0
 	)
+	_bar.visible = mode == SimulationClock.MODE_RUNNING
+	_time_icon.visible = _bar.visible
+	_time_status.text = ""
 
 	# 非日末状态一律清空停留倒计时（进入 report 时再起，见下）
 	if mode != SimulationClock.MODE_REPORT:
@@ -283,13 +291,30 @@ func _refresh(snapshot_data: Dictionary) -> void:
 	_action.visible = false
 	_show_exam_line("")
 
-	var remaining := _seconds_text(float(snapshot_data.get("remaining_seconds", 0.0)))
-	if str(snapshot_data.get("kind", "")) == "class":
-		_detail.text = "发酵中 · 本阶段约剩余 %s" % remaining
-		_detail.modulate = COLOR_LOCKED
-		return
-	_detail.text = "课间剩余 %s" % remaining
-	_detail.modulate = COLOR_SUB
+	_refresh_remaining_state(snapshot_data)
+
+
+func _refresh_remaining_state(snapshot_data: Dictionary) -> void:
+	var words: Dictionary = _card_cfg.messages
+	var is_class := str(snapshot_data.get("kind", "")) == "class"
+	var paused := bool(snapshot_data.get("paused", false))
+	var ending := _bar.value <= float(_card_cfg.ending_remaining_ratio) * _bar.max_value
+	var color := Color(str(CampusTheme.settings().teal))
+	_detail.text = str(words.class_remaining if is_class else words.break_remaining)
+	_detail.modulate = Color.WHITE
+	if paused:
+		_time_status.text = str(words.paused)
+		color = Color(str(_card_cfg.bar_paused_color))
+	elif ending:
+		_time_status.text = str(words.class_ending if is_class else words.break_ending)
+		color = Color(str(_card_cfg.bar_ending_color))
+	_time_status.add_theme_color_override("font_color", color)
+	_time_icon.modulate = color
+	_time_icon.texture = load(
+		"res://assets/icons/ui/time_pause.svg" if paused else "res://assets/icons/ui/time_bell.svg"
+	)
+	var fill := _bar.get_theme_stylebox("fill") as StyleBoxFlat
+	fill.bg_color = color
 
 
 func _refresh_weekly_goal(snapshot_data: Dictionary) -> void:
@@ -368,12 +393,6 @@ func _show_action(text: String) -> void:
 	_action.text = text
 
 
-## 2026-10-14 概念图口径：mm:ss；向上取整，零边界不出现负数。
-func _seconds_text(seconds: float) -> String:
-	var rounded := int(ceilf(maxf(seconds, 0.0)))
-	return "%02d:%02d" % [rounded / 60, rounded % 60]
-
-
 func _show_toast(text: String) -> void:
 	if _toast == null:
 		return
@@ -411,7 +430,20 @@ func _build_ui() -> void:
 	_title = _make_label(int(_card_cfg.title_font_size), COLOR_INK)
 	box.add_child(_title)
 	_detail = _make_label(int(_card_cfg.detail_font_size), COLOR_SUB)
-	box.add_child(_detail)
+	var time_row := HBoxContainer.new()
+	time_row.name = "TimeRow"
+	time_row.add_theme_constant_override("separation", int(_card_cfg.icon_gap))
+	box.add_child(time_row)
+	_time_icon = TextureRect.new()
+	_time_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_time_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_time_icon.custom_minimum_size = Vector2.ONE * float(_card_cfg.icon_size)
+	time_row.add_child(_time_icon)
+	_detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	time_row.add_child(_detail)
+	_time_status = _make_label(int(_card_cfg.detail_font_size), COLOR_SUB)
+	_time_status.name = "TimeStatus"
+	time_row.add_child(_time_status)
 	_bar = ProgressBar.new()
 	_bar.name = "Remaining"
 	_bar.show_percentage = false

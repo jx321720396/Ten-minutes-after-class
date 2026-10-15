@@ -1,0 +1,21 @@
+# 心理状态与跨天继承（《老师版规则合并稿 D01至D07》D01 / D06）
+# 依据：D01「开局与跨天继承」、D06「崩溃入口 / 恢复」。
+# 只放合并稿已明确的规则阈值；未确认参数在 docs/production/老师版待确认参数.md 列出，不在此表填占位值。
+param,value,unit,note
+stress_init_min,0,点,开局压力下界（0–20 随机）
+stress_init_max,20,点,开局压力上界
+vitality_equals_stress,1,标志,开局动力 = 该生开局压力（1 = 是）
+grade_init_min,150,分,开局成绩下界
+grade_init_max,450,分,开局成绩上界（与上界合计均值 300，D01 要求「确保平均成绩为 300」）
+stat_min,0,点,压力／动力下界
+stat_max,100,点,压力／动力上界
+vitality_study_threshold,60,点,动力 > 60 → 进入学习状态（持续一个课间）
+vitality_play_threshold,30,点,动力 < 30 → 进入游戏状态（持续一个课间）
+breakdown_enter_stress,90,点,压力 > 90 → 崩溃（立即中断活动，保留已得收益）
+breakdown_exit_stress,70,点,压力 < 70 → 从崩溃恢复
+carry_stress_cut,20,点,跨天：压力单独减少 20
+carry_vitality_cut,10,点,跨天：动力单独减少 10
+stress_up_vitality_up,1,标志,联动：默认事件加压力时同步加等量动力（D01 主规则）
+stress_down_vitality_down,1,标志,联动：压力减少时动力随之减少
+vitality_up_stress_unchanged,1,标志,联动：动力增加不带动压力
+vitality_down_stress_unchanged,1,标志,联动：动力减少不影响压力

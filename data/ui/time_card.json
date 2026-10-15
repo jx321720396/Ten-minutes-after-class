@@ -19,8 +19,11 @@
   "exam_font_size": 22,
   "goal_font_size": 18,
   "row_gap": 6,
-  "bar_height": 10,
-  "bar_radius": 5,
+  "bar_height": 18,
+  "bar_radius": 9,
+  "ending_remaining_ratio": 0.2,
+  "bar_ending_color": "bd651f",
+  "bar_paused_color": "527c7d",
   "icon_size": 22,
   "icon_gap": 8,
   "phase_names": {
@@ -29,6 +32,11 @@
     "afternoon_break": "第三课间"
   },
   "messages": {
+    "break_remaining": "课间剩余",
+    "class_remaining": "课堂剩余",
+    "break_ending": "即将上课",
+    "class_ending": "即将下课",
+    "paused": "已暂停",
     "week_future": "周考还有 %d 天",
     "week_today": "今天周考",
     "week_past": "首次周考已结束",

@@ -2,7 +2,7 @@
   "bindings": {
     "warm_male": {
       "study": "res://assets/textures/characters/study_front_v1/char_01_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_01_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_01_stand_natural_v2.png",
       "layout": {
         "split_y": 730,
         "upper_height_gain": 0.026449999999999863,
@@ -89,11 +89,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1503
     },
     "sensitive_female": {
       "study": "res://assets/textures/characters/study_front_v1/char_02_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_02_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_02_stand_natural_v2.png",
       "layout": {
         "split_y": 732,
         "upper_height_gain": 0.02652246575342452,
@@ -180,11 +181,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1500
     },
     "quiet_male": {
       "study": "res://assets/textures/characters/study_front_v1/char_03_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_03_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_03_stand_natural_v2.png",
       "layout": {
         "split_y": 768,
         "upper_height_gain": 0.027826849315068347,
@@ -271,11 +273,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1514
     },
     "stern_female": {
       "study": "res://assets/textures/characters/study_front_v1/char_04_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_04_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_04_stand_natural_v2.png",
       "layout": {
         "split_y": 736,
         "upper_height_gain": 0.026667397260273833,
@@ -362,11 +365,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1522
     },
     "lively_female": {
       "study": "res://assets/textures/characters/study_front_v1/char_05_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_06_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_05_stand_natural_v2.png",
       "layout": {
         "split_y": 759,
         "upper_height_gain": 0.02750075342465739,
@@ -453,11 +457,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1524
     },
     "warm_female": {
       "study": "res://assets/textures/characters/study_front_v1/char_06_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_07_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_06_stand_natural_v2.png",
       "layout": {
         "split_y": 716,
         "upper_height_gain": 0.025942739726027262,
@@ -544,11 +549,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1506
     },
     "blunt_male": {
       "study": "res://assets/textures/characters/study_front_v1/char_07_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_08_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_07_stand_natural_v2.png",
       "layout": {
         "split_y": 741,
         "upper_height_gain": 0.026848561643835474,
@@ -635,11 +641,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1516
     },
     "shy_female": {
       "study": "res://assets/textures/characters/study_front_v1/char_08_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_09_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_08_stand_natural_v2.png",
       "layout": {
         "split_y": 729,
         "upper_height_gain": 0.026413767123287534,
@@ -726,11 +733,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1515
     },
     "sensitive_male": {
       "study": "res://assets/textures/characters/study_front_v1/char_09_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_10_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_09_stand_natural_v2.png",
       "layout": {
         "split_y": 730,
         "upper_height_gain": 0.026449999999999863,
@@ -817,11 +825,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1520
     },
     "blunt_female": {
       "study": "res://assets/textures/characters/study_front_v1/char_10_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_14_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_10_stand_natural_v2.png",
       "layout": {
         "split_y": 730,
         "upper_height_gain": 0.026449999999999863,
@@ -908,11 +917,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1509
     },
     "shy_male": {
       "study": "res://assets/textures/characters/study_front_v1/char_11_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_16_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_11_stand_natural_v2.png",
       "layout": {
         "split_y": 721,
         "upper_height_gain": 0.026123904109588904,
@@ -999,11 +1009,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1520
     },
     "tsundere_male": {
       "study": "res://assets/textures/characters/study_front_v1/char_12_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_17_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_12_stand_natural_v2.png",
       "layout": {
         "split_y": 731,
         "upper_height_gain": 0.02648623287671219,
@@ -1090,11 +1101,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1519
     },
     "quiet_female": {
       "study": "res://assets/textures/characters/study_front_v1/char_13_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_20_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_13_stand_natural_v2.png",
       "layout": {
         "split_y": 707,
         "upper_height_gain": 0.025616643835616303,
@@ -1181,11 +1193,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1521
     },
     "lively_male": {
       "study": "res://assets/textures/characters/study_front_v1/char_14_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_21_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_14_stand_natural_v2.png",
       "layout": {
         "split_y": 733,
         "upper_height_gain": 0.026558698630136848,
@@ -1272,11 +1285,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1518
     },
     "tsundere_female": {
       "study": "res://assets/textures/characters/study_front_v1/char_15_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_23_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_15_stand_natural_v2.png",
       "layout": {
         "split_y": 729,
         "upper_height_gain": 0.026413767123287534,
@@ -1363,11 +1377,12 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1502
     },
     "stern_male": {
       "study": "res://assets/textures/characters/study_front_v1/char_16_study_down_v1.png",
-      "standing": "res://assets/textures/characters/fullbody_v1/char_24_body_base_v1.png",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_16_stand_natural_v2.png",
       "layout": {
         "split_y": 726,
         "upper_height_gain": 0.026305068493150546,
@@ -1454,7 +1469,8 @@
             ]
           ]
         ]
-      }
+      },
+      "standing_floor_pixel": 1509
     }
   },
   "split_y": 730,
@@ -1543,5 +1559,10 @@
     ]
   ],
   "clear_desk_props": true,
-  "standing_scale": 1.3225
+  "standing_scale": 1.3225,
+  "geometry_reference": {
+    "desktop_top": 0.76,
+    "desktop_depth": 0.46
+  },
+  "standing_chair_clearance": 0.1
 }

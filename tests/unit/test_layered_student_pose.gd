@@ -13,12 +13,23 @@ func test_full_roster_has_matching_standing_and_downward_study_assets() -> void:
 		)
 	)
 	assert_eq(settings.bindings.size(), 16, "16名同学全部接入")
+	var standing: Array = JSON.parse_string(
+		FileAccess.get_file_as_string(
+			"res://assets/textures/characters/standing_front_v2/manifest.json"
+		)
+	)
 	for row in manifest:
 		assert_true(settings.bindings.has(row.sprite), "当前名册外观必须有素材绑定")
 		if not settings.bindings.has(row.sprite):
 			continue
 		var binding: Dictionary = settings.bindings[row.sprite]
-		assert_eq(binding.standing, row.reference, "姓名映射不能误用旧24人文件编号")
+		var standing_row: Dictionary = standing[int(row.id) - 1]
+		assert_eq(standing_row.id, row.id)
+		assert_eq(standing_row.identity_reference, row.reference, "保持原人物参考身份")
+		assert_eq(binding.standing, standing_row.reference, "绑定对应同学的自然站姿")
+		var texture := load(str(binding.standing)) as Texture2D
+		assert_gt(int(binding.standing_floor_pixel), 0)
+		assert_lte(int(binding.standing_floor_pixel), texture.get_height(), "鞋底标定不能超出原图")
 		assert_eq(binding.study, "res://assets/textures/characters/study_front_v1/" + row.file)
 		assert_true(binding.has("layout"), "每图单独校准桌面和前景")
 	assert_almost_eq(float(settings.get("standing_scale", 0)), 1.3225, 0.0001)
@@ -96,6 +107,22 @@ func test_real_classroom_switches_without_moving_actor_or_writing_core() -> void
 	var core = state.sim_core
 	assert_eq(actors._seated_poses.size(), 16, "全班同学启用新版图片")
 	var index = actors._seated_poses.keys()[0]
+	for candidate in actors._seated_poses:
+		var standing = actors.actor_for(candidate).get_node("Sprite")
+		var binding: Dictionary = actors._seated_poses[candidate]._binding
+		var sole: float = (
+			standing.position.y
+			+ (
+				(standing.texture.get_height() * 0.5 - binding.standing_floor_pixel)
+				* standing.pixel_size
+			)
+		)
+		assert_almost_eq(sole, 0.0, 0.0001, "每张站姿的实际鞋底都落在人物根节点")
+		if (
+			actors.seat_node_of(candidate).global_position.z
+			> actors.seat_node_of(index).global_position.z
+		):
+			index = candidate
 	var actor = actors.actor_for(index)
 	var pose = actor.get_node("SeatedPose")
 	var seat = actors.seat_node_of(index)
@@ -115,6 +142,13 @@ func test_real_classroom_switches_without_moving_actor_or_writing_core() -> void
 	assert_eq(core.grade(index), grade)
 	assert_eq(core.activity_of(index), "study")
 	var camera = room.get_node("Camera3D")
+	# Isolate the frontmost real desk; roster order must not imply an unobstructed view.
+	room.get_node("ClassroomArt").set_camera_follow_enabled(false)
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = 2.0
+	camera.look_at_from_position(
+		seat.global_position + Vector3(0, 1.6, 2.5), seat.global_position + Vector3(0, .8, 0)
+	)
 	var head = pose.to_global(
 		pose._foreground_vertex(Vector2(512, 220), pose._textures["study"], camera)
 	)
@@ -139,7 +173,8 @@ func test_real_classroom_switches_without_moving_actor_or_writing_core() -> void
 	box.shape = shape
 	blocker.add_child(box)
 	room.add_child(blocker)
-	blocker.global_position = camera.global_position.lerp(head, 0.5)
+	var ray_origin: Vector3 = camera.project_ray_origin(camera.unproject_position(head))
+	blocker.global_position = ray_origin.lerp(head, 0.5)
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	assert_eq(

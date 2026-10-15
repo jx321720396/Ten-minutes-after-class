@@ -125,6 +125,10 @@ func test_action_completion_restores_normal_speed() -> void:
 	var clock: SimulationClock = parts[1]
 	var flow = parts[2]
 	var me := core.node_count() - 1
+	# 先完成惰性段首初始化，再隔离自主决策，避免首 tick 覆盖测试状态。
+	core._begin_phase()
+	for i in range(core.node_count()):
+		core._phase_state[i] = "broken"
 	core._do_chat(me, 0)
 	# 聊天时长带抖动（base × uniform[0.8,1.2]），所以按「忙不忙」推进，不写死 30 tick。
 	var guard := 0
@@ -133,7 +137,9 @@ func test_action_completion_restores_normal_speed() -> void:
 		clock.pump(1.0)
 		guard += 1
 	flow.refresh()
-	assert_false(core.is_busy(me), "聊天在十真实秒内完成")
+	assert_lt(guard, 40, "聊天应在保护上限前完成，不能拖到铃响")
+	assert_lt(core.global_tick(), 100, "必须在当前课间内观察聊天完成")
+	assert_false(core.is_busy(me), "聊天完成后不再占用")
 	assert_eq(flow.multiplier(), 1.0, "完成后自动恢复正常速度")
 	var tick_after := core.global_tick()
 	clock.pump(1.0)
@@ -255,14 +261,20 @@ func test_study_accelerates_clock_and_grade_together() -> void:
 	var clock: SimulationClock = parts[1]
 	var flow: TimeFlow = parts[2]
 	var me := core.node_count() - 1
-	var before := core.grade(me)
+	# 段首状态决定结算口径：这里明确把该生设为学习状态（其余隔离），避免被动力推断成游戏状态。
+	core._begin_phase()
+	for i in range(core.node_count()):
+		core._phase_state[i] = "broken"
+	core._phase_state[me] = "study"
+	var gain_before := core.gain_today(me)
 	core._do_study(me)
 	for second in range(20):
 		flow._process(1.0)
 		clock.pump(1.0)
 	assert_eq(core.global_tick(), 30)
-	# 学生成绩初值是种子化随机（200–650，2026-10-16 起没有固定玩家初值），所以断言增量而不是绝对值。
-	assert_gt(core.grade(me), before, "学习期间成绩增长")
+	# D02：学习先记「今日学业收益」，跨天由 _settle_day 并入成绩（成绩当天不变）。
+	assert_eq(core.phase_state_of(me), "study", "推进后仍保留学习段首状态")
+	assert_almost_eq(core.gain_today(me), gain_before + 1.0, 0.0001, "30 tick 完成一个学习单位")
 	assert_eq(flow.multiplier(), 3.0)
 
 

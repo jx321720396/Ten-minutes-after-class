@@ -1,0 +1,178 @@
+{
+  "godot_files_modified": false,
+  "seat_count": 16,
+  "sprite_count": 16,
+  "old_column_pitch_approx": 1.87,
+  "new_column_pitch": 1.25,
+  "old_row_pitch": 1.6,
+  "new_row_pitch": 2.0,
+  "furniture_scale": 1.12,
+  "old_room_width": 10,
+  "new_room_width": 8,
+  "camera_and_lighting_settings_identical": true,
+  "character_sizes_unchanged": true,
+  "character_seat_mapping": [
+    {
+      "object": "_root_Classroom3D_Actors_Actor_03_Sprite",
+      "seat": 3,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_10_Sprite",
+      "seat": 1,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_06_Sprite",
+      "seat": 9,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_02_Sprite",
+      "seat": 6,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_13_Sprite",
+      "seat": 16,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_05_Sprite",
+      "seat": 15,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_09_Sprite",
+      "seat": 2,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_15_Sprite",
+      "seat": 10,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_11_Sprite",
+      "seat": 11,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_12_Sprite",
+      "seat": 13,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_01_Sprite",
+      "seat": 8,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_14_Sprite",
+      "seat": 14,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_08_Sprite",
+      "seat": 5,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_04_Sprite",
+      "seat": 4,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_07_Sprite",
+      "seat": 12,
+      "old_anchor_distance": 0.0003125071468731612
+    },
+    {
+      "object": "_root_Classroom3D_Actors_Actor_16_Sprite",
+      "seat": 7,
+      "old_anchor_distance": 4.109060657201664
+    }
+  ],
+  "seat_positions": {
+    "1": [
+      1.875,
+      -3.0,
+      0.0
+    ],
+    "2": [
+      0.625,
+      -3.0,
+      0.0
+    ],
+    "3": [
+      -0.625,
+      -3.0,
+      0.0
+    ],
+    "4": [
+      -1.875,
+      -3.0,
+      0.0
+    ],
+    "5": [
+      1.875,
+      -1.0,
+      0.0
+    ],
+    "6": [
+      0.625,
+      -1.0,
+      0.0
+    ],
+    "7": [
+      -0.625,
+      -1.0,
+      0.0
+    ],
+    "8": [
+      -1.875,
+      -1.0,
+      0.0
+    ],
+    "9": [
+      1.875,
+      1.0,
+      0.0
+    ],
+    "10": [
+      0.625,
+      1.0,
+      0.0
+    ],
+    "11": [
+      -0.625,
+      1.0,
+      0.0
+    ],
+    "12": [
+      -1.875,
+      1.0,
+      0.0
+    ],
+    "13": [
+      1.875,
+      3.0,
+      0.0
+    ],
+    "14": [
+      0.625,
+      3.0,
+      0.0
+    ],
+    "15": [
+      -0.625,
+      3.0,
+      0.0
+    ],
+    "16": [
+      -1.875,
+      3.0,
+      0.0
+    ]
+  }
+}

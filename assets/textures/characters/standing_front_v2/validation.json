@@ -1,0 +1,258 @@
+[
+  {
+    "id": "01",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7333,
+    "opaque_bounds": [
+      282,
+      25,
+      736,
+      1503
+    ],
+    "sha256": "cffab9519e46d4461f8f117c7f027c33a898e974a6b75e5e133cfad96b95fdd2"
+  },
+  {
+    "id": "02",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7308,
+    "opaque_bounds": [
+      271,
+      17,
+      747,
+      1500
+    ],
+    "sha256": "7a7b05b20d25a222b96c782918bf1ccf829d148946f67799d693ca252c72673f"
+  },
+  {
+    "id": "03",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7344,
+    "opaque_bounds": [
+      280,
+      20,
+      765,
+      1514
+    ],
+    "sha256": "fe503807509eaaeae24f3f6b7ff1b388f12a242e0edc12c042305a596e133eb6"
+  },
+  {
+    "id": "04",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7326,
+    "opaque_bounds": [
+      296,
+      19,
+      731,
+      1522
+    ],
+    "sha256": "de94aaa19063e5de5db5aee84d67088b72596c9594992362bd192e1292b47d9c"
+  },
+  {
+    "id": "05",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7352,
+    "opaque_bounds": [
+      280,
+      10,
+      740,
+      1524
+    ],
+    "sha256": "8603624e197f94a162fce2d98e216793b177011dbcbc1f1b6e082c0a5c062354"
+  },
+  {
+    "id": "06",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7354,
+    "opaque_bounds": [
+      309,
+      17,
+      734,
+      1506
+    ],
+    "sha256": "4701c36238966053c2e6372b315d05d9d3e15a9815f874e7f29d30c24c0ffa7a"
+  },
+  {
+    "id": "07",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7273,
+    "opaque_bounds": [
+      282,
+      11,
+      751,
+      1516
+    ],
+    "sha256": "a6e775c0fb9e3951bd29573ce03bba24de73a1d2deff5991764fa34cfdfbdd95"
+  },
+  {
+    "id": "08",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7262,
+    "opaque_bounds": [
+      279,
+      15,
+      756,
+      1515
+    ],
+    "sha256": "74dabc8f05fe87bf13b414ce6355a37672db9016a0a9cd372d8635395e120e5b"
+  },
+  {
+    "id": "09",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7278,
+    "opaque_bounds": [
+      280,
+      19,
+      746,
+      1520
+    ],
+    "sha256": "67d0bb4f8ec76779963a474bfa68a7adf5df7a23cbdda850267baceb6cf179ab"
+  },
+  {
+    "id": "10",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7389,
+    "opaque_bounds": [
+      291,
+      22,
+      752,
+      1509
+    ],
+    "sha256": "653223fbe941fb79f3a71e38eb967537008de1fc1fc5ebee9189dc6ea738a8f5"
+  },
+  {
+    "id": "11",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7239,
+    "opaque_bounds": [
+      282,
+      11,
+      749,
+      1520
+    ],
+    "sha256": "6773d08f36ff1a2f59484e86e278af9c3a70a365eadb2e20cac68920f9a7ce50"
+  },
+  {
+    "id": "12",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7248,
+    "opaque_bounds": [
+      273,
+      12,
+      737,
+      1519
+    ],
+    "sha256": "ff5e42252d4a0f6aed9478a32155205e617af685a7b565daeeae96ffad337d86"
+  },
+  {
+    "id": "13",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7389,
+    "opaque_bounds": [
+      298,
+      16,
+      727,
+      1521
+    ],
+    "sha256": "a6481de4668d84b5f4828591417cb2aa3ea2a30f5d7f0741d47cb4f03b919ca4"
+  },
+  {
+    "id": "14",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.73,
+    "opaque_bounds": [
+      285,
+      17,
+      748,
+      1518
+    ],
+    "sha256": "de1d2a0fdc6e9d9bb7962afb9ca2a53122507286ec88194d754de64c96a6f621"
+  },
+  {
+    "id": "15",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7293,
+    "opaque_bounds": [
+      284,
+      14,
+      748,
+      1502
+    ],
+    "sha256": "45ce780c9ee7c45dd2a06da9cc1d4815f526ab1bdcdcf45676239c56513794ed"
+  },
+  {
+    "id": "16",
+    "size": [
+      1024,
+      1536
+    ],
+    "mode": "RGBA",
+    "transparent_ratio": 0.7313,
+    "opaque_bounds": [
+      288,
+      13,
+      742,
+      1509
+    ],
+    "sha256": "f3552b18260a107341501411ede385c227ea128d0c82ac592b8db580bc69d913"
+  }
+]

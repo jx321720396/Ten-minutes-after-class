@@ -1,5 +1,7 @@
 # 第三方资源登记（CREDITS）
 
+全班自然站姿 v2：assets/textures/characters/standing_front_v2/。2026-10-15 使用内置 imagegen，基于项目现有人物稿及用户确认的陈阳新版生成；原始参考、生成来源、最终提示与透明校验见同目录文件。用于站立、同学档案与推理板，不含第三方角色形象或字体。
+
 > 状态：生效 ｜ 维护者：全体 ｜ 最后更新：2026-10-06
 > 规则：**未在本文件登记的第三方资源禁止合入仓库**（见 [`README.md`](README.md)、[`../CONTRIBUTING.md`](../CONTRIBUTING.md) 第 6 节）。
 
@@ -67,3 +69,8 @@ assets/textures/characters/fullbody_v1/ 共 26 张，由内置 imagegen 根据�
 ## 2026-10-15 内嵌天花板
 
 assets/models/classroom_ceiling/ceiling_recessed.glb 为本项目使用 Blender 脚本原创建模的开槽天花板、收边与九组内嵌灯具，无新增第三方纹理。源工程与接入记录见 docs/art/concepts/ceiling_preview_20261015/README.md。
+
+
+## 2026-10-15 左侧书包挂钩
+
+assets/models/classroom_compact/bag_left_hook.glb 复用项目原创 schoolbag 模型，新增固定片、J 形挂钩和提带由 Blender 脚本原创建模；无新增第三方素材。源工程与接入记录见 docs/art/concepts/ceiling_preview_20261015/compact_layout/。
