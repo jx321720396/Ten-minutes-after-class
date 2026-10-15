@@ -106,14 +106,12 @@ func test_paused_run_does_not_touch_kernel_or_rng() -> void:
 	var core := _make_core()
 	var clock := _make_clock(core)
 	var before_affinity := core.affinity(0, 1)
-	var before_opacity := core.opacity(0)
 	clock.hold(&"menu")
 	clock.pump(60.0)
 	var snap: Dictionary = core.time_snapshot()
 	assert_eq(snap["global_tick"], 0, "暂停不推进 tick")
 	assert_eq(snap["day"], 1)
 	assert_almost_eq(core.affinity(0, 1), before_affinity, 0.0001, "关系矩阵不变")
-	assert_almost_eq(core.opacity(0), before_opacity, 0.0001, "透明度不变")
 
 
 func test_frame_budget_keeps_backlog_without_skipping() -> void:

@@ -101,8 +101,8 @@ func test_player_cannot_act_without_interaction_geometry() -> void:
 
 
 func test_unknown_kind_is_rejected_before_anything_else() -> void:
-	# 玩家入口目前只接了 behaviors.csv 里的七项；未接的行为（如安慰 / 道歉）应
-	# 明确报 unknown_kind，而不是静默执行成别的东西（审查报告 §3 的缺失项）。
+	# 玩家入口目前只接老师版两项（闲聊 / 打闹）；未接的行为（如已删除的安慰 / 道歉）应
+	# 明确报 unknown_kind，而不是静默执行成别的东西。
 	var core := _core()
 	var result: Dictionary = core.player_action("comfort", 0)
 	assert_false(result["ok"])

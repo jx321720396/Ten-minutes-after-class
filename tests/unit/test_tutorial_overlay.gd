@@ -1,6 +1,6 @@
 extends GutTest
 ## 新手教程 P0 回归（docs/gdd/v4/28-新手教程设计.md）：
-## 开场卡 → 五步提示（条件 / 超时 / 课间结束收尾）→ 完成与跳过写「已看」标记。
+## 开场卡 → 四步提示（条件 / 超时 / 课间结束收尾）→ 完成与跳过写「已看」标记。
 ## 覆盖层测试用临时标记文件，不碰开发者真档（user://tutorial_seen.dat）；
 ## 教室级用例验证「默认无教程、入口置位才弹」。
 
@@ -52,10 +52,10 @@ func _close_intro(d: TutorialOverlay) -> void:
 # ------------------------------------------------------------------ 配置
 
 
-func test_config_loads_with_three_cards_and_five_steps() -> void:
+func test_config_loads_with_three_cards_and_four_steps() -> void:
 	var d := _overlay()
 	assert_eq(d._cfg.get("intro_cards", []).size(), 3, "开场卡 3 张")
-	assert_eq(d._cfg.get("steps", []).size(), 5, "首课间 5 步")
+	assert_eq(d._cfg.get("steps", []).size(), 4, "首课间 4 步")
 	for card in d._cfg.get("intro_cards", []):
 		assert_false(str(card.get("text", "")).is_empty(), "每张卡有文案")
 	for step in d._cfg.get("steps", []):
@@ -121,19 +121,19 @@ func test_s3_armed_then_s4_chat_commit_chain() -> void:
 	d.notify_committed(&"study")
 	assert_eq(_hint_text(d), str(d._cfg.steps[3].text), "非等待行为不推进 S4")
 	d.notify_committed(&"chat")
-	assert_eq(_hint_text(d), str(d._cfg.steps[4].text), "闲聊提交（含被拒口径）完成 S4")
+	assert_false(d.is_running(), "闲聊提交（含被拒口径）完成 S4 并收尾")
 
 
-func test_observe_commit_finishes_and_marks_seen() -> void:
+func test_chat_commit_finishes_and_marks_seen() -> void:
 	var d := _overlay()
 	d.bind_world(null, null, {})
 	d.start_first_run()
 	_close_intro(d)
-	for _i in range(4):
-		d._advance()  # S1 → S2 → S3 → S4 → S5
+	for _i in range(3):
+		d._advance()  # S1 → S2 → S3 → S4
 	watch_signals(d)
-	d.notify_committed(&"observe")
-	assert_false(d.is_running(), "S5 完成即收尾")
+	d.notify_committed(&"chat")
+	assert_false(d.is_running(), "S4 完成即收尾")
 	assert_signal_emitted(d, "tutorial_finished")
 	assert_true(FileAccess.file_exists(_seen_tmp), "完成写已看标记")
 

@@ -1,29 +1,11 @@
 # 阈值类行为的触发条件（确定性：条件满足即发生）
-# 依据：主文档 §8.2（举报）、§6.5（爆发）、docs/design/NPC行为决策.md §3
+# 依据：主文档 §6.5（爆发）、§9.4（多人聊天）
 behavior,metric,op,value,note
-report,hostility,>=,40,举报：对某人的敌对累积到阈值即触发（sigmoid 拐点）
-report,scale,>=,8,举报软门槛 sigmoid 坡度（H 低于 40 仍有极小概率）
-report,witness_window,<=,7,举报把柄有效期：最近多少天内目击过对方的标签行为痕迹
-report,affinity_penalty,>=,1.5,好友惩罚：A/100 每单位压低 z 的量（好友几乎不举报）
-report,trust_penalty,>=,1.0,信任惩罚：T/100 每单位压低 z 的量
 burst,stress,>=,70,压力爆发**入口**：进入高压区（§8.3 的 70–90）后每日判定，不是到点必爆
-apologize_trigger,hostility,>=,30,道歉可发起的最低敌对
-comfort_trigger,target_stress,>=,70,安慰可发起的目标压力门槛
-# 当众调侃的方向判定（混合判定型）：用**绝对阈值**分档。
-# 为何不用 M 的符号：M 的零点在 A=H，而游戏里 A 的基线(25~40)远高于 H 的基线(0~15)，
-#   M 恒偏正 → 会退化成「永远玩笑」，实测 30 天全班冲到 89.4、SD 1.5、爆发 0。
-tease_laugh,affinity,>=,55,玩笑档：好感下限
-tease_laugh,hostility,<,25,玩笑档：敌对上限
-tease_taunt,hostility,>=,40,嘲讽档：敌对下限
-tease_taunt,affinity,<,25,嘲讽档：低好感触发
-# 加入闲聊是否被接纳：判据 = **被请求者的真值好感 A[j][i]** + 对方外向度修正
-#   （判定读真值、展示读信念 —— §6.4 / §10.32.3。2026-10-07 由「信念 B_A」改为真值口径）
+# 加入闲聊是否被接纳：判据 = **被请求者的真值好感 A[j][i]**（2026-10-07 由「信念 B_A」改为真值口径）
 # θ（chat_join_affinity）是 p=0.5 的拐点而非闸门。
-# ⚠️ 旧注释要求「θ 须高于 belief.csv 的 prior_a(=40)」—— 那是**信念口径**的约束
-#   （当时判定输入是 B_A，其期望恰为先验 40）。判定改读真值后输入是 A[j][i]，
-#   该约束已失效，故删除。
 # 43：60 局实测 爆发 21.9 / 好感均值 54.1 / SD 23.0 / 饱和 0%（2026-10-07 重标定）
-chat,join_affinity,>=,43,加入闲聊被接纳的 sigmoid 拐点（含对方外向度修正后）
+chat,join_affinity,>=,43,加入闲聊被接纳的 sigmoid 拐点
 chat,join_duration,>=,10,加入尝试本身的耗时（tick）；成功后的持续聊天按 chat.duration=30 计
 chat,join_scale,>=,10,加入判定 sigmoid 坡度（score−θ 除以它；越大越缓）
 chat,join_stress_penalty,>=,12,对方压力对 score 的压制（压力是程度不是闸门）
@@ -31,36 +13,18 @@ chat,join_gate_affinity,>=,30,决策侧软门槛：我对他好感低于此值�
 chat,join_gate_stress,>=,80,决策侧软门槛：我压力高于此值仍有小概率发起
 chat,join_gate_scale,>=,8,决策侧软门槛 sigmoid 坡度
 chat,join_gate_weight,>=,4,决策侧软门槛在 U_b 中的权重
-# 调侃时**围观者**的立场（与主行为同一套轴、同一套阈值 —— 围观分裂也走表驱动）：
-#   围观者站谁，由「他对被调侃者的态度」决定，而不是由他的性格决定；
-#   性格只应影响「是否发声」，不该影响「站哪边」。
-conformity,see,>=,25,【已废弃】旧语义：读真值敌对（信息层穿透，违反 §7.4）
-conformity,see_window,<=,14,从众：最近多少天内有**公开**敌对行为才算「我亲眼见过他在欺负 j」
-conformity,min,>=,2,从众：邻居里至少这么多人恨 j，从众者才跟着恨
-humiliate,bystanders,>=,4,当众羞辱：围观者达到此数则嘲讽升级为「羞辱」（计深层敌对）。围观者=调侃双方的共同邻居，**几何上界只有 4 人**（§10.23）——取上界 = 「两人座位紧挨、被同一批人夹住」才算被围满；3 人只是普通摩擦。⚠️ 取 3 会与 do_tease 的调用门槛（≥3）撞车而**恒真**，使「私下嘲讽」档不存在
-tease_stand,affinity,>=,55,围观者喜欢被调侃者 → 站被调侃者（看戏/不满发起者）
-tease_sneer,hostility,>=,40,围观者讨厌被调侃者 → 附和发起者（嫌弃）
-# 【排挤】（B 类：判定来源为「群体状态」而非任何一对个人关系）
-#   触发条件 = 「大家都讨厌他」——需要**多个人**同时敌对，才形成集体驱逐。
-# 【追逐打闹】门槛：发起者要够外向（热闹型才追跑），且要有人在场当旁观者
-roughhouse,affinity,>=,45,发起者外向度门槛（用 E 维代替：仅外向者主动发起）
+# ---- 多人聊天（2026-10-14 重构：会话 2→3→4，双向判定 + 聚合接纳 + 规模衰减）----
+#   接纳侧：成员 m 对加入者 C 的欢迎 score = A[m][C] − H[m][C]，p = σ((score−θ)/scale)。
+#   意愿侧：朋友在场（max A[C][m]）拉高意愿，明显敌对（H[C][m] ≥ hostility_veto）劝退。
+#   聚合：欢迎数 > 拒绝数才放行（平票=拒绝）；任一成员 H[m][C] ≥ hostility_veto 硬否决。
+chat,welcome_theta,>=,40,多人加入：成员对加入者 score=A−H 的 sigmoid 拐点
+chat,welcome_scale,>=,12,多人加入：sigmoid 坡度
+chat,hostility_veto,>=,50,多人加入：明显敌对硬阈值（H≥50 意愿劝退 / 成员否决，双向分别判定）
+chat,desire_theta,>=,40,多人加入：加入者对在场朋友最高好感 max A 的 sigmoid 拐点
+chat,desire_scale,>=,10,多人加入：意愿 sigmoid 坡度
+chat,size_k,>=,0.3,多人加入：规模衰减系数 k（w_size(s)=1/(1+k·(s−s0))，s=加入前成员数）
+chat,size_s0,>=,4,多人加入：规模衰减参考规模 s0（s≤s0 不衰减）
+chat,duration_jitter_min,>=,0.8,聊天时长随机下限（乘 chat.duration；逐人独立计时）
+chat,duration_jitter_max,>=,1.2,聊天时长随机上限（乘 chat.duration）
+# 【追逐打闹】门槛：要有人在场当旁观者
 roughhouse,count,>=,2,旁观者人数门槛
-exclude,window,<=,30,排挤：在最近多少天内有敌对行为才算「当前还在欺负他」
-exclude,cooldown,>=,7,排挤：同一目标多少天内不再被重复驱逐（孤立是状态，不是反复的动作）
-exclude,count,>=,2,排挤：近期对他做过重大敌对行为的人数门槛（≥3 人才构成「集体」）
-# ---- 安慰（§10.13，A 类）----
-#   触发门槛 = 「目标压力 ≥ `comfort_trigger_target_stress`(70，见上)」×「发起者对目标好感 ≥ 门槛」。
-#   好感门槛按外向度分两段：**E ≥ 50 用默认值**，E < 50 时向内向端线性抬高
-#   （§10.13「一般 50 / 内向 70」→ E=50 恰为 50、E=0 恰为 70；连续、不跳变，UIF §2.6 边界③）。
-comfort_trigger,affinity,>=,50,安慰：好感门槛默认值（E ≥ 50）
-comfort_trigger,introvert_affinity,>=,70,安慰：好感门槛的内向端（E=0）
-#   好感门槛三段锚点：E=50 → 30、E=0 → 50、E=100 → 20（§10.10「≥30；内向 ≥50；外向 ≥20」）。
-#   以 30 为默认值向两侧线性展开。
-# ---- 道歉 / 和解（§10.11，E 类）----
-#   `apologize_trigger_hostility = 30` 见上。⚠️ §10.11 的「双方敌对 ≥30」在**决策侧**拆成
-#   「我的真值敌对 H[i][j] ≥ 30」+「我以为他也敌对 B_H[i][j] ≥ 30」—— 决策侧不得读 H[j][i]
-#   （§18.7 不变式 3）；真值 H[j][i] 只在**判定侧**（接受概率）出现。
-apologize,accept_theta,>=,40,道歉判定：被接受的 sigmoid 拐点
-apologize,accept_scale,>=,12,道歉判定 sigmoid 坡度
-apologize,calm_bonus,>=,20,道歉判定：对方随和系数（F_j/100 × 此值，§10.11「对方随和系数」）
-apologize,hostility_penalty,>=,0.5,道歉判定：对方敌对对接受概率的压制（§10.11「− 敌对值 ×0.5」）

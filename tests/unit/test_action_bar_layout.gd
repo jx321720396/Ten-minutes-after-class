@@ -12,9 +12,7 @@ func test_scroll_keeps_target_and_profile_fixed() -> void:
 	var footer_y := profile.global_position.y
 	var target_y := target.global_position.y
 	assert_gt(scroll.get_v_scroll_bar().max_value, scroll.size.y)
-	assert_eq(bar.button_count(), 14)
-	assert_eq(bar.button_text_of(&"ask_question"), "提问")
-	assert_eq(bar.button_text_of(&"teach_lesson"), "讲题")
+	assert_eq(bar.button_count(), 8)
 	scroll.scroll_vertical = int(scroll.get_v_scroll_bar().max_value)
 	await wait_frames(3)
 	assert_eq(profile.global_position.y, footer_y)

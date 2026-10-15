@@ -26,13 +26,7 @@ signal profile_requested(index: int)
 ## 公开活动的中文名（内核 activity_of 的返回值 → 玩家看得懂的说法）
 const ACTIVITY_NAMES := {
 	"chat": "正在闲聊",
-	"pass_note": "正在传纸条",
-	"tease": "正在起哄",
-	"comfort": "正在安慰人",
-	"apologize": "在道歉",
 	"roughhouse": "在打闹",
-	"exclude": "在排挤人",
-	"report": "去了老师那儿",
 	"move": "走动中",
 	"sleep": "睡着了",
 	"study": "在学习",
@@ -54,19 +48,12 @@ const COLOR_LOCKED := Color(0.62, 0.34, 0.22)
 const COLOR_PLACEHOLDER := Color(0.55, 0.55, 0.52)
 
 ## 行为栏内容：[kind, 分组, 显示名, 是否自指]
-##   - 需要选对象的（target 组）：闲聊（含加入）/ 递纸条 / 举报 / 追逐打闹 / 排挤
-##   - 对自己做的事（self）：观察 / 学习 / 睡觉 / 听音乐 / 吃零食 / 看课外书 / 出门
+##   - 需要选对象的（target 组）：闲聊（含加入）/ 追逐打闹
+##   - 对自己做的事（self）：学习 / 睡觉 / 听音乐 / 吃零食 / 看课外书 / 出门
 ## 分组只用于排布与标题（§10.2 的三组口径），不改变任何判定。
 const ROWS := [
 	[&"chat", "talk", "闲聊", false],
-	[&"ask_question", "talk", "提问", false],
-	[&"teach_lesson", "talk", "讲题", false],
-	[&"pass_note", "do", "递纸条", false],
-	[&"report", "do", "举报", false],
 	[&"roughhouse", "do", "追逐打闹", false],
-	[&"exclude", "do", "排挤", false],
-	# 观察属「不接触」类（§10.2.3），但它**需要点一个对象**（最后一列 false = 不是纯自指）
-	[&"observe", "self", "观察", false],
 	[&"study", "self", "学习", true],
 	[&"sleep", "self", "睡觉", true],
 	[&"listen_music", "self", "听音乐", true],

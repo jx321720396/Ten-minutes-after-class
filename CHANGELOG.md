@@ -26,6 +26,24 @@
   - 补充规则验收、确认事项及人数上限／邀请频率等待定边界；仅更新策划，旧运行时团体接受尚未迁移。
   - 检验一：投票依赖实时有向关系，座位、真实互动与老师干预会改变后续接纳结果；固定关系剧情无法替代这些局部选择。
 
+- **老师版运行时迁移：删除四维／透明度／信任及学生版依赖子系统（2026-10-14，内核/数据/文档）**：全量删除透明度、信任度与隐藏性格四维修正，以及依赖它们的学生版行为（从众、调侃、举报、学习圈、书礼、道歉、安慰、提问／讲题、传纸条、观察）。只保留好感／敌对（16×16）、压力、动力、今日学业收益、成绩 + 公开专属被动，行为集对齐 §9.2 + §9.4。
+  - `tools/core_sim.py`：`AXES` 收敛为 affinity/hostility；删 `T/O/dims/B` 状态与 `mult_personality`/`transmission`/`perceive`/`tier`/`sigma_max` 及从众/调侃/举报/学习圈/书礼/道歉/安慰/提问/传纸条各分支；`apply_event` 去性格倍率与 trust 轴；观察层恒 'clear' 读真值 A/H。
+  - `scripts/core/sim_core.gd`：镜像 Python，删 `_t/_o/_dims/_b_a/_b_h/_b_t` 与依赖函数；决策只留老师版行为集；`_settle_day` 删 `decay_t` 与信念遗忘。
+  - 行为注册表只留 chat + roughhouse；删 tease/report/exclude/comfort/apologize/pass_note/observe 行为脚本与 actor_state/relations/belief 遗留平行类及对应测试。
+  - 访问器/观察/UI：`behavior_context`、`observer_layer`、`term_record`、`classroom_roam`、`roster_selector`、`player_interactions`、`teacher_patrol`、`player_invitations` 及五处 UI 去信任轴。
+  - 数据表：删 belief.csv/choice_weights.csv 与四维/信任列；`transmission.csv` 改为只保留软饱和刻度与 `settle_interval`。
+  - 文档：§4.3/§9.4/§13.3/§15.1/§15.3 同步删除口径与实现状态。
+  - **验证**：check_config（170）／test_core（33）／verify_formula（9）全绿；改动 17 个 .gd 通过 gdtoolkit 解析；对拍脚本仍 SKIP。按用户要求仅本地修改，未提交未推送。
+
+- **聊天机制 GDScript 移植 + 文档回填（2026-10-14，内核/文档）**：`scripts/core/sim_core.gd` 把多人聊天机制（2→3→4）从 Python 内核镜像移植——`_start_conversation` 两人成会、`_try_join_conversation` 双向判定（意愿侧 + 成员欢迎侧 + 聚合 + H≥50 硬否决）+ 逐人离场 + 铃响打断；`_do_chat`/`_do_chat_join` 改为会话种子并保留玩家邀请拦截；`_join_score`/`_join_feedback` 删除性格四维项；`_do_study` 置占用。读书分享（书礼）改用 `_record_book_gift_chat`/`_settle_book_gifts` 对齐 Python 口径。
+  - 老师版主文档 `docs/gdd/core-gameplay-v3.1.md` 新增 §9.4「聊天会话与多人加入」，并把 §7.2/§10.2/§13.3/§15.1/§15.3 的「多人聊天另行裁定」改为指向 §9.4 的确定口径。
+  - **验证**：check_config / test_core / verify_formula / check_docs 全绿；`sim_core.gd` 通过 gdtoolkit 解析校验。对拍脚本（`test_tick_parity.py`）当前 SKIP（Godot 导出环境未就绪），留作后续自动验收。
+
+- **聊天机制重构：多人会话 2→3→4（2026-10-14，内核）**：`tools/core_sim.py` 把两人固定闲聊改为多人会话——`start_conversation` 两人成会、`try_join_conversation` 双向判定（意愿侧「朋友在场拉高、明显敌对 H≥50 劝退」+ 接纳侧「σ((A−H−θ)/scale) × 规模衰减 w_size=1/(1+k(s−s0))」）+ 聚合（欢迎>拒绝才放行，平票拒绝，H≥50 硬否决）+ 逐人独立计时离场 + 铃响打断；`do_study` 置占用，学习中的学生不再被聊天/搭话强行拉走；搭话判定 `join_score`/`join_feedback` 删除性格四维项。
+  - **配置**：新增 `behavior_thresholds.csv` 的 `chat.welcome_theta/scale`、`hostility_veto`、`desire_theta/scale`、`size_k/s0`、`duration_jitter_min/max` 与 `behavior_probs.csv` 的 `chat_join_p`（数值集中）。
+  - **只读观察**：`join_log` 记录谁欢迎、谁拒绝、拒绝原因。
+  - **验证**：check_config / test_core / verify_formula / check_docs 全绿；check_metrics 与 diversity_report 为既有标定欠账（改动前即未达标），重构后好感均值 30→49（入目标区）、爆发上场率 78%→100%，但压力爆发均值越上界、排挤/羞辱上场率下滑，待后续标定。
+
 - **旧学生版场景用例按老师版接管标 pending（2026-10-14，测试）**
   - 教室场景改由老师界面接管后，旧学生版的每帧轮询、点人、行为栏、邀请／聊天轮询与教程接线均已停用；依赖这些接线的 7 条场景级用例（integration 5 + unit 2）改标 `pending()` 并在用例内注明恢复条件，不再以失败计入。
   - 涉及 `test_note_prompt_scene.gd`（轮询接线）、`test_player_chat_scene.gd`（邀请接受／拒绝、档案按钮聊天、行为栏点人）、`test_tutorial_overlay.gd`（两条教室级教程用例）。

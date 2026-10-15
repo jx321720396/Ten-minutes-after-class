@@ -11,13 +11,13 @@ func _presenter(core: SimCore) -> ChatActivityBubble:
 	return view
 
 
-func test_six_public_activities_emit_for_player_and_npc() -> void:
+func test_public_activities_emit_for_player_and_npc() -> void:
 	var core := SimCore.new(12345, 16, ConfigLoader.new().load_all())
 	var view := _presenter(core)
 	assert_true(view.has_method("emitter_kind"), "符号气泡需要按公开行为查询发射器")
 	if not view.has_method("emitter_kind"):
 		return
-	for kind in ["study", "listen_music", "eat_snack", "read_book", "comfort"]:
+	for kind in ["study", "listen_music", "eat_snack", "read_book"]:
 		core._current_act[0] = kind
 		core._current_act[core.node_count() - 1] = kind
 		view._process(0.1)
@@ -80,7 +80,7 @@ func test_effect_does_not_consume_simulation_rng_and_hold_freezes_it() -> void:
 func test_particles_use_real_time_at_all_world_speeds_and_hold_still_freezes() -> void:
 	var core := SimCore.new(12345, 16, ConfigLoader.new().load_all())
 	var me := core.node_count() - 1
-	core._current_act[me] = "comfort"
+	core._current_act[me] = "study"
 	core._busy_until[me] = core.global_tick() + 50
 	var view := _presenter(core)
 	var clock := SimulationClock.new()

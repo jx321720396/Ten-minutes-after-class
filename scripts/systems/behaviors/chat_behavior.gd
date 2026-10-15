@@ -10,7 +10,7 @@ extends RefCounted
 ##     已有会话则并入而不是另开一场（该登记不消耗随机数、不改矩阵，只让底部圈与「能不能加入」
 ##     有真实成员来源）；
 ##   · **加入**（`options.mode = "join"`）：i 请求 j，通过则并入原会话（`roll` 可由调用方预掷，
-##     保证三拍展示一致）；被拒走 `reject_*` 三轴反噬，且**不占用请求者**；
+##     保证三拍展示一致）；被拒走 `reject_*` 双轴反噬，且**不占用请求者**；
 ##   · **群聊编排**（`options.mode = "group"`，玩家加入既有闲聊）：按**一场活动**处理 ——
 ##     一次判定、新边各结算一次、全体占用与结束点对齐、拒绝不占用请求者。
 ##
@@ -36,7 +36,7 @@ func execute(context: Context, i: int, j: int, options: Dictionary = {}) -> void
 
 
 # ------------------------------------------------------------------ 发起新聊天
-## 发起：双向好感 / 信任、发起者压力 −，并登记真实会话。
+## 发起：双向好感、发起者压力 −，并登记真实会话。
 func _execute_start(context: Context, i: int, j: int) -> void:
 	if not context.can_chat_in_space(i, j):
 		return
@@ -44,12 +44,8 @@ func _execute_start(context: Context, i: int, j: int) -> void:
 	context.set_in_conversation(j, true)
 	context.occupy(i, j, "chat", true)
 	context.apply_event(i, j, "topic_affinity")
-	context.apply_event(i, j, "topic_trust")
 	context.apply_event(i, j, "topic_stress")
 	context.apply_event(j, i, "topic_affinity")
-	context.apply_event(j, i, "topic_trust")
-	context.observe(i, j, "affinity")
-	context.observe(j, i, "affinity")
 	context.increment_stat("chats")
 	# 真实成立点：结束点取双方占用里更晚的那个（占用时长是累积的，不是覆盖的）
 	var until := maxi(context.busy_until_of(i), context.busy_until_of(j))
@@ -82,7 +78,6 @@ func _execute_join(context: Context, i: int, j: int, options: Dictionary) -> voi
 		context.apply_event(i, j, "reject_affinity")
 		context.apply_event(i, j, "reject_hostility")
 		context.apply_event(i, j, "reject_stress")
-		context.observe(i, j, "affinity")
 		context.increment_stat("joins")
 		context.increment_stat("join_rejects")
 		context.increment_stat("skipped_events")
@@ -139,11 +134,7 @@ func _accept(context: Context, i: int, j: int, session_id: int, members: Array) 
 	for m in members:
 		var other := int(m)
 		context.apply_event(i, other, "topic_affinity")
-		context.apply_event(i, other, "topic_trust")
 		context.apply_event(other, i, "topic_affinity")
-		context.apply_event(other, i, "topic_trust")
-		context.observe(i, other, "affinity")
-		context.observe(other, i, "affinity")
 		context.increment_stat("chats")
 	# 减压仍是「发起者单方」：玩家只减一次，不因群聊人数重复减
 	context.apply_event(i, j, "topic_stress")
@@ -165,7 +156,6 @@ func _reject(context: Context, i: int, j: int, members: Array) -> void:
 	for m in members:
 		context.apply_event(i, int(m), "reject_hostility")
 	context.apply_event(i, j, "reject_stress")
-	context.observe(i, j, "affinity")
 
 
 ## 群聊编排的前置：请求者与**全体原成员**都得在聊天范围内。

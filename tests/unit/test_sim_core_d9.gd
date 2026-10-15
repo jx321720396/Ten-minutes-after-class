@@ -1,8 +1,8 @@
 extends GutTest
-## D9：压力爆发 + 跨天衰减 + 深/浅层敌对（§3.5 / §10.22 / §10.29）+ 信念遗忘回归。
+## D9：压力爆发 + 跨天衰减（§3.5 / §10.22 / §10.29）。
 ##
-## 补齐 test_core.py §1–§4 中 D8 尚未覆盖的手算例与不变式（§3.5/§3.6 的 do_report/do_tease
-## 方向断言依赖 D10 行为决策，留待 D10 接入）。手算值与 tools/test_core.py 逐条对齐。
+## 手算值与 tools/test_core.py §1–§4 逐条对齐。老师版已删除深/浅层敌对（_h_deep）、
+## 信任（_t）与信念（_b_a）及性格倍率，相应回归用例一并移除。
 
 var _tables: Dictionary
 
@@ -19,25 +19,7 @@ func _n(core: SimCore) -> int:
 	return core.node_count()
 
 
-## 把节点 0 的 MBTI 四维设成 [e, n, f, p]（dims 为 dim-major）。
-func _set_dims0(core: SimCore, e: float, n: float, f: float, p: float) -> void:
-	var nn := _n(core)
-	var dims := core._dims
-	dims[0] = e
-	dims[nn] = n
-	dims[2 * nn] = f
-	dims[3 * nn] = p
-	core._dims = dims
-
-
 # ------------------------------------------------------------------ 手算例（§1 补齐）
-func test_personality_multiplier_lower_clamp() -> void:
-	var core := _core()
-	var row := {"w_e": "-1.0", "w_s": "-1.0", "w_f": "-1.0", "w_j": "-1.0"}
-	_set_dims0(core, 100.0, 100.0, 100.0, 100.0)  # 1 + (−4) = −3 → 钳到下限
-	assert_almost_eq(core._mult_personality(row, 0), 0.1, 0.001, "全负权重 → 下限 0.1 生效")
-
-
 func test_relation_modulation_upper_clamp() -> void:
 	var core := _core()
 	var a := core._a
@@ -52,7 +34,6 @@ func test_relation_modulation_upper_clamp() -> void:
 # ------------------------------------------------------------------ 负反馈专项（§2）
 func test_negative_feedback_stronger_on_low_affinity() -> void:
 	var core := _core()
-	_set_dims0(core, 100.0, 50.0, 50.0, 50.0)  # 倍率 1.2
 	var a := core._a
 	var h := core._h
 	h[1] = 0.0
@@ -76,7 +57,6 @@ func test_negative_feedback_stronger_on_low_affinity() -> void:
 # ------------------------------------------------------------------ 事件去重（§3）
 func test_apply_event_dedup_returns_false() -> void:
 	var core := _core()
-	_set_dims0(core, 100.0, 50.0, 50.0, 50.0)
 	core._apply_event(0, 1, "topic_affinity")
 	var before := core.affinity(0, 1)
 	var ok := core._apply_event(0, 1, "topic_affinity")  # 同日同相位 → 应被跳过
@@ -95,8 +75,7 @@ func test_axes_within_range_after_day() -> void:
 				continue
 			ok = ok and core.affinity(i, j) >= 0.0 and core.affinity(i, j) <= 100.0
 			ok = ok and core.hostility(i, j) >= 0.0 and core.hostility(i, j) <= 100.0
-			ok = ok and core.trust(i, j) >= 0.0 and core.trust(i, j) <= 100.0
-	assert_true(ok, "所有关系轴落在 [0,100]")
+	assert_true(ok, "好感/敌对落在 [0,100]")
 
 
 func test_stress_within_range_after_day() -> void:
@@ -138,60 +117,3 @@ func test_spread_knot_contagion_prefers_strong_relations() -> void:
 	core._spread_knot(0, 0.0)  # severity=0 → days_eff=3，pool 只取 ratio=0.25 里的最强关系
 	assert_eq(core._knot_days[1], 3, "关系最鲜明者被波及（心结 3 天）")
 	assert_eq(core._knot_days[2], 0, "泛泛之交不受波及")
-
-
-# ------------------------------------------------------------------ 跨天衰减 + 深/浅层敌对（D9，§10.22/§10.29）
-func test_cross_day_decay_separates_deep_and_surface_hostility() -> void:
-	var core := _core()
-	var n := _n(core)
-	var idx := 1  # (0,1)
-	var a := core._a
-	var h := core._h
-	var hd := core._h_deep
-	var t := core._t
-	var stress := core._stress
-	a[idx] = 100.0
-	h[idx] = 50.0
-	hd[idx] = 20.0
-	t[idx] = 80.0
-	stress[0] = 50.0
-	core._a = a
-	core._h = h
-	core._h_deep = hd
-	core._t = t
-	core._stress = stress
-	core._settle_day()
-	# decay_a_no_interact=0.9 / deep_decay=0.995 / decay_h=0.95 / decay_t=0.93 / retain_s=0.65
-	assert_almost_eq(core._a[idx], 90.0, 0.0001, "好感无互动衰减 ×0.9")
-	assert_almost_eq(core._h_deep[idx], 19.9, 0.0001, "深层 ×0.995")
-	var h_expected := 19.9 + maxf(0.0, 50.0 - 19.9) * 0.95
-	assert_almost_eq(core._h[idx], h_expected, 0.0001, "总敌对 = 深层 + 表层×0.95")
-	assert_true(core._h[idx] >= core._h_deep[idx] - 1e-9, "深层是底线（H ≥ H_deep）")
-	assert_almost_eq(core._t[idx], 74.4, 0.0001, "信任 ×0.93")
-	assert_almost_eq(core._stress[0], 32.5, 0.0001, "压力 ×0.65")
-
-
-func test_cross_day_decay_preserves_deep_as_floor() -> void:
-	var core := _core()
-	var n := _n(core)
-	var idx := 1
-	var h := core._h
-	var hd := core._h_deep
-	h[idx] = 10.0  # 总敌对 < 深层（表层为负 → 夹到 0）
-	hd[idx] = 20.0
-	core._h = h
-	core._h_deep = hd
-	core._settle_day()
-	assert_almost_eq(core._h[idx], core._h_deep[idx], 0.0001, "表层夹到 0：H 退到深层底线")
-
-
-# ------------------------------------------------------------------ 信念遗忘回归（D9，§18.9）
-func test_belief_decay_pulls_toward_prior() -> void:
-	var core := _core()
-	var idx := 1  # (0,1)
-	var ba := core._b_a
-	ba[idx] = 80.0
-	core._b_a = ba
-	core._settle_day()
-	# lambda_b=0.02 / prior_a=40 → 80 + 0.02×(40−80) = 79.2
-	assert_almost_eq(core._b_a[idx], 79.2, 0.0001, "信念向先验缓慢回落")

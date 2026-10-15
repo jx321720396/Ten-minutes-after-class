@@ -33,16 +33,7 @@ const PEN_HOLD := &"player_pen_check"
 ## 需要选对象的动作（与右侧行为栏的 target 组一致）
 const BAR_REFRESH_SECONDS := 0.25
 ## 需要选对象的动作（与右侧行为栏的 target 组一致）
-const PLAYER_TARGET_KINDS := [
-	"chat",
-	"pass_note",
-	"report",
-	"roughhouse",
-	"exclude",
-	"observe",
-	"ask_question",
-	"teach_lesson"
-]
+const PLAYER_TARGET_KINDS := ["chat", "roughhouse"]
 ## 自指行为（对自己做的事）：不选对象，点按钮就发起
 const PLAYER_SELF_KINDS := SimCore.PLAYER_SELF_KINDS
 
@@ -56,7 +47,6 @@ var _hud: ChatFeedbackHUD = null
 var _rings: ActivityRingPresenter = null
 var _bubbles: ChatActivityBubble = null
 var _emotion: PlayerEmotionFeedback = null
-var _note: NotePrompt = null
 
 var _state: StringName = STATE_IDLE
 var _selected := -1
@@ -68,7 +58,6 @@ var _session_id := -1
 var _packet: Dictionary = {}
 var _pen_hold := false
 var _leave_dialog: ConfirmationDialog = null
-var _book_gift_dialog: AcceptDialog = null
 var _bar_timer := 0.0
 
 
@@ -98,15 +87,13 @@ func bind_feedback(
 	hud: ChatFeedbackHUD,
 	rings: ActivityRingPresenter,
 	bubbles: ChatActivityBubble,
-	emotion: PlayerEmotionFeedback,
-	note_prompt: NotePrompt
+	emotion: PlayerEmotionFeedback
 ) -> void:
 	_bar = bar
 	_hud = hud
 	_rings = rings
 	_bubbles = bubbles
 	_emotion = emotion
-	_note = note_prompt
 
 
 func _connect_sources() -> void:
@@ -127,8 +114,6 @@ func _connect_sources() -> void:
 		_bar.self_behavior_requested.connect(_on_self_behavior)
 	if _bar != null and not _bar.cancel_requested.is_connected(_on_backpack_opened):
 		_bar.cancel_requested.connect(_on_backpack_opened)
-	if _note != null and not _note.choice_made.is_connected(_on_note_choice):
-		_note.choice_made.connect(_on_note_choice)
 	if _hud != null and not _hud.result_revealed.is_connected(_on_result_revealed):
 		_hud.result_revealed.connect(_on_result_revealed)
 	var bus := get_node_or_null("/root/EventBus")
@@ -208,8 +193,6 @@ func trigger_armed(target: int) -> void:
 		if _hud != null:
 			_hud.show_status(_action_reason(str(result.get("error", "")), kind))
 		return
-	if _hud != null and (kind == "ask_question" or kind == "teach_lesson"):
-		_hud.show_status(_lesson_line(kind, bool(result.get("emperor", false))))
 	_finish_action()
 
 
@@ -274,119 +257,6 @@ func request_behavior(kind: String, mode: String = "auto") -> void:
 
 func request_behavior_chat() -> void:
 	request_behavior(KIND_CHAT)
-
-
-## 递纸条（§8.6）：以选中的同学为**被说的人**写一张纸条，投给座位相邻或已走近的人。
-## 玩家只决定「说的是谁」——**写什么内容、递给谁由内核按写者自己的关系决定**，不做内容编辑。
-func request_behavior_note() -> void:
-	if _core == null or _selected < 0 or _state != STATE_SELECTED:
-		return
-	var result: Dictionary = _core.player_action("pass_note", _selected)
-	if not bool(result.get("ok", false)):
-		if _hud != null:
-			_hud.show_status(_note_reason(str(result.get("error", ""))))
-		_refresh_bar()
-		return
-	if _hud != null:
-		_hud.show_status("纸条塞出去了。")
-	_selected = -1
-	_clear_armed_state()
-	_set_state(STATE_IDLE)
-
-
-## 纸条的两次决策（§21.2.9）：先看不看，看完再决定去向。内核是唯一事实源。
-func _on_note_choice(action: StringName) -> void:
-	if _core == null or _note == null:
-		return
-	match action:
-		&"skip_forward":
-			_core.respond_note(false, true)
-			_note.close()
-		&"skip_destroy":
-			_core.respond_note(false, false)
-			_note.close()
-		&"read":
-			# 「看」会打断当前动作并占一点时间；纸条仍在手上，等第二步决定去向
-			_core.read_note()
-			var row: Dictionary = _core.note_pending_for_player()
-			_note.show_after_read(int(row.get("tone", 1)))
-		&"destroy":
-			_core.finish_note(false, false)
-			_note.close()
-		&"forward":
-			_core.finish_note(true, false)
-			_note.close()
-		&"report":
-			# 只能**当场**举报（撕掉之后不能再举）：被举报的是上一个递给我的人（§8.2）
-			_core.finish_note(false, true)
-			if _hud != null:
-				_hud.show_status("你把纸条交给了老师。")
-			_note.close()
-
-
-## 纸条到手（§8.6）：**不打断当前动作**，只在界面角落提示，等玩家自己做选择。
-func _poll_note() -> void:
-	if _core == null or _note == null:
-		return
-	var pending: Dictionary = _core.note_pending_for_player()
-	if pending.is_empty():
-		if _note.is_open():
-			_note.close()
-		return
-	if _note.is_open():
-		return
-	if bool(pending.get("read", false)):
-		_note.show_after_read(int(pending.get("tone", 1)))
-	else:
-		_note.show_offer()
-
-
-## 递纸条的可用性**预览**（真正的裁决在内核 `player_action`）：
-## 上课段也能用（纸条是上课唯一允许的动作），但需坐位相邻或已走近、自己此刻没在忙。
-func _note_ok(index: int) -> bool:
-	if _core == null or index < 0 or not bool(_core._allowed("pass_note")):
-		return false
-	var me := int(_core.node_count()) - 1
-	if _core.is_moving(me) or not str(_core.activity_of(me)).is_empty():
-		return false
-	if int(_core._busy_until[me]) > int(_core._global_tick):
-		return false
-	return bool(_preview().get("in_range", false))
-
-
-func _note_hint(index: int) -> String:
-	if _core == null:
-		return ""
-	if _note_ok(index):
-		return "写一张纸条，说说%s（写什么由你与他的关系决定）" % _display_name(index)
-	if not bool(_core._allowed("pass_note")):
-		return "现在不能传纸条"
-	var me := int(_core.node_count()) - 1
-	if _core.is_moving(me) or not str(_core.activity_of(me)).is_empty():
-		return "你正忙着"
-	return "先走近一点再递"
-
-
-## 内核错误码 → 一句人话（纸条侧；不暴露任何隐藏数值）
-func _note_reason(error: String) -> String:
-	match error:
-		"no_book":
-			return "你还没有课外书。"
-		"no_snacks":
-			return "零食吃完了"
-		"player_absent":
-			return "你出去了。"
-		"absence_limit":
-			return "这节课间已经出去过了"
-		"player_busy":
-			return "你正忙着 · 做完再说"
-		"phase_not_allowed":
-			return "现在不能传纸条"
-		"target_unavailable":
-			return "现在递不过去"
-		"invalid_target", "unknown_kind":
-			return "现在没法传纸条"
-	return "现在没法传纸条"
 
 
 ## 取消尚未提交的接近请求（选中 / 接近阶段可取消；提交后不撤销结果）。
@@ -480,10 +350,6 @@ func _bar_states() -> Dictionary:
 	for kind in PLAYER_TARGET_KINDS + PLAYER_SELF_KINDS:
 		var ok := _can_do(kind)
 		var reason := "" if ok else _action_reason_of(kind)
-		if ok and _selected >= 0 and (kind == "ask_question" or kind == "teach_lesson"):
-			var preview: Dictionary = _core.lesson_preview(kind, _selected)
-			ok = bool(preview.get("ok", false))
-			reason = "" if ok else _action_reason(str(preview.get("error", "")), kind)
 		states[StringName(kind)] = {"ok": ok, "reason": reason}
 		if kind == "eat_snack":
 			states[StringName(kind)]["snacks"] = int(
@@ -528,7 +394,7 @@ func _action_reason_of(kind: String) -> String:
 
 
 ## 内核错误码 → 一句人话（不暴露任何隐藏数值）。
-func _action_reason(error: String, kind: String = "") -> String:
+func _action_reason(error: String, _kind: String = "") -> String:
 	match error:
 		"no_snacks":
 			return "零食吃完了"
@@ -544,20 +410,9 @@ func _action_reason(error: String, kind: String = "") -> String:
 			return "现在没法对他做这个"
 		"out_of_range":
 			return "离得太远了，走近一点再开口。"
-		"grade_gap":
-			return "现在不太适合问这个。" if kind == "ask_question" else "现在不太适合讲这个。"
-		"already_used":
-			return "这节课间问过了。" if kind == "ask_question" else "这节课间讲过了。"
 		"invalid_target", "unknown_kind":
 			return "现在做不了"
 	return "现在做不了"
-
-
-func _lesson_line(kind: String, emperor: bool) -> String:
-	var line := "他把思路说了一遍，你听懂了。" if kind == "ask_question" else "你讲了一遍，他点头了。"
-	if emperor:
-		line += "坐在这儿，你听得更明白。"
-	return line
 
 
 ## 动作提交成功：清掉已选动作与已选对象，回 Idle。
@@ -819,10 +674,6 @@ func _on_event_happened(payload: Dictionary) -> void:
 		if _hud != null:
 			_hud.show_status("你回到教室，刚好听见铃声。")
 		return
-	if kind == "book_gift":
-		_show_book_gift(payload)
-		_refresh_bar()
-		return
 	if kind in ["leisure_finished", "leisure_interrupted"]:
 		if int(payload.get("i", -1)) != int(_core.node_count()) - 1:
 			return
@@ -847,11 +698,6 @@ func _on_event_happened(payload: Dictionary) -> void:
 			_hud.show_status(message)
 		_refresh_bar()
 		return
-	# 观察结果（§10.3.1）：只读信息进情报日志，不提交任何行为
-	if kind == "observe":
-		if _hud != null:
-			_hud.show_intel(payload.get("clues", []))
-		return
 	if not kind.begins_with("player_"):
 		return
 	var request_id: int = int(payload.get("request_id", -1))
@@ -866,20 +712,6 @@ func _on_event_happened(payload: Dictionary) -> void:
 			_on_finished(payload)
 		"player_interaction_interrupted":
 			_on_interrupted(payload)
-
-
-func _show_book_gift(payload: Dictionary) -> void:
-	if _book_gift_dialog == null:
-		_book_gift_dialog = AcceptDialog.new()
-		_book_gift_dialog.title = "收到课外书"
-		_book_gift_dialog.ok_button_text = "收下了"
-		add_child(_book_gift_dialog)
-	var donor := int(payload.get("donor", -1))
-	var message := "%s 塞给你一本课外书：「看这个，别老闷着。」" % _display_name(donor)
-	if bool(payload.get("first", false)):
-		message += "\n现在可以看课外书了。\n被老师看到正在看书，书会被收走。"
-	_book_gift_dialog.dialog_text = message
-	_book_gift_dialog.popup_centered()
 
 
 func _on_finished(payload: Dictionary) -> void:
@@ -935,8 +767,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	# 纸条提示优先于菜单刷新：它**不打断**正在做的事，任何时候都可能到手
-	_poll_note()
 	if _bar == null:
 		return
 	_bar_timer += delta
