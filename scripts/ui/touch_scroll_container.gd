@@ -9,7 +9,8 @@ var _touch_distance := 0.0
 
 
 func _input(event: InputEvent) -> void:
-	if not visible:
+	if not is_visible_in_tree():
+		_touch_active = false
 		return
 	if event is InputEventScreenTouch:
 		var touch := event as InputEventScreenTouch

@@ -1,6 +1,16 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://scripts/ui/clue_board_entry.gd" id="1_entry"]
-
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/ui/clue_board_entry.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/clue_board.tscn" id="2"]
 [node name="ClueBoardEntry" type="CanvasLayer"]
-script = ExtResource("1_entry")
+process_mode = 3
+layer = 6
+script = ExtResource("1")
+metadata/handles_native_touch = true
+[node name="BoardButton" type="Button" parent="."]
+offset_left = 1580.0
+offset_top = 985.0
+offset_right = 1730.0
+offset_bottom = 1045.0
+text = "推理板"
+[node name="Board" parent="." instance=ExtResource("2")]
+visible = false

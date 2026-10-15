@@ -44,7 +44,7 @@ func _capture() -> void:
 					i + 1,
 					target,
 					subject,
-					"trust",
+					"hostility",
 					50.0 + float(i),
 					{
 						"day": 1,
@@ -72,10 +72,14 @@ func _capture() -> void:
 		)
 	scene.get_node("Interaction").select_actor(target)
 	profile.open_profile(target)
+	if args.has("--status"):
+		profile._show_page(true)
 	if fixture:
 		var targets: OptionButton = profile.get_node("%Targets")
 		targets.select(targets.get_item_index(subject))
 		profile._on_target_selected(targets.get_item_index(subject))
+	if args.has("--picker"):
+		profile._open_target_picker()
 	if compact:
 		root.content_scale_size = Vector2i(1280, 720)
 		root.size = Vector2i(1280, 720)
@@ -83,10 +87,11 @@ func _capture() -> void:
 		await process_frame
 	await RenderingServer.frame_post_draw
 	var output := (
-		"res://tmp/npc_profile_%s%s.png"
+		"res://tmp/npc_profile_%s%s%s.png"
 		% [
 			"fixture" if fixture else "empty",
 			"_720" if compact else "_1080",
+			"_picker" if args.has("--picker") else ("_status" if args.has("--status") else ""),
 		]
 	)
 	root.get_texture().get_image().save_png(output)

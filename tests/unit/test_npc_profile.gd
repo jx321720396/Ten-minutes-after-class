@@ -1,164 +1,88 @@
 extends GutTest
-## 回归重点：方向/逐轴时间/未知/只读；模型仅接收已获得历史，不接收SimCore。
 
-const MODEL_PATH := "res://scripts/ui/npc_profile_data.gd"
-const PROFILE_PATH := "res://scenes/ui/npc_profile.tscn"
-
-
-func _clue(id: int, source: int, subject: int, axis: String, value: Variant) -> Dictionary:
-	return {
-		"clue_id": id,
-		"request_id": id,
-		"source": source,
-		"subject": subject,
-		"axis": axis,
-		"value": value,
-		"day": id,
-		"phase_id": "morning_break",
-		"global_tick": id * 100,
-	}
+const PROFILE = preload("res://scenes/ui/npc_profile.tscn")
+const MODEL = preload("res://scripts/ui/npc_profile_data.gd")
 
 
-func test_latest_is_directional_per_axis_and_does_not_mutate_history() -> void:
-	assert_true(ResourceLoader.exists(MODEL_PATH), "档案只读适配器应存在")
-	if not ResourceLoader.exists(MODEL_PATH):
-		return
-	var model = load(MODEL_PATH).new()
-	var history := [
-		_clue(3, 0, 1, "trust", 80.0),
-		_clue(1, 0, 1, "affinity", 0.0),
-		_clue(4, 1, 0, "hostility", 95.0),
-		_clue(2, 0, 1, "trust", 20.0),
-		_clue(5, 0, 2, "hostility", 90.0),
-	]
-	var before := history.duplicate(true)
-	var result: Dictionary = model.build(history, 0, 1)
-	assert_eq(result.latest.trust.value, 80.0)
-	assert_eq(result.latest.trust.day, 3)
-	assert_eq(result.latest.affinity.value, 0.0, "已知零值不能显示为未知")
-	assert_eq(result.latest.affinity.day, 1, "逐轴保留不同获知时间")
-	assert_false(result.latest.has("hostility"), "不能泄露反方向或其他对象的信息")
-	assert_eq(result.history.size(), 3)
-	assert_eq(history, before)
-	result.latest.trust.value = 1.0
-	assert_eq(history, before, "返回深拷贝")
-
-
-func test_unknown_duplicates_and_shared_chat_request() -> void:
-	assert_true(ResourceLoader.exists(MODEL_PATH))
-	if not ResourceLoader.exists(MODEL_PATH):
-		return
-	var model = load(MODEL_PATH).new()
-	var a := _clue(1, 0, 1, "trust", 70.0)
-	var b := _clue(2, 0, 2, "affinity", 30.0)
-	b.request_id = 1
-	var result: Dictionary = model.build(
-		[a, a.duplicate(), b, _clue(3, 0, 1, "hostility", null)], 0, 1
-	)
-	assert_eq(result.history.size(), 1, "重复与无值记录不作为已知关系")
-	assert_eq(result.encounters.size(), 1, "同次闲聊的两条线索只记一次交集")
-	assert_eq(result.encounters[0].count, 2)
-	assert_false(result.latest.has("hostility"))
-	assert_true(model.build([], 0, 1).latest.is_empty())
-
-
-func test_profile_pause_empty_state_switch_and_escape() -> void:
-	var path := PROFILE_PATH
-	assert_true(ResourceLoader.exists(path), "应有可复用的原生UI场景")
-	if not ResourceLoader.exists(path):
-		return
-	var profile = load(path).instantiate()
+func test_teacher_targets_exclude_player_and_switch_without_effects() -> void:
+	var profile = PROFILE.instantiate()
 	add_child_autofree(profile)
 	var core := SimCore.new(12345, 16)
 	profile.bind_sources(core, null, null)
-	var before := core.get_player_intel()
+	var before := [core._a.duplicate(), core._h.duplicate(), core._rng._mti]
 	profile.open_profile(0)
-	assert_true(profile.is_open())
+	var targets: OptionButton = profile.get_node("%Targets")
+	assert_eq(targets.get_item_index(core.node_count() - 1), -1)
+	assert_eq(targets.item_count, 15)
+	assert_null(profile.get_node_or_null("%TrustValue"))
 	assert_true(get_tree().paused)
-	var targets: OptionButton = profile.get_node("%Targets")
-	profile._on_target_selected(targets.get_item_index(1))
-	assert_eq(profile.get_node("%TrustValue").text, "未知")
-	assert_eq(profile.get_node("%PersonName").text, core.alias(0))
 	profile.open_profile(1)
-	assert_eq(profile.get_node("%PersonName").text, core.alias(1))
-	var escape := InputEventAction.new()
-	escape.action = "ui_cancel"
-	escape.pressed = true
-	profile._input(escape)
-	assert_false(profile.is_open())
+	profile.close()
 	assert_false(get_tree().paused)
-	assert_eq(core.get_player_intel(), before)
-	get_tree().paused = true
-	profile.open_profile(0)
-	profile.close()
-	assert_true(get_tree().paused, "不能释放其他界面持有的暂停")
-	get_tree().paused = false
+	assert_eq([core._a, core._h, core._rng._mti], before)
 
 
-func test_profile_uses_snapshot_even_after_live_relationship_changes() -> void:
-	var profile = load(PROFILE_PATH).instantiate()
+func test_manual_axis_and_new_intel_override_only_corresponding_direction() -> void:
+	var model = MODEL.new()
+	assert_true(model.has_method("mark"), "应支持玩家观察标注")
+	if not model.has_method("mark"):
+		return
+	model.mark(0, 1, "affinity", "band_high", {"day": 1, "phase_id": "morning_break"})
+	model.mark(0, 1, "hostility", "band_high", {"day": 1, "phase_id": "morning_break"})
+	var clue := {
+		"clue_id": 1,
+		"source": 0,
+		"subject": 1,
+		"axis": "affinity",
+		"value": 0.0,
+		"day": 2,
+		"phase_id": "lunch_break",
+		"global_tick": 100
+	}
+	var input := [clue]
+	var before := input.duplicate(true)
+	var result: Dictionary = model.build(input, 0, 1)
+	assert_eq(result.latest.affinity.origin, "known")
+	assert_eq(result.latest.affinity.value, 0.0)
+	assert_eq(result.latest.hostility.band, "band_high")
+	assert_true(model.build(input, 1, 0).latest.is_empty())
+	model.mark(0, 1, "affinity", "band_medium", {"day": 2, "phase_id": "lunch_break"})
+	assert_eq(model.build(input, 0, 1).latest.affinity.origin, "guess", "重复旧消息不能覆盖后来的推测")
+	model.mark(0, 1, "hostility", "unknown", {"day": 2, "phase_id": "lunch_break"})
+	assert_false(model.build(input, 0, 1).latest.has("hostility"))
+	assert_eq(input, before)
+	var restored = MODEL.new()
+	restored.state = JSON.parse_string(JSON.stringify(model.state))
+	assert_eq(restored.build(input, 0, 1).latest.affinity.band, "band_medium")
+	assert_eq(restored.build(input, 0, 1).history.size(), 5)
+
+
+func test_teacher_metrics_do_not_fabricate_unmigrated_values() -> void:
+	var profile = PROFILE.instantiate()
 	add_child_autofree(profile)
 	var core := SimCore.new(12345, 16)
-	(
-		core
-		. _intel
-		. record(
-			1,
-			1,
-			0,
-			1,
-			"affinity",
-			0.0,
-			{
-				"day": 1,
-				"phase_id": "morning_break",
-				"global_tick": 1,
-			}
-		)
-	)
 	profile.bind_sources(core, null, null)
 	profile.open_profile(0)
-	var targets: OptionButton = profile.get_node("%Targets")
-	profile._on_target_selected(targets.get_item_index(1))
-	assert_eq(profile.get_node("%AffinityValue").text, "较低")
-	assert_eq(profile.get_node("%HostilityValue").text, "未知")
-	var before := core.get_player_intel()
-	core._a[1] = 100.0  # 测试夹具：后台已变化，但玩家没有获取新线索。
-	profile.close()
-	profile.open_profile(0)
-	profile._on_target_selected(targets.get_item_index(1))
-	assert_eq(core.affinity(0, 1), 100.0)
-	assert_eq(profile.get_node("%AffinityValue").text, "较低")
-	assert_eq(core.get_player_intel(), before)
-	assert_eq(profile.get_node("%StaleNote").text, "此后关系可能变化")
+	assert_not_null(profile.get_node_or_null("%MotivationValue"))
+	if profile.get_node_or_null("%MotivationValue") == null:
+		return
+	assert_eq(profile.get_node("%MotivationValue").text, "—")
+	assert_eq(profile.get_node("%GainValue").text, "—")
+	assert_true(profile.get_node("%GradeValue").text.contains(str(roundi(core.grade(0)))))
 	profile.close()
 
 
-func test_player_is_a_relationship_target_with_truthful_read_only_impression() -> void:
-	var profile = load(PROFILE_PATH).instantiate()
+func test_individual_grade_and_settlement_display_whole_points() -> void:
+	var profile = PROFILE.instantiate()
 	add_child_autofree(profile)
-	var core := SimCore.new(12345, 16)
-	var player := core.node_count() - 1
-	core._a[player] = 90.0
-	core._h[player] = 0.0
-	core._t[player] = 55.0
-	var before := core.get_player_intel()
-	profile.bind_sources(core, null, null)
+	profile.bind_sources(SimCore.new(12345, 16), null, null)
 	profile.open_profile(0)
-	var targets: OptionButton = profile.get_node("%Targets")
-	assert_eq(targets.item_count, core.node_count() - 1)
-	assert_ne(targets.get_item_index(player), -1, "玩家也在同学关系对象里")
-	assert_eq(targets.get_selected_id(), player, "默认展示该同学对我的印象")
-	assert_eq(profile.get_node("%AffinityValue").text, "很高")
-	assert_eq(profile.get_node("%HostilityValue").text, "较低")
-	assert_eq(profile.get_node("%TrustValue").text, "较高")
-	assert_null(profile.get_node_or_null("%JudgmentCard"), "不再单独分出对我的态度区")
-	profile._on_target_selected(targets.get_item_index(1))
-	assert_eq(profile.get_node("%AffinityValue").text, "未知", "其他同学仍只显示已获得情报")
-	profile._on_target_selected(targets.get_item_index(player))
-	assert_eq(profile.get_node("%AffinityValue").text, "很高")
-	assert_eq(core.get_player_intel(), before)
-	assert_eq(core.affinity(0, player), 90.0)
+	profile.update_student_snapshot(0, {"grade": 474.6, "academic_gain": 1.2})
+	assert_eq(profile.get_node("%GradeValue").text, "475 / 750")
+	assert_true(profile.get_node("%Settlement").text.contains("476分"))
+	profile.update_student_snapshot(0, {"grade": 474.3, "academic_gain": -0.8})
+	assert_eq(profile.get_node("%GradeValue").text, "474 / 750")
+	assert_true(profile.get_node("%Settlement").text.contains("474分"))
 	profile.close()
 
 

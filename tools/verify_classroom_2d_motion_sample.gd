@@ -27,12 +27,10 @@ func _verify() -> void:
 			scene.actor.texture not in scene.frames.slice(4, 7),
 			"arrival must never display crouching poses"
 		)
-	scene.seek(2.0 / float(scene.settings["capture_fps"]))
-	assert(scene.blend_sprite.visible, "walk frame boundary must interpolate")
-	assert(
-		scene.actor.modulate.a > 0.0 and scene.blend_sprite.modulate.a > 0.0,
-		"both adjacent frames contribute"
-	)
+	for index in 120:
+		scene.seek(float(scene.settings["walk_duration"]) * index / 120.0)
+		assert(scene.actor.modulate.a == 1.0, "walking must never fade or overlay adjacent poses")
+		assert(not scene.has_node("WalkFrameBlend"), "must contain only one character sprite")
 	scene.seek(scene.duration() - 0.1)
 	var expected := Vector2(scene.settings["seat"][0], scene.settings["seat"][1])
 	assert(scene.actor.position.distance_to(expected) < 0.01, "seated pose must settle at seat")

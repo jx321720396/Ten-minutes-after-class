@@ -4,7 +4,6 @@ extends Node2D
 const CONFIG := "res://data/ui/classroom_2d_motion_sample.json"
 var settings: Dictionary
 var actor: Sprite2D
-var blend_sprite: Sprite2D
 var shadow: Polygon2D
 var backrest: Sprite2D
 var frames: Array[AtlasTexture] = []
@@ -41,11 +40,6 @@ func _ready() -> void:
 	actor.centered = false
 	actor.scale = Vector2.ONE * float(settings["scale"])
 	add_child(actor)
-	blend_sprite = Sprite2D.new()
-	blend_sprite.name = "WalkFrameBlend"
-	blend_sprite.centered = false
-	blend_sprite.scale = actor.scale
-	add_child(blend_sprite)
 	backrest = Sprite2D.new()
 	backrest.centered = false
 	var region: Array = settings["backrest_region"]
@@ -87,7 +81,6 @@ func seek(time: float) -> void:
 		var progress := clampf((time - walk_time) / sit_time, 0.0, 1.0)
 		actor.position = _v(path.back()).lerp(_v(settings["seat"]), smoothstep(0.0, 1.0, progress))
 		actor.modulate.a = 1.0
-		blend_sprite.visible = false
 		if progress < 1.0:
 			actor.offset = -_v(settings["walk_pivot"])
 			actor.texture = frames[1]
@@ -101,16 +94,8 @@ func seek(time: float) -> void:
 func _walk_pose(time: float) -> void:
 	var phase := time * float(settings["walk_fps"])
 	var index := int(phase) % 4
-	var fraction := fposmod(phase, 1.0)
-	var window := float(settings["walk_blend_fraction"])
-	var weight := smoothstep(1.0 - window, 1.0, fraction)
 	actor.texture = frames[index]
-	actor.modulate.a = 1.0 - weight
-	blend_sprite.texture = frames[(index + 1) % 4]
-	blend_sprite.position = actor.position
-	blend_sprite.offset = actor.offset
-	blend_sprite.modulate.a = weight
-	blend_sprite.visible = weight > 0.0
+	actor.modulate.a = 1.0
 
 
 func _path_position(path: Array, progress: float) -> Vector2:

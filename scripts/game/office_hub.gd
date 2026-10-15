@@ -49,6 +49,9 @@ func bind_classroom(room: Node) -> void:
 				pick_body.collision_layer = 0
 	_teacher.action_requested.connect(_on_teacher_action)
 	_teacher.profile_requested.connect(_room.get_node("UI/NpcProfile").open_profile)
+	var profile: NpcProfile = _room.get_node("UI/NpcProfile")
+	profile.enable_teacher_navigation()
+	profile.summon_requested.connect(_on_profile_summon)
 	_bind_tool_touch(_teacher)
 	_return = _teacher.get_node("%ReturnOffice")
 	replay.tooltip_text = _teacher.config.copy.disabled_tutorial
@@ -108,6 +111,12 @@ func _capture_classroom_state() -> void:
 		var node: Node = _room.get_node_or_null(path)
 		if node != null:
 			_saved_visible[path] = node.visible
+
+
+func _on_profile_summon(index: int) -> void:
+	set_mode("office")
+	open_tool("summon")
+	select_student(index)
 
 
 func _refresh_profile_binding() -> void:
@@ -293,6 +302,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _bind_tool_touch(node: Node) -> void:
+	if bool(node.get_meta("handles_native_touch", false)):
+		return
 	if node is Button:
 		_view.bind_touch(node)
 	for child in node.get_children():

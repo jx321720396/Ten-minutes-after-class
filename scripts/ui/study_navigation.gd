@@ -39,13 +39,9 @@ func bind_sources(core: Variant) -> void:
 
 
 func _build_profile_links() -> void:
-	var content := _profile.get_node("Root/Design/Frame/Margin/Content")
-	var row := _new_row()
-	row.alignment = BoxContainer.ALIGNMENT_END
-	content.add_child(row)
-	content.move_child(row, content.get_child_count() - 2)
-	_add_button(row, "board")
-	_add_button(row, "encyclopedia")
+	_profile.tool_requested.connect(_switch)
+	for key in ["OpenBoard", "OpenEncyclopedia"]:
+		_profile.get_node("%" + key).disabled = false
 
 
 func _build_book_links() -> void:
@@ -56,33 +52,22 @@ func _build_book_links() -> void:
 
 
 func _build_board_links() -> void:
-	var board := _board.get_node("ClueBoard1")
-	var row := _new_row()
-	row.name = "StudyNavigation"
-	board.add_child(row)
-	row.z_index = 6
-	row.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	row.offset_left = -float(_cfg.board_width) - float(_cfg.margin)
-	row.offset_right = -float(_cfg.margin)
-	row.offset_top = float(_cfg.margin)
-	row.offset_bottom = float(_cfg.margin) + float(_cfg.height)
-	_picker = OptionButton.new()
-	_picker.name = "StudyPerson"
-	_picker.custom_minimum_size.x = float(_cfg.person_width)
-	_picker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_picker.tooltip_text = str(_copy.person_hint)
-	_style_button(_picker)
-	row.add_child(_picker)
+	var board := _board.get_node("Board")
+	_picker = board.get_node("Design/StudyPerson")
 	_picker.item_selected.connect(_on_person_selected)
-	_add_button(row, "profile")
-	_add_button(row, "encyclopedia")
+	board.person_selected.connect(_on_board_person)
+	for destination in ["profile", "encyclopedia"]:
+		var button: Button = board.get_node("Design/" + str(_copy[destination].node_name))
+		button.pressed.connect(_switch.bind(destination))
+		if destination == "profile":
+			_profile_buttons.append(button)
 
 
-func _new_row() -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.name = "StudyNavigation"
-	row.add_theme_constant_override("separation", int(_cfg.gap))
-	return row
+func _on_board_person(index: int) -> void:
+	var item := _picker.get_item_index(index)
+	if item >= 0:
+		_picker.select(item)
+		_on_person_selected(item)
 
 
 func _add_button(row: Node, destination: String) -> Button:
