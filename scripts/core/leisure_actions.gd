@@ -15,18 +15,6 @@ static func start_leisure(c: SimCore, i: int, kind: String) -> bool:
 	return true
 
 
-static func class_affinity_settle(c: SimCore) -> void:
-	for i in range(c._n):
-		if c._sleeping[i] or not c.is_present(i):
-			continue
-		for j in c._neighbor_idx[i]:
-			if not c._sleeping[j] and c.is_present(j):
-				c._a[i * c._n + j] = c._clamp100(
-					c._a[i * c._n + j] + float(c._p["class_affinity_gain"])
-				)
-	c._term_record.capture(c, "class_affinity")
-
-
 static func select_roster(pool: Array, npc_count: int, leisure: Dictionary) -> Array:
 	var selected: Array = []
 	# 持书配额是单值（rules/leisure.csv 的 book_count）；不得超过本局人数，否则下面会选出超过 npc_count 的人

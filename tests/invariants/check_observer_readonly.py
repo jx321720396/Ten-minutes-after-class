@@ -170,10 +170,9 @@ def runtime_probe(root, seed, npc, days):
         sim.run_day()
 
     counter = Counter()
+    # 老师版（2026-10-16）：信任 T 与透明度 O 轴已删除，只包装仍存在的 A / H。
     sim.A = CountingMatrix(sim.A, counter, "A")
     sim.H = CountingMatrix(sim.H, counter, "H")
-    sim.T = CountingMatrix(sim.T, counter, "T")
-    sim.O = CountingVector(sim.O, counter, "O")
 
     layer = core_sim.ObserverLayer(sim)
     views = 0

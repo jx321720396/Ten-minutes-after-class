@@ -9,14 +9,13 @@
 ----
 * 基准（reference）：Python 内核原型 `tools/core_sim.py` 导出的逐 tick 序列；
 * 对拍（candidate）：GDScript 内核经 `tests/integration/export_ticks_gd.gd` 导出的同种子序列；
-* 判据：每个 tick 的 `A_mean / H_mean / T_mean / O_mean / stress_mean` 相对误差 ≤ `--tol`（默认 1%）；
+* 判据：每个 tick 的 `A_mean / H_mean / stress_mean / grade_mean / vitality_mean / gain_mean` 相对误差 ≤ `--tol`（默认 1%）；
   `*_hash` 只作参考打印（浮点末位差异不应判死）。
 
-现状
+状态
 ----
-GDScript 内核（`scripts/core/`）尚未移植，所以对拍对象缺失 → 本脚本明确 **SKIP**。
-但它**永远保留一条自检**：拿「故意偏 5%」的假数据喂给比对逻辑，必须判红 ——
-否则对拍器本身坏了却显示「通过」，比不测更糟。
+两侧均已接入老师版内核。随机浮点调用数、MT19937 字消耗数及崩溃人数必须精确一致；
+关系、压力、成绩、动力和今日收益按误差阈值比较。哨兵同时检查数值和随机消耗偏差。
 
 用法
 ----
@@ -43,8 +42,9 @@ KERNEL = os.path.join(ROOT, "scripts", "core", "sim_core.gd")
 GD_EXPORTER = os.path.join(ROOT, "tests", "integration", "export_ticks_gd.gd")
 GODOT_PATH_FILE = os.path.join(ROOT, ".godot_path")
 
-NUMERIC_FIELDS = ("A_mean", "H_mean", "T_mean", "O_mean", "stress_mean", "grade_mean")
-HASH_FIELDS = ("A_hash", "H_hash", "T_hash", "grade_hash", "study_acc_hash")
+NUMERIC_FIELDS = ("A_mean", "H_mean", "stress_mean", "grade_mean", "vitality_mean", "gain_mean")
+EXACT_FIELDS = ("rng_random_calls", "rng_words_consumed", "broken_count")
+HASH_FIELDS = ("A_hash", "H_hash", "grade_hash")
 
 
 # ------------------------------------------------------------------ 比对逻辑
@@ -55,9 +55,18 @@ def compare_series(reference, candidate, tol):
         problems.append("tick 数不一致：基准 %d vs 对拍 %d" % (len(reference), len(candidate)))
         return False, problems
     for ref_row, cand_row in zip(reference, candidate):
+        for field in EXACT_FIELDS:
+            if field not in ref_row or field not in cand_row or ref_row[field] != cand_row[field]:
+                problems.append("tick=%s %s: reference=%s candidate=%s" % (
+                    ref_row.get("tick"), field, ref_row.get(field), cand_row.get(field)))
+        if problems:
+            return False, problems
         for field in NUMERIC_FIELDS:
-            a = float(ref_row.get(field, 0.0))
-            b = float(cand_row.get(field, 0.0))
+            if field not in ref_row or field not in cand_row:
+                problems.append("tick=%s missing numeric field: %s" % (ref_row.get("tick"), field))
+                return False, problems
+            a = float(ref_row[field])
+            b = float(cand_row[field])
             rel = abs(a - b) / max(abs(a), 1e-9)
             if rel > tol:
                 problems.append("tick=%s %s：基准 %.3f vs 对拍 %.3f（相对差 %.2f%%）" % (
@@ -70,13 +79,24 @@ def compare_series(reference, candidate, tol):
 
 def self_check(tol):
     """哨兵：比对逻辑必须能判出「偏 5%」，且不能误杀「偏 0.4%」。"""
-    base = {"tick": 1, "A_mean": 25.0, "H_mean": 5.0, "T_mean": 27.0,
-            "O_mean": 46.0, "stress_mean": 0.75}
+    base = {"tick": 1, "A_mean": 25.0, "H_mean": 5.0,
+            "stress_mean": 0.75, "grade_mean": 300.0,
+            "vitality_mean": 40.0, "gain_mean": 1.0, "rng_random_calls": 10,
+            "rng_words_consumed": 20, "broken_count": 0}
     near = [dict(base, A_mean=25.1)]      # 0.4% —— 应通过
     far = [dict(base, A_mean=26.25)]      # 5.0% —— 应判红
     tolerates_small, _ = compare_series([base], near, tol)
     _, far_problems = compare_series([base], far, tol)
-    return tolerates_small, bool(far_problems)
+    count_ok, _ = compare_series([base], [dict(base, rng_random_calls=11)], tol)
+    words_ok, _ = compare_series([base], [dict(base, rng_words_consumed=21)], tol)
+    missing = dict(base)
+    del missing["rng_words_consumed"]
+    missing_ok, _ = compare_series([base], [missing], tol)
+    del missing["gain_mean"]
+    missing["rng_words_consumed"] = base["rng_words_consumed"]
+    numeric_missing_ok, _ = compare_series([base], [missing], tol)
+    return tolerates_small, bool(far_problems) and not (
+        count_ok or words_ok or missing_ok or numeric_missing_ok)
 
 
 # ------------------------------------------------------------------ 执行环境

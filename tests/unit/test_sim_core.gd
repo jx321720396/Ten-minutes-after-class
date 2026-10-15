@@ -109,3 +109,18 @@ func test_constructor_takes_npc_count() -> void:
 	assert_eq(SimCore.new(12345, 16).node_count(), 16, "16 名学生（内部自取 tables）")
 	assert_eq(SimCore.new(12345, 99, _tables).node_count(), 16, "超出角色池的人数被夹到池人数（16）")
 	assert_eq(SimCore.new(12345, 0, _tables).node_count(), 1, "人数下限 1（不静默造出空局）")
+
+
+func test_sleep_roll_includes_every_student() -> void:
+	var core := _core()
+	core._probs["sleep"] = 1.0
+	core._character_tags = []
+	var calls_before := core._rng.random_calls
+	core._roll_sleep()
+	for i in range(core.node_count()):
+		assert_true(
+			core._sleeping[i], "Every student participates in sleep rolls, including the last"
+		)
+	assert_eq(
+		core._rng.random_calls - calls_before, core.node_count(), "One sleep roll per student"
+	)

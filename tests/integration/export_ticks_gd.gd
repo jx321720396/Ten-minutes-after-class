@@ -58,12 +58,18 @@ func _snapshot(core: SimCore, n: int) -> Dictionary:
 	var s: Array[float] = []
 	var g: Array[float] = []
 	var sa: Array[float] = []
+	var v: Array[float] = []
+	var gn: Array[float] = []
 	for i in range(n):
 		s.append(core.stress(i))
 		g.append(core.grade(i))
 		sa.append(core.study_acc(i))
+		v.append(core.vitality(i))
+		gn.append(core.gain_today(i))
 	return {
 		"tick": core.global_tick(),
+		"rng_random_calls": core._rng.random_calls,
+		"rng_words_consumed": core._rng.words_consumed,
 		"day": core.day(),
 		"phase": core.phase(),
 		"phase_index": core.phase_index(),
@@ -72,6 +78,9 @@ func _snapshot(core: SimCore, n: int) -> Dictionary:
 		"H_mean": _mean(h),
 		"stress_mean": _mean(s),
 		"grade_mean": _mean(g),
+		"vitality_mean": _mean(v),
+		"gain_mean": _mean(gn),
+		"broken_count": _broken_count(core),
 		"A_hash": _digest(a),
 		"H_hash": _digest(h),
 		"grade_hash": _digest(g),
@@ -79,6 +88,15 @@ func _snapshot(core: SimCore, n: int) -> Dictionary:
 		"events": int(core._stats.get("events", 0)),
 		"bursts": int(core._stats.get("bursts", 0)),
 	}
+
+
+## 崩溃人数（《老师版规则合并稿》D01 / D06）：与 tools/export_ticks.py 的 broken_count 对齐。
+func _broken_count(core: SimCore) -> int:
+	var count := 0
+	for i in range(int(core.node_count())):
+		if core.is_broken(i):
+			count += 1
+	return count
 
 
 ## 均值，round 到 3 位（对齐 export_ticks.py 的 _mean：round(x,3)，half-even）。

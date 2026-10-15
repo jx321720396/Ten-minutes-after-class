@@ -5,6 +5,9 @@ extends GutTest
 func test_classroom_chat_and_movement_are_mutually_exclusive() -> void:
 	var state = get_node("/root/GameState")
 	state.start_game(20261007, 16)
+	# Initialize free vitality before live scene ticks can lock a play activity.
+	for i in range(state.sim_core.node_count()):
+		state.sim_core._vitality[i] = 45.0
 	var scene = load("res://scenes/game/classroom3D.tscn").instantiate()
 	add_child_autofree(scene)
 	# 教室要等导航就绪后才把时钟与交互接上：按条件等待，别用固定帧数 ——
@@ -14,11 +17,6 @@ func test_classroom_chat_and_movement_are_mutually_exclusive() -> void:
 			break
 		await get_tree().physics_frame
 	var core: SimCore = state.sim_core
-	# D01：开局动力 = 压力（0–20）→ 全班落在「<30 的游戏状态」，整课间不会自主聊天。
-	# 本用例验的是「聊天与走动互斥」，所以先把动力放进自由区（30–60）并重算段首状态。
-	for i in range(core.node_count()):
-		core._vitality[i] = 45.0
-	core._begin_phase_state()
 	var roam = scene.get_node("Roam")
 	var clock: SimulationClock = scene.get_node("Clock")
 	assert_not_null(roam._clock, "真实导航与时钟完成接线")

@@ -397,13 +397,21 @@ check("exam：进步奖门槛为正", float(_exam.get("progress_prize_delta", 0)
 
 print("\n=== 结论 ===")
 _leisure = params("rules/leisure.csv")
-for prefix in ("music", "snack", "book"):
-    check("P0-3 %s：减压与时长为正" % prefix,
-          all(math.isfinite(_leisure.get(prefix + suffix, 0)) and _leisure.get(prefix + suffix, 0) > 0
-              for suffix in ("_relief", "_duration")))
+# 2026-10-16（D02）：减压不再逐活动配 —— 统一「每 10 秒 −5 压力」（rules/activities.csv 的 relief_per_unit），
+# 因此本表只校验活动时长与噪声；玩手机（phone）为本轮新增活动。
+for prefix in ("music", "snack", "book", "phone"):
+    check("P0-3 %s：时长为正" % prefix,
+          math.isfinite(_leisure.get(prefix + "_duration", 0)) and _leisure.get(prefix + "_duration", 0) > 0)
     check("P0-3 %s：时长为整数、噪声非负" % prefix,
           _leisure[prefix + "_duration"] == int(_leisure[prefix + "_duration"])
           and math.isfinite(_leisure.get(prefix + "_noise", -1)) and _leisure.get(prefix + "_noise", -1) >= 0)
+_acts_cfg = params("rules/activities.csv")
+check("D02：每 10 秒减压为正", _acts_cfg.get("relief_per_unit", 0) > 0)
+check("D02：单位时长与学习结算时长为正整数",
+      _acts_cfg.get("unit_seconds", 0) > 0 and _acts_cfg.get("study_settle_seconds", 0) > 0
+      and _acts_cfg.get("play_settle_seconds", 0) > 0)
+check("D02：学习收益为正、游戏收益为负",
+      _acts_cfg.get("study_gain", 0) > 0 and _acts_cfg.get("play_gain", 0) < 0)
 _seed_books = load("characters/seeds.csv")
 check("P0-3：课外书种子仅 0/1", all(r.get("book") in ("0", "1") for r in _seed_books))
 _roster = {r["key"]: r["value"] for r in load("rules/roster.csv")}
@@ -416,11 +424,16 @@ check("P0-3：持书配额可抽足（book_count 单值）",
       0 <= _quota <= _npc_count and int(_quota) == _quota and _quota <= _available
       and _npc_count - _quota <= len(_seed_books) - _available,
       "book_count=%s，持书者 %d" % (_quota, _available))
-check("P0-3：中断压力有限且非负", math.isfinite(_leisure.get("interrupted_stress", -1)) and _leisure.get("interrupted_stress", -1) >= 0)
-_tparams = params("rules/transmission.csv")
-check("P0-3：上课好感增量为正且有限", math.isfinite(_tparams.get("class_affinity_gain", 0)) and _tparams.get("class_affinity_gain", 0) > 0)
+_seat_rel = params("rules/seat_relations.csv")
+check("D04：座位基础好感增量为有限数",
+      math.isfinite(_seat_rel.get("orthogonal_h", 0)) and math.isfinite(_seat_rel.get("far_h", 0)))
+check("D04：对角邻座不加好感", _seat_rel.get("diagonal_h", -1) == 0)
+check("D04：学习者对娱乐邻座的敌对增量为正且有限",
+      math.isfinite(_seat_rel.get("study_play_hostility", 0))
+      and _seat_rel.get("study_play_hostility", 0) > 0)
+check("D04：睡觉视同学习标志仅 0/1", _seat_rel.get("sleep_as_study") in (0, 1))
 _lprobs = {r["behavior"]: float(r["base_p"]) for r in load("rules/behavior_probs.csv")}
-check("P0-3：三种行为概率存在且在 [0,1]", all(0 <= _lprobs.get(k, -1) <= 1 for k in ("music_p", "snack_p", "book_p")))
+check("P0-3：四种行为概率存在且在 [0,1]", all(0 <= _lprobs.get(k, -1) <= 1 for k in ("music_p", "snack_p", "book_p", "phone_p")))
 # P0-2/P3：巡查与没收参数定义；运行该校验仍遵从用户指令。
 _teacher = params("rules/teacher.csv")
 for _key in ("visit_check_first", "visit_check_second", "stay_ticks", "confiscate_books_per_catch"):

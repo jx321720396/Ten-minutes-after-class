@@ -18,6 +18,13 @@ var _last_score: PackedFloat64Array = PackedFloat64Array()
 var _tokens: PackedInt32Array = PackedInt32Array()
 var _rank: PackedInt32Array = PackedInt32Array()
 var _reports: Dictionary = {}
+## D05：目标均分／考前加压／考后减压／考试当天只有考试。
+var _target_mean := 380.0
+var _pre_bonus := 20.0
+var _post_cut := 30.0
+var _only_day := 1
+var _means: Dictionary = {}
+var _passed: Dictionary = {}
 
 
 func configure(tables: Dictionary, seed_value: int, count: int, grade_max: float) -> void:
@@ -31,6 +38,14 @@ func configure(tables: Dictionary, seed_value: int, count: int, grade_max: float
 			_days.append(int(float(raw)))
 		elif key == "exam_noise_sigma":
 			_sigma = float(raw)
+		elif key == "exam_target_mean":
+			_target_mean = float(raw)
+		elif key == "pre_exam_stress_bonus":
+			_pre_bonus = float(raw)
+		elif key == "post_exam_stress_cut":
+			_post_cut = float(raw)
+		elif key == "exam_only_day":
+			_only_day = int(float(raw))
 		elif key == "stress_exam_penalty":
 			_penalty = float(raw)
 		elif key == "progress_prize_delta":
@@ -52,6 +67,53 @@ func configure(tables: Dictionary, seed_value: int, count: int, grade_max: float
 func capture_baseline(grade: PackedFloat64Array) -> void:
 	for i in grade.size():
 		_last_score[i] = grade[i]
+
+
+## D05：是否是考试日（周考日或期末考日）。
+func is_exam_day(day: int) -> bool:
+	return day == _term_days or _days.has(day)
+
+
+## D05：是否是考试前一天（第七天为第八天的考前日）。
+func is_exam_eve(day: int) -> bool:
+	return is_exam_day(day + 1)
+
+
+## D05：考试当天只有考试 —— 不发生普通事件与相关结算。
+func exam_only_day() -> bool:
+	return _only_day == 1
+
+
+func target_mean() -> float:
+	return _target_mean
+
+
+func pre_stress_bonus() -> float:
+	return _pre_bonus
+
+
+func post_stress_cut() -> float:
+	return _post_cut
+
+
+## 某次考试的班级均分（未考过返回 0）。
+func mean_of(day: int) -> float:
+	return float(_means.get(day, 0.0))
+
+
+## 某次考试是否达到目标均分（未考过按达标处理，避免误报辞退）。
+func passed_of(day: int) -> bool:
+	return bool(_passed.get(day, true))
+
+
+## 最近一次已出分考试的达标情况；没考过返回 true。
+func last_passed() -> bool:
+	var best_day := -1
+	for key in _passed.keys():
+		best_day = maxi(best_day, int(key))
+	if best_day < 0:
+		return true
+	return bool(_passed[best_day])
 
 
 func banner(day: int) -> String:
@@ -106,6 +168,13 @@ func settle(
 				return scores[a] > scores[b]
 			return a < b
 	)
+	# D05：全班均分与目标均分（380）考核 —— 不达标老师被辞退（考核结果只读，不改成绩）。
+	var total := 0.0
+	for i in n:
+		total += scores[i]
+	var mean := (total / float(n)) if n > 0 else 0.0
+	_means[day] = mean
+	_passed[day] = mean >= _target_mean
 	for place in order.size():
 		_rank[order[place]] = place + 1
 	var player := n - 1
