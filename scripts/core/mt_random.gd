@@ -24,6 +24,9 @@ const _MULT_INIT_A := 1664525
 const _MULT_INIT_B := 1566083941
 const _MASK32 := 0xffffffff
 
+## Diagnostic counts include initialization and phase setup, never reset per tick.
+var random_calls := 0
+var words_consumed := 0
 var _mt := PackedInt64Array()
 var _mti := _N
 
@@ -35,6 +38,7 @@ func _init(seed: int) -> void:
 
 ## [0,1) 均匀浮点（CPython `random.random`，每次消费两个 32-bit 字）。
 func random() -> float:
+	random_calls += 1
 	var a := _uint32() >> 5
 	var b := _uint32() >> 6
 	return (a * 67108864.0 + b) * (1.0 / 9007199254740992.0)
@@ -159,6 +163,7 @@ func _seed_by_array(init_key: Array) -> void:
 
 ## CPython `genrand_uint32`（含 tempering）。
 func _uint32() -> int:
+	words_consumed += 1
 	if _mti >= _N:
 		var kk := 0
 		while kk < _N - _M:

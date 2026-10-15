@@ -32,7 +32,7 @@
     "topic_affinity": "闲聊 · 好感变化",
     "reject_affinity": "加入被拒 · 好感变化",
     "reject_hostility": "加入被拒 · 敌意变化",
-    "class_affinity": "共同上课",
+    "seat_relations": "座位关系",
     "day_decay": "日末关系衰减",
     "environment": "其他关系变化"
   },

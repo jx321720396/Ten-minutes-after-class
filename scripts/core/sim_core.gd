@@ -17,7 +17,9 @@ extends RefCounted
 
 const AXES := ["affinity", "hostility"]
 ## 娱乐行为 → rules/leisure.csv 与 behavior_probs.csv 的前缀（学生自主娱乐，§9.2）
-const LEISURE_KINDS := {"listen_music": "music", "eat_snack": "snack", "read_book": "book"}
+const LEISURE_KINDS := {
+	"listen_music": "music", "eat_snack": "snack", "read_book": "book", "play_phone": "phone"
+}
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
 const OBSERVER_LAYER = preload("res://scripts/systems/observer/observer_layer.gd")
@@ -31,6 +33,7 @@ const CHAT_SPACE_TABLE := "rules/chat_space"
 const PSYCHE_TABLE := "rules/psyche"
 const ACTIVITIES_TABLE := "rules/activities"
 const TEACHER_COMMANDS_TABLE := "rules/teacher_commands"
+const SEAT_RELATIONS_TABLE := "rules/seat_relations"
 const EXAM_SETTLE := preload("res://scripts/core/exam_settle.gd")
 const TERM_RECORD := preload("res://scripts/core/term_record.gd")
 
@@ -156,6 +159,7 @@ var _settle_acc: Array = []
 ## 配置：rules/psyche.csv（心理状态与跨天）、rules/activities.csv（单位与结算）
 var _psyche: Dictionary = {}
 var _acts: Dictionary = {}
+var _seat_rel: Dictionary = {}
 
 
 func _init(seed: int, npc_count: int, tables: Dictionary = {}) -> void:
@@ -232,6 +236,7 @@ func _load_config(tables: Dictionary) -> void:
 	_chat_space = _params(tables, CHAT_SPACE_TABLE)
 	_psyche = _params(tables, PSYCHE_TABLE)
 	_acts = _params(tables, ACTIVITIES_TABLE)
+	_seat_rel = _params(tables, SEAT_RELATIONS_TABLE)
 	_p = _params(tables, "rules/transmission")
 	_kp = _params(tables, "rules/kernel_params")
 	_grade_bands = _build_grade_bands(tables)
@@ -465,11 +470,11 @@ func _end_phase() -> void:
 		return
 	_settled_boundary = key
 	_settle_finished_actions()
-	# D04：课间末读一次状态，结算邻座学习涓流（同一时点一次性处理，不每秒重复累加）
-	if _phase == "break":
+	# D04：课间末读一次状态，同时结算「邻座学习加压」与「座位基础关系」（不每秒重复累加）。
+	# D05：考试当天只有考试，不发生普通事件与相关结算。
+	if _phase == "break" and not _is_exam_only_day():
 		_settle_neighbor_drip()
-	if _phase == "class":
-		_class_affinity_settle()
+		_settle_seat_relations()
 	_settle_sleep()
 	_check_interrupt()
 	_cleanup_phase()
@@ -645,9 +650,8 @@ func _settle_finished_actions() -> void:
 		_last_finished[i] = _busy_act[i]
 		# D02 第 4 条：未满一个单位的部分按时间比例折算（压力按 2 秒 1 点；收益只按整数单位）。
 		_fold_pending_unit(i)
+		# D02 起减压不再在「完成」时结算：按每 10 秒 −5 压力由 _settle_units 逐单位给。
 		if LEISURE_KINDS.has(_busy_act[i]):
-			var prefix: String = LEISURE_KINDS[_busy_act[i]]
-			_stress[i] = _clamp100(_stress[i] - float(_leisure[prefix + "_relief"]))
 			if _busy_act[i] == "eat_snack" and _snack_provider[i] != null:
 				# 分享零食（§9.1.4）：自然完成一个共同进食单位 → 对分享者结算一次分享好感；
 				# 中断 / 退出不结算；同一对子每课间段至多一次（沿用事件去重，防退出重入刷收益）
@@ -685,7 +689,8 @@ func _tick() -> void:
 	_settle_units()
 	_check_breakdown()
 	_update_environment()
-	if _global_tick % int(_p["settle_interval"]) == 0:
+	# D05：考试当天只有考试，压力涓流也属「相关结算」，当天不跑。
+	if _global_tick % int(_p["settle_interval"]) == 0 and not _is_exam_only_day():
 		_stress_drip()
 
 
@@ -802,21 +807,85 @@ func _settle_neighbor_drip() -> void:
 			_stats["neighbor_drip"] = int(_stats.get("neighbor_drip", 0)) + studying
 
 
-## 游戏状态（D01 / D02）：动力 <30 的学生整课间做娱乐活动，减少学业收益。
-## 可选活动 = LEISURE_KINDS 中当前相位允许、且条件满足者（看课外书需要手上有书）。
-## 待确认（合并稿未定）：游戏状态是否必须包含「聊天 / 打闹」这类需要伙伴的活动。
-func _start_play_activity(i: int) -> bool:
-	var kinds: Array = []
-	for kind in LEISURE_KINDS:
-		if not _allowed(kind):
-			continue
-		if kind == "read_book" and _book[i] <= 0:
-			continue
-		kinds.append(kind)
-	if kinds.is_empty():
+## 座位结算参与资格（D04 / §8.1）：实际在自己座位、处于学习／娱乐／睡觉，
+## 且非崩溃、非换座。离座、办公室、崩溃与换座期间既不作来源也不作接收者。
+func _seat_eligible(i: int) -> bool:
+	if _broken[i] or not is_present(i) or not in_own_seat(i):
 		return false
-	var pick := clampi(int(_rng.random() * float(kinds.size())), 0, kinds.size() - 1)
-	return _start_leisure(i, str(kinds[pick]))
+	if _teacher_commands.is_seat_changing(i):
+		return false
+	return _seat_role(i) != ""
+
+
+## 座位关系里的角色（D04 / §8.1）：睡觉仅在座位关系中视同学习，不获得学习收益。
+func _seat_role(i: int) -> String:
+	if _broken[i] or not is_present(i):
+		return ""
+	if _sleeping[i]:
+		return "study"
+	return _unit_kind(i)
+
+
+## 两学生的座位关系：前后左右 = orthogonal，斜向 = diagonal，其余 = 一圈以外。
+func _seat_relation_between(i: int, j: int) -> String:
+	if i == j or not _seat_pos.has(_seat_of[i]) or not _seat_pos.has(_seat_of[j]):
+		return "none"
+	var a: Array = _seat_pos[_seat_of[i]]
+	var b: Array = _seat_pos[_seat_of[j]]
+	var dr: int = absi(int(a[0]) - int(b[0]))
+	var dc: int = absi(int(a[1]) - int(b[1]))
+	if dr + dc == 1:
+		return "orthogonal"
+	if dr == 1 and dc == 1:
+		return "diagonal"
+	return "far"
+
+
+## 座位基础关系结算（D04 / §8.2、§8.4）：每个课间末读一次状态，结算一次。
+## 正交邻座双方好感 +1、对角不加、一圈以外双方 −1；学习者的正交娱乐邻座敌对 +5（不反向）。
+## 只在不同学生之间写入，不对自身关系增减。
+func _settle_seat_relations() -> void:
+	var orth := float(_seat_rel.get("orthogonal_h", 0.0))
+	var diag := float(_seat_rel.get("diagonal_h", 0.0))
+	var far := float(_seat_rel.get("far_h", 0.0))
+	var hostility := float(_seat_rel.get("study_play_hostility", 0.0))
+	var eligible: Array = []
+	for i in range(_n):
+		if _seat_eligible(i):
+			eligible.append(i)
+	for a in range(eligible.size()):
+		for b in range(a + 1, eligible.size()):
+			var i := int(eligible[a])
+			var j := int(eligible[b])
+			var rel := _seat_relation_between(i, j)
+			var delta := orth if rel == "orthogonal" else (diag if rel == "diagonal" else far)
+			var idx_ij := i * _n + j
+			var idx_ji := j * _n + i
+			# 好感（_a = affinity）承接基础增减；敌对（_h = hostility）只由「学习者对娱乐者」写入。
+			_a[idx_ij] = _clamp100(_a[idx_ij] + delta)
+			_a[idx_ji] = _clamp100(_a[idx_ji] + delta)
+			if rel != "orthogonal":
+				continue
+			var ri := _seat_role(i)
+			var rj := _seat_role(j)
+			# 「娱乐」包含段首游戏状态（play）与具体娱乐活动（leisure）两种角色。
+			var i_play: bool = ri == "play" or ri == "leisure"
+			var j_play: bool = rj == "play" or rj == "leisure"
+			if ri == "study" and j_play:
+				_h[idx_ij] = _clamp100(_h[idx_ij] + hostility)
+			elif rj == "study" and i_play:
+				_h[idx_ji] = _clamp100(_h[idx_ji] + hostility)
+	_stats["seat_settles"] = int(_stats.get("seat_settles", 0)) + 1
+	_term_record.capture(self, "seat_relations")
+
+
+## 游戏状态（D01 / D02）：动力 <30 的学生整课间处于游戏状态，结算走 play 口径（见 _settle_units）。
+## 这里只给表现层一个具体动作名 —— D02 没有指定「游戏状态做哪一项娱乐」，固定用「玩手机」，
+## 且**不消耗随机数**（确定性选择，避免两侧随机序列无意义漂移；是否改为随机属待确认项）。
+func _start_play_activity(i: int) -> bool:
+	if not _allowed("play_phone"):
+		return false
+	return _start_leisure(i, "play_phone")
 
 
 ## 动力（0–100，D01）：>60 进入学习状态、<30 进入游戏状态。
@@ -961,6 +1030,11 @@ func _spread_knot(i: int, severity: float) -> void:
 		_emit("tag_changed", {"id": j, "tag": "heart_knot"})
 
 
+## D05：考试当天只有考试 —— 当天不发生普通事件与相关结算（座位、涓流、学生行为）。
+func _is_exam_only_day() -> bool:
+	return _exam != null and _exam.exam_only_day() and _exam.is_exam_day(_day)
+
+
 ## 跨天结算（§3.5 + 《老师版规则合并稿》D01）：压力/动力的固定继承 → 爆发判定 → 心结加压 → 各轴衰减。
 ## D01：「跨天压力单独减少 20 点，动力单独减少 10 点，成绩提升数值为学业收益。」
 func _settle_day() -> void:
@@ -995,7 +1069,17 @@ func _settle_day() -> void:
 		# D01：压力按固定 −20 继承（不再按 retain_s 比例保留；旧口径见 CHANGELOG 的冲突清单）。
 	_day_events.clear()
 	if _exam != null:
+		# D05 第 4 条：考试前一天全班压力 +20（考试日当天再照常跨天继承）。
+		if _exam.is_exam_eve(_day):
+			var pre: float = float(_exam.pre_stress_bonus())
+			for i in range(_n):
+				_stress[i] = _clamp100(_stress[i] + pre)
 		_exam.settle(_day, _grade, _stress, _alias_list())
+		# D05 第 4 条：考试结束全班压力 −30（动力按一般规则联动，不额外强制改动力）。
+		if _exam.is_exam_day(_day):
+			var cut: float = float(_exam.post_stress_cut())
+			for i in range(_n):
+				_stress[i] = _clamp100(_stress[i] - cut)
 	_term_record.settle_day(self, _day)
 	_day += 1
 	_emit("day_settled", {"day": _day - 1, "stats": _stats.duplicate(true)})
@@ -1226,11 +1310,10 @@ func _check_interrupt() -> void:
 			_fold_pending_unit(i)
 			_busy_until[i] = 0
 			_busy_phase[i] = -1
-			var action_cost := (
-				float(_leisure["interrupted_stress"]) if LEISURE_KINDS.has(_busy_act[i]) else cost
-			)
-			if action_cost > 0.0:
-				_stress[i] = _clamp100(_stress[i] + action_cost)
+			# D02 第 4 条：被打断按时间比例结算（减压与收益都已由 _fold_pending_unit 折算）；
+			# 通用打断代价仍来自 behavior_probs.csv（不再是娱乐专属的 leisure.interrupted_stress）。
+			if cost > 0.0:
+				_stress[i] = _clamp100(_stress[i] + cost)
 			_stats["interrupts"] = int(_stats["interrupts"]) + 1
 			_interrupted_nodes.append(i)
 
@@ -1371,8 +1454,8 @@ func _roll_sleep() -> void:
 	if not _allowed("sleep"):
 		return
 	var p := float(_probs["sleep"])
-	# 玩家由人的主动选择驱动，不参加 NPC 的睡觉决策。
-	for i in range(_n - 1):
+	# 老师不占学生节点，全部学生都参与段首判定，保持与 Python 同序。
+	for i in range(_n):
 		if _sleeping[i] or is_moving(i):
 			continue
 		if _rng.random() < p * (1.0 + _tag_bias(i, "alone_bias")):
@@ -1386,6 +1469,9 @@ func _roll_sleep() -> void:
 ## 铁律：决策顺序按索引升序（可复现，取代 Python 的 shuffle）；决策读「我对他」的 A/H（§18.7 不变式 3）。
 func _decide_and_act() -> void:
 	var n := _n
+	# D05：考试当天只有考试 —— 学生不做普通行为决策（不产生事件与相关结算）。
+	if _is_exam_only_day():
+		return
 	var busy: Array = []
 	for _k in range(n):
 		busy.append(false)
@@ -1413,8 +1499,13 @@ func _decide_and_act() -> void:
 		var leisure_started := false
 		for kind in LEISURE_KINDS:
 			var prefix: String = LEISURE_KINDS[kind]
+			var prob_key: String = prefix + "_p"
+			# 具体娱乐的概率键在 behavior_probs.csv；缺键时跳过而不是让决策崩掉
+			# （旧实现曾因 phone_p 缺键在场景里报运行时错误）。
+			if not _probs.has(prob_key):
+				continue
 			if _allowed(kind) and (kind != "read_book" or _book[i] > 0):
-				if _rng.random() < float(_probs[prefix + "_p"]):
+				if _rng.random() < float(_probs[prob_key]):
 					_start_leisure(i, kind)
 					leisure_started = true
 					break
@@ -1480,10 +1571,6 @@ func inventory_of(i: int) -> Dictionary:
 
 func _start_leisure(i: int, kind: String) -> bool:
 	return LeisureActions.start_leisure(self, i, kind)
-
-
-func _class_affinity_settle() -> void:
-	LeisureActions.class_affinity_settle(self)
 
 
 func is_busy(i: int) -> bool:

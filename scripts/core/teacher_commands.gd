@@ -88,7 +88,8 @@ func send_back(core: Variant) -> bool:
 
 
 ## 办公室聊天（D03 第 2 条）：安抚 / 训斥 / 打听 / 鼓励统一耗时 20 秒；训斥按 D01 加压 +20。
-func office_chat(core: Variant, kind: String) -> bool:
+## 参数 `_core` 保留为统一调用签名（与 summon / send_back 一致），本命令当下不需读内核状态。
+func office_chat(_core: Variant, kind: String) -> bool:
 	if _held or _command != "" and _command != "summon":
 		return false
 	if _called < 0:

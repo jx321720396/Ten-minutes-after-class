@@ -1,13 +1,15 @@
-# P0-3：自然完成减压；配置值均来自本表
+# 娱乐活动的时长与噪声（《老师版规则合并稿 D01至D07》D02）
+# 减压不再逐活动配置：D02 统一为「每 10 秒 −5 压力」，数值在 rules/activities.csv 的 relief_per_unit。
+# 依据 D02 第 3 条：吃零食 10 秒、聊天 20 秒（在 behaviors.csv）、打闹 30 秒（在 behaviors.csv）、听歌 40 秒、玩手机 50 秒。
+# ⚠️ 课外书（read_book）未出现在 D02 的娱乐清单里，其 40 秒沿用旧值 —— 列为待确认（docs/production/老师版待确认参数.md）。
+# 列：param | value | note（启动校验见 tools/check_config.py）
 param,value,note
-music_relief,2.0,听完音乐减压
-snack_relief,1.5,吃完零食减压
-book_relief,2.5,看完课外书减压
-music_duration,30,音乐占用
-snack_duration,15,零食占用
-book_duration,40,课外书占用
+music_duration,40,听歌占用（D02）
+snack_duration,10,吃零食占用（D02）
+book_duration,40,课外书占用（D02 未列，沿用旧值 · 待确认）
+phone_duration,50,玩手机占用（D02）
 music_noise,0,耳机无声
 snack_noise,1,零食噪声
 book_noise,0,看书无声
-book_count,5,本局持书 NPC 数（= 池内 book=1 的角色数：陈阳 / 张渊 / 孙悦 / 许静 / 顾言）
-interrupted_stress,0.5,减压动作被铃声打断的压力代价
+phone_noise,1,玩手机有轻微响动
+book_count,5,本局持书学生数（= 池内 book=1 的角色数）

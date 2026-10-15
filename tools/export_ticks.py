@@ -14,9 +14,10 @@ D8–D9 硬闸门（同种子关键指标误差 ≤ 1%，见 `docs/production/�
 | 字段 | 含义 |
 |---|---|
 | `tick` / `day` / `phase` / `phase_index` / `tick_in_phase` | 时间定位（与内核 §3 时间系统一致） |
-| `A_mean` / `H_mean` / `T_mean` | 关系三轴均值（对拍用「≤ 1% 误差」判据） |
-| `O_mean` / `stress_mean` | 透明度 / 压力均值 |
-| `A_hash` / `H_hash` / `T_hash` | 矩阵按 0.1 精度展开后的 sha256 前 16 位（严格对拍） |
+| `A_mean` / `H_mean` | 好感／敌对均值（对拍用「≤ 1% 误差」判据） |
+| `stress_mean` / `vitality_mean` / `gain_mean` | 压力／动力／今日收益均值 |
+| `A_hash` / `H_hash` | 矩阵按 0.1 精度展开后的 sha256 前 16 位（严格对拍） |
+| `rng_random_calls` / `rng_words_consumed` | 从初始化起累计的浮点调用数／MT19937 字消耗数（含段首） |
 | `events` / `bursts` / `transmits` | 累计事件 / 爆发 / 传导次数 |
 
 输出默认落在 `tools/out/`（已在 `.gitignore`，属导出产物，不入库）。
@@ -43,8 +44,9 @@ OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
 
 FIELDS = [
     "tick", "day", "phase", "phase_index", "tick_in_phase",
-    "A_mean", "H_mean", "T_mean", "O_mean", "stress_mean", "grade_mean",
-    "A_hash", "H_hash", "T_hash", "grade_hash", "study_acc_hash",
+    "rng_random_calls", "rng_words_consumed",
+    "A_mean", "H_mean", "stress_mean", "grade_mean", "vitality_mean", "gain_mean",
+    "broken_count", "A_hash", "H_hash", "grade_hash", "study_acc_hash",
     "events", "bursts", "transmits",
 ]
 
@@ -64,22 +66,26 @@ def _flat(matrix):
 
 
 def snapshot(sim):
-    a, h, t = _flat(sim.A), _flat(sim.H), _flat(sim.T)
+    # 老师版（2026-10-16）：信任 T 与透明度 O 轴已删除；新增动力 / 今日学业收益 / 崩溃计数，
+    # 字段与 tests/integration/export_ticks_gd.gd 一一对应。
+    a, h = _flat(sim.A), _flat(sim.H)
     return {
         "tick": sim.global_tick,
+        "rng_random_calls": sim.rng.random_calls,
+        "rng_words_consumed": sim.rng.words_consumed,
         "day": sim.day,
         "phase": sim.phase,
         "phase_index": sim.phase_index,
         "tick_in_phase": sim.tick_in_phase,
         "A_mean": _mean(a),
         "H_mean": _mean(h),
-        "T_mean": _mean(t),
-        "O_mean": _mean(list(sim.O)),
         "stress_mean": _mean(list(sim.Stress)),
         "grade_mean": _mean(list(sim.Grade)),
+        "vitality_mean": _mean(list(sim.Vitality)),
+        "gain_mean": _mean(list(sim.GainToday)),
+        "broken_count": sum(1 for b in sim.Broken if b),
         "A_hash": _digest(a),
         "H_hash": _digest(h),
-        "T_hash": _digest(t),
         "grade_hash": _digest(list(sim.Grade)),
         "study_acc_hash": _digest(list(sim.StudyAcc)),
         "events": sim.stats.get("events", 0),
@@ -136,7 +142,7 @@ def main(argv=None):
     write_rows(rows, out, args.format)
 
     print("导出完成：%d 个 tick -> %s" % (len(rows), out))
-    print("口径：seed=%d，npc=%d（含玩家节点共 %d），%d 天" % (
+    print("口径：seed=%d，npc=%d（学生节点共 %d），%d 天" % (
         args.seed, args.npc, sim.N, args.days))
     if not args.quiet and rows:
         print("")
@@ -148,8 +154,8 @@ def main(argv=None):
             rows[-1]["tick"], rows[-1]["day"], rows[-1]["phase"],
             rows[-1]["A_mean"], rows[-1]["A_hash"]))
         print("")
-        print("对拍提示：GDScript 侧读同一文件，逐 tick 比 A_mean/H_mean/T_mean（1% 判据），")
-        print("          必要时用 A_hash/H_hash/T_hash 做严格逐项比对。")
+        print("对拍提示：GDScript 侧读同一文件，逐 tick 比 A_mean/H_mean/stress_mean/vitality_mean/gain_mean（1% 判据），")
+        print("          必要时用 A_hash/H_hash 做严格逐项比对。")
     return 0
 
 

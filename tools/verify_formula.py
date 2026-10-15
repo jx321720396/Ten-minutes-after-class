@@ -80,7 +80,8 @@ sim3.settle_day()
 check("好感(无互动) ×%.2f" % d3["decay_a_no_interact"], sim3.A[0][1],
       round(60.0 * d3["decay_a_no_interact"], 3))
 check("敌对 ×%.2f" % d3["decay_h"], sim3.H[0][1], round(40.0 * d3["decay_h"], 3))
-check("压力 ×%.2f" % d3["retain_s"], sim3.Stress[0], round(60.0 * d3["retain_s"], 3))
+check("跨天压力固定 −%.0f（D01）" % sim3.psyche["carry_stress_cut"], sim3.Stress[0],
+      round(60.0 - sim3.psyche["carry_stress_cut"], 3))
 
 # 附：验证「有互动」档生效（当天该对子有事件结算 → 用 decay_a_interact）
 sim3b = Sim(seed=3, npc_count=3)

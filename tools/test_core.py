@@ -132,27 +132,37 @@ exam.Stress = [0.0] * exam.N
 exam.exam_last = [0.0] * exam.N
 check("非考试日不结算", exam.settle_exam(6) is False)
 grade_snapshot = list(exam.Grade)
-check("周考不改平时成绩", exam.settle_exam(7) is True and exam.Grade == grade_snapshot)
+check("周考不改平时成绩", exam.settle_exam(8) is True and exam.Grade == grade_snapshot)
 check("周考按考分排名（最高分第一）", exam.exam_rank[0] == 1)
 check("同分按节点号破平", exam.exam_rank[1] == 2)
+# D05：第八天考试的目标均分 380 与达标判定。
+check("D05：目标均分为 380", exam.exam_target_mean == 380.0)
+check("D05：考试日结算后记录班级均分", exam.exam_means.get(8, -1.0) > 0.0)
+check("D05：达标判定按均分与目标比较",
+      exam.exam_passed.get(8) == (exam.exam_means.get(8, 0.0) >= exam.exam_target_mean))
+check("D05：第七天是考前日、第八天是考试日",
+      exam.is_exam_eve(7) is True and exam.is_exam_day(8) is True)
+check("D05：考试当天只有考试", exam.exam_only_day == 1)
 exam.settle_exam(30)
 check("期末考也不改平时成绩", exam.Grade == grade_snapshot)
 
-print("=== 7. 持续学习回归 ===")
+print("=== 7. 持续学习回归（《老师版规则合并稿》D02：每 20 秒 +1 学业收益、−5 动力）===")
 study = Sim(seed=12345, npc_count=8)
 me = 0
 study.Grade[me] = 100.0
-before = study.Grade[me]
+study.phase_state[me] = "study"
+gain_before = study.GainToday[me]
+vitality_before = study.Vitality[me]
 study.do_study(me)
-for _ in range(12):
-    study.study_accumulate()
+for _ in range(20):
+    study.settle_units()
     study.update_environment()
 check("学习不会被过期占用清理", study.current_act[me] == "study")
-check("持续学习实际增加成绩", study.Grade[me] > before)
-earned = study.Grade[me]
+check("学习每 20 秒记 1 点学业收益", study.GainToday[me] == gain_before + 1.0)
+check("学习每 20 秒扣 5 点动力", abs(study.Vitality[me] - (vitality_before - 5.0)) < 1e-9)
+check("成绩当天不变（D02：跨天才并入成绩）", study.Grade[me] == 100.0)
 study.cleanup_phase([])
-check("铃声退出学习且保留已结算成绩", study.current_act[me] is None and study.Grade[me] == earned)
-check("铃声清除未结算进度", study.StudyAcc[me] == 0.0)
+check("铃声退出学习且当天成绩不变", study.current_act[me] is None and study.Grade[me] == 100.0)
 
 print("=== 8. 通用加入（§9.1.4：找伴 / 确定 / 跟随 / 加入 / 带朋友）===")
 join_sim = Sim(seed=20261015, npc_count=8)

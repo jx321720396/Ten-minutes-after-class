@@ -1784,7 +1784,7 @@ def write_learning_sheet(wb):
         ("w_events.csv", "reject_stress（复用现有键）", "2", "拒绝学习邀请：发起者压力 +2"),
         ("behavior_probs.csv", "study_p", "待标定", "NPC 主动学习的每 tick 概率（原 study=1.0 作废）"),
         ("grade_table.csv", "speed_mult（每档学习加速倍率）", "= ticks_per_point ÷ 10", "体感恒 10s/分；只作用于 study_acc 步长"),
-        ("transmission.csv", "class_affinity_gain", "0.2", "上课好感涓流：相邻且清醒对子，每天 2 次"),
+        ("rules/seat_relations.csv", "orthogonal_h / study_play_hostility", "1 / 5", "座位基础关系：每课间末结算一次（D04 取代旧上课好感涓流）"),
         ("seeds.csv", "book 列", "8 人班 3 / 16 人班 6 / 24 人班 10 为 1", "环境事实，非倾向；按难度缩放"),
     ]:
         write_row(ws, row, [table, key, init, "", note], fills={4: FILL_IN})
@@ -1803,7 +1803,7 @@ def write_learning_sheet(wb):
         ("data/characters/seeds.csv", "新增 book 列（0/1）"),
         ("data/rules/behavior_probs.csv", "新增 music_p / snack_p / book_p"),
         ("data/balance/w_events.csv", "新增 teacher_visit_stress / leave_absence"),
-        ("data/rules/transmission.csv", "新增 class_affinity_gain"),
+        ("data/rules/seat_relations.csv", "新增（D04 座位基础关系：正交 +1 / 圈外 −1 / 学习者对娱乐者敌对 +5）"),
     ]:
         kv(rel, change + ("（已存在，待加列/行）" if os.path.exists(os.path.join(ROOT, rel)) else "（表待建）"), "§17.4")
 

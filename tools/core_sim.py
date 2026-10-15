@@ -27,7 +27,8 @@ AXES = ("affinity", "hostility")
 # 主动行为的冷却（tick）：每角色每这么久最多发起一次行为
 # ⚠️ 文档未规定，属实现补充；待标定（见 docs/design/NPC行为决策.md 待确认）
 ACTION_COOLDOWN = 20
-LEISURE_KINDS = {"listen_music": "music", "eat_snack": "snack", "read_book": "book"}
+LEISURE_KINDS = {"listen_music": "music", "eat_snack": "snack", "read_book": "book",
+                 "play_phone": "phone"}
 
 
 # ---------------------------------------------------------------- 工具
@@ -125,11 +126,28 @@ def default_npc_count():
     return len(load_table("characters/seeds.csv"))
 
 
+class CountedRandom(random.Random):
+    """Count random() calls without changing CPython integer sampling/shuffling."""
+
+    random_calls = 0
+    words_consumed = 0
+
+    def random(self):
+        self.random_calls += 1
+        self.words_consumed += 2
+        return super().random()
+
+    def getrandbits(self, k):
+        value = super().getrandbits(k)
+        self.words_consumed += (k + 31) // 32
+        return value
+
+
 class Sim:
     def __init__(self, seed=12345, npc_count=None, verbose=False):
         if npc_count is None:
             npc_count = default_npc_count()
-        self.rng = random.Random(seed)
+        self.rng = CountedRandom(seed)
         self.seed = seed
         self.verbose = verbose
 
@@ -159,6 +177,8 @@ class Sim:
         # 内核硬编码系数（grade 等初始化常量）—— 从 kernel_params.csv 读，与 GDScript 内核同源。
         self.kp = load_params("rules/kernel_params.csv")
         self.psyche = load_params("rules/psyche.csv")
+        self.acts = load_params("rules/activities.csv")
+        self.seat_rel = load_params("rules/seat_relations.csv")
         # 成绩涓流分段表（§17.1.2）：band_upper 升序。
         self.grade_bands = sorted(
             [(float(r["band_upper"]), float(r["ticks_per_point"]))
@@ -189,7 +209,13 @@ class Sim:
         self.H = [[0.0] * n for _ in range(n)]
         self.Stress = [0.0] * n
         self.Grade = [0.0] * n         # 成绩（§17.1）
-        self.StudyAcc = [0.0] * n      # 学习时长累加器（§17.1.2）
+        self.StudyAcc = [0.0] * n      # 学习时长累加器（§17.1.2，2026-10-16 起不再用于计分）
+        # --- 老师版状态层（《老师版规则合并稿》D01 / D02，2026-10-16）---
+        self.Vitality = [0.0] * n        # 动力：>60 学习状态、<30 游戏状态、之间自由
+        self.GainToday = [0.0] * n       # 今日学业收益（跨天并入成绩后清零）
+        self.Broken = [False] * n        # 崩溃：压力 >90 进入、<70 恢复
+        self.phase_state = ["free"] * n  # 段首状态：study / play / free / broken
+        self.settle_acc = [0.0] * n      # 单位结算游标（按秒累计）
 
         # --- 初始化 ---
         self._init_relations()
@@ -328,10 +354,18 @@ class Sim:
         ⚠️ 压力 / 动力 / 学业收益的完整 D01 口径尚未在本参考实现中同步（见
         docs/production/老师版待确认参数.md「本轮未做」第 3 条）。
         """
+        smin = self.psyche["stress_init_min"]
+        smax = self.psyche["stress_init_max"]
         gmin = self.psyche["grade_init_min"]
         gmax = self.psyche["grade_init_max"]
+        pin_stress = int(self.psyche["vitality_equals_stress"]) == 1
         for i in range(len(self.chars)):
+            stress = clamp100(smin + self.rng.random() * (smax - smin))
+            self.Stress[i] = stress
+            self.Vitality[i] = stress if pin_stress else 0.0
+            self.GainToday[i] = 0.0
             self.Grade[i] = gmin + self.rng.random() * (gmax - gmin)
+            self.Broken[i] = False
 
     # ------------------------------------------------ 派生量
     def m_relation(self, i, j):
@@ -521,6 +555,9 @@ class Sim:
     def decide_and_act(self):
         """一 tick 内的行为决策（简化：只挑一个行为执行）"""
         n = self.N
+        # D05：考试当天只有考试 —— 学生不做普通行为决策（不产生事件与相关结算）。
+        if self.exam_only_today():
+            return
         # 老师版：节点全部是学生，全部参与自主决策（主文档 §13.2「老师不是学生节点」）。
         order = list(range(n))
         self.rng.shuffle(order)
@@ -530,10 +567,27 @@ class Sim:
             if self.sleeping[i] or i in busy or self.global_tick < self.busy_until[i]:
                 continue
             self.in_conversation[i] = False
+            # 段首状态（D01）：学习状态整课间学习、游戏状态整课间娱乐，不被拉朋友规则改变；
+            # 崩溃者不参与决策（D06：不能互动、找伴、加入或带朋友）。
+            state = self.phase_state[i]
+            if state == "broken":
+                continue
+            if state == "study":
+                self.do_study(i)
+                busy.add(i)
+                continue
+            if state == "play" and self.start_play_activity(i):
+                busy.add(i)
+                continue
             leisure_started = False
             for kind, prefix in LEISURE_KINDS.items():
+                prob_key = prefix + "_p"
+                # 具体娱乐的概率键在 behavior_probs.csv；缺键时跳过而不是让决策崩掉
+                # （旧实现曾因 phone_p 缺键在场景里报运行时错误）。
+                if prob_key not in self.probs:
+                    continue
                 if self.allowed(kind) and (kind != "read_book" or self.book[i] > 0):
-                    if self.rng.random() < self.probs[prefix + "_p"]:
+                    if self.rng.random() < self.probs[prob_key]:
                         self.start_leisure(i, kind)
                         leisure_started = True
                         break
@@ -588,14 +642,6 @@ class Sim:
         if kind == "read_book":
             self.teacher.catch_reader(self, i)
         return True
-
-    def class_affinity_settle(self):
-        for i in range(self.N):
-            if self.sleeping[i]:
-                continue
-            for j in self.neighbor_idx[i]:
-                if not self.sleeping[j]:
-                    self.A[i][j] = clamp100(self.A[i][j] + self.p["class_affinity_gain"])
 
     def is_busy(self, i):
         """节点此刻是否正处在占用型行为中（§10.4 行为耗时）—— 表现层权限判定用（如玩家操控）。"""
@@ -1308,11 +1354,12 @@ class Sim:
             if self.busy_phase[i] < 0:
                 continue
             if self.busy_until[i] > self.global_tick:
+                # D02 第 4 条：被打断按时间比例结算（减压与收益由 fold_pending_unit 折算）
+                self.fold_pending_unit(i)
                 self.busy_until[i] = 0
                 self.busy_phase[i] = -1
-                action_cost = self.leisure["interrupted_stress"] if self.busy_act[i] in LEISURE_KINDS else cost
-                if action_cost > 0:
-                    self.Stress[i] = clamp100(self.Stress[i] + action_cost)
+                if cost > 0:
+                    self.Stress[i] = clamp100(self.Stress[i] + cost)
                 self.stats["interrupts"] = self.stats.get("interrupts", 0) + 1
                 interrupted.append(i)
         return interrupted
@@ -1331,9 +1378,10 @@ class Sim:
             if self.busy_phase[i] < 0 or self.busy_until[i] > self.global_tick:
                 continue
             self.last_finished[i] = self.busy_act[i]
+            # D02：减压不再在「完成」时结算（按每 10 秒 −5 压力由 settle_units 逐单位给）；
+            # 未满一个单位的部分按时间比例折算。
+            self.fold_pending_unit(i)
             if self.busy_act[i] in LEISURE_KINDS:
-                prefix = LEISURE_KINDS[self.busy_act[i]]
-                self.Stress[i] = clamp100(self.Stress[i] - self.leisure[prefix + "_relief"])
                 if self.busy_act[i] == "eat_snack" and self.snack_provider[i] is not None:
                     # 分享零食（§9.1.4）：自然完成一个共同进食单位 → 对分享者结算一次分享好感；
                     # 中断 / 退出不结算；同一对子每课间段至多一次（沿用事件去重，防退出重入刷收益）
@@ -1353,39 +1401,189 @@ class Sim:
         self._settle_groups()            # 通用加入：活动组成员到期离组 / 解散（§9.1.4，2026-10-15）
         self.teacher.step(self)
         self.decide_and_act()
-        self.study_accumulate()
+        self.settle_units()
+        self.check_breakdown()
         self.update_environment()
-        if self.global_tick % int(self.p["settle_interval"]) == 0:   # 每天 2 次（上午/下午）
-            self.stress_drip()
+        if self.global_tick % int(self.p["settle_interval"]) == 0 and not self.exam_only_today():
+            self.stress_drip()          # 每天 2 次（上午/下午）；D05 考试当天不跑
         # 压力爆发已在每日结算时按概率判定（见 try_burst），此处不再做阈值相变
 
-    def study_accumulate(self):
-        """成绩涓流（§17.1.2）：每 tick 处于「学习状态」（默认空闲 = 无行为且不忙碌）时累积
-        study_acc，满档 +1 分。上课段不累积；跨天保留（settle_day 不清 study_acc）。不消耗 RNG。
-        """
+    def unit_kind(self, i):
+        """该生此刻按哪一类结算："" = 不结算｜"study"｜"play"｜"leisure"。"""
+        if self.Broken[i] or self.sleeping[i]:
+            return ""
+        state = self.phase_state[i]
+        if state == "study":
+            return "study"
+        if state == "play":
+            return "play"
+        act = self.current_act[i]
+        if act == "study":
+            return "study"
+        if act is not None and act in LEISURE_KINDS:
+            return "leisure"
+        return ""
+
+    def settle_units(self):
+        """单位结算（D02）：按秒累计，每满一个单位结算一次；只对课间生效。"""
         if self.phase != "break":
             return
-        gmax = self.kp["grade_max"]
+        study_seconds = self.acts["study_settle_seconds"]
+        play_seconds = self.acts["play_settle_seconds"]
+        unit_seconds = self.acts["unit_seconds"]
         for i in range(self.N):
-            if self.Grade[i] >= gmax:
-                self.StudyAcc[i] = 0.0
+            kind = self.unit_kind(i)
+            if kind == "":
+                self.settle_acc[i] = 0.0
                 continue
-            # §8.23：学习是**主动行为** —— 玩家与 NPC 都必须处于学习态才累积成绩
-            if self.current_act[i] != "study":
-                continue
-            self.StudyAcc[i] += 1.0
-            self._fold_study_acc(i)
+            self.settle_acc[i] += 1.0
+            if kind == "study":
+                while self.settle_acc[i] >= study_seconds:
+                    self.settle_acc[i] -= study_seconds
+                    self.GainToday[i] += self.acts["study_gain"]
+                    self.Vitality[i] = clamp100(self.Vitality[i] - self.acts["study_vitality_cost"])
+            elif kind == "play":
+                while self.settle_acc[i] >= play_seconds:
+                    self.settle_acc[i] -= play_seconds
+                    self.GainToday[i] += self.acts["play_gain"]
+                    self.Stress[i] = clamp100(self.Stress[i] - self.acts["play_relief"])
+            else:
+                while self.settle_acc[i] >= unit_seconds:
+                    self.settle_acc[i] -= unit_seconds
+                    self.Stress[i] = clamp100(self.Stress[i] - self.acts["relief_per_unit"])
 
-    def _fold_study_acc(self, i):
-        """把已经灌进 StudyAcc 的时长折成分数。与 SimCore._fold_study_acc 对齐。"""
-        gmax = self.kp["grade_max"]
-        while self.Grade[i] < gmax:
-            tpp = self._grade_ticks_per_point(self.Grade[i])
-            if tpp <= 0.0 or self.StudyAcc[i] < tpp:
-                return
-            self.StudyAcc[i] -= tpp
-            self.Grade[i] += 1.0
-            self.apply_event(i, i, "study_stress")
+    def fold_pending_unit(self, i):
+        """未完成单位折算（D02 第 4 条）：压力每 2 秒 1 点，学业收益只按整数单位计。"""
+        pending = self.settle_acc[i]
+        self.settle_acc[i] = 0.0
+        if pending <= 0.0:
+            return
+        per_point = self.acts["interrupt_stress_per_point_seconds"]
+        if per_point <= 0.0:
+            return
+        relief = math.floor(pending / per_point)
+        if relief > 0:
+            self.Stress[i] = clamp100(self.Stress[i] - relief)
+
+    def start_play_activity(self, i):
+        """游戏状态（D01 / D02）：固定用「玩手机」作为表现层动作（结算走 play 口径）。
+
+        确定性选择、不消耗随机数 —— 与 GDScript 参考实现一致，避免两侧随机序列无意义漂移。
+        """
+        if not self.allowed("play_phone"):
+            return False
+        return self.start_leisure(i, "play_phone")
+
+    def check_breakdown(self):
+        """崩溃判定（D01 / D06）：压力 >90 崩溃（中断活动、保留已得收益）；<70 恢复。"""
+        enter = self.psyche["breakdown_enter_stress"]
+        recover = self.psyche["breakdown_exit_stress"]
+        for i in range(self.N):
+            if not self.Broken[i] and self.Stress[i] > enter:
+                self.Broken[i] = True
+                self.fold_pending_unit(i)
+                self.current_act[i] = None
+                self.busy_act[i] = None
+                self.busy_phase[i] = -1
+                self.busy_until[i] = 0
+                self.sleeping[i] = False
+                self.phase_state[i] = "broken"
+                self.stats["breakdowns"] = self.stats.get("breakdowns", 0) + 1
+            elif self.Broken[i] and self.Stress[i] < recover:
+                self.Broken[i] = False
+                self.phase_state[i] = "free"
+
+    def settle_neighbor_drip(self):
+        """邻座涓流（D01 / D04）：课间末读一次状态 —— 前后左右有人学习 → 压力 +5，可叠加。"""
+        drip = self.acts["neighbor_study_stress"]
+        for i in range(self.N):
+            if self.Broken[i]:
+                continue
+            studying = sum(1 for j in self.neighbor_idx[i]
+                           if self.unit_kind(j) == "study")
+            if studying > 0:
+                self.Stress[i] = clamp100(self.Stress[i] + drip * studying)
+                self.stats["neighbor_drip"] = self.stats.get("neighbor_drip", 0) + studying
+
+    def seat_role(self, i):
+        """座位关系里的角色（D04 / §8.1）：睡觉仅在座位关系判定中视同学习。"""
+        if self.Broken[i]:
+            return ""
+        if self.sleeping[i]:
+            return "study"
+        return self.unit_kind(i)
+
+    def seat_eligible(self, i):
+        """座位结算参与资格（D04 / §8.1）：在座 + 学习／娱乐／睡觉，且非崩溃、非换座。"""
+        if self.Broken[i] or not self.in_own_seat(i):
+            return False
+        return self.seat_role(i) != ""
+
+    def seat_relation_between(self, i, j):
+        """前后左右 = orthogonal，斜向 = diagonal，其余 = 一圈以外。"""
+        if i == j:
+            return "none"
+        a = self.seat_pos.get(self.seat_of[i])
+        b = self.seat_pos.get(self.seat_of[j])
+        if a is None or b is None:
+            return "none"
+        dr = abs(a[0] - b[0])
+        dc = abs(a[1] - b[1])
+        if dr + dc == 1:
+            return "orthogonal"
+        if dr == 1 and dc == 1:
+            return "diagonal"
+        return "far"
+
+    def settle_seat_relations(self):
+        """座位基础关系结算（D04 / §8.2、§8.4）：每个课间末读一次状态，结算一次。
+
+        正交邻座双方好感 +1、对角不加、一圈以外双方 −1；
+        学习者的正交娱乐邻座敌对 +5（不自动反向）；不对自身关系写入。
+        """
+        orth = self.seat_rel.get("orthogonal_h", 0.0)
+        diag = self.seat_rel.get("diagonal_h", 0.0)
+        far = self.seat_rel.get("far_h", 0.0)
+        hostility = self.seat_rel.get("study_play_hostility", 0.0)
+        eligible = [i for i in range(self.N) if self.seat_eligible(i)]
+        for a in range(len(eligible)):
+            for b in range(a + 1, len(eligible)):
+                i = eligible[a]
+                j = eligible[b]
+                rel = self.seat_relation_between(i, j)
+                delta = orth if rel == "orthogonal" else (diag if rel == "diagonal" else far)
+                # 好感（A = affinity）承接基础增减；敌对（H = hostility）只由「学习者对娱乐者」写入。
+                self.A[i][j] = clamp100(self.A[i][j] + delta)
+                self.A[j][i] = clamp100(self.A[j][i] + delta)
+                if rel != "orthogonal":
+                    continue
+                ri = self.seat_role(i)
+                rj = self.seat_role(j)
+                # 「娱乐」包含段首游戏状态（play）与具体娱乐活动（leisure）两种角色。
+                i_play = ri in ("play", "leisure")
+                j_play = rj in ("play", "leisure")
+                if ri == "study" and j_play:
+                    self.H[i][j] = clamp100(self.H[i][j] + hostility)
+                elif rj == "study" and i_play:
+                    self.H[j][i] = clamp100(self.H[j][i] + hostility)
+        self.stats["seat_settles"] = self.stats.get("seat_settles", 0) + 1
+
+    def begin_phase_state(self):
+        """段首状态判定（D01）：动力 >60 学习、<30 游戏、之间自由；崩溃者停摆。"""
+        study_threshold = self.psyche["vitality_study_threshold"]
+        play_threshold = self.psyche["vitality_play_threshold"]
+        for i in range(self.N):
+            self.settle_acc[i] = 0.0
+            if self.Broken[i]:
+                self.phase_state[i] = "broken"
+            elif self.phase != "break":
+                self.phase_state[i] = "free"
+            elif self.Vitality[i] > study_threshold:
+                self.phase_state[i] = "study"
+            elif self.Vitality[i] < play_threshold:
+                self.phase_state[i] = "play"
+            else:
+                self.phase_state[i] = "free"
 
     def _init_exam(self):
         rows = load_table("rules/exam.csv")
@@ -1393,6 +1591,13 @@ class Sim:
         by_key = {r["param"]: float(r["value"]) for r in rows if not r["param"].startswith("exam_day_")}
         self.exam_sigma = by_key.get("exam_noise_sigma", 12.0)
         self.exam_penalty = by_key.get("stress_exam_penalty", 15.0)
+        # D05：目标均分／考前加压／考后减压／考试当天只有考试。
+        self.exam_target_mean = by_key.get("exam_target_mean", 380.0)
+        self.exam_pre_bonus = by_key.get("pre_exam_stress_bonus", 20.0)
+        self.exam_post_cut = by_key.get("post_exam_stress_cut", 30.0)
+        self.exam_only_day = int(by_key.get("exam_only_day", 1))
+        self.exam_means = {}
+        self.exam_passed = {}
         runtime = {r["key"]: float(r["value"]) for r in load_table("rules/time_runtime.csv")}
         self.exam_term_days = int(runtime.get("term_days", 30))
         self.exam_last = list(self.Grade)
@@ -1413,7 +1618,24 @@ class Sim:
             self.exam_rank[i] = place + 1
         self.exam_score = scores
         self.exam_last = list(scores)
+        # D05：全班均分与目标均分（380）考核 —— 不达标老师被辞退（只读，不改成绩）。
+        total = sum(scores)
+        mean = (total / float(self.N)) if self.N > 0 else 0.0
+        self.exam_means[day] = mean
+        self.exam_passed[day] = mean >= self.exam_target_mean
         return True
+
+    def is_exam_day(self, day):
+        """D05：是否是考试日（周考日或期末考日）。"""
+        return day == self.exam_term_days or day in self.exam_days
+
+    def is_exam_eve(self, day):
+        """D05：是否是考试前一天。"""
+        return self.is_exam_day(day + 1)
+
+    def exam_only_today(self):
+        """D05：考试当天只有考试 —— 不发生普通事件与相关结算。"""
+        return self.exam_only_day == 1 and self.is_exam_day(self.day)
 
     def _exam_index(self, day):
         all_days = sorted(self.exam_days + [self.exam_term_days])
@@ -1455,8 +1677,11 @@ class Sim:
         核心 RNG 只由 `settle_day → try_burst` 消耗一次，其余步骤无核心 RNG。
         """
         self.settle_finished_actions()
-        if self.phase == "class":
-            self.class_affinity_settle()
+        # D04：课间末读一次状态，同时结算「邻座学习加压」与「座位基础关系」（不每秒累加）。
+        # D05：考试当天只有考试，不发生普通事件与相关结算。
+        if self.phase == "break" and not self.exam_only_today():
+            self.settle_neighbor_drip()
+            self.settle_seat_relations()
         self.settle_sleep()
         interrupted = self.check_interrupt()
         self.cleanup_phase(interrupted)
@@ -1472,6 +1697,7 @@ class Sim:
         self.tick_in_phase = 0
         self.teacher.begin_phase(self)
         self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
+        self.begin_phase_state()          # D01 段首状态：学习 / 游戏 / 自由
 
     def run_day(self):
         total_ticks = 0
@@ -1517,7 +1743,17 @@ class Sim:
             self.stats["bursts"] += 1
 
     def settle_day(self):
-        """跨天结算（§3.5）"""
+        """跨天结算（§3.5 + 《老师版规则合并稿》D01）
+
+        D01：「跨天压力单独减少 20 点，动力单独减少 10 点，成绩提升数值为学业收益。」
+        """
+        carry_stress = self.psyche["carry_stress_cut"]
+        carry_vitality = self.psyche["carry_vitality_cut"]
+        for i in range(self.N):
+            self.Stress[i] = clamp100(self.Stress[i] - carry_stress)
+            self.Vitality[i] = clamp100(self.Vitality[i] - carry_vitality)
+            self.Grade[i] = max(0.0, min(self.kp["grade_max"], self.Grade[i] + self.GainToday[i]))
+            self.GainToday[i] = 0.0
         self.try_burst()                      # 每日一次：压力爆发按概率判定
         d = self.decay
 
@@ -1533,9 +1769,16 @@ class Sim:
                 interacted = self.day_events.get((i, j), 0) >= d["interact_min_events"]
                 self.A[i][j] *= d["decay_a_interact"] if interacted else d["decay_a_no_interact"]
                 self.H[i][j] *= d["decay_h"]
-            self.Stress[i] *= d["retain_s"]
+            # D01：压力按固定 −20 继承，不再乘 retain_s（旧口径见 CHANGELOG 冲突清单）
         self.day_events.clear()          # 新的一天，重置「有互动」判定
+        # D05 第 4 条：考试前一天全班压力 +20；考试结束全班压力 −30。
+        if self.is_exam_eve(self.day):
+            for i in range(self.N):
+                self.Stress[i] = clamp100(self.Stress[i] + self.exam_pre_bonus)
         self.settle_exam(self.day)
+        if self.is_exam_day(self.day):
+            for i in range(self.N):
+                self.Stress[i] = clamp100(self.Stress[i] - self.exam_post_cut)
         self.day += 1
 
     # ------------------------------------------------ 报告
