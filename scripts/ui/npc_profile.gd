@@ -6,6 +6,7 @@ signal closed
 signal tool_requested(action: String)
 signal summon_requested(index: int)
 
+const PORTRAITS = preload("res://scripts/ui/student_portraits.gd")
 const DATA = preload("res://scripts/ui/npc_profile_data.gd")
 const STYLE = preload("res://scripts/ui/npc_profile_theme.gd")
 const LAYOUT = preload("res://scripts/ui/npc_profile_layout.gd")
@@ -78,8 +79,7 @@ func bind_sources(core: Variant, actors: Node3D, _interaction: Node) -> void:
 	_roster.clear()
 	if core != null:
 		for index in range(core.node_count()):
-			if not core.is_player(index):
-				_roster.append(index)
+			_roster.append(index)
 
 
 ## 老师版状态接口；缺失字段不从旧学习累计或性格推算。
@@ -240,7 +240,7 @@ func _on_mark(axis: String, band: String) -> void:
 func _refresh_records() -> void:
 	var source := _subject if _reverse else _index
 	var target := _index if _reverse else _subject
-	var result: Dictionary = _model.build(_core.get_player_intel(), source, target)
+	var result: Dictionary = _model.build([], source, target)
 	%RelationTitle.text = words(
 		"relation",
 		{
@@ -384,16 +384,9 @@ func _on_tool(action: String) -> void:
 
 
 func _texture_for(index: int) -> Texture2D:
-	var path := str(_config.get("portraits", {}).get(str(_core.character_id(index)), ""))
-	if not path.is_empty() and ResourceLoader.exists(path):
-		return load(path) as Texture2D
-	if _actors == null:
+	if _core == null:
 		return null
-	var actor: Node3D = _actors.actor_for(index)
-	if actor == null:
-		return null
-	var sprite := actor.get_node_or_null("Sprite") as Sprite3D
-	return sprite.texture if sprite != null else null
+	return PORTRAITS.texture_for(str(_core.character_id(index)), _config)
 
 
 func _date(entry: Dictionary) -> String:

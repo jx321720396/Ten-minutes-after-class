@@ -9,11 +9,9 @@ func _stack() -> Array:
 	core._stress[0] = 80.0
 	core._stress[1] = 79.0
 	core._stress[2] = 95.0
-	core._stress[16] = 100.0
 	core._current_act[0] = "study"
 	core._current_act[1] = "chat"
 	core._current_act[2] = "sleep"
-	core._current_act[16] = "study"
 	var clock := SimulationClock.new()
 	add_child_autofree(clock)
 	assert_true(clock.bind_core(core))

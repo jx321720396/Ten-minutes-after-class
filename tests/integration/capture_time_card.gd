@@ -14,7 +14,7 @@ func _capture() -> void:
 	current_scene = scene
 	var clock: SimulationClock = scene.get_node("Clock")
 	for frame in range(180):
-		if scene.get_node("Interaction")._core != null:
+		if scene.get_node("Roam")._clock != null:
 			break
 		await physics_frame
 	clock.hold(&"time_card_capture")

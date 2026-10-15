@@ -14,9 +14,9 @@
   8. behaviors：`duration ≥ 0`、`|payoff| ∈ [1,5]`、**按 |payoff| 分组后平均耗时呈上升趋势**（效果越强耗时越长）
   9. social_event_triggers：metric / op / value 不得含日期类记号（不变式 1）
  10. 配置键存在性：`core_sim.py` 引用的阈值键必须真的在 behavior_thresholds.csv 里
- 11. 玩家交互 / 闲聊反馈（2026-10-07 完整可玩流程）：
-     `rules/player_interaction.csv` 与 `ui/chat_feedback_style.csv` 的必需键、值域，
-     以及**表 ↔ 消费者**双向一致（写了没人读 / 读了没写都要报）
+ 11. 闲聊空间几何 / 场景拾取层（2026-10-16 接替已删的玩家交互配置）：
+     `rules/chat_space.csv`（学生闲聊的范围 / 容差 / 采样步长）与 `ui/pick_layers.csv`
+     （点选学生的物理层）的必需键与值域
 """
 
 import csv
@@ -201,44 +201,34 @@ for _r in _phases_rows:
         check("%s: 活动相位实时时长为正" % _r["phase_id"], _seconds > 0.0, _seconds)
         check("%s: 活动相位 tick_count 为正" % _r["phase_id"], int(_r["tick_count"]) > 0, _r["tick_count"])
 
-print("=== 12. 玩家交互 / 闲聊反馈配置（计划 2026-10-07-chat-playable-loop）===")
-# 依据：docs/superpowers/plans/2026-10-07-chat-playable-loop.md §3.1、§7、§8；
-#     主文档 §10.5（闲聊范围与玩家专属透露）。
-# 两类校验：
-#   ① 值域（范围 / 步长 / 条数 / 掩码）；
-#   ② **表 ↔ 消费者**：表里每个键都必须被某个脚本引用（防「写了没人读」），
-#      脚本里 `params.get("键")` 的键必须真的在表里（防 `.get` 静默回落到默认值）。
-_pi_rows = load("rules/player_interaction.csv")
-_pi = {r["param"]: r["value"] for r in _pi_rows}
-_pi_required = [
-    "chat_range_m",
-    "seated_tolerance_m",
-    "seated_chat_range_m",
-    "range_step_m",
-    "clue_count_low",
-    "clue_count_high",
-    "actor_pick_layer",
-    "world_pick_blocker_layer",
-]
-check("player_interaction 必需键齐全", all(k in _pi for k in _pi_required),
-      "缺失: %s" % sorted(set(_pi_required) - set(_pi)))
-if all(k in _pi for k in _pi_required):
-    check("chat_range_m 为正", float(_pi["chat_range_m"]) > 0, _pi["chat_range_m"])
+print("=== 12. 闲聊空间几何 / 场景拾取层 ===")
+# 依据：主文档 §10.5（交互范围）、§8.7（加入闲聊）。
+# 2026-10-16：原 rules/player_interaction.csv 随玩家子系统删除 —— 学生自主闲聊仍需要的几何参数
+#            迁到 rules/chat_space.csv；点选学生的物理层留在 UI 配置 ui/pick_layers.csv。
+_cs_rows = load("rules/chat_space.csv")
+_cs = {r["param"]: r["value"] for r in _cs_rows}
+_cs_required = ["chat_range_m", "seated_tolerance_m", "seated_chat_range_m", "range_step_m"]
+check("chat_space 必需键齐全", all(k in _cs for k in _cs_required),
+      "缺失: %s" % sorted(set(_cs_required) - set(_cs)))
+if all(k in _cs for k in _cs_required):
+    check("chat_range_m 为正", float(_cs["chat_range_m"]) > 0, _cs["chat_range_m"])
     check("座位聊天容差为正且小于通用范围",
-          0 < float(_pi["seated_tolerance_m"]) < float(_pi["chat_range_m"]),
-          _pi["seated_tolerance_m"])
+          0 < float(_cs["seated_tolerance_m"]) < float(_cs["chat_range_m"]),
+          _cs["seated_tolerance_m"])
     check("前后座位聊天上限不小于通用范围",
-          float(_pi["seated_chat_range_m"]) >= float(_pi["chat_range_m"]),
-          _pi["seated_chat_range_m"])
-    check("range_step_m 为正", float(_pi["range_step_m"]) > 0, _pi["range_step_m"])
-    check("clue_count_low / high 为正整数且 low ≤ high",
-          int(_pi["clue_count_low"]) >= 1 and int(_pi["clue_count_high"]) >= int(_pi["clue_count_low"]),
-          "%s / %s" % (_pi["clue_count_low"], _pi["clue_count_high"]))
+          float(_cs["seated_chat_range_m"]) >= float(_cs["chat_range_m"]),
+          _cs["seated_chat_range_m"])
+    check("range_step_m 为正", float(_cs["range_step_m"]) > 0, _cs["range_step_m"])
+_pl_rows = load("ui/pick_layers.csv")
+_pl = {r["param"]: r["value"] for r in _pl_rows}
+check("pick_layers 必需键齐全",
+      all(k in _pl for k in ("actor_pick_layer", "world_pick_blocker_layer")))
+if all(k in _pl for k in ("actor_pick_layer", "world_pick_blocker_layer")):
     check("拾取层掩码为正且与遮挡层不同",
-          int(_pi["actor_pick_layer"]) > 0
-          and int(_pi["world_pick_blocker_layer"]) > 0
-          and _pi["actor_pick_layer"] != _pi["world_pick_blocker_layer"],
-          "%s / %s" % (_pi["actor_pick_layer"], _pi["world_pick_blocker_layer"]))
+          int(_pl["actor_pick_layer"]) > 0
+          and int(_pl["world_pick_blocker_layer"]) > 0
+          and _pl["actor_pick_layer"] != _pl["world_pick_blocker_layer"],
+          "%s / %s" % (_pl["actor_pick_layer"], _pl["world_pick_blocker_layer"]))
 
 _particles = json.loads(read(os.path.join(DATA, "ui", "behavior_particles.json")))
 _ps = _particles["settings"]
@@ -319,16 +309,17 @@ for _root_dir, _dirs, _files in os.walk(os.path.join(ROOT, "scripts")):
         if _f.endswith(".gd"):
             _scripts.append(read(os.path.join(_root_dir, _f)))
 _src_all = "\n".join(_scripts)
-_dead = [k for k in list(_pi) + list(_style) if ('"%s"' % k) not in _src_all]
+_dead = [k for k in list(_cs) + list(_pl) + list(_style) if ('"%s"' % k) not in _src_all]
 check("新表的每个键都有脚本消费者（防「写了没人读」）", not _dead, "未被引用的键: %s" % _dead)
 _used = set()
 for _pat in (re.compile(r'params\.get\("([a-z_]+)"'), re.compile(r'\.get\("([a-z_]+)"\s*,')):
     for _m in _pat.finditer(_src_all):
         _used.add(_m.group(1))
 _ghost = sorted(k for k in _used
-                if k.startswith(("chat_range", "range_step", "clue_", "pen_", "menu_",
+                if k.startswith(("chat_range", "seated_", "range_step", "actor_pick_layer",
+                                 "world_pick_blocker_layer", "pen_", "menu_",
                                  "bubble_", "ring_", "toast_", "emotion_", "progress_bar"))
-                and k not in _pi and k not in _style)
+                and k not in _cs and k not in _pl and k not in _style)
 check("脚本 params.get 的键都在新表里（防 .get 静默回落）", not _ghost, "无对应表项: %s" % _ghost)
 
 # 13. movement（导航口径）：数值集中 + 烘焙参数可校验
@@ -356,9 +347,9 @@ check("时间流速：行动倍率有限且不小于正常倍率",
       and _time_flow.get("player_action_scale", 0.0) >= _time_flow.get("normal_scale", 1.0),
       _time_flow.get("player_action_scale"))
 
-# 14. 学业系统（§17.1）：成绩轴初始化常量 + 涓流分段表
+# 14. 学业系统（§17.1）：成绩轴初始化常量 + 涓流分段表（2026-10-16：玩家成绩初值随玩家节点删除）
 _kp = params("rules/kernel_params.csv")
-_grade_keys = ("grade_max", "grade_init_player", "grade_init_npc_min", "grade_init_npc_max")
+_grade_keys = ("grade_max", "grade_init_npc_min", "grade_init_npc_max")
 check("kernel_params：成绩初始化常量齐全", all(k in _kp for k in _grade_keys),
       "缺失: %s" % sorted(set(_grade_keys) - set(_kp)))
 if all(k in _kp for k in _grade_keys):
@@ -366,8 +357,6 @@ if all(k in _kp for k in _grade_keys):
     check("grade_init_npc_min ≤ grade_init_npc_max",
           _kp["grade_init_npc_min"] <= _kp["grade_init_npc_max"],
           "%s / %s" % (_kp["grade_init_npc_min"], _kp["grade_init_npc_max"]))
-    check("grade_init_player ∈ [0, grade_max]",
-          0 <= _kp["grade_init_player"] <= _kp["grade_max"], _kp["grade_init_player"])
     check("NPC 初始区间 ⊆ [0, grade_max]",
           0 <= _kp["grade_init_npc_min"] and _kp["grade_init_npc_max"] <= _kp["grade_max"],
           "%s / %s" % (_kp["grade_init_npc_min"], _kp["grade_init_npc_max"]))
@@ -398,12 +387,6 @@ check("exam：特等奖名次至少为 1", int(float(_exam.get("top_prize_rank",
 check("exam：进步奖门槛为正", float(_exam.get("progress_prize_delta", 0)) > 0)
 
 print("\n=== 结论 ===")
-_invite_kinds = load("rules/player_invitation_kinds.csv")
-check("玩家邀请：行为键不重复", len({r["behavior"] for r in _invite_kinds}) == len(_invite_kinds))
-check("玩家邀请：requires_choice 为 0/1", all(r["requires_choice"] in ("0", "1") for r in _invite_kinds))
-check("玩家邀请：行为存在于 behaviors", all(r["behavior"] in {r["behavior"] for r in load("rules/behaviors.csv")} for r in _invite_kinds))
-_invite_params = params("rules/player_interaction.csv")
-check("玩家邀请：有效期与再次邀请间隔为正整数", all(_invite_params.get(k, 0) > 0 and int(_invite_params[k]) == _invite_params[k] for k in ("invitation_timeout_ticks", "invitation_cooldown_ticks")))
 _leisure = params("rules/leisure.csv")
 for prefix in ("music", "snack", "book"):
     check("P0-3 %s：减压与时长为正" % prefix,
@@ -424,12 +407,7 @@ check("P0-3：持书配额可抽足（book_count 单值）",
       0 <= _quota <= _npc_count and int(_quota) == _quota and _quota <= _available
       and _npc_count - _quota <= len(_seed_books) - _available,
       "book_count=%s，持书者 %d" % (_quota, _available))
-check("P0-3：玩家零食为非负整数", _leisure.get("snack_count_per_run", -1) >= 0
-      and _leisure["snack_count_per_run"] == int(_leisure["snack_count_per_run"]))
 check("P0-3：中断压力有限且非负", math.isfinite(_leisure.get("interrupted_stress", -1)) and _leisure.get("interrupted_stress", -1) >= 0)
-_absence = params("rules/player_absence.csv")
-check("P0-3：出门限制为正整数", _absence.get("max_per_break", 0) > 0
-      and _absence["max_per_break"] == int(_absence["max_per_break"]))
 _tparams = params("rules/transmission.csv")
 check("P0-3：上课好感增量为正且有限", math.isfinite(_tparams.get("class_affinity_gain", 0)) and _tparams.get("class_affinity_gain", 0) > 0)
 _lprobs = {r["behavior"]: float(r["base_p"]) for r in load("rules/behavior_probs.csv")}

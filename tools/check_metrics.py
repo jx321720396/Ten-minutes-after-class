@@ -58,7 +58,7 @@ def run_one(seed, days, npc):
         "reports": s.stats.get("reports", 0),
         "excludes": s.stats.get("excludes", 0),
         "humiliations": s.stats.get("humiliations", 0),
-        "deep_max": max(s.H_deep[i][j] for i in range(n) for j in range(n) if i != j),
+        "deep_max": max(s.H[i][j] for i in range(n) for j in range(n) if i != j),
         "h_max": max(s.H[i][j] for i in range(n) for j in range(n) if i != j),
     }
     return r

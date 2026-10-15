@@ -26,7 +26,6 @@ func _core() -> SimCore:
 
 func _digest(core: SimCore) -> PackedByteArray:
 	var values: Array = [core.get_active_sessions(), core._a, core._h]
-	values.append(core.get_player_intel())
 	var hashing := HashingContext.new()
 	hashing.start(HashingContext.HASH_SHA256)
 	hashing.update(var_to_bytes(values))

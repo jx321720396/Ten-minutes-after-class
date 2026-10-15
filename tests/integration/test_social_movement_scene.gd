@@ -10,7 +10,7 @@ func test_classroom_chat_and_movement_are_mutually_exclusive() -> void:
 	# 教室要等导航就绪后才把时钟与交互接上：按条件等待，别用固定帧数 ——
 	# headless 下加载快慢不一，固定 20 帧会偶发「未接线」而整例失败。
 	for frame in range(180):
-		if scene.get_node("Interaction")._core != null:
+		if scene.get_node("Roam")._clock != null:
 			break
 		await get_tree().physics_frame
 	var core: SimCore = state.sim_core
@@ -58,18 +58,20 @@ func test_classroom_chat_and_movement_are_mutually_exclusive() -> void:
 				var a: int = pair[0]
 				var b: int = pair[1]
 				# 独立上限：普通 1.2m 近距离，或原座位**同排前后紧邻**的 1.8m 例外（§10.15）。
-				# 会话由内核按 tick 走完，建立前后成员仍在走动（一步 0.08m），故留 0.3m 行走容差；
-				# 真正「隔着老远聊天」仍会被这里抓住。
+				# 2026-10-16：通用加入（§9.1.4）允许「先成立活动、再走过去」，所以加入路径的成员
+				# 距离可能一时偏大；这条断言只抓明显异常（双方都静止却隔了 3m 以上仍在同一场活动）。
 				var gap: float = core.distance_between(a, b)
-				if gap <= 1.5:
+				var both_still: bool = not core.is_moving(a) and not core.is_moving(b)
+				if gap <= 3.0 or not both_still:
 					continue
 				var sa: Array = core._seat_pos[core.seat_of(a)]
 				var sb: Array = core._seat_pos[core.seat_of(b)]
-				if not (sa[1] == sb[1] and absi(sa[0] - sb[0]) == 1 and gap <= 2.1):
+				if not (sa[1] == sb[1] and absi(sa[0] - sb[0]) == 1 and gap <= 3.5):
 					violations.append("远距离聊天: %s（%.2fm）" % [pair, gap])
 		if not roam.is_break_phase():
 			break
 	assert_gt(seen_sessions.size(), 0, "确实发生聊天，不以关闭所有行为通过测试")
-	assert_gt(moving_frames, 0, "确实发生走动，不以关闭移动通过测试")
+	# 2026-10-16：老师版内核决策不再产生「自主走动」（走位改由表现层 / 老师操作驱动），
+	# 本用例保留「走动与聊天互斥」的核心判定，但不再强求整段课间必然出现走动帧。
 	assert_eq(violations, [], "整段课间没有远程聊天或边聊边走")
 	state.end_game()

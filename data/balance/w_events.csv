@@ -13,5 +13,4 @@ snack_share_affinity,affinity,2,normal,A,分享零食：加入者自然完成一
 topic_affinity,affinity,3,normal,A,话题共鸣
 topic_stress,stress,-2,normal,A,话题共鸣
 study_stress,stress,3,normal,A,主动学习：每满一档给自身压力 +3（§8.23）
-leave_absence,affinity,-3,normal,E,邻居对出门玩家的好感代价
 teacher_visit_stress,stress,3,normal,E,老师到场压力（学习睡觉缺席豁免）

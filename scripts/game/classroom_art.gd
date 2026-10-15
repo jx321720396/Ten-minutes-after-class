@@ -18,6 +18,8 @@ var _camera_origin_x := 0.0
 var _camera_follow_bound := false
 var _camera_offset := 0.0
 var _camera_follow_enabled := false
+var _display_pressure := 0.0
+var _pressure_initialized := false
 
 
 func _ready() -> void:
@@ -68,6 +70,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	if enabled and _room != null and not _style.is_empty():
+		_update_pressure_lighting(delta)
 	if not enabled or not _camera_follow_enabled or _room == null:
 		return
 	var player := _room.get_node("Player") as PlayerController
@@ -87,6 +91,55 @@ func _process(delta: float) -> void:
 	_room.get_node("Camera3D").global_position = (
 		_camera_base.origin + Vector3.RIGHT * _camera_offset
 	)
+
+
+func _update_pressure_lighting(delta: float) -> void:
+	var config: Dictionary = _style.get("pressure_light", {})
+	var state := get_node_or_null("/root/GameState")
+	if config.is_empty() or state == null or state.sim_core == null:
+		return
+	var core = state.sim_core
+	var total := 0.0
+	var count := 0
+	for index in range(core.node_count()):
+		total += core.stress(index)
+		count += 1
+	if count == 0:
+		return
+	var target := total / count
+	if not _pressure_initialized:
+		_display_pressure = target
+		_pressure_initialized = true
+	_display_pressure = lerpf(
+		_display_pressure, target, 1.0 - exp(-delta / float(config["transition_seconds"]))
+	)
+	var stops: Array = config["stops"]
+	var lower: Dictionary = stops.front()
+	var upper: Dictionary = stops.back()
+	for index in range(1, stops.size()):
+		lower = stops[index - 1]
+		upper = stops[index]
+		if _display_pressure <= float(upper["pressure"]):
+			break
+	var weight := clampf(
+		(
+			(_display_pressure - float(lower["pressure"]))
+			/ (float(upper["pressure"]) - float(lower["pressure"]))
+		),
+		0.0,
+		1.0
+	)
+	var environment: Environment = _room.get_node("WorldEnvironment").environment
+	environment.ambient_light_color = Color(str(lower["ambient_color"])).lerp(
+		Color(str(upper["ambient_color"])), weight
+	)
+	environment.ambient_light_energy = lerpf(
+		float(lower["ambient_energy"]), float(upper["ambient_energy"]), weight
+	)
+	var tint := Color(str(lower["lamp_color"])).lerp(Color(str(upper["lamp_color"])), weight)
+	for definition in _style["lighting"]["lights"]:
+		var light := _room.get_node(str(definition["path"])) as OmniLight3D
+		light.light_color = Color(str(definition["color"])) * tint
 
 
 func rebuild() -> void:
@@ -113,7 +166,11 @@ func rebuild() -> void:
 		anchor.name = str(seat.name) + "Anchor"
 		desks.add_child(anchor)
 		anchor.global_transform = seat.global_transform
-		var details := builder.add_prop(anchor, _style["props"][variant], placement)
+		var definition: Dictionary = _style["props"][variant]
+		# The pose supplies its own notebook; static piles must not cut through its arms.
+		if _room.get_node("Actors").reserves_desktop(seat):
+			definition = {}
+		var details := builder.add_prop(anchor, definition, placement)
 		anchor.set_meta("variant", variant)
 		details.set_meta("variant", variant)
 	_build_placements(builder, _group("RoomDetails"), _style["room_details"])
@@ -188,6 +245,10 @@ func _apply_materials(node: Node) -> void:
 				var source_name := source.resource_path.get_file().get_basename()
 				if _style["material_replacements"].has(source_name):
 					mesh_node.material_override = _materials[_style["material_replacements"][source_name]]
+		var overrides: Dictionary = _style.get("node_material_overrides", {})
+		var relative_path := str(_room.get_path_to(mesh_node))
+		if overrides.has(relative_path):
+			mesh_node.material_override = _materials[str(overrides[relative_path])]
 	for child in node.get_children():
 		if child != self:
 			_apply_materials(child)

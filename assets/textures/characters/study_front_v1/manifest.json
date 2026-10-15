@@ -1,0 +1,178 @@
+[
+  {
+    "id": "01",
+    "name": "陈阳",
+    "sprite": "warm_male",
+    "gender": "male",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_01_body_base_v1.png",
+    "file": "char_01_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-d06bc14b-7355-4412-8837-78c9e3f6c6f6.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "02",
+    "name": "林晚",
+    "sprite": "sensitive_female",
+    "gender": "female",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_02_body_base_v1.png",
+    "file": "char_02_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-903cdef0-40ab-4984-846b-1611251cc304.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "03",
+    "name": "张渊",
+    "sprite": "quiet_male",
+    "gender": "male",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_03_body_base_v1.png",
+    "file": "char_03_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-def23154-cb2c-4bf7-9516-ef8eddf594c1.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "04",
+    "name": "周敏",
+    "sprite": "stern_female",
+    "gender": "female",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_04_body_base_v1.png",
+    "file": "char_04_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-a538eddf-a019-4df3-a8ea-1578dd9365d2.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "05",
+    "name": "赵蕊",
+    "sprite": "lively_female",
+    "gender": "female",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_06_body_base_v1.png",
+    "file": "char_05_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-343e3ecc-33f3-439e-b230-f57b3a6c0982.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "06",
+    "name": "孙悦",
+    "sprite": "warm_female",
+    "gender": "female",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_07_body_base_v1.png",
+    "file": "char_06_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-46e210c3-0d18-4ef0-b271-c39a7a85bca5.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "07",
+    "name": "郑浩",
+    "sprite": "blunt_male",
+    "gender": "male",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_08_body_base_v1.png",
+    "file": "char_07_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-70d0dcb8-35b9-40c7-b701-24f84db392b4.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "08",
+    "name": "许静",
+    "sprite": "shy_female",
+    "gender": "female",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_09_body_base_v1.png",
+    "file": "char_08_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-f6072449-9c49-465c-b348-fa8d159d068e.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "09",
+    "name": "何川",
+    "sprite": "sensitive_male",
+    "gender": "male",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_10_body_base_v1.png",
+    "file": "char_09_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-a7d41f01-1c3d-47bf-80bf-cddec9b2dd9e.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "10",
+    "name": "韩雪",
+    "sprite": "blunt_female",
+    "gender": "female",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_14_body_base_v1.png",
+    "file": "char_10_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-80212a42-3779-4051-a67a-dec1b1404c00.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "11",
+    "name": "沈浪",
+    "sprite": "shy_male",
+    "gender": "male",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_16_body_base_v1.png",
+    "file": "char_11_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-4524f004-225f-4321-97d7-5bb7ffb2235e.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "12",
+    "name": "顾言",
+    "sprite": "tsundere_male",
+    "gender": "male",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_17_body_base_v1.png",
+    "file": "char_12_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-e6dfba6c-74ca-4130-97d2-cdf0bfd4a29c.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "13",
+    "name": "叶梓",
+    "sprite": "quiet_female",
+    "gender": "female",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_20_body_base_v1.png",
+    "file": "char_13_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-de20f8c3-b86a-424f-8c02-46e683f2dc98.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "14",
+    "name": "佳豪",
+    "sprite": "lively_male",
+    "gender": "male",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_21_body_base_v1.png",
+    "file": "char_14_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-f69f66fd-a44e-4d8f-8d06-139a447cc88c.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "15",
+    "name": "温雅",
+    "sprite": "tsundere_female",
+    "gender": "female",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_23_body_base_v1.png",
+    "file": "char_15_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-b8c085b9-0cd2-4bc7-a574-ac428dee0dc8.png",
+    "gaze": "down_at_notebook"
+  },
+  {
+    "id": "16",
+    "name": "李峥",
+    "sprite": "stern_male",
+    "gender": "male",
+    "reference": "res://assets/textures/characters/fullbody_v1/char_24_body_base_v1.png",
+    "file": "char_16_study_down_v1.png",
+    "status": "generated",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-e80ae22f-880b-40a4-8713-5e63cf66fe75.png",
+    "gaze": "down_at_notebook"
+  }
+]

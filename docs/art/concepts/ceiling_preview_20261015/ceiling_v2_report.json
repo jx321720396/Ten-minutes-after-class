@@ -1,0 +1,25 @@
+{
+	"blocked_rays": [],
+	"camera_fov": 36.0,
+	"camera_position": [
+		0.0,
+		3.34999990463257,
+		9.5
+	],
+	"checked_rays": 102,
+	"lamp_alignment_distances": [
+		0.0160000324249268,
+		0.0160000324249268,
+		0.0160000324249268,
+		0.0160000324249268,
+		0.0160000324249268,
+		0.0160000324249268,
+		0.0160000324249268,
+		0.0160000324249268,
+		0.0160000324249268
+	],
+	"lamp_count": 9,
+	"production_scene_modified": false,
+	"total_lamp_energy_after": 1.08000004291534,
+	"total_lamp_energy_before": 1.08000004291534
+}

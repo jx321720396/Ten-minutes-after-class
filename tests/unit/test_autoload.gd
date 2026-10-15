@@ -20,7 +20,7 @@ func test_event_bus_emit_and_receive() -> void:
 func test_config_get_table_known() -> void:
 	var t := Config.get_table("rules/behaviors")
 	assert_false(t.is_empty(), "Config 应能转发 rules/behaviors")
-	assert_eq(t["rows"].size(), 15, "含提问与讲题的behaviors行数")
+	assert_eq(t["rows"].size(), 5, "老师版行为表 5 行：study/move/chat/roughhouse/sleep")
 
 
 func test_config_get_table_missing() -> void:
@@ -43,7 +43,7 @@ func test_game_state_wire_events_routes_to_event_bus() -> void:
 	var cb := func(p: Dictionary) -> void: received.append(p)
 	EventBus.event_happened.connect(cb)
 	GameState.wire_events(core)
-	core._do_chat(0, 1)
+	core._emit("event_happened", {"kind": "probe", "i": 0})
 	EventBus.event_happened.disconnect(cb)
-	assert_eq(received.size(), 1, "内核 chat 事件应经 GameState 路由到 EventBus")
-	assert_eq(received[0].get("kind"), "chat", "载荷 kind=chat")
+	assert_gte(received.size(), 1, "内核事件应经 GameState 路由到 EventBus")
+	assert_eq(str(received[0].get("kind")), "probe", "载荷透传")

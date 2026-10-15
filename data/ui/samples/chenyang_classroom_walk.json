@@ -1,0 +1,13 @@
+{
+  "start": [
+    0,
+    0,
+    -1.1
+  ],
+  "capture_cycles": 4,
+  "capture_fps": 24,
+  "viewport": [
+    1280,
+    720
+  ]
+}

@@ -34,8 +34,7 @@ func bind_sources(core: Variant, clock: Node, actors: Node) -> void:
 	if core == null:
 		return
 	for index in range(core.node_count()):
-		if not core.is_player(index):
-			_students.append(index)
+		_students.append(index)
 	_model = DATA.new()
 	if GameState.sim_core == core:
 		_model.state = GameState.clue_board_journal

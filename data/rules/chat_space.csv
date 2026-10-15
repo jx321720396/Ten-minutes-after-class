@@ -1,0 +1,9 @@
+# 闲聊空间几何（内核只读）
+# 2026-10-16：从已删的 rules/player_interaction.csv 迁出。老师版删除玩家节点与玩家交互服务，
+#            但学生自主闲聊仍需要同一套几何参数（主文档 §10.5 交互范围、§8.7 加入闲聊）。
+# 启动校验见 tools/check_config.py「闲聊空间几何」段。
+param,value,unit,note
+chat_range_m,1.2,m,闲聊双方的交互范围（真实地面位置距离上限，§10.5）
+seated_tolerance_m,0.1,m,判定仍在本座位入口的平面距离容差
+seated_chat_range_m,1.8,m,同列前后紧邻且都在本座位时允许转身聊天的距离上限
+range_step_m,0.1,m,连线阻挡判定采样步长（短连接段不得穿过桌椅）

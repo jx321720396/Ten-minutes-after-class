@@ -1,0 +1,7 @@
+# 场景拾取层（表现层只读）
+# 2026-10-16：从已删的 rules/player_interaction.csv 迁出 —— 玩家节点删除后，「点选学生看档案」
+#            仍需要知道人物拾取体与静态遮挡体所在的物理层。
+# 校验见 tools/check_config.py「闲聊空间几何 / 场景拾取层」段。
+param,value,note
+actor_pick_layer,2,人物拾取体所在 3D 物理层（位掩码；地面点击不进这一层）
+world_pick_blocker_layer,1,世界静态遮挡体所在 3D 物理层（桌椅 / 墙；挡住人物则不可选中）

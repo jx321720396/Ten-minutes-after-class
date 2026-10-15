@@ -31,8 +31,7 @@ func bind_sources(core: Variant) -> void:
 	_core = core
 	_picker.clear()
 	for index in range(int(core.node_count())):
-		if not core.is_player(index):
-			_picker.add_item(str(core.alias(index)), index)
+		_picker.add_item(str(core.alias(index)), index)
 	_person = _picker.get_selected_id() if _picker.item_count > 0 else -1
 	for button in _profile_buttons:
 		button.disabled = _person < 0

@@ -122,33 +122,26 @@ sim_player.sleeping = [False] * sim_player.N
 sim_player.busy_until = [0] * sim_player.N
 sim_player.probs["sleep"] = 100.0
 sim_player.roll_sleep()
-check("随机睡觉只决定 NPC，不替玩家选择", not sim_player.sleeping[-1])
-check("随机睡觉仍允许 NPC 睡觉", sim_player.sleeping[0])
-sim_invite = Sim(seed=12345, npc_count=16)
-sim_invite.do_chat(0, sim_invite.N - 1)
-pending = sim_invite.get_player_invitation()
-check("NPC 找玩家聊天先邀请，不占用玩家", bool(pending) and sim_invite.busy_until[-1] == 0)
-sim_invite.respond_player_invitation(pending["id"], False)
-check("玩家拒绝聊天后仍自由", sim_invite.busy_until[-1] == 0 and sim_invite.stats["chats"] == 0)
-
+check("随机睡觉对所有学生生效", sim_player.sleeping[0] and all(sim_player.sleeping))
 print("=== 6. 周考 ===")
 exam = Sim(seed=99, npc_count=8)
-for i in range(exam.N - 1):
+for i in range(exam.N):
     exam.Grade[i] = 100.0
-exam.Grade[-1] = 400.0
+exam.Grade[0] = 400.0
+exam.Stress = [0.0] * exam.N
 exam.exam_last = [0.0] * exam.N
 check("非考试日不结算", exam.settle_exam(6) is False)
 grade_snapshot = list(exam.Grade)
 check("周考不改平时成绩", exam.settle_exam(7) is True and exam.Grade == grade_snapshot)
-check("玩家高分拿特等奖免罚卷", exam.exam_rank[-1] <= 3 and exam.exam_tokens[-1] == 1)
-check("拉开 50 分以上记进步奖", exam.exam_gave_progress is True)
+check("周考按考分排名（最高分第一）", exam.exam_rank[0] == 1)
+check("同分按节点号破平", exam.exam_rank[1] == 2)
 exam.settle_exam(30)
-check("期末考不发进步奖", exam.exam_gave_progress is False)
 check("期末考也不改平时成绩", exam.Grade == grade_snapshot)
 
 print("=== 7. 持续学习回归 ===")
 study = Sim(seed=12345, npc_count=8)
-me = study.N - 1
+me = 0
+study.Grade[me] = 100.0
 before = study.Grade[me]
 study.do_study(me)
 for _ in range(12):

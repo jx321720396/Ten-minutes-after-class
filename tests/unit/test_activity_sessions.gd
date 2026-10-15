@@ -158,52 +158,19 @@ func test_chat_session_disappears_when_it_completes() -> void:
 	var core := _core()
 	core._do_chat(0, 1)
 	var sid := int(core.session_of(0))
-	var until := int(core._busy_until[0])
-	while core.global_tick() < until:
+	assert_gte(sid, 0, "手动发起的闲聊应登记为一场真实会话")
+	# 会话结束点 = 两人各自抖动时长里更晚的那个（_conv_until），所以按「会话是否还在」推进。
+	var guard := 0
+	while core._sessions.has_session(sid) and guard < 120:
 		core.advance_tick()
+		guard += 1
 	assert_false(core._sessions.has_session(sid), "到期即结束，不留半场会话")
-	# 「到期 = 完成」而不是「被打断」：0 号的完成记录应能被观测到
-	assert_eq(core._last_finished[0], "chat", "到期的行为算完成，不算中断")
+	# 聊天占用不走通用完成协议（`_occupy_chat` 不写 `_busy_phase`，见 scripts/core/sim_core.gd 注释），
+	# 因此这里不再断言 `_last_finished`；「到期 = 完成可观测」由 test_action_completion.gd
+	# 用娱乐类占用（eat_snack）验证。
 
 
-func test_completion_exactly_at_the_bell_is_not_an_interrupt() -> void:
-	# 计划 §5.3：完成时刻恰好等于铃声 —— 完成不误算中断、不漏线索。
-	var core := _core()
-	var me := _make_room(core)
-	# 让一段 30 tick 的玩家闲聊正好在课间最后一 tick（第 100 tick）到期
-	_advance_to(core, 100 - CHAT_DURATION)
-	me = _make_room(core)
-	var request_id := core.next_player_request_id()
-	var packet := core.commit_player_interaction(request_id, "chat", 0, "start")
-	assert_true(bool(packet["ok"]), "提交应成功：%s" % str(packet))
-	assert_eq(int(packet["end_tick"]), 100, "结束点正好落在铃声上")
-	_advance_to(core, 100)
-	var status: Dictionary = core.get_player_interaction(request_id)
-	assert_eq(str(status["request"]["status"]), "completed", "到期即完成")
-	assert_eq(str(status["request"]["outcome"]), "chat_started")
-	assert_gte(core.get_player_intel().size(), 1, "自然完成的玩家闲聊必有线索")
-	# 跨过铃声：完成过的请求不发生「完成→中断」翻转
-	core.advance_tick()
-	assert_eq(str(core.get_player_interaction(request_id)["request"]["status"]), "completed")
-
-
-func test_interrupted_chat_clears_session_and_does_not_complete() -> void:
-	var core := _core()
-	var me := _make_room(core)
-	_advance_to(core, 95)
-	me = _make_room(core)
-	var request_id := core.next_player_request_id()
-	var packet := core.commit_player_interaction(request_id, "chat", 0, "start")
-	assert_true(bool(packet["ok"]), "提交应成功：%s" % str(packet))
-	assert_gt(int(packet["end_tick"]), 100, "占用应跨过本段边界（否则测不到中断）")
-	while str(core.time_snapshot()["phase_id"]) == "morning_break":
-		core.advance_tick()
-	var status: Dictionary = core.get_player_interaction(request_id)
-	assert_eq(str(status["request"]["status"]), "interrupted", "被铃声打断 → interrupted")
-	assert_eq(core.session_of(me), -1, "中断不留下玩家的半场会话；上课时 NPC 可另开合法活动")
-	for session in core.get_active_sessions():
-		assert_ne(int(session.session_id), int(packet.session_id), "原会话确实被中断，不得残留")
-	assert_eq(core.get_player_intel().size(), 0, "中断不发完成线索")
-	var acts: Array = core._current_act
-	assert_eq(acts[me], null, "中断后当前动作被清空")
-	assert_eq(int(core._busy_phase[me]), -1, "中断后占用记录被清空")
+## 2026-10-16：原先在此的两条用例（「完成时刻恰好落在铃声」「被铃声打断清会话」）验证的是
+## 玩家请求状态机（preview / commit / request status），已随玩家子系统删除；
+## 会话在相位边界的完成与中断仍由 test_phase_boundary_protocol.gd 与上面的
+## test_chat_session_disappears_when_it_completes 覆盖。

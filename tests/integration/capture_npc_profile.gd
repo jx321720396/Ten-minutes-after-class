@@ -70,7 +70,6 @@ func _capture() -> void:
 				}
 			)
 		)
-	scene.get_node("Interaction").select_actor(target)
 	profile.open_profile(target)
 	if args.has("--status"):
 		profile._show_page(true)

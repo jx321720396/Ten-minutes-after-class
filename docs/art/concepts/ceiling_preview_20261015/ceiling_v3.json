@@ -1,0 +1,63 @@
+{
+  "columns_x": [
+    -2.5,
+    0.0,
+    2.5
+  ],
+  "rows_godot_z": [
+    -3.6,
+    0.0,
+    3.6
+  ],
+  "suspension_center_y": 3.19,
+  "suspension_size": [
+    0.025,
+    0.025,
+    0.21
+  ],
+  "housing_center_y": 3.428,
+  "housing_size": [
+    0.24,
+    1.24,
+    0.04
+  ],
+  "diffuser_center_y": 3.405,
+  "diffuser_size": [
+    0.2,
+    1.2,
+    0.008
+  ],
+  "light_center_y": 3.38,
+  "blender_total_lamp_watts": 210,
+  "alignment_tolerance": 0.04,
+  "person_sample_heights": [
+    0.6,
+    1.2,
+    1.75
+  ],
+  "interior_camera_position": [
+    -0.6,
+    2.05,
+    5.7
+  ],
+  "interior_camera_target": [
+    0.1,
+    1.95,
+    -1.0
+  ],
+  "interior_camera_fov": 62.0,
+  "opening_size": [
+    0.25,
+    1.25,
+    0.14
+  ],
+  "trim_width": 0.018,
+  "trim_depth": 0.012,
+  "trim_center_y": 3.399,
+  "beam_rows": [
+    -5.4,
+    -1.8,
+    1.8,
+    5.4
+  ]
+}

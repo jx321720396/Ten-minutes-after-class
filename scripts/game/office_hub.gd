@@ -38,15 +38,7 @@ func bind_classroom(room: Node) -> void:
 	room.get_node("UI").layer = 4
 	_teacher = TEACHER_UI.instantiate()
 	add_child(_teacher)
-	var actors: Node = room.get_node("Actors")
-	var core: Variant = actors.current_core()
-	for index in range(core.node_count()):
-		if core.is_player(index):
-			var actor: Node3D = actors.actor_for(index)
-			actor.hide()
-			var pick_body := actor.get_node_or_null("PickBody") as Area3D
-			if pick_body != null:
-				pick_body.collision_layer = 0
+	# 2026-10-16 起本局没有玩家节点：不必再隐藏「玩家自己」的形象与拾取体。
 	_teacher.action_requested.connect(_on_teacher_action)
 	_teacher.profile_requested.connect(_room.get_node("UI/NpcProfile").open_profile)
 	var profile: NpcProfile = _room.get_node("UI/NpcProfile")
@@ -84,10 +76,6 @@ func set_mode(next: String) -> void:
 	_teacher.visible = next != "office"
 	_teacher.set_mode(next)
 	_room.get_node("Player").enabled = false
-	var interaction: Node = _room.get_node("Interaction")
-	interaction.set_process(false)
-	interaction.set_process_unhandled_input(false)
-	interaction.set_process_input(false)
 	_room.get_node("ChatHUD").set_process(false)
 	for path in _saved_visible:
 		var node: Node = _room.get_node(path)
@@ -148,7 +136,7 @@ func _on_teacher_action(action: String) -> void:
 
 func select_observed_student(index: int) -> void:
 	var core: Variant = _room.get_node("Actors").current_core()
-	if index < 0 or index >= core.node_count() or core.is_player(index):
+	if index < 0 or index >= core.node_count():
 		return
 	_teacher.select_student(index, str(core.alias(index)))
 
@@ -232,8 +220,6 @@ func _show_picker(kind: String) -> void:
 		child.queue_free()
 	var core: Variant = _room.get_node("Actors").current_core()
 	for index in range(core.node_count()):
-		if core.is_player(index):
-			continue
 		var button := Button.new()
 		button.text = str(core.alias(index))
 		_view.style_button(button)
@@ -251,7 +237,7 @@ func picker_visible() -> bool:
 
 func select_student(index: int) -> void:
 	var core: Variant = _room.get_node("Actors").current_core()
-	if index < 0 or index >= core.node_count() or core.is_player(index):
+	if index < 0 or index >= core.node_count():
 		return
 	if _picker_kind == "profile":
 		close_picker()

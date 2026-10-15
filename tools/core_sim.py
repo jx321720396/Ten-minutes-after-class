@@ -17,7 +17,6 @@ import csv
 import math
 import os
 import random
-from player_invitations import PlayerInvitations, invitation_behavior
 from teacher_patrol import TeacherPatrol
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -136,9 +135,6 @@ class Sim:
 
         # --- 配置 ---
         self.leisure = load_params("rules/leisure.csv")
-        self.absence = load_params("rules/player_absence.csv")
-        self.player_absent = False
-        self.leave_count = 0
         self.p = load_params("rules/transmission.csv")
         self.probs = {r["behavior"]: float(r["base_p"]) for r in load_table("rules/behavior_probs.csv")}
         self.thresholds = load_table("rules/behavior_thresholds.csv")
@@ -177,13 +173,13 @@ class Sim:
         books = [c for c in pool if c["book"] == "1"][:book_count]
         others = [c for c in pool if c["book"] == "0"][:npc_count - book_count]
         self.chars = [c for c in pool if c in books or c in others]
-        self.book = [int(c["book"]) for c in self.chars] + [0]
-        self.snacks_remaining = int(self.leisure["snack_count_per_run"])
+        self.book = [int(c["book"]) for c in self.chars]
         for kind, prefix in LEISURE_KINDS.items():
             self.behaviors[kind] = dict(duration=int(self.leisure[prefix + "_duration"]),
                                         noise=self.leisure[prefix + "_noise"],
                                         kind="env", join_mode="none")
-        self.N = len(self.chars) + 1  # 索引 N-1 为玩家；实际人数以入池者为准（请求数超过池人数时自动夹紧）
+        # 老师版（2026-10-16）：删末位玩家节点，节点全部是学生（主文档 §13.2/§14.2「老师不是学生节点」）
+        self.N = len(self.chars)
         self.teacher = TeacherPatrol(load_params("rules/teacher.csv"), self.N)
 
         # --- 状态矩阵 ---
@@ -238,7 +234,7 @@ class Sim:
         # 每个角色持有的标签（来自 seeds.csv 的 tags 列，"|" 分隔）
         self.character_tags = [
             [t2 for t2 in (c.get("tags") or "").split("|") if t2] for c in self.chars
-        ] + [[]]                                 # 末位是玩家（无标签）
+        ]
         # 相位 -> 允许的行为集（§3.3：上课段只跑规则子集；"all" = 全部允许）
         self.phase_rules = {r["phase_id"]: (r["active_rules"] or "none").split("|")
                             for r in load_table("rules/phases.csv")}
@@ -270,15 +266,6 @@ class Sim:
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
         self.day_events = {}            # (i,j) -> 当天事件类结算次数，用于「有互动」判定
-        self.player_invitations = PlayerInvitations(
-            self, load_table("rules/player_invitation_kinds.csv"),
-            load_params("rules/player_interaction.csv"))
-
-    def get_player_invitation(self):
-        return self.player_invitations.pending()
-
-    def respond_player_invitation(self, invitation_id, accepted):
-        return self.player_invitations.respond(invitation_id, accepted)
 
     def _build_neighbors(self):
         """按 8 邻域（相邻 ≤1 格）建立邻接表；讲桌旁（row 0）与第一排（row 1）相邻。
@@ -341,7 +328,6 @@ class Sim:
         gmax = self.kp["grade_init_npc_max"]
         for i in range(len(self.chars)):
             self.Grade[i] = gmin + self.rng.random() * (gmax - gmin)
-        self.Grade[self.N - 1] = self.kp["grade_init_player"]
 
     # ------------------------------------------------ 派生量
     def m_relation(self, i, j):
@@ -387,8 +373,6 @@ class Sim:
         它与 `base` 相乘、仍走同一套公式，不是旁路写入（保持 §2.6 的单一写入点）。
         """
 
-        if not self.is_present(i) or not self.is_present(j):
-            return False
         dkey = (i, j, event_id, self.day, self.phase_index)
         if dkey in self.settled:
             self.stats["dedup_skips"] += 1
@@ -521,8 +505,7 @@ class Sim:
         if not self.allowed("sleep"):
             return
         p = self.probs.get("sleep", 0.0)
-        # 随机睡觉属于 NPC 决策，不能替玩家选择。
-        for i in range(self.N - 1):
+        for i in range(self.N):
             if self.sleeping[i]:
                 continue
             if self.rng.random() < p * (1.0 + self.tag_bias(i, "alone_bias")):
@@ -534,15 +517,12 @@ class Sim:
     def decide_and_act(self):
         """一 tick 内的行为决策（简化：只挑一个行为执行）"""
         n = self.N
-        # 玩家（末位节点，§4.1）由人的主动选择驱动，**不参与 NPC 自主决策**（§12.1）。
-        # 但它仍是被交互对象：下方候选集合与 pick_target 都不排除末位。
-        order = list(range(n - 1))
+        # 老师版：节点全部是学生，全部参与自主决策（主文档 §13.2「老师不是学生节点」）。
+        order = list(range(n))
         self.rng.shuffle(order)
         busy = set()
 
         for i in order:
-            if self.player_invitations.is_waiting(i):
-                continue
             if self.sleeping[i] or i in busy or self.global_tick < self.busy_until[i]:
                 continue
             self.in_conversation[i] = False
@@ -556,9 +536,14 @@ class Sim:
             if leisure_started:
                 busy.add(i)
                 continue
-            # 环境类：学习（§8.23）—— 主动坐下学一整个课间；爱学习的人更常坐下来
+            # 环境类：学习（§8.23）—— 必须**在自己的座位上**才能坐下学一整个课间（用户 2026-10-16 裁定补回）
+            # ⚠️ 座位检查放在掷骰前，与 GDScript 参考实现同序，同种子可复现
             study_gain = 1.0 + self.tag_bias(i, "study_bias")
-            if self.allowed("study") and self.rng.random() < self.probs.get("study_p", 0.0) * study_gain:
+            if (
+                self.allowed("study")
+                and self.in_own_seat(i)
+                and self.rng.random() < self.probs.get("study_p", 0.0) * study_gain
+            ):
                 self.do_study(i)
                 busy.add(i)
                 continue
@@ -579,7 +564,7 @@ class Sim:
                 j = self._find_partner(i, "roughhouse")
                 if j is not None:
                     bys = [k for k in range(n) if k not in (i, j) and k not in busy
-                           and self.is_present(k) and not self.sleeping[k]]
+                           and not self.sleeping[k]]
                     if len(bys) >= th_rc:
                         self._propose_activity(i, j, "roughhouse")
                         busy.add(i)
@@ -589,45 +574,23 @@ class Sim:
         # 随机数顺序固定（组按创建序、成员按节点号升序），同种子可复现。
         self._invite_friends_pass()
 
-    def is_present(self, i):
-        return not (i == self.N - 1 and self.player_absent)
-
     def start_leisure(self, i, kind):
         if kind not in LEISURE_KINDS or not self.allowed(kind) or not self.can_interact_with(i):
             return False
         if kind == "read_book" and self.book[i] <= 0:
             return False
-        if i == self.N - 1 and kind == "eat_snack":
-            if self.snacks_remaining <= 0:
-                return False
-            self.snacks_remaining -= 1
         self.occupy(i, i, kind)
         self.stats[kind] = self.stats.get(kind, 0) + 1
         if kind == "read_book":
             self.teacher.catch_reader(self, i)
         return True
 
-    def leave_class(self):
-        me = self.N - 1
-        if not self.allowed("leave_class") or not self.can_interact_with(me):
-            return False
-        if self.leave_count >= self.absence["max_per_break"]:
-            return False
-        for j in self.neighbor_idx[me]:
-            self.apply_event(j, me, "leave_absence")
-        self.leave_count += 1
-        self.player_absent = True
-        self.current_act[me] = "leave_class"
-        self.busy_until[me] = self.global_tick + self.day_phases[self.phase_index][1] - self.tick_in_phase
-        self.player_invitations.expire()
-        return True
-
     def class_affinity_settle(self):
         for i in range(self.N):
-            if self.sleeping[i] or not self.is_present(i):
+            if self.sleeping[i]:
                 continue
             for j in self.neighbor_idx[i]:
-                if not self.sleeping[j] and self.is_present(j):
+                if not self.sleeping[j]:
                     self.A[i][j] = clamp100(self.A[i][j] + self.p["class_affinity_gain"])
 
     def is_busy(self, i):
@@ -657,7 +620,7 @@ class Sim:
         跨 tick 的占用看 `busy_until` —— 只看本 tick 的局部 `busy` 集合，
         会让「还在做上一个行为」的人被反复拉进新交互（内核策划符合性审查 P1-03）。
         """
-        return self.is_present(j) and (not self.sleeping[j]) and self.global_tick >= self.busy_until[j]
+        return (not self.sleeping[j]) and self.global_tick >= self.busy_until[j]
 
     def pick_target(self, i, neighbors_only=False):
         """选交互目标。**邻居优先**（§10.15 相邻修正）——
@@ -695,11 +658,9 @@ class Sim:
         self.current_act[i] = behavior
         # quiet=True：加入 / 被搭话的一方 —— 同一场对话只算**一个声源**
         # （现实里多一个人加入同一场聊天，音量几乎不变；让教室变吵的是「多摊人各自在聊」）
-        occupy_target = j != self.N - 1 or i == self.N - 1 or self.player_invitations.authorizes(i)
-        if occupy_target:
-            if self.current_act[j] == "study":
-                self.StudyAcc[j] = 0.0
-            self.current_act[j] = None if quiet else behavior
+        if self.current_act[j] == "study":
+            self.StudyAcc[j] = 0.0
+        self.current_act[j] = None if quiet else behavior
         dur = self.behaviors.get(behavior, {}).get("duration", 0)
         if dur > 0:
             # 时长**累积**而不是覆盖（策划 2026-10-07：「群聊作为同一个交互管理，
@@ -708,17 +669,14 @@ class Sim:
             self.busy_until[i] = max(self.busy_until[i], until)
             self.busy_phase[i] = self.phase_index
             self.busy_act[i] = behavior
-            if occupy_target:
-                self.busy_until[j] = max(self.busy_until[j], until)
-                self.busy_phase[j] = self.phase_index
-                self.busy_act[j] = behavior
+            self.busy_until[j] = max(self.busy_until[j], until)
+            self.busy_phase[j] = self.phase_index
+            self.busy_act[j] = behavior
 
-    @invitation_behavior("chat")
     def do_chat(self, i, j):
         """闲聊（会话种子，规格 B）：i 与 j 开聊，形成二人会话，他人可随后加入。"""
         self.start_conversation(i, j)
 
-    @invitation_behavior("chat")
     def do_chat_join(self, i, j, roll=None):
         """搭话（二人会话种子，含接纳判定，规格 E/I）：i 接近 j，j 按 p=σ((score−θ)/scale)
         接纳则开聊（score 已删四维项）；拒绝则记单向拒绝事件，不占时间槽。
@@ -727,10 +685,7 @@ class Sim:
         `roll` 可由调用方（玩家 UI）预先掷好，保证「三拍展示」与实际结算一致。
         """
         p = self.join_probability(i, j)
-        choice = self.player_invitations.choice_for(i)
-        if choice is not None:
-            p, roll = (1.0 if choice else 0.0), 0.0
-        elif roll is None:
+        if roll is None:
             roll = self.rng.random()
         if roll < p:
             self.start_conversation(i, j)
@@ -851,11 +806,9 @@ class Sim:
 
     def _join_blocked(self, j):
         """j 此刻不可被邀请（**条件不满足**，不算关系拒绝，§9.1.2/§9.1.4）：
-        睡觉、不在场、出门、正在走动；崩溃等不可中断状态同理。"""
+        睡觉、正在走动；崩溃等不可中断状态同理。"""
         return (
             self.sleeping[j]
-            or not self.is_present(j)
-            or self.current_act[j] == "leave_class"
             or (self.busy_act[j] == "move" and self.global_tick < self.busy_until[j])
         )
 
@@ -922,15 +875,8 @@ class Sim:
         """i（空闲发起者）向 j 提议 / 申请加入活动 kind（§9.1.4 决策树）。
 
         返回 True = i 已被占用（成事）；False = 未占用（条件不满足 / 关系拒绝 / 相等不合流）。
-        玩家伙伴走既有邀请机制（玩家自己决定是否接受），不进入投票。
         """
         self.stats["joins"] = self.stats.get("joins", 0) + 1
-        if j == self.N - 1:
-            if kind == "chat":
-                self.do_chat(i, j)
-            else:
-                self.do_roughhouse(i, j)
-            return True
         akind, group = self._join_activity_of(j)
         if akind == "idle":
             # 两人新建活动：被邀请者是唯一现有成员，投票定夺（§9.1.2）
@@ -985,10 +931,6 @@ class Sim:
             if group is None:
                 return False
         members = sorted(group["members"])
-        if self.N - 1 in group["members"]:
-            # 含玩家的活动不参与 NPC 自主加入（玩家交互走邀请机制，§9.4 同口径）
-            self._log_join_event(i, members, "condition_fail", akind, extra={"reason": "player_session"})
-            return False
         if len(members) >= self._join_cap():
             self._log_join_event(i, members, "condition_fail", akind, extra={"reason": "full"})
             return False
@@ -1111,7 +1053,7 @@ class Sim:
             return
         cap = self._join_cap()
         for akind, grp in self._iter_join_groups():
-            if (self.N - 1) in grp["members"] or len(grp["members"]) >= cap:
+            if len(grp["members"]) >= cap:
                 continue
             for m in sorted(grp["members"]):
                 if self.joined_tick[m] >= self.global_tick:
@@ -1137,9 +1079,9 @@ class Sim:
 
     def _find_friend_outside(self, m, grp):
         """m 的组外最佳朋友（§9.1.1 找伴规则）：不邀请组内成员、不拉正在别组的人
-        （不同时参与多个活动）、不邀请玩家（玩家走邀请 UI）。并列取最低节点号。"""
+        （不同时参与多个活动）。并列取最低节点号。"""
         best, best_a = None, None
-        for f in range(self.N - 1):
+        for f in range(self.N):
             if f == m or f in grp["members"] or self._join_blocked(f):
                 continue
             if (self.conv_of[f] is not None or self.rough_of[f] is not None
@@ -1180,7 +1122,6 @@ class Sim:
         self.snack_of = [None] * self.N
         self.snack_provider = [None] * self.N
 
-    @invitation_behavior("roughhouse")
     def do_roughhouse(self, i, j):
         """【追逐打闹】（§10.18）—— 参与者互相好感↑（A 类效果）。
 
@@ -1281,7 +1222,7 @@ class Sim:
     `phases.csv` 用 `stress_drip` 描述上课段允许的规则；
         这里把它翻译成"行为白名单"——**上课时禁用的行为** = 一切主动社交。
         """
-        if behavior in LEISURE_KINDS or behavior == "leave_class":
+        if behavior in LEISURE_KINDS:
             return self.phase == "break"
         if not hasattr(self, "phase_rules"):
             return True
@@ -1306,8 +1247,6 @@ class Sim:
         v = self.volume / 100.0
         loud = ("chat", "roughhouse")
         for i in range(self.N):
-            if not self.is_present(i):
-                continue
             act = self.current_act[i] or "study"
             if act in loud and v < 0.4:
                 self.Stress[i] = clamp100(self.Stress[i] + k * (0.4 - v) * 10.0)
@@ -1321,8 +1260,6 @@ class Sim:
         self.deviance_pressure()   # 环境层：偏离氛围 → 压力（不是禁止，是代价）
         """涓流：独处恢复 / 学习累积（主文档 §8.4）"""
         for i in range(self.N):
-            if not self.is_present(i):
-                continue
             if self.in_conversation[i]:
                 continue                      # 参与互动者已由 topic_stress 减压
             if self.doing_study(i):
@@ -1380,13 +1317,11 @@ class Sim:
         """行为完成结算：把**已到期**的占用收尾（§10.4 / §12.2 行为耗时契约）。
 
         占用到期即「这件事做完了」：清 current_act、清 busy_phase，并把行为名写进
-        last_finished（仅本 tick 有效）。**「行为完成才发信息」的规则必须挂在这里**
-        （例如玩家的闲聊线索），不能挂在「发起」上 —— 发起不等于做完。
+        last_finished（仅本 tick 有效）。
 
         ⚠️ 与「被铃声打断」严格互斥：到期的不算被打断；未到期的才可能被 check_interrupt()
         在相位切换时打断。两边都不重复记。
         """
-        self.player_invitations.expire()
         self.last_finished = [None] * self.N
         for i in range(self.N):
             if self.busy_phase[i] < 0 or self.busy_until[i] > self.global_tick:
@@ -1428,8 +1363,6 @@ class Sim:
             return
         gmax = self.kp["grade_max"]
         for i in range(self.N):
-            if not self.is_present(i):
-                continue
             if self.Grade[i] >= gmax:
                 self.StudyAcc[i] = 0.0
                 continue
@@ -1456,13 +1389,9 @@ class Sim:
         by_key = {r["param"]: float(r["value"]) for r in rows if not r["param"].startswith("exam_day_")}
         self.exam_sigma = by_key.get("exam_noise_sigma", 12.0)
         self.exam_penalty = by_key.get("stress_exam_penalty", 15.0)
-        self.exam_progress_delta = by_key.get("progress_prize_delta", 50.0)
-        self.exam_top_rank = int(by_key.get("top_prize_rank", 3))
-        self.exam_top_tokens = int(by_key.get("top_prize_tokens", 1))
         runtime = {r["key"]: float(r["value"]) for r in load_table("rules/time_runtime.csv")}
         self.exam_term_days = int(runtime.get("term_days", 30))
         self.exam_last = list(self.Grade)
-        self.exam_tokens = [0] * self.N
         self.exam_rank = [0] * self.N
         self.exam_score = [0.0] * self.N
 
@@ -1478,13 +1407,8 @@ class Sim:
         order = sorted(range(self.N), key=lambda i: (-scores[i], i))
         for place, i in enumerate(order):
             self.exam_rank[i] = place + 1
-        player = self.N - 1
-        delta = scores[player] - self.exam_last[player]
-        if self.exam_rank[player] <= self.exam_top_rank:
-            self.exam_tokens[player] += self.exam_top_tokens
         self.exam_score = scores
         self.exam_last = list(scores)
-        self.exam_gave_progress = (not final) and delta >= self.exam_progress_delta
         return True
 
     def _exam_index(self, day):
@@ -1519,11 +1443,6 @@ class Sim:
             self.current_act[i] = None
             self.busy_act[i] = None
             self.in_conversation[i] = False
-        if self.player_absent:
-            self.player_absent = False
-            self.busy_until[self.N - 1] = 0
-            self.current_act[self.N - 1] = None
-        self.leave_count = 0
 
     def end_phase(self):
         """统一边界协议 ②③④⑤：结束旧段（不推进 tick）。

@@ -55,9 +55,11 @@ func test_keep_signal_still_available_in_save_mode() -> void:
 
 
 func test_main_menu_new_game_flow_matches_save_state() -> void:
-	# 自适应本机真实存档状态，不碰存档文件（GUT 的 stub 不接受 autoload，无法打桩）。
-	var menu: Control = MAIN_MENU.instantiate()
+	# 自适应本机真实存档状态（Save 是 autoload，无法打桩，只能顺着真实存档状态分支）。
+	# 老师版无选角色：确认后直接开局；_start_new_game 打桩防测试真切场景。
+	var menu: Control = partial_double(MAIN_MENU).instantiate()
 	add_child_autofree(menu)
+	stub(menu, "_start_new_game").to_do_nothing()
 	(menu.get_node("VBoxContainer/NewGame") as Button).pressed.emit()
 	assert_true(menu.confirm_dialog.visible, "两种情况都先弹确认面板")
 	if Save.has_save():
@@ -65,9 +67,9 @@ func test_main_menu_new_game_flow_matches_save_state() -> void:
 		assert_true(menu.confirm_dialog.keep_btn.visible, "有存档维持三键口径")
 		menu.confirm_dialog.cancel_btn.pressed.emit()  # 只取消，不动真实存档
 		assert_false(menu.confirm_dialog.visible, "取消后面板收起")
-		assert_false(menu.gender_select_panel.visible, "取消不进性别选择")
+		assert_not_called(menu, "_start_new_game")
 	else:
 		assert_eq(menu.confirm_dialog.title_label.text, menu.confirm_dialog.FRESH_TITLE)
 		menu.confirm_dialog.clear_btn.pressed.emit()  # 无存档：确定不删除任何文件
-		assert_true(menu.gender_select_panel.visible, "确认后进性别选择")
 		assert_false(menu.confirm_dialog.visible, "面板已收起")
+		assert_called(menu, "_start_new_game")  # 确认后直接开局，不再进性别选择

@@ -10,7 +10,7 @@ func test_real_classroom_chat_scales_world_and_normal_event_restores_it() -> voi
 	add_child_autofree(scene)
 	# 同上：等接线完成再冻结帧推进（固定帧数在 headless 下会偶发跑在接线之前）。
 	for frame in range(180):
-		if scene.get_node("Interaction")._core != null:
+		if scene.get_node("Roam")._clock != null:
 			break
 		await get_tree().physics_frame
 	scene.process_mode = Node.PROCESS_MODE_DISABLED
@@ -38,8 +38,8 @@ func test_real_classroom_chat_scales_world_and_normal_event_restores_it() -> voi
 	target.global_position = stand + Vector3(0.6, 0, 0)
 	core.set_position(me, stand.x, stand.z)
 	core.set_position(0, target.position.x, target.position.z)
-	var result := core.player_action("chat", 0)
-	assert_true(bool(result.get("ok", false)), "真实几何中的聊天必须成立：%s" % result)
+	assert_true(core.chat_pair_in_range(me, 0), "真实几何中的聊天必须成立")
+	core._do_chat(me, 0)
 	flow.refresh()
 	assert_eq(flow.multiplier(), 3.0)
 	var hud: TimeHUD = scene.get_node("TimeHUD")

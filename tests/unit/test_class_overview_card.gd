@@ -4,7 +4,7 @@ extends GutTest
 func _stack() -> Array:
 	var core := SimCore.new(20261014, 16, ConfigLoader.new().load_all())
 	for index in range(core.node_count()):
-		core._stress[index] = 100.0 if core.is_player(index) else 25.0
+		core._stress[index] = 25.0
 	var clock := SimulationClock.new()
 	add_child_autofree(clock)
 	assert_true(clock.bind_core(core))

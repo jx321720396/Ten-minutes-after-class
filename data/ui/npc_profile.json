@@ -21,7 +21,150 @@
   "encounter_limit": 3,
   "portrait_art_height": 340,
   "portraits": {
-    "01": "res://assets/textures/characters/portraits/chen_yang_v01.png"
+    "01": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_01_body_base_v1.png",
+      "region": [
+        284,
+        0,
+        479,
+        700
+      ]
+    },
+    "02": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_02_body_base_v1.png",
+      "region": [
+        271,
+        0,
+        489,
+        700
+      ]
+    },
+    "03": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_03_body_base_v1.png",
+      "region": [
+        249,
+        0,
+        530,
+        700
+      ]
+    },
+    "04": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_04_body_base_v1.png",
+      "region": [
+        258,
+        0,
+        500,
+        700
+      ]
+    },
+    "05": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_06_body_base_v1.png",
+      "region": [
+        238,
+        0,
+        555,
+        700
+      ]
+    },
+    "06": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_07_body_base_v1.png",
+      "region": [
+        294,
+        0,
+        450,
+        700
+      ]
+    },
+    "07": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_08_body_base_v1.png",
+      "region": [
+        269,
+        0,
+        547,
+        700
+      ]
+    },
+    "08": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_09_body_base_v1.png",
+      "region": [
+        293,
+        0,
+        485,
+        700
+      ]
+    },
+    "09": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_10_body_base_v1.png",
+      "region": [
+        277,
+        0,
+        498,
+        700
+      ]
+    },
+    "10": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_14_body_base_v1.png",
+      "region": [
+        302,
+        0,
+        469,
+        700
+      ]
+    },
+    "11": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_16_body_base_v1.png",
+      "region": [
+        296,
+        0,
+        480,
+        700
+      ]
+    },
+    "12": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_17_body_base_v1.png",
+      "region": [
+        253,
+        0,
+        536,
+        700
+      ]
+    },
+    "13": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_20_body_base_v1.png",
+      "region": [
+        328,
+        0,
+        444,
+        700
+      ]
+    },
+    "14": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_21_body_base_v1.png",
+      "region": [
+        210,
+        0,
+        588,
+        700
+      ]
+    },
+    "15": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_23_body_base_v1.png",
+      "region": [
+        251,
+        0,
+        493,
+        700
+      ]
+    },
+    "16": {
+      "path": "res://assets/textures/characters/fullbody_v1/char_24_body_base_v1.png",
+      "region": [
+        306,
+        0,
+        471,
+        700
+      ]
+    }
   },
   "grade_max": 750,
   "state_max": 100,

@@ -1,5 +1,7 @@
 # tools/ —— 离线脚本
 
+压力灯光验证：`godot --headless --path . --script tools/verify_pressure_lighting.gd` 检查真实教室平滑过渡、固定镜头更新、旧玩家排除及压力只读；去掉 `--headless` 可生成三档截图至 `tools/out/pressure_lighting/`。
+
 > 状态：生效 ｜ 维护者：程序 ｜ 最后更新：2026-10-08
 
 本目录存放**不参与游戏运行**的离线脚本：批量标定、数据校验、内核原型验证。见 [`../docs/design/架构总览.md`](../docs/design/架构总览.md) 的目录约定。

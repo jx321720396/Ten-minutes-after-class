@@ -8,6 +8,5 @@ init_affinity_spread,20,初始好感随机幅度
 init_hostility_spread,15,初始敌对：H = random*15
 saturated_threshold,95,报告统计「接近饱和」判定阈值
 grade_max,750,成绩上限（grade ∈ [0,750]，主文档 §17.1.1）
-grade_init_player,250,玩家初始成绩（固定）
 grade_init_npc_min,200,NPC 初始成绩下界
 grade_init_npc_max,650,NPC 初始成绩上界

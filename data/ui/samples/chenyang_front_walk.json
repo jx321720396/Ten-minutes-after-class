@@ -1,0 +1,29 @@
+{
+  "period": 1.25,
+  "stance_fraction": 0.6,
+  "foot_travel": 0.3,
+  "foot_lift": 0.06,
+  "hip_y": 0.91,
+  "knee_y": 0.49,
+  "ankle_y": 0.13,
+  "knee_lead": 0.025,
+  "body_bob": 0.005,
+  "body_sway": 0.004,
+  "arm_depth": 0.095,
+  "arm_out": 0.006,
+  "arm_lift": 0.008,
+  "arm_drop_length": 0.6,
+  "foot_plant_tolerance": 0.0001,
+  "capture_fps": 24,
+  "capture_cycles": 2,
+  "floor_tile": 0.5,
+  "shadow_size": [
+    0.17,
+    0.105
+  ],
+  "shadow_x": [
+    -0.13,
+    0.15
+  ],
+  "shadow_strength": 0.19
+}

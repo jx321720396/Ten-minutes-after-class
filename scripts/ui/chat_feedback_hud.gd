@@ -316,37 +316,13 @@ func _process(delta: float) -> void:
 	_progress_text.text = "%s · 还剩 %.0f 秒" % [_active_label, seconds]
 
 
+## 老师版没有「NPC 邀请玩家」机制（2026-10-16 随玩家节点删除）：邀请卡片恒隐藏。
 func _refresh_invitation() -> void:
-	if _core == null:
-		return
-	var invitation: Dictionary = _core.get_player_invitation()
-	_invitation_card.visible = not invitation.is_empty()
-	if invitation.is_empty():
-		_invitation_id = -1
-		return
-	_invitation_id = int(invitation.id)
-	var kind := str(invitation.kind)
-	var names := {
-		"chat": "一起聊天",
-		"roughhouse": "一起打闹",
-	}
-	var seconds := maxf(
-		0.0, float(int(invitation.expires_tick) - _current_tick()) * _seconds_per_tick()
-	)
-	_invitation_text.text = (
-		"%s 想和你%s\n接受或拒绝由你决定 · 还剩 %.0f 秒"
-		% [_name_of(int(invitation.actor)), str(names.get(kind, "一起活动")), seconds]
-	)
-	var paused := _clock != null and is_instance_valid(_clock) and _clock.is_paused()
-	_invitation_accept.disabled = paused
-	_invitation_reject.disabled = paused
+	_invitation_card.visible = false
+	_invitation_id = -1
 
 
-func _respond_invitation(accepted: bool) -> void:
-	if _core == null or _invitation_id < 0:
-		return
-	var result: Dictionary = _core.respond_player_invitation(_invitation_id, accepted)
-	show_status(("已接受邀请" if accepted else "已拒绝邀请") if bool(result.get("ok", false)) else "邀请已失效")
+func _respond_invitation(_accepted: bool) -> void:
 	_refresh_invitation()
 
 

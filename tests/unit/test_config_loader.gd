@@ -9,7 +9,6 @@ func test_load_all_reads_all_tables() -> void:
 	assert_true(tables.has("rules/exam"), "考试配置应加载")
 	assert_true(tables.has("rules/teacher"), "老师巡查配置应加载")
 	assert_true(tables.has("rules/leisure"))
-	assert_true(tables.has("rules/player_absence"))
 	assert_true(tables.has("ui/emotion_faces"))
 	assert_true(tables.has("rules/behaviors"), "rules/behaviors 应在")
 	assert_true(tables.has("rules/stand_points"), "rules/stand_points 应在")
@@ -17,7 +16,7 @@ func test_load_all_reads_all_tables() -> void:
 	assert_true(tables.has("rules/time_runtime"), "rules/time_runtime 应在")
 	assert_true(tables.has("rules/time_flow"), "rules/time_flow 应在（世界倍速配置）")
 	assert_true(tables.has("rules/movement"), "rules/movement 应在")
-	assert_true(tables.has("rules/player_interaction"), "rules/player_interaction 应在（玩家交互几何与线索参数）")
+	assert_true(tables.has("rules/chat_space"), "rules/chat_space 应在（闲聊空间几何）")
 	assert_true(tables.has("ui/chat_feedback_style"), "ui/chat_feedback_style 应在（闲聊反馈呈现参数）")
 	assert_true(tables.has("balance/npc_weights"), "balance/npc_weights 应在")
 	assert_true(tables.has("characters/seeds"), "characters/seeds 应在")
@@ -33,7 +32,7 @@ func test_skips_comments_and_header() -> void:
 	var headers: Array = t["headers"]
 	assert_eq(headers[0], "behavior", "首列应为 behavior")
 	var rows: Array = t["rows"]
-	assert_eq(rows.size(), 15, "含提问与讲题的15个行为（不含注释与表头）")
+	assert_eq(rows.size(), 5, "老师版行为表 5 行：study/move/chat/roughhouse/sleep（不含注释与表头）")
 
 
 func test_rows_keyed_by_header() -> void:
