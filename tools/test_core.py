@@ -229,6 +229,54 @@ for _k in range(2):
 iso.settle_risk(2)
 check("D06：好感低 + 当天被拒 2 次 + 没参加活动 → 孤立预警", iso.risk_warned[5])
 
+print("=== 6d. 崩溃休息与心结（§5.3）===")
+rest = Sim(seed=12345, npc_count=8)
+rest.begin_phase_state()
+rest.Stress[0] = 95.0
+rest.Vitality[0] = 60.0
+rest.check_breakdown()
+check("崩溃休息：当天只睡觉", rest.Broken[0] and rest.sleeping[0])
+check("崩溃休息：不参与结算（unit_kind 为空）", rest.unit_kind(0) == "")
+rest.Stress[0] = 10.0
+rest.check_breakdown()
+check("旧「压力 <70 即时恢复」出口已废止", rest.Broken[0])
+rest.Stress[0] = 60.0
+rest.Vitality[0] = 60.0
+rest.resting[0] = True
+rest.knot_days[0] = 0
+for _j in rest.neighbor_idx[0]:
+    rest.knot_days[_j] = 0
+rest.day = 6
+rest.settle_day()
+check("崩溃次日压力 −50（替代普通 −20）", abs(rest.Stress[0] - 10.0) < 1e-6)
+check("崩溃次日动力 −50（替代普通 −10，且不联动）", abs(rest.Vitality[0] - 10.0) < 1e-6)
+check("崩溃休息在次日跨天时解除", not rest.Broken[0])
+
+knot = Sim(seed=12345, npc_count=8)
+knot.begin_phase_state()
+knot.neighbor_idx[0] = [1]
+knot.Stress[0] = 95.0
+knot.check_breakdown()
+check("心结：崩溃者本人获得 3 天", knot.knot_days[0] == 3)
+check("心结：正交邻座同样获得", knot.knot_days[1] == 3)
+check("心结：不遍及非邻座（不传染）", knot.knot_days[2] == 0)
+knot.knot_days[0] = 1
+knot.Broken[0] = False
+knot.Stress[0] = 96.0
+knot.check_breakdown()
+check("心结：重复获得只刷新为 3 天，不叠层", knot.knot_days[0] == 3)
+
+knot_day = Sim(seed=12345, npc_count=8)
+knot_day.knot_days[0] = 3
+for _d in range(3):
+    knot_day.day = 6
+    knot_day.Stress[0] = 30.0
+    knot_day.Vitality[0] = 30.0
+    knot_day.settle_day()
+check("心结：连续 3 天后结束", knot_day.knot_days[0] == 0)
+check("心结每天压力净 −10（跨天 −20 后 +10）", abs(knot_day.Stress[0] - 20.0) < 1e-6)
+check("心结动力按一般规则同步 +10", abs(knot_day.Vitality[0] - 30.0) < 1e-6)
+
 print("=== 7. 持续学习回归（《老师版规则合并稿》D02：每 20 秒 +1 学业收益、−5 动力）===")
 study = Sim(seed=12345, npc_count=8)
 me = 0

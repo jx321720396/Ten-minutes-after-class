@@ -308,6 +308,7 @@ class Sim:
         self.share_units = {}           # (provider, receiver) -> 已结算分享单位数（去重，只读观察）
         self.joined_tick = [-1] * n     # 最近一次加入活动的 tick（本决策点新加入者不带朋友，§9.1.4）
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
+        self.resting = [False] * n      # 崩溃休息锁（§5.3）：当天只睡觉，次日跨天时特殊恢复
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
         self.day_events = {}            # (i,j) -> 当天事件类结算次数，用于「有互动」判定
 
@@ -1536,25 +1537,30 @@ class Sim:
         return self.start_leisure(i, "play_phone")
 
     def check_breakdown(self):
-        """崩溃判定（D01 / D06）：压力 >90 崩溃（中断活动、保留已得收益）；<70 恢复。"""
+        """崩溃与恢复（§5.3，2026-10-16）：压力 > 阈值进入崩溃休息 —— 当天只睡觉、不学习不社交、
+        不参加座位结算；次日跨天时特殊恢复（压力／动力各减固定值）并解除。旧「<70 即时恢复」已废止。
+        """
         enter = self.psyche["breakdown_enter_stress"]
-        recover = self.psyche["breakdown_exit_stress"]
+        knot_days = int(float(self.status_tags["heart_knot"]["days"]))
         for i in range(self.N):
-            if not self.Broken[i] and self.Stress[i] > enter:
-                self.Broken[i] = True
-                self.fold_pending_unit(i)
-                self.current_act[i] = None
-                self.busy_act[i] = None
-                self.busy_phase[i] = -1
-                self.busy_until[i] = 0
-                self.sleeping[i] = False
-                self.phase_state[i] = "broken"
-                self.stats["breakdowns"] = self.stats.get("breakdowns", 0) + 1
-                # D06：每人累计崩溃次数（退学判据）。
-                self.risk_breakdowns[i] += 1
-            elif self.Broken[i] and self.Stress[i] < recover:
-                self.Broken[i] = False
-                self.phase_state[i] = "free"
+            if self.Broken[i] or self.Stress[i] <= enter:
+                continue
+            self.Broken[i] = True
+            self.resting[i] = True
+            self.fold_pending_unit(i)
+            self.current_act[i] = None
+            self.busy_act[i] = None
+            self.busy_phase[i] = -1
+            self.busy_until[i] = 0
+            # 崩溃休息：当天只睡觉（不作为邻座学习来源，也不产生学业收益）。
+            self.sleeping[i] = True
+            self.phase_state[i] = "broken"
+            self.stats["breakdowns"] = self.stats.get("breakdowns", 0) + 1
+            self.risk_breakdowns[i] += 1
+            # 心结（§5.3）：本人与正交邻座获得；重复只刷新天数，不叠层。
+            self.knot_days[i] = knot_days
+            for j in self.neighbor_idx[i]:
+                self.knot_days[j] = knot_days
 
     def settle_neighbor_drip(self):
         """邻座涓流（D01 / D04）：课间末读一次状态 —— 前后左右有人学习 → 压力 +5，可叠加。"""
@@ -1831,7 +1837,7 @@ class Sim:
     def settle_seat_relations(self):
         """座位基础关系结算（D04 / §8.2、§8.4）：每个课间末读一次状态，结算一次。
 
-        正交邻座双方好感 +1、对角不加、一圈以外双方 −1；
+        正交邻座双方好感 +2、对角不加、一圈以外双方 −1；
         学习者的正交娱乐邻座敌对 +5（不自动反向）；不对自身关系写入。
         """
         orth = self.seat_rel.get("orthogonal_h", 0.0)
@@ -2016,21 +2022,14 @@ class Sim:
         return total_ticks
 
     def try_burst(self):
-        """概率爆发（不是「到点必爆」）。
+        """概率爆发（§8.3）：压力跨过阈值后每天判定一次，p = burst_p_max × severity。
 
-        压力跨过入口阈值 `burst`（70，即 §8.3 高压区入口）后，**每天判定一次**：
-            概率 p = burst_p_max × severity，其中 severity = (stress − θ) / (100 − θ)
-        `severity` 同时放大**波及范围**与**心结时长** —— 于是「拖得越久、压力越高、爆得越大」，
-        而大爆又会传染更广 → 这就是「连环爆发」的结构来源。
-
-        为什么概率化：阈值处「必爆」会让行为在阈值附近疯狂跳变（UIF §2.6 边界③）；
-        概率化之后，高压区是一个**危险斜区**，而不是一堵墙。
+        心结不再由爆发给出（§5.3 改为崩溃时本人与正交邻座获得），这里只做减压与统计。
         """
         th = self.thresholds_lookup.get("burst_stress", 70.0)
         pmax = self.probs.get("burst_p_max", 0.0)
         if pmax <= 0:
             return
-        tag = self.status_tags.get("heart_knot")
         for i in range(self.N):
             s = self.Stress[i]
             if s < th:
@@ -2039,10 +2038,7 @@ class Sim:
             if self.rng.random() >= pmax * severity:
                 continue
             self.add_stress(i, -40)
-            if tag:
-                self.knot_days[i] = max(self.knot_days[i],
-                                        int(round(float(tag["days"]) * (1.0 + severity))))
-            self.stats["bursts"] += 1
+            self.stats["bursts"] = self.stats.get("bursts", 0) + 1
 
     def settle_day(self):
         """跨天结算（§3.5 + 《老师版规则合并稿》D01）
@@ -2051,9 +2047,20 @@ class Sim:
         """
         carry_stress = self.psyche["carry_stress_cut"]
         carry_vitality = self.psyche["carry_vitality_cut"]
+        rest_stress_cut = self.psyche["breakdown_rest_stress_cut"]
+        rest_vitality_cut = self.psyche["breakdown_rest_vitality_cut"]
         for i in range(self.N):
-            self.add_stress(i, -carry_stress, False)
-            self.add_vitality(i, -carry_vitality)
+            if self.resting[i]:
+                # §5.3：崩溃后次日特殊恢复，替代普通跨天的 −20／−10，不重复扣除、不联动动力。
+                self.add_stress(i, -rest_stress_cut, False)
+                self.add_vitality(i, -rest_vitality_cut)
+                self.Broken[i] = False
+                self.resting[i] = False
+                self.sleeping[i] = False
+                self.phase_state[i] = "free"
+            else:
+                self.add_stress(i, -carry_stress, False)
+                self.add_vitality(i, -carry_vitality)
             self.Grade[i] = max(0.0, min(self.kp["grade_max"], self.Grade[i] + self.GainToday[i]))
             self.GainToday[i] = 0.0
         self.try_burst()                      # 每日一次：压力爆发按概率判定

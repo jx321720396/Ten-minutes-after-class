@@ -106,14 +106,72 @@ func test_day_carry_follows_d01() -> void:
 	assert_almost_eq(core.gain_today(0), 0.0, 0.0001, "学业收益跨天清零（D01）")
 
 
-func test_breakdown_enters_and_recovers() -> void:
+func test_breakdown_enters_rest_and_recovers_next_day() -> void:
 	var core := _core()
+	core._begin_phase_state()
 	core._stress[0] = 95.0
+	core._vitality[0] = 60.0
 	core._check_breakdown()
 	assert_true(core.is_broken(0), "压力 >90 → 崩溃（D01 / D06）")
-	core._stress[0] = 65.0
+	assert_true(core._sleeping[0], "崩溃休息：当天只睡觉（§5.3）")
+	assert_eq(core._unit_kind(0), "", "崩溃休息的睡觉不作为邻座学习来源，也不产生学业收益")
+	assert_eq(core.phase_state_of(0), "broken", "崩溃者不参与决策与座位结算")
+	# 旧出口已废止：压力降到下限也不会即时恢复
+	core._stress[0] = 10.0
 	core._check_breakdown()
-	assert_false(core.is_broken(0), "压力 <70 → 恢复（D01 / D06）")
+	assert_true(core.is_broken(0), "旧的「压力 <70 即时恢复」出口已废止")
+	# 次日跨天：压力／动力各 −50（替代普通 −20／−10），并解除休息
+	core._stress[0] = 90.0
+	core._vitality[0] = 90.0
+	core._resting[0] = true
+	core._knot_days[0] = 0  # 隔离心结，只看崩溃次日恢复本身
+	for j in core._neighbor_idx[0]:
+		core._knot_days[int(j)] = 0
+	core._day = 6
+	core._settle_day()
+	assert_false(core.is_broken(0), "崩溃休息在次日跨天时解除（§5.3）")
+	assert_almost_eq(core.stress(0), 40.0, 0.0001, "次日压力 −50（替代普通 −20）")
+	assert_almost_eq(core.vitality(0), 40.0, 0.0001, "次日动力 −50（替代普通 −10，且不联动）")
+
+
+func test_breakdown_gives_knot_to_self_and_orthogonal_neighbours_only() -> void:
+	var core := _core()
+	core._begin_phase_state()
+	core._neighbor_idx[0] = [1]
+	core._stress[0] = 95.0
+	core._check_breakdown()
+	assert_eq(core._knot_days[0], 3, "崩溃者本人获得心结，天数为 3（§5.3）")
+	assert_eq(core._knot_days[1], 3, "正交邻座同样获得心结")
+	assert_eq(core._knot_days[2], 0, "非邻座不会获得（不遍及全班、不传染）")
+
+
+func test_knot_repeats_refresh_without_stacking() -> void:
+	var core := _core()
+	core._begin_phase_state()
+	core._neighbor_idx[0] = [1]
+	core._stress[0] = 95.0
+	core._check_breakdown()
+	core._knot_days[0] = 1  # 手动消耗两天后再次崩溃
+	core._broken[0] = false
+	core._stress[0] = 96.0
+	core._check_breakdown()
+	assert_eq(core._knot_days[0], 3, "重复获得只刷新为 3 天，不叠层")
+
+
+func test_knot_raises_stress_and_vitality_daily_for_three_days() -> void:
+	var core := _core()
+	core._knot_days[0] = 3
+	core._stress[0] = 30.0
+	core._vitality[0] = 30.0
+	for _d in range(3):
+		core._day = 6
+		core._stress[0] = 30.0
+		core._vitality[0] = 30.0
+		core._settle_day()
+	# 跨天 −20／−10 后再心结 +10（动力按一般规则同步 +10）
+	assert_almost_eq(core._knot_days[0], 0.0, 0.0001, "第三次生效后心结结束")
+	assert_almost_eq(core.stress(0), 20.0, 0.0001, "每天压力净 −10（−20 跨天 +10 心结）")
+	assert_almost_eq(core.vitality(0), 30.0, 0.0001, "动力按一般规则同步 +10")
 
 
 func test_teacher_summon_and_office_chat_timings() -> void:

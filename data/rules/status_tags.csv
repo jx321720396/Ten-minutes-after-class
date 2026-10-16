@@ -4,4 +4,4 @@
 #   与 decay.csv（乘性衰减）、w_events.csv（一次性事件）是三种不同语义，不要混写。
 # 启动校验：days ≥ 1；tag_id 唯一
 tag_id,days,daily_stress,trigger,spread_ratio,spread_max,note
-heart_knot,3,5,压力爆发（stress ≥ 90）,0.25,2,心结：崩溃有回声（3 天、每天 +5）
+heart_knot,3,10,崩溃（压力 > 90）,0,0,心结（§5.3）：崩溃时本人与当时固定座位的前后左右邻座获得，自次日起连续 3 天每天压力 +10（动力按一般规则同步）；重复获得只刷新 3 天、不叠层。spread_* 不再使用（旧按关系传染已改为正交邻座）
