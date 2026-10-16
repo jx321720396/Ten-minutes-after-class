@@ -523,10 +523,15 @@ func _begin_phase_state() -> void:
 	_settle_acc = []
 	var study_threshold := float(_psyche["vitality_study_threshold"])
 	var play_threshold := float(_psyche["vitality_play_threshold"])
+	var class_threshold := float(_psyche["vitality_class_study_threshold"])
 	for i in range(_n):
 		_settle_acc.append(0.0)
 		if _broken[i]:
 			_phase_state.append("broken")
+		elif _phase == "class":
+			# 上课段（2026-10-16 裁定）：动力 > 上课阈值 → 学习，否则自由；**不进入游戏状态**。
+			# 只在段首判定一次 —— 进入学习后本段**粘性**，中途动力跌破阈值也不退出学习。
+			_phase_state.append("study" if _vitality[i] > class_threshold else "free")
 		elif _phase != "break":
 			_phase_state.append("free")
 		elif _vitality[i] > study_threshold:
@@ -729,14 +734,19 @@ func _tick() -> void:
 ## · 游戏状态：每 20 秒 -1 学业收益、-5 压力（不减少动力）
 ## 未完成的余额不在这里结算：自然完成 / 被打断时由 _fold_pending_unit 按 D02 第 4 条折算。
 func _settle_units() -> void:
-	if _phase != "break":
-		return
+	# D02 + 2026-10-16 裁定：学习单位在**任何段**都结算（上课也积累学业收益）；
+	# 娱乐／游戏状态只在课间结算 —— 规格写明上课不执行课间事件。
+	var in_break := _phase == "break"
 	var study_seconds := float(_acts["study_settle_seconds"])
 	var play_seconds := float(_acts["play_settle_seconds"])
 	var unit_seconds := float(_acts["unit_seconds"])
 	for i in range(_n):
 		var kind := _unit_kind(i)
 		if kind == "":
+			_settle_acc[i] = 0.0
+			continue
+		if kind != "study" and not in_break:
+			# 上课段只结算学习：娱乐 / 游戏单位不生效，也不累计进度。
 			_settle_acc[i] = 0.0
 			continue
 		_settle_acc[i] += 1.0

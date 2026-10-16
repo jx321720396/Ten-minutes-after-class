@@ -189,3 +189,52 @@ func test_seat_change_parks_neighbor_drip() -> void:
 	assert_true(tc.start_seat_change(core, 0, 1), "换座窗口开始")
 	core._settle_neighbor_drip()
 	assert_almost_eq(core.stress(1), 0.0, 0.0001, "换座期间不参加课间涓流（D03 第 5 条）")
+
+
+func test_class_phase_enters_study_above_30_and_never_plays() -> void:
+	var core := _core()
+	core._phase = "class"
+	core._vitality[0] = 31.0
+	core._vitality[1] = 30.0
+	core._vitality[2] = 5.0
+	core._begin_phase_state()
+	assert_eq(core.phase_state_of(0), "study", "上课：动力 >30 → 学习状态")
+	assert_eq(core.phase_state_of(1), "free", "上课：恰好 30 → 自由")
+	assert_eq(core.phase_state_of(2), "free", "上课：低动力也是自由，不进入游戏状态")
+
+
+func test_class_study_is_sticky_and_settles_gain() -> void:
+	var core := _core()
+	core._phase = "class"
+	core._vitality[0] = 31.0
+	core._begin_phase_state()
+	assert_eq(core.phase_state_of(0), "study", "上课开始进入学习状态")
+	var gain_before := core.gain_today(0)
+	for _k in range(40):
+		core._settle_units()
+	assert_almost_eq(core.vitality(0), 21.0, 0.0001, "学习每 20 秒 −5 动力（两次 → 21）")
+	assert_eq(core.phase_state_of(0), "study", "段内粘性：跌破 30 仍保持学习到段末")
+	assert_almost_eq(core.gain_today(0), gain_before + 2.0, 0.0001, "上课学习正常结算学业收益")
+
+
+func test_class_phase_state_is_decided_once_per_phase() -> void:
+	var core := _core()
+	core._phase = "class"
+	core._vitality[0] = 31.0
+	core._begin_phase_state()
+	core._vitality[0] = 1.0  # 段中动力暴跌，不重判（段首一次）
+	core._begin_phase_state()
+	assert_eq(core.phase_state_of(0), "free", "再次调用段首判定才会按新动力重算")
+
+
+func test_leisure_units_do_not_settle_during_class() -> void:
+	var core := _core()
+	core._phase = "class"
+	core._begin_phase_state()  # 先按段首判定建好状态数组
+	core._phase_state[0] = "free"
+	core._current_act[0] = "listen_music"
+	core._stress[0] = 50.0
+	core._vitality[0] = 50.0
+	for _k in range(20):
+		core._settle_units()
+	assert_almost_eq(core.stress(0), 50.0, 0.0001, "上课不执行娱乐单位（不减压）")
