@@ -22,6 +22,7 @@ var _acts: Dictionary = {}
 
 ## 当前命令："", "summon", "office_chat", "send_back", "seat_change"
 var _command := ""
+var _mediate_pair: Dictionary = {}  # 老师调解（D07）的双方
 ## 命令的剩余秒数（1 tick = 1 秒，课间）
 var _remaining := 0
 ## 被召唤 / 正在办公室的学生索引（-1 = 无人）
@@ -100,6 +101,22 @@ func office_chat(_core: Variant, kind: String) -> bool:
 	return true
 
 
+## 老师调解（D07）：任一方向敌对 >50 才执行（否则调用方不应扣耗时）；
+## 完成后双方敌对各 −5，不抹去风险历史、不自动修复无冲突的敌对。
+func mediate(core: Variant, a: int, b: int) -> bool:
+	if _held or _command != "":
+		return false
+	if a < 0 or b < 0 or a == b or a >= int(core.node_count()) or b >= int(core.node_count()):
+		return false
+	var threshold := float(core._mediate_hostility_threshold())
+	if float(core.hostility(a, b)) <= threshold and float(core.hostility(b, a)) <= threshold:
+		return false  # 两方向都不超过门槛：不执行、不扣耗时
+	_command = "mediate"
+	_remaining = int(_timing["mediate_seconds"])
+	_mediate_pair = {"a": a, "b": b}
+	return true
+
+
 ## 全班训斥（D01）：全班压力 +30。
 func scold_class(core: Variant) -> void:
 	var delta := float(_acts["class_scold_stress"])
@@ -150,6 +167,12 @@ func _finish(core: Variant) -> void:
 			if not _seat_change.is_empty():
 				core.apply_seat_change(int(_seat_change["a"]), int(_seat_change["b"]))
 			_seat_change = {}
+		"mediate":
+			if not _mediate_pair.is_empty():
+				var cut := float(core._mediate_hostility_cut())
+				core._add_hostility(int(_mediate_pair["a"]), int(_mediate_pair["b"]), -cut)
+				core._add_hostility(int(_mediate_pair["b"]), int(_mediate_pair["a"]), -cut)
+			_mediate_pair = {}
 		"office_chat":
 			# 训斥按 D01 加压 +20；安抚 / 打听 / 鼓励的幅度待确认，只计时不施加数值。
 			if _chat_kind == "scold" and _called >= 0:

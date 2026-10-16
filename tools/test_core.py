@@ -146,6 +146,89 @@ check("D05：考试当天只有考试", exam.exam_only_day == 1)
 exam.settle_exam(30)
 check("期末考也不改平时成绩", exam.Grade == grade_snapshot)
 
+
+print("=== 6b. D07 伤害与关系修复（《老师版规则合并稿》）===")
+harm = Sim(seed=12345, npc_count=8)
+harm.phase = "break"
+harm.harm["aggression_trigger_p"] = 1.0
+harm.harm["shove_trigger_p"] = 1.0
+harm.neighbor_idx[0] = [1]
+harm.neighbor_idx[1] = [0]
+harm.H[0][1] = 40.0
+harm.begin_harm_phase()
+harm.check_harm()
+check("D07：恰好 40 不触发恶语攻击", len(harm.harm_events) == 0)
+harm.H[0][1] = 41.0
+stress_before = harm.Stress[1]
+hostility_before = harm.H[1][0]
+harm.begin_harm_phase()
+harm.check_harm()
+check("D07：>40 触发恶语攻击",
+      len(harm.harm_events) == 1 and harm.harm_events[0]["kind"] == "aggression")
+check("D07：恶语使目标压力 +5", abs(harm.Stress[1] - (stress_before + 5.0)) < 1e-6)
+check("D07：恶语使目标对发起者敌对 +3", abs(harm.H[1][0] - (hostility_before + 3.0)) < 1e-6)
+harm.H[0][1] = 71.0
+harm.begin_harm_phase()
+harm.check_harm()
+check("D07：>70 归为推搡", harm.harm_events[0]["kind"] == "shove")
+harm.phase_state[0] = "study"
+harm.begin_harm_phase()
+harm.check_harm()
+check("D07：学习锁定的学生不参与伤害", len(harm.harm_events) == 0)
+harm.phase_state[0] = "free"
+harm.phase = "class"
+harm.begin_harm_phase()
+harm.check_harm()
+check("D07：上课段不发生伤害（课间接触才判）", len(harm.harm_events) == 0)
+
+chat = Sim(seed=12345, npc_count=8)
+chat.start_conversation(0, 1)
+chat.H[0][1] = 30.0
+chat.H[1][0] = 30.0
+chat.busy_act[0] = "chat"
+chat.busy_phase[0] = 0
+chat.busy_until[0] = 0
+chat.settle_finished_actions()
+check("D07：完成聊天后对子双方敌对各 −2",
+      abs(chat.H[0][1] - 28.0) < 1e-6 and abs(chat.H[1][0] - 28.0) < 1e-6)
+
+print("=== 6c. D06 风险判定与退学 ===")
+risk = Sim(seed=12345, npc_count=8)
+for k in range(3):
+    risk.H[k][5] = 60.0
+risk.note_harm(0, 5, "aggression")
+risk.settle_risk(2)
+check("D06：满足霸凌条件第一天只预警（不触发、不辞退）",
+      risk.risk_warned[5] and not risk.risk_triggered[5] and not risk.dropped[5])
+for k in range(3):
+    risk.H[k][5] = 60.0
+risk.note_harm(0, 5, "aggression")
+risk.settle_risk(2)
+check("D06：连续第二天正式触发霸凌", risk.risk_triggered[5])
+risk.register_breakdown(5)
+risk.settle_risk(4)
+check("D06：正式触发风险后再崩溃一次 → 退学",
+      risk.dropped[5] and risk.class_failed())
+
+four = Sim(seed=12345, npc_count=8)
+for _k in range(4):
+    four.register_breakdown(3)
+four.settle_risk(3)
+check("D06：累计崩溃超过 3 次（第 4 次）→ 退学", four.dropped[3])
+three = Sim(seed=12345, npc_count=8)
+for _k in range(3):
+    three.register_breakdown(7)
+three.settle_risk(3)
+check("D06：恰好 3 次崩溃不退学", not three.dropped[7])
+iso = Sim(seed=12345, npc_count=8)
+for j in range(8):
+    if j != 5:
+        iso.A[j][5] = 10.0
+for _k in range(2):
+    iso.register_join_reject(5)
+iso.settle_risk(2)
+check("D06：好感低 + 当天被拒 2 次 + 没参加活动 → 孤立预警", iso.risk_warned[5])
+
 print("=== 7. 持续学习回归（《老师版规则合并稿》D02：每 20 秒 +1 学业收益、−5 动力）===")
 study = Sim(seed=12345, npc_count=8)
 me = 0

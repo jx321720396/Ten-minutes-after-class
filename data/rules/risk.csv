@@ -1,0 +1,15 @@
+# 风险判定、预警与失败（《老师版规则合并稿》D06 / 主文档第十一章）
+# 判据全部只统计**实际事件**，不看初始关系；短暂独处不判孤立、普通争吵不判霸凌。
+# 第一天满足条件只预警，连续第二天才正式触发；中间一天不满足则重置连续计数。
+param,value,note
+window_days,2,连续天数窗口：第 1 天预警、连续第 2 天正式触发
+earliest_day,2,最早在「两个完整上学日」结束后才正式判定（此前只记录不判定）
+bully_hostility_threshold,50,霸凌：敌对门槛 >50（恰好 50 不算；沿用旧值，不随伤害门槛调整）
+bully_min_enemies,3,霸凌：至少这么多名其他学生对目标敌对 >50
+bully_daily_harm_min,1,霸凌：当天受到这些人中至少一人发起的伤害次数
+isolate_affinity_threshold,20,孤立：其他所有学生对目标好感 <20
+isolate_daily_rejects,2,孤立：当天主动找伴被拒至少这么多次（忙碌、满员不算关系拒绝）
+isolate_require_no_activity,1,孤立：当天必须没有成功参加共同活动
+dropout_breakdown_limit,3,退学：累计崩溃超过这个次数（即第 4 次）
+dropout_after_risk_breakdowns,1,退学：正式触发霸凌／孤立后再次崩溃达到这么多次
+warn_only_no_fire,1,预警与正式触发本身不直接辞退（只有退学判据才辞退）
