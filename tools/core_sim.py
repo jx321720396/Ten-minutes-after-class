@@ -179,6 +179,8 @@ class Sim:
         self.psyche = load_params("rules/psyche.csv")
         self.acts = load_params("rules/activities.csv")
         self.seat_rel = load_params("rules/seat_relations.csv")
+        self.harm = load_params("rules/harm.csv")
+        self.risk_cfg = load_params("rules/risk.csv")
         # 成绩涓流分段表（§17.1.2）：band_upper 升序。
         self.grade_bands = sorted(
             [(float(r["band_upper"]), float(r["ticks_per_point"]))
@@ -214,6 +216,20 @@ class Sim:
         self.Vitality = [0.0] * n        # 动力：>60 学习状态、<30 游戏状态、之间自由
         self.GainToday = [0.0] * n       # 今日学业收益（跨天并入成绩后清零）
         self.Broken = [False] * n        # 崩溃：压力 >90 进入、<70 恢复
+        # D06 风险判定 / D07 伤害事件的状态（每人一份，跨天只清「当天」计数）
+        self.risk_breakdowns = [0] * n            # 每人累计崩溃次数（退学判据）
+        self.risk_rejects_today = [0] * n        # 当天主动找伴被拒次数（孤立判据）
+        self.risk_activity_today = [False] * n   # 当天是否成功参加过共同活动
+        self.risk_harm_today = [[] for _ in range(n)]  # 当天受到的伤害 {from, kind}
+        self.risk_streak = [0] * n
+        self.risk_warned = [False] * n
+        self.risk_triggered = [False] * n
+        self.risk_triggered_kind = [""] * n
+        self.risk_breakdowns_at_trigger = [0] * n
+        self.dropped = [False] * n
+        self.risk_events = []
+        self.harm_events = []
+        self.harm_struck_phase = [False] * n  # D07 §10：每人每课间最多主动伤害一次
         self.phase_state = ["free"] * n  # 段首状态：study / play / free / broken
         self.settle_acc = [0.0] * n      # 单位结算游标（按秒累计）
 
@@ -747,6 +763,8 @@ class Sim:
             self.apply_event(i, j, "reject_stress")
             self.stats["joins"] += 1
             self.stats["join_rejects"] = self.stats.get("join_rejects", 0) + 1
+            # D06 孤立判据：主动找伴被拒（忙碌 / 满员不算关系拒绝，不走这里）。
+            self.risk_rejects_today[i] += 1
             self.stats["skipped_events"] += 1
 
     # ---------- 多人聊天会话子系统（2026-10-14 重构：2→3→4 递进加入）----------
@@ -757,6 +775,9 @@ class Sim:
         self.conversations.append(conv)
         self.conv_of[i] = conv
         self.conv_of[j] = conv
+        # D06 孤立判据：新建共同活动 → 双方当天都算「成功参加共同活动」。
+        self.risk_activity_today[i] = True
+        self.risk_activity_today[j] = True
         self.in_conversation[i] = True
         self.in_conversation[j] = True
         self._occupy_chat(i)
@@ -788,6 +809,8 @@ class Sim:
         """k 成功加入：加入者作为本次「发起」方，对每位现有成员做一次定向聊天结算。"""
         conv["members"].add(k)
         self.conv_of[k] = conv
+        # D06 孤立判据：当天成功参加过共同活动。
+        self.risk_activity_today[k] = True
         self.in_conversation[k] = True
         self._occupy_chat(k)
         for m in sorted(conv["members"]):
@@ -919,6 +942,8 @@ class Sim:
             self.apply_event(i, m, "reject_hostility")
         self.apply_event(i, anchor, "reject_stress")
         self.stats["join_rejects"] = self.stats.get("join_rejects", 0) + 1
+        # D06 孤立判据：主动找伴被拒（忙碌 / 满员不算关系拒绝，不走这里）。
+        self.risk_rejects_today[i] += 1
         self._log_join_event(i, members, "vote_reject", activity, yes, no, {"anchor": anchor})
 
     def _propose_activity(self, i, j, kind):
@@ -1042,6 +1067,7 @@ class Sim:
         self.do_study(i)
         group["members"].add(i)
         self.study_of[i] = group
+        self.risk_activity_today[i] = True  # D06 孤立判据：加入共同活动
 
     def _join_snack(self, i, group):
         """加入零食分享（§9.1.4 表）：加入者无需自带零食；正常娱乐效果；
@@ -1050,6 +1076,7 @@ class Sim:
         self.snack_provider[i] = group["provider"]
         group["members"].add(i)
         self.snack_of[i] = group
+        self.risk_activity_today[i] = True  # D06 孤立判据：加入共同活动
 
     def _switch_activity(self, j, kind, i):
         """j 放弃当前独自活动、跟随 i 的新活动（§9.1.4 不同活动跟随）。
@@ -1390,6 +1417,15 @@ class Sim:
                     self.share_units[(provider, i)] = self.share_units.get((provider, i), 0) + 1
                     self.snack_provider[i] = None
                     self.stats["share_units"] = self.stats.get("share_units", 0) + 1
+            # D07 友善交流：正常接纳并实际完成聊天 → 对子双方敌对各 −2。
+            if self.busy_act[i] == "chat" and self.conv_of[i] is not None:
+                cut = self.friendly_chat_cut()
+                for m in self.conv_of[i]["members"]:
+                    if m == i:
+                        continue
+                    self.H[i][m] = clamp100(self.H[i][m] - cut)
+                    self.H[m][i] = clamp100(self.H[m][i] - cut)
+                self.stats["friendly_chats"] = self.stats.get("friendly_chats", 0) + 1
             self.current_act[i] = None
             self.busy_act[i] = None
             self.busy_phase[i] = -1
@@ -1404,6 +1440,9 @@ class Sim:
         self.settle_units()
         self.check_breakdown()
         self.update_environment()
+        # D07：伤害每 10 秒检查一次（课间接触；门槛 / 概率 / 增量读 rules/harm.csv）。
+        if self.global_tick % int(self.harm["check_seconds"]) == 0:
+            self.check_harm()
         if self.global_tick % int(self.p["settle_interval"]) == 0 and not self.exam_only_today():
             self.stress_drip()          # 每天 2 次（上午/下午）；D05 考试当天不跑
         # 压力爆发已在每日结算时按概率判定（见 try_burst），此处不再做阈值相变
@@ -1489,6 +1528,8 @@ class Sim:
                 self.sleeping[i] = False
                 self.phase_state[i] = "broken"
                 self.stats["breakdowns"] = self.stats.get("breakdowns", 0) + 1
+                # D06：每人累计崩溃次数（退学判据）。
+                self.risk_breakdowns[i] += 1
             elif self.Broken[i] and self.Stress[i] < recover:
                 self.Broken[i] = False
                 self.phase_state[i] = "free"
@@ -1505,6 +1546,224 @@ class Sim:
                 self.Stress[i] = clamp100(self.Stress[i] + drip * studying)
                 self.stats["neighbor_drip"] = self.stats.get("neighbor_drip", 0) + studying
 
+    # ------------------------------------------------ 风险与伤害（D06 / D07）
+    def next_unit_random(self):
+        """伤害触发用的随机数（带种子；与 GDScript 同序）。"""
+        return self.rng.random()
+
+    def add_hostility(self, from_i, to_i, delta):
+        if from_i < 0 or to_i < 0 or from_i >= self.N or to_i >= self.N or from_i == to_i:
+            return
+        self.H[from_i][to_i] = clamp100(self.H[from_i][to_i] + delta)
+
+    def shares_activity(self, i, j):
+        """两人是否在同一场共同活动里（多人会话 / 学习组 / 零食分享组）。"""
+        for conv in self.conversations:
+            members = conv["members"]
+            if i in members and j in members:
+                return True
+        if self.study_of[i] is not None and self.study_of[i] is self.study_of[j]:
+            return True
+        if self.snack_of[i] is not None and self.snack_of[i] is self.snack_of[j]:
+            return True
+        return False
+
+    def are_neighbors(self, i, j):
+        return 0 <= i < self.N and 0 <= j < self.N and j in self.neighbor_idx[i]
+
+    def is_in_office(self, i):
+        """学生是否在办公室（D07：在办公室期间不参与伤害）。"""
+        return int(getattr(self, "called_index", -1)) == i
+
+    def is_study_locked(self, i):
+        """学习锁定（D07）：处于学习状态或正在学习的学生不参与伤害。"""
+        if not (0 <= i < self.N):
+            return False
+        if self.phase_state[i] == "study":
+            return True
+        return self.current_act[i] == "study"
+
+    def interrupt_activity(self, i):
+        """中断当前活动（推搡效果）；已得学业收益按 D02 折算后保留。"""
+        if not (0 <= i < self.N):
+            return
+        self.fold_pending_unit(i)
+        self.current_act[i] = None
+        self.busy_act[i] = None
+        self.busy_phase[i] = -1
+        self.busy_until[i] = 0
+
+    def register_breakdown(self, i):
+        """D06：每人累计崩溃次数（退学判据）。"""
+        if 0 <= i < self.N:
+            self.risk_breakdowns[i] += 1
+
+    def register_join_reject(self, i):
+        """D06 孤立判据：主动找伴被拒（忙碌 / 满员不算关系拒绝，调用方只登记真实拒绝）。"""
+        if 0 <= i < self.N:
+            self.risk_rejects_today[i] += 1
+
+    def register_activity(self, i):
+        """D06 孤立判据：当天成功参加过共同活动。"""
+        if 0 <= i < self.N:
+            self.risk_activity_today[i] = True
+
+    def note_harm(self, from_i, to_i, kind):
+        """伤害登记（霸凌判据：当天受到这些敌对者中至少一人发起的伤害）。"""
+        if 0 <= to_i < self.N:
+            self.risk_harm_today[to_i].append({"from": from_i, "kind": kind})
+
+    def harm_eligible(self, i):
+        """参与伤害的资格（D07）：不得处于学习锁定、办公室或崩溃。"""
+        if self.Broken[i] or self.is_in_office(i) or self.is_study_locked(i):
+            return False
+        return True
+
+    def begin_harm_phase(self):
+        """段首重置「每课间一次」的伤害计数（两类共用）。"""
+        self.harm_struck_phase = [False] * self.N
+
+    def is_stopped_by_teacher(self, i):
+        """D07 §10：本课间被老师单独处理过的学生不能再发起伤害（Python 侧暂无老师命令）。"""
+        return False
+
+    def check_harm(self):
+        """D07：每 10 秒一次的伤害检查（课间接触；只有恶语攻击与推搡）。"""
+        self.harm_events = []
+        if self.phase != "break":
+            return 0
+        n = self.N
+        for i in range(n):
+            if not self.harm_eligible(i):
+                continue
+            # §10：每人每课间最多主动伤害一次；老师制止后本课间不能再发起。
+            if self.harm_struck_phase[i] or self.is_stopped_by_teacher(i):
+                continue
+            for j in range(n):
+                if i == j or not self.harm_eligible(j):
+                    continue
+                if not (self.shares_activity(i, j) or self.are_neighbors(i, j)):
+                    continue
+                hostility = self.H[i][j]
+                if hostility > self.harm["shove_hostility_threshold"]:
+                    kind = "shove"
+                elif hostility > self.harm["aggression_hostility_threshold"]:
+                    kind = "aggression"
+                else:
+                    continue
+                key = "shove_trigger_p" if kind == "shove" else "aggression_trigger_p"
+                if self.next_unit_random() >= self.harm[key]:
+                    continue
+                self.apply_harm(i, j, kind)
+                self.harm_struck_phase[i] = True
+                break  # 一次只触发一种（两类共用次数）
+        return len(self.harm_events)
+
+    def apply_harm(self, from_i, to_i, kind):
+        if kind == "shove":
+            self.Stress[to_i] = clamp100(self.Stress[to_i] + self.harm["shove_target_stress"])
+            self.add_hostility(to_i, from_i, self.harm["shove_hostility_gain"])
+            self.interrupt_activity(to_i)
+        else:
+            self.Stress[to_i] = clamp100(self.Stress[to_i] + self.harm["aggression_target_stress"])
+            self.add_hostility(to_i, from_i, self.harm["aggression_hostility_gain"])
+        self.harm_events.append(
+            {"kind": kind, "from": from_i, "to": to_i, "tick": int(self.global_tick)}
+        )
+        self.note_harm(from_i, to_i, kind)
+
+    def settle_risk(self, day):
+        """D06：当天末判定霸凌 / 孤立（预警、正式触发）与退学（在关系衰减之前调用）。"""
+        self.risk_events = []
+        cfg = self.risk_cfg
+        for i in range(self.N):
+            if self.dropped[i]:
+                continue
+            reason = self.daily_risk_reason(i)
+            if reason == "":
+                self.risk_streak[i] = 0
+            else:
+                self.risk_streak[i] += 1
+                if self.risk_streak[i] == 1:
+                    self.risk_warned[i] = True
+                    self.risk_events.append({"kind": "warn", "of": i, "reason": reason, "day": day})
+                elif (self.risk_streak[i] >= int(cfg["window_days"])
+                      and day >= int(cfg["earliest_day"]) and not self.risk_triggered[i]):
+                    self.risk_triggered[i] = True
+                    self.risk_triggered_kind[i] = reason
+                    self.risk_breakdowns_at_trigger[i] = self.risk_breakdowns[i]
+                    self.risk_events.append({"kind": "trigger", "of": i, "reason": reason, "day": day})
+            quota = int(cfg["dropout_breakdown_limit"]) + 1
+            if self.risk_triggered[i]:
+                quota = min(quota, self.risk_breakdowns_at_trigger[i] + int(cfg["dropout_after_risk_breakdowns"]))
+            if self.risk_breakdowns[i] >= quota:
+                self.dropped[i] = True
+                self.risk_events.append({"kind": "dropout", "of": i, "day": day})
+        for i in range(self.N):
+            self.risk_rejects_today[i] = 0
+            self.risk_activity_today[i] = False
+            self.risk_harm_today[i] = []
+
+    def daily_risk_reason(self, i):
+        if self.is_bullied(i):
+            return "bully"
+        if self.is_isolated(i):
+            return "isolate"
+        return ""
+
+    def is_bullied(self, i):
+        cfg = self.risk_cfg
+        enemies = [j for j in range(self.N)
+                   if j != i and self.H[j][i] > cfg["bully_hostility_threshold"]]
+        if len(enemies) < int(cfg["bully_min_enemies"]):
+            return False
+        harmed = sum(1 for e in self.risk_harm_today[i] if e["from"] in enemies)
+        return harmed >= int(cfg["bully_daily_harm_min"])
+
+    def is_isolated(self, i):
+        cfg = self.risk_cfg
+        for j in range(self.N):
+            if j == i:
+                continue
+            if self.A[j][i] >= cfg["isolate_affinity_threshold"]:
+                return False
+        if int(cfg.get("isolate_require_no_activity", 1)) == 1 and self.risk_activity_today[i]:
+            return False
+        return self.risk_rejects_today[i] >= int(cfg["isolate_daily_rejects"])
+
+    def mediate_hostility_threshold(self):
+        return self.harm["mediate_hostility_threshold"]
+
+    def mediate_hostility_cut(self):
+        return self.harm["mediate_hostility_cut"]
+
+    def friendly_chat_cut(self):
+        return self.harm["friendly_chat_hostility_cut"]
+
+    def risk_snapshot(self):
+        """风险快照（只读：预警、正式触发、退学与每人崩溃计数）。"""
+        return {
+            "breakdowns": list(self.risk_breakdowns),
+            "streak": list(self.risk_streak),
+            "warned": list(self.risk_warned),
+            "triggered": list(self.risk_triggered),
+            "triggered_kind": list(self.risk_triggered_kind),
+            "dropped": list(self.dropped),
+        }
+
+    def is_dropped_out(self, i):
+        return 0 <= i < self.N and self.dropped[i]
+
+    def class_failed(self):
+        """老师是否被辞退：首次考核不达标（D05）或出现退学（D06）。"""
+        if any(self.dropped):
+            return True
+        return not self.last_exam_passed()
+
+    def last_exam_passed(self):
+        if not self.exam_passed:
+            return True
+        return bool(self.exam_passed[max(self.exam_passed)])
     def seat_role(self, i):
         """座位关系里的角色（D04 / §8.1）：睡觉仅在座位关系判定中视同学习。"""
         if self.Broken[i]:
@@ -1695,6 +1954,7 @@ class Sim:
         """
         self.phase = self.day_phases[self.phase_index][0]
         self.tick_in_phase = 0
+        self.begin_harm_phase()          # D07 §10：每课间重置「主动伤害一次」的计数
         self.teacher.begin_phase(self)
         self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
         self.begin_phase_state()          # D01 段首状态：学习 / 游戏 / 自由
@@ -1755,6 +2015,8 @@ class Sim:
             self.Grade[i] = max(0.0, min(self.kp["grade_max"], self.Grade[i] + self.GainToday[i]))
             self.GainToday[i] = 0.0
         self.try_burst()                      # 每日一次：压力爆发按概率判定
+        # D06：当天末判定霸凌 / 孤立与退学；用当天实际事件与当天末关系，故在衰减之前。
+        self.settle_risk(self.day)
         d = self.decay
 
         # 「心结」：爆发后的 3 天里，每天先加 5 点压力（长线心理创伤，§3.5）

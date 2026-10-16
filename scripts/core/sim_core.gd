@@ -34,7 +34,11 @@ const PSYCHE_TABLE := "rules/psyche"
 const ACTIVITIES_TABLE := "rules/activities"
 const TEACHER_COMMANDS_TABLE := "rules/teacher_commands"
 const SEAT_RELATIONS_TABLE := "rules/seat_relations"
+const HARM_TABLE := "rules/harm"
+const RISK_TABLE := "rules/risk"
 const EXAM_SETTLE := preload("res://scripts/core/exam_settle.gd")
+const HARM_EVENTS := preload("res://scripts/core/harm_events.gd")
+const RISK_MONITOR := preload("res://scripts/core/risk_monitor.gd")
 const TERM_RECORD := preload("res://scripts/core/term_record.gd")
 
 var _term_record: RefCounted
@@ -160,6 +164,8 @@ var _settle_acc: Array = []
 var _psyche: Dictionary = {}
 var _acts: Dictionary = {}
 var _seat_rel: Dictionary = {}
+var _harm_events: RefCounted  # 伤害事件（D07），脚本见 harm_events.gd
+var _risk: RefCounted  # 风险判定 / 预警 / 退学（D06），脚本见 risk_monitor.gd
 
 
 func _init(seed: int, npc_count: int, tables: Dictionary = {}) -> void:
@@ -237,6 +243,10 @@ func _load_config(tables: Dictionary) -> void:
 	_psyche = _params(tables, PSYCHE_TABLE)
 	_acts = _params(tables, ACTIVITIES_TABLE)
 	_seat_rel = _params(tables, SEAT_RELATIONS_TABLE)
+	_harm_events = HARM_EVENTS.new()
+	_harm_events.configure(_params(tables, HARM_TABLE))
+	_risk = RISK_MONITOR.new()
+	_risk.configure(_params(tables, RISK_TABLE), _n)
 	_p = _params(tables, "rules/transmission")
 	_kp = _params(tables, "rules/kernel_params")
 	_grade_bands = _build_grade_bands(tables)
@@ -488,6 +498,9 @@ func _begin_phase() -> void:
 	var row: Dictionary = _active_phases[_phase_index]
 	_phase = str(row["kind"])
 	_tick_in_phase = 0
+	# D07 §10：每课间重置「主动伤害一次」的计数。
+	if _harm_events != null:
+		_harm_events.begin_phase(_n)
 	# D03：课间开始恢复挂起命令与「首次进教室」机会；上课开始则把未完成命令挂起。
 	if _phase == "break":
 		_teacher_commands.begin_break()
@@ -664,6 +677,16 @@ func _settle_finished_actions() -> void:
 			leisure_notifications.append(
 				{"kind": "leisure_finished", "i": i, "activity": _busy_act[i]}
 			)
+		# D07 友善交流：正常接纳并实际完成聊天 → 对子双方敌对各 −2（不额外加修复概率）。
+		if _busy_act[i] == "chat" and _conv_of.size() > i and _conv_of[i] != null:
+			var friendly_cut := float(_harm_events.friendly_cut())
+			for m in (_conv_of[i] as Dictionary)["members"] as Array:
+				var other := int(m)
+				if other == i:
+					continue
+				_h[i * _n + other] = _clamp100(_h[i * _n + other] - friendly_cut)
+				_h[other * _n + i] = _clamp100(_h[other * _n + i] - friendly_cut)
+			_stats["friendly_chats"] = int(_stats.get("friendly_chats", 0)) + 1
 		_current_act[i] = null
 		_busy_act[i] = null
 		_busy_phase[i] = -1
@@ -689,6 +712,9 @@ func _tick() -> void:
 	_settle_units()
 	_check_breakdown()
 	_update_environment()
+	# D07：伤害每 10 秒检查一次（课间接触；门槛 / 概率 / 增量读 rules/harm.csv）。
+	if _harm_events != null and _global_tick % int(_harm_events.check_seconds()) == 0:
+		_harm_events.check(self)
 	# D05：考试当天只有考试，压力涓流也属「相关结算」，当天不跑。
 	if _global_tick % int(_p["settle_interval"]) == 0 and not _is_exam_only_day():
 		_stress_drip()
@@ -778,6 +804,10 @@ func _check_breakdown() -> void:
 			if _phase_state.size() > i:
 				_phase_state[i] = "broken"
 			_stats["breakdowns"] = int(_stats.get("breakdowns", 0)) + 1
+			# D06：每人累计崩溃次数（退学判据）——「同一事件同时触发风险与崩溃」的先后仍待裁定，
+			# 这里按事件实际发生登记，不额外回溯。
+			if _risk != null:
+				_risk.register_breakdown(i)
 			_emit("event_happened", {"kind": "breakdown", "i": i})
 		elif _broken[i] and _stress[i] < recover:
 			_broken[i] = false
@@ -1030,6 +1060,111 @@ func _spread_knot(i: int, severity: float) -> void:
 		_emit("tag_changed", {"id": j, "tag": "heart_knot"})
 
 
+# ------------------------------------------------------------------ 风险与伤害（D06 / D07）
+## 伤害触发用的随机数（带种子、两侧同序；HarmEvents 只通过这里取随机）。
+func _next_unit_random() -> float:
+	return _rng.random()
+
+
+## 当前段类型（"break" / "class"）——伤害与座位结算的时段判定口径。
+func _current_phase_kind() -> String:
+	return _phase
+
+
+## 老师调解的门槛与幅度（D07，供 TeacherCommands 只读）。
+func _mediate_hostility_threshold() -> float:
+	return float(_harm_events.mediate_threshold())
+
+
+func _mediate_hostility_cut() -> float:
+	return float(_harm_events.mediate_cut())
+
+
+## 有向敌对增量（D07：恶语 / 推搡让目标对发起者的敌对增加）。
+func _add_hostility(from_i: int, to_i: int, delta: float) -> void:
+	if from_i < 0 or to_i < 0 or from_i >= _n or to_i >= _n or from_i == to_i:
+		return
+	_h[from_i * _n + to_i] = _clamp100(_h[from_i * _n + to_i] + delta)
+
+
+## 两人是否在同一场共同活动里（多人会话 / 学习组 / 零食分享组）。
+func _shares_activity(i: int, j: int) -> bool:
+	for conv in _conversations:
+		var members: Array = conv["members"]
+		if members.has(i) and members.has(j):
+			return true
+	if (
+		_study_of.size() > i
+		and _study_of.size() > j
+		and _study_of[i] != null
+		and _study_of[i] == _study_of[j]
+	):
+		return true
+	if (
+		_snack_of.size() > i
+		and _snack_of.size() > j
+		and _snack_of[i] != null
+		and _snack_of[i] == _snack_of[j]
+	):
+		return true
+	return false
+
+
+## 学生是否在办公室（D07：在办公室期间不参与伤害）。
+func _is_in_office(i: int) -> bool:
+	return _teacher_commands.called_index() == i
+
+
+## 老师制止（D07 §10）：本课间被老师单独处理过的学生不能再发起伤害。
+## 「制止」的具体范围合并稿未细化 —— 当前按「本课间被召唤到办公室」判定，列在待确认项。
+func _is_stopped_by_teacher(i: int) -> bool:
+	if _teacher_commands == null:
+		return false
+	return _teacher_commands.called_index() == i
+
+
+## 学习锁定（D07：处于学习状态或正在学习的学生不参与伤害）。
+func _is_study_locked(i: int) -> bool:
+	if i < 0 or i >= _n:
+		return false
+	if _phase_state.size() > i and str(_phase_state[i]) == "study":
+		return true
+	return _current_act[i] == "study"
+
+
+## 中断当前活动（推搡效果；已得学业收益不清空 —— 按 D02 折算后保留）。
+func _interrupt_activity(i: int) -> void:
+	if i < 0 or i >= _n:
+		return
+	_fold_pending_unit(i)
+	_current_act[i] = null
+	_busy_act[i] = null
+	_busy_phase[i] = -1
+	_busy_until[i] = 0
+
+
+## 伤害登记（霸凌判据：当天受到这些敌对者中至少一人发起的伤害）。
+func _note_harm(from_i: int, to_i: int, kind: String) -> void:
+	if _risk != null:
+		_risk.register_harm(from_i, to_i, kind)
+
+
+## 风险快照（只读：预警、正式触发、退学原因与每人崩溃计数）。
+func _risk_snapshot() -> Dictionary:
+	return _risk.snapshot() if _risk != null else {}
+
+
+func _is_dropped_out(i: int) -> bool:
+	return _risk != null and _risk.is_dropped(i)
+
+
+## 老师是否被辞退：首次考核不达标（D05）或出现退学（D06）。
+func _class_failed() -> bool:
+	if _risk != null and _risk.has_dropout():
+		return true
+	return _exam != null and not _exam.last_passed()
+
+
 ## D05：考试当天只有考试 —— 当天不发生普通事件与相关结算（座位、涓流、学生行为）。
 func _is_exam_only_day() -> bool:
 	return _exam != null and _exam.exam_only_day() and _exam.is_exam_day(_day)
@@ -1047,6 +1182,10 @@ func _settle_day() -> void:
 		_grade[i] = clampf(_grade[i] + _gain_today[i], 0.0, grade_max)
 		_gain_today[i] = 0.0
 	_try_burst()
+	# D06：当天末判定霸凌 / 孤立（预警、正式触发）与退学；判定在关系衰减之前，
+	# 用的是当天实际发生的事件与当天末的关系。
+	if _risk != null:
+		_risk.settle_day(self, _day)
 	# 「心结」：爆发后的几天里，每天先加压（长线心理创伤，§3.5）。
 	for i in range(_n):
 		if _knot_days[i] > 0:
@@ -1749,6 +1888,9 @@ func _do_chat_join(i: int, j: int, roll: float = -1.0) -> void:
 		_apply_event(i, j, "reject_stress")
 		_stats["joins"] = int(_stats["joins"]) + 1
 		_stats["join_rejects"] = int(_stats.get("join_rejects", 0)) + 1
+		# D06 孤立判据：发起者当天主动找伴被拒次数（忙碌 / 满员不算关系拒绝）。
+		if _risk != null:
+			_risk.register_join_reject(i)
 		_stats["skipped_events"] = int(_stats["skipped_events"]) + 1
 
 
@@ -1756,6 +1898,10 @@ func _do_chat_join(i: int, j: int, roll: float = -1.0) -> void:
 ## 二人开聊（会话种子，规格 B）：形成会话 {i,j}，逐人独立计时，他人可随后加入。
 func _start_conversation(i: int, j: int) -> void:
 	var members: Array = [i, j]
+	# D06 孤立判据：新建共同活动 → 双方当天都算「成功参加共同活动」。
+	if _risk != null:
+		_risk.register_activity(i)
+		_risk.register_activity(j)
 	members.sort()
 	var conv := {"members": members}
 	_conversations.append(conv)
@@ -1804,6 +1950,9 @@ func _add_member_to_conversation(k: int, conv: Dictionary) -> void:
 	members.sort()
 	conv["members"] = members
 	_conv_of[k] = conv
+	# D06 孤立判据：当天成功参加过共同活动。
+	if _risk != null:
+		_risk.register_activity(k)
 	_in_conversation[k] = true
 	_occupy_chat(k)
 	for m in members:
@@ -2001,6 +2150,9 @@ func _reject_join(
 		_apply_event(i, int(m), "reject_hostility")
 	_apply_event(i, anchor, "reject_stress")
 	_stats["join_rejects"] = int(_stats.get("join_rejects", 0)) + 1
+	# D06 孤立判据：投票被拒同样计入「主动找伴被拒」。
+	if _risk != null:
+		_risk.register_join_reject(i)
 	_log_join_event(i, members, "vote_reject", activity, yes, no, {"anchor": anchor})
 
 
@@ -2162,6 +2314,9 @@ func _join_roughhouse(i: int, grp: Dictionary) -> void:
 func _join_study(i: int, grp: Dictionary) -> void:
 	## 加入学习组：进入学习态（各自按真实学习单位结算，不新增讲题加成，§9.1.4 表）。
 	_do_study(i)
+	# D06 孤立判据：加入共同活动（各自按真实学习单位结算）。
+	if _risk != null:
+		_risk.register_activity(i)
 	(grp["members"] as Array).append(i)
 	(grp["members"] as Array).sort()
 	_study_of[i] = grp
@@ -2171,6 +2326,9 @@ func _join_snack(i: int, grp: Dictionary) -> void:
 	## 加入零食分享（§9.1.4 表）：加入者无需自带零食；正常娱乐效果；
 	## 自然完成一个共同进食单位后，对分享者结算一次分享好感（见 _settle_finished_actions）。
 	_occupy(i, i, "eat_snack")
+	# D06 孤立判据：加入共同活动。
+	if _risk != null:
+		_risk.register_activity(i)
 	_snack_provider[i] = grp["provider"]
 	(grp["members"] as Array).append(i)
 	(grp["members"] as Array).sort()

@@ -425,6 +425,29 @@ check("P0-3：持书配额可抽足（book_count 单值）",
       and _npc_count - _quota <= len(_seed_books) - _available,
       "book_count=%s，持书者 %d" % (_quota, _available))
 _seat_rel = params("rules/seat_relations.csv")
+_harm_cfg = params("rules/harm.csv")
+check("D07：恶语门槛 40 / 推搡门槛 70（且推搡更高）",
+      _harm_cfg.get("aggression_hostility_threshold", -1) == 40
+      and _harm_cfg.get("shove_hostility_threshold", -1) == 70)
+check("D07：伤害检查间隔为 10 秒", _harm_cfg.get("check_seconds", -1) == 10)
+check("D07：触发概率在 (0,1]",
+      0 < _harm_cfg.get("aggression_trigger_p", 0) <= 1
+      and 0 < _harm_cfg.get("shove_trigger_p", 0) <= 1)
+check("D07：友善交流 −2 / 调解门槛 50 / 调解 −5",
+      _harm_cfg.get("friendly_chat_hostility_cut", -1) == 2
+      and _harm_cfg.get("mediate_hostility_threshold", -1) == 50
+      and _harm_cfg.get("mediate_hostility_cut", -1) == 5)
+_risk_cfg = params("rules/risk.csv")
+check("D06：霸凌敌对门槛 >50、至少 3 名敌对者",
+      _risk_cfg.get("bully_hostility_threshold", -1) == 50
+      and _risk_cfg.get("bully_min_enemies", -1) == 3)
+check("D06：连续窗口 2 天、最早第 2 天判定",
+      _risk_cfg.get("window_days", -1) == 2 and _risk_cfg.get("earliest_day", -1) == 2)
+check("D06：孤立好感门槛 <20、每天被拒至少 2 次",
+      _risk_cfg.get("isolate_affinity_threshold", -1) == 20
+      and _risk_cfg.get("isolate_daily_rejects", -1) == 2)
+check("D06：退学 = 累计崩溃超过 3 次（第 4 次）",
+      _risk_cfg.get("dropout_breakdown_limit", -1) == 3)
 check("D04：座位基础好感增量为有限数",
       math.isfinite(_seat_rel.get("orthogonal_h", 0)) and math.isfinite(_seat_rel.get("far_h", 0)))
 check("D04：对角邻座不加好感", _seat_rel.get("diagonal_h", -1) == 0)
