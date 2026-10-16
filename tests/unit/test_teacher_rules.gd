@@ -25,9 +25,9 @@ func test_initial_distribution_follows_d01() -> void:
 		assert_true(stress >= 0.0 and stress <= 20.0, "开局压力 0–20（D01）")
 		assert_almost_eq(core.vitality(i), stress, 0.0001, "开局动力 = 该生压力（D01）")
 		var grade := core.grade(i)
-		assert_true(grade >= 150.0 and grade <= 450.0, "开局成绩 150–450（D01）")
+		assert_true(grade >= 250.0 and grade <= 450.0, "开局成绩 250–450（D01）")
 		total += grade
-	assert_almost_eq(total / float(core.node_count()), 300.0, 60.0, "开局平均成绩落在 150–450 的中段（D01）")
+	assert_almost_eq(total / float(core.node_count()), 350.0, 60.0, "开局平均成绩落在 250–450 的中段（D01）")
 
 
 func test_phase_state_follows_vitality_thresholds() -> void:

@@ -360,7 +360,7 @@ if all(k in _ps for k in _grade_keys):
           0 <= _ps["grade_init_min"] and _ps["grade_init_max"] <= _kp["grade_max"],
           "%s / %s" % (_ps["grade_init_min"], _ps["grade_init_max"]))
     check("开局成绩均值 = (min+max)/2",
-          abs((_ps["grade_init_min"] + _ps["grade_init_max"]) / 2.0 - 300.0) <= 1.0,
+          abs((_ps["grade_init_min"] + _ps["grade_init_max"]) / 2.0 - 350.0) <= 1.0,
           (float(_ps["grade_init_min"]) + float(_ps["grade_init_max"])) / 2.0)
 check("psych：压力 / 动力范围与阈值合法",
       0 <= _ps["stress_init_min"] <= _ps["stress_init_max"] <= _ps["stat_max"]

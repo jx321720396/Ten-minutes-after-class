@@ -407,7 +407,7 @@ func _apply_bindings() -> void:
 
 ## 成绩初始化（§17.1.1）：NPC 种子化均匀 [min,max)，玩家固定。消费 len(chars) 次 RNG。
 ## ⚠️ 必须紧跟 _init_relations() 之后调用，与 Python 同一点插入，保同种子 RNG 流不漂移。
-## 开局状态（《老师版规则合并稿》D01）：压力 0–20 随机、动力 = 该生压力、成绩 150–450 随机（均值 300）。
+## 开局状态（《老师版规则合并稿》D01）：压力 0–20 随机、动力 = 该生压力、成绩 250–450 随机（均值 350）。
 ## ⚠️ 随机数顺序固定（每名学生两次 random：压力、成绩），Python 参考实现需同序。
 func _init_grade() -> void:
 	var smin := float(_psyche["stress_init_min"])
