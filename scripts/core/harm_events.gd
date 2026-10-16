@@ -10,8 +10,8 @@ extends RefCounted
 
 var _aggression_threshold := 40.0
 var _shove_threshold := 70.0
-var _aggression_p := 0.05
-var _shove_p := 0.05
+var _trigger_p := 0.05
+var _shove_choice_p := 0.5
 var _aggression_stress := 5.0
 var _aggression_hostility := 3.0
 var _shove_stress := 10.0
@@ -31,8 +31,8 @@ func configure(table: Dictionary) -> void:
 		table.get("aggression_hostility_threshold", _aggression_threshold)
 	)
 	_shove_threshold = float(table.get("shove_hostility_threshold", _shove_threshold))
-	_aggression_p = float(table.get("aggression_trigger_p", _aggression_p))
-	_shove_p = float(table.get("shove_trigger_p", _shove_p))
+	_trigger_p = float(table.get("trigger_p", _trigger_p))
+	_shove_choice_p = float(table.get("shove_choice_p", _shove_choice_p))
 	_aggression_stress = float(table.get("aggression_target_stress", _aggression_stress))
 	_aggression_hostility = float(table.get("aggression_hostility_gain", _aggression_hostility))
 	_shove_stress = float(table.get("shove_target_stress", _shove_stress))
@@ -73,6 +73,10 @@ func last_events() -> Array:
 
 
 ## 一次伤害检查（主循环每 check_seconds 调一次）；返回本次触发条数。
+## 一次伤害检查（主循环每 check_seconds 调一次）；返回本次触发条数。
+##
+## 2026-10-16 定稿：每名符合资格的发起者**只掷一次** —— 先在自己满足条件的目标里等概率随机
+## 选一个，再掷 _trigger_p；不对每个候选分别掷骰（否则周围人越多命中越高）。
 func check(core: Variant) -> int:
 	_last_events = []
 	# §369：伤害发生在「课间接触」。
@@ -87,27 +91,29 @@ func check(core: Variant) -> int:
 			continue
 		if bool(core._is_stopped_by_teacher(i)):
 			continue
+		var candidates: Array = []
 		for j in range(n):
 			if i == j or not _can_act(core, j):
 				continue
 			if not (core._shares_activity(i, j) or core._are_neighbors(i, j)):
 				continue
-			var hostility: float = float(core.hostility(i, j))
-			var kind := ""
-			if hostility > _shove_threshold:
-				# 门槛更高的一类优先（合并稿的「两类同时满足时的选择方式」仍待确认）。
+			if float(core.hostility(i, j)) > _aggression_threshold:
+				candidates.append(j)
+		if candidates.is_empty():
+			continue
+		var pick := int(floor(float(core._next_unit_random()) * float(candidates.size())))
+		pick = mini(pick, candidates.size() - 1)
+		var target := int(candidates[pick])
+		if float(core._next_unit_random()) >= _trigger_p:
+			continue
+		# 敌对 >70：各 50% 选恶语或推搡（一次只发生一种）；40 < 敌对 ≤ 70 只能恶语。
+		var kind := "aggression"
+		if float(core.hostility(i, target)) > _shove_threshold:
+			if float(core._next_unit_random()) < _shove_choice_p:
 				kind = "shove"
-			elif hostility > _aggression_threshold:
-				kind = "aggression"
-			if kind == "":
-				continue
-			var probability := _shove_p if kind == "shove" else _aggression_p
-			if float(core._next_unit_random()) >= probability:
-				continue
-			_apply(core, i, j, kind)
-			if i < _struck_this_phase.size():
-				_struck_this_phase[i] = true
-			break  # 一次只触发一种（两类共用次数）
+		_apply(core, i, target, kind)
+		if i < _struck_this_phase.size():
+			_struck_this_phase[i] = true
 	return _last_events.size()
 
 
@@ -129,8 +135,6 @@ func _apply(core: Variant, from_i: int, to_i: int, kind: String) -> void:
 	else:
 		core.add_stress(to_i, _aggression_stress)
 		core._add_hostility(to_i, from_i, _aggression_hostility)
-	_last_events.append(
-		{"kind": kind, "from": from_i, "to": to_i, "tick": int(core.global_tick())}
-	)
+	_last_events.append({"kind": kind, "from": from_i, "to": to_i, "tick": int(core.global_tick())})
 	# 霸凌判据要看「当天受到这些人中至少一人发起的伤害」→ 记到风险监控里。
 	core._note_harm(from_i, to_i, kind)

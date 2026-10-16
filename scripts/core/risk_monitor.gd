@@ -85,6 +85,9 @@ func register_harm(from_i: int, to_i: int, kind: String) -> void:
 ## 一天结束时判定（在跨天结算里调用，day = 刚结束的那一天）。
 func settle_day(core: Variant, day: int) -> void:
 	_events = []
+	# 2026-10-16 定稿：考试日跳过判定但**保留连续计数**（考试不能自动洗掉风险）。
+	if bool(core._is_exam_only_day()):
+		return
 	var n := int(core.node_count())
 	for i in range(n):
 		if bool(_dropped[i]):

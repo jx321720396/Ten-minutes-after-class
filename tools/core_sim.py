@@ -230,6 +230,7 @@ class Sim:
         self.risk_events = []
         self.harm_events = []
         self.harm_struck_phase = [False] * n  # D07 §10：每人每课间最多主动伤害一次
+        self.phase_stopped = []              # D07 §10：本课间被老师制止的学生
         self.phase_state = ["free"] * n  # 段首状态：study / play / free / broken
         self.settle_acc = [0.0] * n      # 单位结算游标（按秒累计）
 
@@ -1620,15 +1621,20 @@ class Sim:
         return True
 
     def begin_harm_phase(self):
-        """段首重置「每课间一次」的伤害计数（两类共用）。"""
+        """段首重置「每课间一次」的伤害计数与「被老师制止」名单。"""
         self.harm_struck_phase = [False] * self.N
+        self.phase_stopped = []
 
     def is_stopped_by_teacher(self, i):
-        """D07 §10：本课间被老师单独处理过的学生不能再发起伤害（Python 侧暂无老师命令）。"""
-        return False
+        """D07 §10：本课间被老师制止（现场制止 / 调解 / 召唤）的学生不能再发起伤害。"""
+        return i in self.phase_stopped
 
     def check_harm(self):
-        """D07：每 10 秒一次的伤害检查（课间接触；只有恶语攻击与推搡）。"""
+        """D07：每 10 秒一次的伤害检查（课间接触；只有恶语攻击与推搡）。
+
+        2026-10-16 定稿：每名符合资格的发起者**只掷一次** —— 先在自己满足条件的目标里
+        等概率随机选一个，再掷 trigger_p；不对每个候选分别掷骰（否则周围人越多命中越高）。
+        """
         self.harm_events = []
         if self.phase != "break":
             return 0
@@ -1639,24 +1645,28 @@ class Sim:
             # §10：每人每课间最多主动伤害一次；老师制止后本课间不能再发起。
             if self.harm_struck_phase[i] or self.is_stopped_by_teacher(i):
                 continue
+            candidates = []
             for j in range(n):
                 if i == j or not self.harm_eligible(j):
                     continue
                 if not (self.shares_activity(i, j) or self.are_neighbors(i, j)):
                     continue
-                hostility = self.H[i][j]
-                if hostility > self.harm["shove_hostility_threshold"]:
+                if self.H[i][j] > self.harm["aggression_hostility_threshold"]:
+                    candidates.append(j)
+            if not candidates:
+                continue
+            pick = int(self.next_unit_random() * len(candidates))
+            if pick >= len(candidates):
+                pick = len(candidates) - 1
+            target = candidates[pick]
+            if self.next_unit_random() >= self.harm["trigger_p"]:
+                continue
+            kind = "aggression"
+            if self.H[i][target] > self.harm["shove_hostility_threshold"]:
+                if self.next_unit_random() < self.harm["shove_choice_p"]:
                     kind = "shove"
-                elif hostility > self.harm["aggression_hostility_threshold"]:
-                    kind = "aggression"
-                else:
-                    continue
-                key = "shove_trigger_p" if kind == "shove" else "aggression_trigger_p"
-                if self.next_unit_random() >= self.harm[key]:
-                    continue
-                self.apply_harm(i, j, kind)
-                self.harm_struck_phase[i] = True
-                break  # 一次只触发一种（两类共用次数）
+            self.apply_harm(i, target, kind)
+            self.harm_struck_phase[i] = True
         return len(self.harm_events)
 
     def apply_harm(self, from_i, to_i, kind):
@@ -1675,6 +1685,9 @@ class Sim:
     def settle_risk(self, day):
         """D06：当天末判定霸凌 / 孤立（预警、正式触发）与退学（在关系衰减之前调用）。"""
         self.risk_events = []
+        # 2026-10-16 定稿：考试日跳过判定但保留连续计数（考试不能自动洗掉风险）。
+        if self.exam_only_today():
+            return
         cfg = self.risk_cfg
         for i in range(self.N):
             if self.dropped[i]:

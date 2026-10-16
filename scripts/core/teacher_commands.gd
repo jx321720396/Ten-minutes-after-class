@@ -172,12 +172,20 @@ func _finish(core: Variant) -> void:
 				var cut := float(core._mediate_hostility_cut())
 				core._add_hostility(int(_mediate_pair["a"]), int(_mediate_pair["b"]), -cut)
 				core._add_hostility(int(_mediate_pair["b"]), int(_mediate_pair["a"]), -cut)
+				# D07 §10：调解完成后，涉及的双方本课间都不能再主动伤害。
+				core._note_stopped(int(_mediate_pair["a"]))
+				core._note_stopped(int(_mediate_pair["b"]))
 			_mediate_pair = {}
 		"office_chat":
 			# 训斥按 D01 加压 +20；安抚 / 打听 / 鼓励的幅度待确认，只计时不施加数值。
 			if _chat_kind == "scold" and _called >= 0:
 				core.add_stress(_called, float(_acts["office_scold_stress"]))
+			# D07 §10：办公室处理（含现场制止类的训斥）完成后，该学生本课间不能主动伤害。
+			core._note_stopped(_called)
 			_chat_kind = ""
+		"summon":
+			# D07 §10：被召唤到办公室后，该学生本课间不能主动伤害。
+			core._note_stopped(_called)
 		"send_back":
 			_called = -1
 	_command = ""

@@ -13,3 +13,4 @@ isolate_require_no_activity,1,孤立：当天必须没有成功参加共同活�
 dropout_breakdown_limit,3,退学：累计崩溃超过这个次数（即第 4 次）
 dropout_after_risk_breakdowns,1,退学：正式触发霸凌／孤立后再次崩溃达到这么多次
 warn_only_no_fire,1,预警与正式触发本身不直接辞退（只有退学判据才辞退）
+skip_exam_day,1,考试日跳过判定但保留连续计数：考前一天满足、考后第一个普通上学日也满足即算连续两天
