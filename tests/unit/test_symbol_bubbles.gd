@@ -97,8 +97,8 @@ func test_particles_use_real_time_at_all_world_speeds_and_hold_still_freezes() -
 	view._process(0.2)
 	var age: float = view._bubbles[me]["particles"][0]["age"]
 	assert_almost_eq(age, 0.2, 0.0001, "三倍速仍按现实时间播放")
-	for speed in [1.0, 3.0, 30.0]:
-		flow._action_scale = speed
+	for speed in [1.0, 2.0, 3.0]:
+		assert_true(flow.set_speed(speed), "玩家自选档位可用")
 		flow.refresh()
 		var previous_age: float = view._bubbles[me]["particles"][0]["age"]
 		view._process(0.2)

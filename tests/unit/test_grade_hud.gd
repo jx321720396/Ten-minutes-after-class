@@ -37,9 +37,13 @@ func test_goal_gap_tracks_student_grades() -> void:
 	var core: SimCore = parts[0]
 	var clock: SimulationClock = parts[1]
 	var hud: TimeHUD = parts[2]
-	assert_true(_goal_text(hud).contains("还差 55 分"), _goal_text(hud))
+	# D05：首次考试第八天，目标均分 380。
 	for index in range(core.node_count()):
-		core._grade[index] = 500.0
+		core._grade[index] = 300.0
+	clock.time_updated.emit(clock.snapshot())
+	assert_true(_goal_text(hud).contains("还差 80 分"), _goal_text(hud))
+	for index in range(core.node_count()):
+		core._grade[index] = 355.0
 	clock.time_updated.emit(clock.snapshot())
 	assert_true(_goal_text(hud).contains("还差 25 分"), _goal_text(hud))
 
@@ -64,8 +68,12 @@ func test_first_weekly_exam_day_has_today_label() -> void:
 	var label := hud.get_node_or_null("Card/Rows/WeeklyExamRow/WeeklyExamLabel") as Label
 	assert_not_null(label, "卡片应有独立周考行")
 	if label != null:
-		assert_eq(label.text, "今天周考")
+		assert_eq(label.text, "周考还有 1 天", "D05：第 7 天是考前日")
 	snapshot["day"] = 8
+	hud._refresh(snapshot)
+	if label != null:
+		assert_eq(label.text, "今天周考", "D05：第 8 天是首次考试日")
+	snapshot["day"] = 9
 	hud._refresh(snapshot)
 	if label != null:
 		assert_eq(label.text, "首次周考已结束")

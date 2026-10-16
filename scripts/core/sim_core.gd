@@ -744,16 +744,16 @@ func _settle_units() -> void:
 			while _settle_acc[i] >= study_seconds:
 				_settle_acc[i] -= study_seconds
 				_gain_today[i] += float(_acts["study_gain"])
-				_vitality[i] = _clamp100(_vitality[i] - float(_acts["study_vitality_cost"]))
+				add_vitality(i, -float(_acts["study_vitality_cost"]))
 		elif kind == "play":
 			while _settle_acc[i] >= play_seconds:
 				_settle_acc[i] -= play_seconds
 				_gain_today[i] += float(_acts["play_gain"])
-				_stress[i] = _clamp100(_stress[i] - float(_acts["play_relief"]))
+				add_stress(i, -float(_acts["play_relief"]), false)
 		else:
 			while _settle_acc[i] >= unit_seconds:
 				_settle_acc[i] -= unit_seconds
-				_stress[i] = _clamp100(_stress[i] - float(_acts["relief_per_unit"]))
+				add_stress(i, -float(_acts["relief_per_unit"]))
 
 
 ## 该生此刻按哪一类结算："" = 不结算｜"study"｜"play"｜"leisure"。
@@ -786,7 +786,7 @@ func _fold_pending_unit(i: int) -> void:
 		return
 	var relief := floorf(pending / per_point)
 	if relief > 0.0:
-		_stress[i] = _clamp100(_stress[i] - relief)
+		add_stress(i, -relief)
 
 
 ## 崩溃判定（D01 / D06）：压力 >90 → 崩溃（立即中断活动、保留已得收益）；
@@ -836,7 +836,7 @@ func _settle_neighbor_drip() -> void:
 			if _unit_kind(int(j)) == "study":
 				studying += 1
 		if studying > 0:
-			_stress[i] = _clamp100(_stress[i] + drip * studying)
+			add_stress(i, drip * studying)
 			_stats["neighbor_drip"] = int(_stats.get("neighbor_drip", 0)) + studying
 
 
@@ -945,11 +945,22 @@ func teacher_commands() -> TeacherCommands:
 	return _teacher_commands
 
 
-## 直接加压（老师命令用；钳制在 0–100，D01 范围）。不消耗随机数。
-func add_stress(i: int, delta: float) -> void:
+## 压力写入的唯一入口（§4.1 一般联动）：一般事件压力 ±1 → 动力同向 ±1，两者各自钳制 0–100。
+## 标注「单独」变化的效果传 linked = false（跨天继承、游戏状态减压等）。
+## 反向不成立：单独改动力（见 add_vitality）不影响压力。不消耗随机数。
+func add_stress(i: int, delta: float, linked: bool = true) -> void:
 	if i < 0 or i >= _n:
 		return
 	_stress[i] = _clamp100(_stress[i] + delta)
+	if linked:
+		_vitality[i] = _clamp100(_vitality[i] + delta)
+
+
+## 只改动力（§4.1「反向不成立」）：用于明确「单独」的动力变化，例如学习每次结算 −5 动力。
+func add_vitality(i: int, delta: float) -> void:
+	if i < 0 or i >= _n:
+		return
+	_vitality[i] = _clamp100(_vitality[i] + delta)
 
 
 ## 调座位发起时打断参与者当前行为（D03 第 6 / 7 条）：保留已得收益、不发放完成奖励；
@@ -1020,7 +1031,7 @@ func _try_burst() -> void:
 		var severity := clampf((s - th) / (100.0 - th), 0.0, 1.0)
 		if _rng.random() >= pmax * severity:
 			continue
-		_stress[i] = _clamp100(s - 40.0)
+		add_stress(i, -40.0)
 		if not tag.is_empty():
 			_knot_days[i] = maxi(_knot_days[i], _rint(float(tag["days"]) * (1.0 + severity)))
 			_emit("tag_changed", {"id": i, "tag": "heart_knot"})
@@ -1186,7 +1197,7 @@ func _settle_day() -> void:
 	var carry_vitality := float(_psyche["carry_vitality_cut"])
 	var grade_max := float(_kp["grade_max"])
 	for i in range(_n):
-		_stress[i] = _clamp100(_stress[i] - carry_stress)
+		add_stress(i, -carry_stress, false)
 		_vitality[i] = _clamp100(_vitality[i] - carry_vitality)
 		_grade[i] = clampf(_grade[i] + _gain_today[i], 0.0, grade_max)
 		_gain_today[i] = 0.0
@@ -1198,7 +1209,7 @@ func _settle_day() -> void:
 	# 「心结」：爆发后的几天里，每天先加压（长线心理创伤，§3.5）。
 	for i in range(_n):
 		if _knot_days[i] > 0:
-			_stress[i] = _clamp100(_stress[i] + float(_status_tags["heart_knot"]["daily_stress"]))
+			add_stress(i, float(_status_tags["heart_knot"]["daily_stress"]))
 			_knot_days[i] -= 1
 	# 各轴衰减（§10.22）：好感/敌对按是否互动分档，压力保留系数。
 	var decay_h := float(_decay["decay_h"])
@@ -1221,13 +1232,13 @@ func _settle_day() -> void:
 		if _exam.is_exam_eve(_day):
 			var pre: float = float(_exam.pre_stress_bonus())
 			for i in range(_n):
-				_stress[i] = _clamp100(_stress[i] + pre)
+				add_stress(i, pre)
 		_exam.settle(_day, _grade, _stress, _alias_list())
 		# D05 第 4 条：考试结束全班压力 −30（动力按一般规则联动，不额外强制改动力）。
 		if _exam.is_exam_day(_day):
 			var cut: float = float(_exam.post_stress_cut())
 			for i in range(_n):
-				_stress[i] = _clamp100(_stress[i] - cut)
+				add_stress(i, -cut)
 	_term_record.settle_day(self, _day)
 	_day += 1
 	_emit("day_settled", {"day": _day - 1, "stats": _stats.duplicate(true)})
@@ -1354,7 +1365,7 @@ func _apply_event(i: int, j: int, event_id: String, scale: float = 1.0) -> bool:
 		else:
 			delta = _r1(_m_state(i, negative) * _sat(e_val, axis))
 		if axis == "stress":
-			_stress[i] = _clamp100(_stress[i] + delta)
+			add_stress(i, delta)
 		else:
 			var idx := i * _n + j
 			var cur := 0.0
@@ -1404,9 +1415,9 @@ func _stress_drip() -> void:
 		if _in_conversation[i]:
 			continue
 		if _doing_study(i):
-			_stress[i] = _clamp100(_stress[i] + float(_probs["study_stress"]))
+			add_stress(i, float(_probs["study_stress"]))
 		else:
-			_stress[i] = _clamp100(_stress[i] + float(_probs["alone_stress"]))
+			add_stress(i, float(_probs["alone_stress"]))
 
 
 func _deviance_pressure() -> void:
@@ -1422,9 +1433,9 @@ func _deviance_pressure() -> void:
 		if act == null:
 			act = "study"
 		if loud.has(act) and v < 0.4:
-			_stress[i] = _clamp100(_stress[i] + k * (0.4 - v) * 10.0)
+			add_stress(i, k * (0.4 - v) * 10.0)
 		elif act == "study" and v > 0.72:
-			_stress[i] = _clamp100(_stress[i] + k * (v - 0.72) * 10.0)
+			add_stress(i, k * (v - 0.72) * 10.0)
 
 
 func _doing_study(_i: int) -> bool:
@@ -1436,7 +1447,7 @@ func _settle_sleep() -> void:
 	var relief := float(_probs.get("sleep_relief", 0.0))
 	for i in range(_n):
 		if _sleeping[i]:
-			_stress[i] = _clamp100(_stress[i] - relief)
+			add_stress(i, -relief)
 			_sleeping[i] = false
 			_busy_until[i] = 0
 			_current_act[i] = null
@@ -1461,7 +1472,7 @@ func _check_interrupt() -> void:
 			# D02 第 4 条：被打断按时间比例结算（减压与收益都已由 _fold_pending_unit 折算）；
 			# 通用打断代价仍来自 behavior_probs.csv（不再是娱乐专属的 leisure.interrupted_stress）。
 			if cost > 0.0:
-				_stress[i] = _clamp100(_stress[i] + cost)
+				add_stress(i, cost)
 			_stats["interrupts"] = int(_stats["interrupts"]) + 1
 			_interrupted_nodes.append(i)
 
@@ -2009,7 +2020,7 @@ func _interrupt_conversations() -> void:
 		for m in members:
 			var mi := int(m)
 			if int(_busy_until[mi]) > _global_tick and cost > 0.0:
-				_stress[mi] = _clamp100(_stress[mi] + cost)
+				add_stress(mi, cost)
 				_stats["interrupts"] = int(_stats.get("interrupts", 0)) + 1
 			_conv_of[mi] = null
 			_in_conversation[mi] = false
