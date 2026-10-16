@@ -5,8 +5,8 @@ param,value,unit,note
 stress_init_min,0,点,开局压力下界（0–20 随机）
 stress_init_max,20,点,开局压力上界
 vitality_equals_stress,1,标志,开局动力 = 该生开局压力（1 = 是）
-grade_init_min,150,分,开局成绩下界
-grade_init_max,450,分,开局成绩上界（与上界合计均值 300，D01 要求「确保平均成绩为 300」）
+grade_init_min,250,分,开局成绩下界
+grade_init_max,450,分,开局成绩上界（与下界合计均值 350，D01 要求确保班级平均成绩为 350）
 stat_min,0,点,压力／动力下界
 stat_max,100,点,压力／动力上界
 vitality_study_threshold,60,点,动力 > 60 → 进入学习状态（持续一个课间）
