@@ -43,6 +43,8 @@ var _mode := MODE_RUNNING
 ## 暂停拥有者集合（同名重复添加不累计，全部释放才恢复）
 var _paused_by: Dictionary = {}
 var _ended_day := 0
+## 被辞退的原因（空串 = 正常进行）—— 由日末结算写入，快照输出给界面。
+var _failure_reason := ""
 var _term_days := 0
 var _max_ticks_per_frame := 1
 ## 日末提示停留秒数（`rules/time_runtime` 的 `report_hold_seconds`；0 = 立刻自动进入次日）。
@@ -302,6 +304,7 @@ func snapshot() -> Dictionary:
 	out["remaining_seconds"] = _remaining_seconds(out) if running else 0.0
 	out["progress"] = _progress(out) if running else 0.0
 	out["ended_day"] = _ended_day
+	out["failure_reason"] = _failure_reason
 	out["term_days"] = _term_days
 	out["report_hold_seconds"] = _report_hold_seconds
 	out["player_grade"] = int(_core.grade(_core.node_count() - 1)) if _core != null else 0
@@ -328,11 +331,15 @@ func snapshot() -> Dictionary:
 func _class_grade_snapshot() -> Dictionary:
 	var total := 0.0
 	var pressure_total := 0.0
+	var motivation_total := 0.0
+	var gain_total := 0.0
 	var count := 0
 	if _core != null:
 		for index in range(_core.node_count()):
 			total += _core.grade(index)
 			pressure_total += _core.stress(index)
+			motivation_total += _core.vitality(index)
+			gain_total += _core.gain_today(index)
 			count += 1
 	var first_day := 0
 	for row in _tables.get("rules/exam", {}).get("rows", []):
@@ -348,6 +355,8 @@ func _class_grade_snapshot() -> Dictionary:
 		"student_count": count,
 		"class_average_grade": total / count if count > 0 else null,
 		"class_average_pressure": pressure_total / count if count > 0 else null,
+		"class_average_motivation": motivation_total / count if count > 0 else null,
+		"class_average_academic_gain": gain_total / count if count > 0 else null,
 		"grade_max": maximum,
 		"first_exam_day": first_day,
 	}
@@ -471,6 +480,16 @@ func _progress(snapshot_data: Dictionary) -> float:
 
 
 func _enter_report() -> void:
+	# 辞退终止（§11.4）：首次考核不达标或出现退学时，老师被辞退 —— 世界立刻停在日末，
+	# 并带上触发判据说明原因；此时不再继续下一天。
+	if _core != null:
+		var failure: String = str(_core._failure_reason())
+		if failure != "":
+			_failure_reason = failure
+			_mode = MODE_FINISHED
+			term_finished.emit(_ended_day)
+			report_ready.emit(_ended_day)
+			return
 	if _ended_day >= _term_days:
 		_mode = MODE_FINISHED
 		term_finished.emit(_ended_day)

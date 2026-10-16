@@ -296,3 +296,30 @@ func test_leisure_units_do_not_settle_during_class() -> void:
 	for _k in range(20):
 		core._settle_units()
 	assert_almost_eq(core.stress(0), 50.0, 0.0001, "上课不执行娱乐单位（不减压）")
+
+
+func test_failure_reason_reports_dropout_with_evidence() -> void:
+	var core := _core()
+	for _k in range(4):
+		core._risk.register_breakdown(3)
+	core._risk.settle_day(core, 3)
+	assert_true(core._risk.is_dropped(3), "累计第 4 次崩溃 → 退学（D06）")
+	var reason := core._failure_reason()
+	assert_ne(reason, "", "已辞退时必须给出原因")
+	assert_true(reason.contains("退学"), "原因说明触发了退学判据")
+	assert_true(reason.length() > 4, "原因附上涉及的学生，不是空泛结论")
+
+
+func test_failure_reason_reports_exam_failure_with_numbers() -> void:
+	var core := _core()
+	core._exam._means[8] = 300.0
+	core._exam._passed[8] = false
+	var reason := core._failure_reason()
+	assert_true(reason.contains("首次考核不达标"), "考核不达标时给出对应判据")
+	assert_true(reason.contains("300"), "原因给出实际均分")
+	assert_true(reason.contains("380"), "原因给出目标均分")
+
+
+func test_no_failure_reason_when_no_trigger() -> void:
+	var core := _core()
+	assert_eq(core._failure_reason(), "", "没触发任何判据时没有辞退原因")

@@ -101,6 +101,16 @@ func mean_of(day: int) -> float:
 	return float(_means.get(day, 0.0))
 
 
+## 最近一次已出分考试的班级均分（没考过返回 0）。
+func last_exam_mean() -> float:
+	var best_day := -1
+	for key in _means.keys():
+		best_day = maxi(best_day, int(key))
+	if best_day < 0:
+		return 0.0
+	return float(_means[best_day])
+
+
 ## 某次考试是否达到目标均分（未考过按达标处理，避免误报辞退）。
 func passed_of(day: int) -> bool:
 	return bool(_passed.get(day, true))

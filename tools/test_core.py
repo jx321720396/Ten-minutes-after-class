@@ -277,6 +277,23 @@ check("心结：连续 3 天后结束", knot_day.knot_days[0] == 0)
 check("心结每天压力净 −10（跨天 −20 后 +10）", abs(knot_day.Stress[0] - 20.0) < 1e-6)
 check("心结动力按一般规则同步 +10", abs(knot_day.Vitality[0] - 30.0) < 1e-6)
 
+print("=== 6e. 辞退原因（§11.4）===")
+fail = Sim(seed=12345, npc_count=8)
+for _k in range(4):
+    fail.register_breakdown(3)
+fail.settle_risk(3)
+check("触发退学判据后有失败原因", fail.failure_reason() != "")
+check("失败原因说明是退学", "退学" in fail.failure_reason())
+clean = Sim(seed=12345, npc_count=8)
+check("未触发判据时没有失败原因", clean.failure_reason() == "")
+exam_fail = Sim(seed=12345, npc_count=8)
+exam_fail.exam_means[8] = 300.0
+exam_fail.exam_passed[8] = False
+check("考核不达标的原因含判据、实际均分与目标均分",
+      "首次考核不达标" in exam_fail.failure_reason()
+      and "300" in exam_fail.failure_reason()
+      and "380" in exam_fail.failure_reason())
+
 print("=== 7. 持续学习回归（《老师版规则合并稿》D02：每 20 秒 +1 学业收益、−5 动力）===")
 study = Sim(seed=12345, npc_count=8)
 me = 0
