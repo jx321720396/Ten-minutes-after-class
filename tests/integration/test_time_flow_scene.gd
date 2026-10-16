@@ -39,7 +39,11 @@ func test_real_classroom_chat_scales_world_and_normal_event_restores_it() -> voi
 	core.set_position(me, stand.x, stand.z)
 	core.set_position(0, target.position.x, target.position.z)
 	assert_true(core.chat_pair_in_range(me, 0), "真实几何中的聊天必须成立")
+	# 2026-10-16：自动加速已删 —— 聊天不再改变世界速度，倍率只由玩家自选档位驱动。
 	core._do_chat(me, 0)
+	flow.refresh()
+	assert_eq(flow.multiplier(), 1.0, "学生忙碌不再自动加速")
+	assert_true(flow.set_speed(3.0), "玩家自选 3×")
 	flow.refresh()
 	assert_eq(flow.multiplier(), 3.0)
 	var hud: TimeHUD = scene.get_node("TimeHUD")
@@ -65,6 +69,11 @@ func test_real_classroom_chat_scales_world_and_normal_event_restores_it() -> voi
 	assert_eq(core.global_tick() - tick_before, 1, "事件期间回到一倍，世界照常运行")
 	flow.release_normal_speed(&"story_event")
 	assert_eq(flow.multiplier(), 3.0)
+	# 玩家点一次左上角时间卡片：3× → 1× → 2× → 3×（按 1→2→3 循环换档）
+	assert_eq(clock.cycle_time_scale(), 1.0, "3× 之后点一次回到 1×")
+	assert_eq(clock.cycle_time_scale(), 2.0, "再点一次到 2×")
+	assert_eq(clock.cycle_time_scale(), 3.0, "再点一次回到 3×")
+	assert_true(hud.title_line().contains("×3"), "HUD 跟着显示当前倍率")
 	clock.hold(&"pen")
 	var frozen_position := npc.position
 	walker._process(1.0)

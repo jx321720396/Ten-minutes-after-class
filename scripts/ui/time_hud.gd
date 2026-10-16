@@ -82,6 +82,9 @@ func _ready() -> void:
 	_attention_card.name = "AttentionCard"
 	_attention_card.student_requested.connect(student_profile_requested.emit)
 	add_child(_attention_card)
+	# 2026-10-16：点一下时间卡片按 1× → 2× → 3× 循环换档（键盘/触屏同一入口）。
+	if _panel != null and not _panel.gui_input.is_connected(_on_time_card_input):
+		_panel.gui_input.connect(_on_time_card_input)
 	_refresh({})
 
 
@@ -95,6 +98,18 @@ func _process(delta: float) -> void:
 		return
 	_toast_left = maxf(0.0, _toast_left - delta)
 	_toast.modulate.a = _toast_left / TOAST_SECONDS
+
+
+## 时间卡片被点/触摸一次 → 切换世界速度档位，并立即刷新卡片上的 ×N 显示。
+func _on_time_card_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton or event is InputEventScreenTouch):
+		return
+	if not event.pressed:
+		return
+	if not is_instance_valid(_clock):
+		return
+	_clock.cycle_time_scale()
+	_refresh(_clock.snapshot())
 
 
 ## 三张卡片按可用屏高统一缩放，详情弹层仍使用完整视口。
