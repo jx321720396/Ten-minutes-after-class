@@ -419,6 +419,23 @@ class Sim:
         return u / (1.0 + abs(u) / U)
 
     # ------------------------------------------------ 事件写入
+    def add_stress(self, i, delta, linked=True):
+        """压力写入的唯一入口（§4.1 一般联动）：压力 ±1 → 动力同向 ±1，各自钳制 0–100。
+
+        标注「单独」变化的效果传 linked=False（跨天继承、游戏状态减压等）；不消耗随机数。
+        """
+        if not (0 <= i < self.N):
+            return
+        self.Stress[i] = clamp100(self.Stress[i] + delta)
+        if linked:
+            self.Vitality[i] = clamp100(self.Vitality[i] + delta)
+
+    def add_vitality(self, i, delta):
+        """只改动力（§4.1「反向不成立」）：用于「单独」的动力变化，例如学习 −5 动力。"""
+        if not (0 <= i < self.N):
+            return
+        self.Vitality[i] = clamp100(self.Vitality[i] + delta)
+
     def apply_event(self, i, j, event_id, scale=1.0):
         """按统一影响公式写入：E × 关系调制 → 软饱和 → round(0.1) → clamp
 
@@ -446,7 +463,7 @@ class Sim:
             m = self.m_state(i, negative=(base < 0) == (axis in AXES))
             delta = r1(m * self.sat(e_val, axis)) if axis != "stress" else r1(self.sat(e_val, axis))
             if axis == "stress":
-                self.Stress[i] = clamp100(self.Stress[i] + delta)
+                self.add_stress(i, delta)
             else:
                 target = {"affinity": self.A, "hostility": self.H}[axis]
                 # 统一写入点：正向轴乘负反馈（越满越难涨）
@@ -846,7 +863,7 @@ class Sim:
         for conv in list(self.conversations):
             for m in list(conv["members"]):
                 if self.busy_until[m] > self.global_tick and cost > 0:
-                    self.Stress[m] = clamp100(self.Stress[m] + cost)
+                    self.add_stress(m, cost)
                     self.stats["interrupts"] = self.stats.get("interrupts", 0) + 1
                 self.conv_of[m] = None
                 self.in_conversation[m] = False
@@ -1327,11 +1344,11 @@ class Sim:
         for i in range(self.N):
             act = self.current_act[i] or "study"
             if act in loud and v < 0.4:
-                self.Stress[i] = clamp100(self.Stress[i] + k * (0.4 - v) * 10.0)
+                self.add_stress(i, k * (0.4 - v) * 10.0)
             elif act == "study" and v > 0.72:
                 # 阈值取 0.72 而非 0.6：否则"音量略高于阈"就惩罚全部学习者，
                 # 而 study 是默认行为 → 等于给全班加压力（实测会把爆发从 20 推到 70+）
-                self.Stress[i] = clamp100(self.Stress[i] + k * (v - 0.72) * 10.0)
+                self.add_stress(i, k * (v - 0.72) * 10.0)
 
     # ------------------------------------------------ 主循环
     def stress_drip(self):
@@ -1341,9 +1358,9 @@ class Sim:
             if self.in_conversation[i]:
                 continue                      # 参与互动者已由 topic_stress 减压
             if self.doing_study(i):
-                self.Stress[i] = clamp100(self.Stress[i] + self.probs["study_stress"])
+                self.add_stress(i, self.probs["study_stress"])
             else:
-                self.Stress[i] = clamp100(self.Stress[i] + self.probs["alone_stress"])
+                self.add_stress(i, self.probs["alone_stress"])
 
     @staticmethod
     def doing_study(i):
@@ -1359,7 +1376,7 @@ class Sim:
         relief = self.probs.get("sleep_relief", 8.0)
         for i in range(self.N):
             if self.sleeping[i]:
-                self.Stress[i] = clamp100(self.Stress[i] - relief)
+                self.add_stress(i, -relief)
                 self.sleeping[i] = False
                 self.busy_until[i] = 0
                 self.current_act[i] = None
@@ -1387,7 +1404,7 @@ class Sim:
                 self.busy_until[i] = 0
                 self.busy_phase[i] = -1
                 if cost > 0:
-                    self.Stress[i] = clamp100(self.Stress[i] + cost)
+                    self.add_stress(i, cost)
                 self.stats["interrupts"] = self.stats.get("interrupts", 0) + 1
                 interrupted.append(i)
         return interrupted
@@ -1481,16 +1498,16 @@ class Sim:
                 while self.settle_acc[i] >= study_seconds:
                     self.settle_acc[i] -= study_seconds
                     self.GainToday[i] += self.acts["study_gain"]
-                    self.Vitality[i] = clamp100(self.Vitality[i] - self.acts["study_vitality_cost"])
+                    self.add_vitality(i, -self.acts["study_vitality_cost"])
             elif kind == "play":
                 while self.settle_acc[i] >= play_seconds:
                     self.settle_acc[i] -= play_seconds
                     self.GainToday[i] += self.acts["play_gain"]
-                    self.Stress[i] = clamp100(self.Stress[i] - self.acts["play_relief"])
+                    self.add_stress(i, -self.acts["play_relief"], False)
             else:
                 while self.settle_acc[i] >= unit_seconds:
                     self.settle_acc[i] -= unit_seconds
-                    self.Stress[i] = clamp100(self.Stress[i] - self.acts["relief_per_unit"])
+                    self.add_stress(i, -self.acts["relief_per_unit"])
 
     def fold_pending_unit(self, i):
         """未完成单位折算（D02 第 4 条）：压力每 2 秒 1 点，学业收益只按整数单位计。"""
@@ -1503,7 +1520,7 @@ class Sim:
             return
         relief = math.floor(pending / per_point)
         if relief > 0:
-            self.Stress[i] = clamp100(self.Stress[i] - relief)
+            self.add_stress(i, -relief)
 
     def start_play_activity(self, i):
         """游戏状态（D01 / D02）：固定用「玩手机」作为表现层动作（结算走 play 口径）。
@@ -1544,7 +1561,7 @@ class Sim:
             studying = sum(1 for j in self.neighbor_idx[i]
                            if self.unit_kind(j) == "study")
             if studying > 0:
-                self.Stress[i] = clamp100(self.Stress[i] + drip * studying)
+                self.add_stress(i, drip * studying)
                 self.stats["neighbor_drip"] = self.stats.get("neighbor_drip", 0) + studying
 
     # ------------------------------------------------ 风险与伤害（D06 / D07）
@@ -1671,11 +1688,11 @@ class Sim:
 
     def apply_harm(self, from_i, to_i, kind):
         if kind == "shove":
-            self.Stress[to_i] = clamp100(self.Stress[to_i] + self.harm["shove_target_stress"])
+            self.add_stress(to_i, self.harm["shove_target_stress"])
             self.add_hostility(to_i, from_i, self.harm["shove_hostility_gain"])
             self.interrupt_activity(to_i)
         else:
-            self.Stress[to_i] = clamp100(self.Stress[to_i] + self.harm["aggression_target_stress"])
+            self.add_stress(to_i, self.harm["aggression_target_stress"])
             self.add_hostility(to_i, from_i, self.harm["aggression_hostility_gain"])
         self.harm_events.append(
             {"kind": kind, "from": from_i, "to": to_i, "tick": int(self.global_tick)}
@@ -2009,7 +2026,7 @@ class Sim:
             severity = clamp((s - th) / (100.0 - th), 0.0, 1.0)
             if self.rng.random() >= pmax * severity:
                 continue
-            self.Stress[i] = clamp100(s - 40)
+            self.add_stress(i, -40)
             if tag:
                 self.knot_days[i] = max(self.knot_days[i],
                                         int(round(float(tag["days"]) * (1.0 + severity))))
@@ -2023,8 +2040,8 @@ class Sim:
         carry_stress = self.psyche["carry_stress_cut"]
         carry_vitality = self.psyche["carry_vitality_cut"]
         for i in range(self.N):
-            self.Stress[i] = clamp100(self.Stress[i] - carry_stress)
-            self.Vitality[i] = clamp100(self.Vitality[i] - carry_vitality)
+            self.add_stress(i, -carry_stress, False)
+            self.add_vitality(i, -carry_vitality)
             self.Grade[i] = max(0.0, min(self.kp["grade_max"], self.Grade[i] + self.GainToday[i]))
             self.GainToday[i] = 0.0
         self.try_burst()                      # 每日一次：压力爆发按概率判定
@@ -2035,7 +2052,7 @@ class Sim:
         # 「心结」：爆发后的 3 天里，每天先加 5 点压力（长线心理创伤，§3.5）
         for i in range(self.N):
             if self.knot_days[i] > 0:
-                self.Stress[i] = clamp100(self.Stress[i] + float(self.status_tags["heart_knot"]["daily_stress"]))
+                self.add_stress(i, float(self.status_tags["heart_knot"]["daily_stress"]))
                 self.knot_days[i] -= 1
         for i in range(self.N):
             for j in range(self.N):
@@ -2049,11 +2066,11 @@ class Sim:
         # D05 第 4 条：考试前一天全班压力 +20；考试结束全班压力 −30。
         if self.is_exam_eve(self.day):
             for i in range(self.N):
-                self.Stress[i] = clamp100(self.Stress[i] + self.exam_pre_bonus)
+                self.add_stress(i, self.exam_pre_bonus)
         self.settle_exam(self.day)
         if self.is_exam_day(self.day):
             for i in range(self.N):
-                self.Stress[i] = clamp100(self.Stress[i] - self.exam_post_cut)
+                self.add_stress(i, -self.exam_post_cut)
         self.day += 1
 
     # ------------------------------------------------ 报告
