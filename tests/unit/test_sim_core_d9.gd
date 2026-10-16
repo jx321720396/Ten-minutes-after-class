@@ -97,7 +97,7 @@ func test_same_seed_same_result() -> void:
 
 
 # ------------------------------------------------------------------ 压力爆发（D9，§3.5）
-func test_stress_burst_drops_stress_and_sets_knot() -> void:
+func test_stress_burst_drops_stress_without_knot() -> void:
 	var core := _core()
 	core._probs["burst_p_max"] = 1.0  # 强制必爆（severity=1.0 → p=1.0，random()<1.0 恒真）
 	var stress := core._stress
@@ -105,15 +105,6 @@ func test_stress_burst_drops_stress_and_sets_knot() -> void:
 	core._stress = stress
 	core._try_burst()
 	assert_almost_eq(core._stress[0], 60.0, 0.001, "爆发后压力回落 40（100 → 60）")
-	assert_eq(core._knot_days[0], 6, "severity=1.0 → 心结 3×(1+1)=6 天")
+	assert_eq(core._knot_days[0], 0, "心结不再由爆发给出（§5.3 改为崩溃时本人与正交邻座获得）")
 	assert_eq(core._stats["bursts"], 1, "bursts 计数 +1")
 
-
-func test_spread_knot_contagion_prefers_strong_relations() -> void:
-	var core := _core()
-	var a := core._a
-	a[1] = 90.0  # node 0 → 1 关系最鲜明（|90−0|=90）
-	core._a = a
-	core._spread_knot(0, 0.0)  # severity=0 → days_eff=3，pool 只取 ratio=0.25 里的最强关系
-	assert_eq(core._knot_days[1], 3, "关系最鲜明者被波及（心结 3 天）")
-	assert_eq(core._knot_days[2], 0, "泛泛之交不受波及")

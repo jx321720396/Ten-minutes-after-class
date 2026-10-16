@@ -138,6 +138,8 @@ var _last_finished: Array = []
 var _pos_x: Array = []
 var _pos_z: Array = []
 var _knot_days: Array = []
+## 崩溃休息锁（§5.3）：崩溃当天只睡觉、不学习不社交、不参加座位结算；次日跨天时特殊恢复并解除。
+var _resting: Array = []
 var _vol_log: Array = []
 var _day_events: Dictionary = {}
 var _settled: Dictionary = {}
@@ -363,6 +365,7 @@ func _reset_runtime(n: int) -> void:
 		_snack_provider.append(null)
 		_joined_tick.append(-1)
 		_knot_days.append(0)
+		_resting.append(false)
 
 
 # ------------------------------------------------------------------ 初始化关系
@@ -803,34 +806,37 @@ func _fold_pending_unit(i: int) -> void:
 ## 压力 <70 → 恢复，下一个正常决策点按动力选择活动。一次连续崩溃只计一次。
 ## 待确认（合并稿未定）：自然恢复方式、安抚幅度与耗时 —— 本实现不额外减压。
 func _check_breakdown() -> void:
+## 崩溃与恢复（§5.3，2026-10-16）：压力 > 阈值进入崩溃休息 —— 当天只睡觉、不学习不社交、
+## 不参加座位结算；**次日跨天时**特殊恢复（压力／动力各减固定值）并解除。旧「压力 <70 即时恢复」出口已废止。
 	var enter := float(_psyche["breakdown_enter_stress"])
-	var recover := float(_psyche["breakdown_exit_stress"])
+	var knot_days := int(float(_status_tags["heart_knot"]["days"]))
 	for i in range(_n):
-		if not _broken[i] and _stress[i] > enter:
-			_broken[i] = true
-			_fold_pending_unit(i)
-			_current_act[i] = null
-			_busy_act[i] = null
-			_busy_phase[i] = -1
-			_busy_until[i] = 0
-			_sleeping[i] = false
-			if _phase_state.size() > i:
-				_phase_state[i] = "broken"
-			_stats["breakdowns"] = int(_stats.get("breakdowns", 0)) + 1
-			# D06：每人累计崩溃次数（退学判据）——「同一事件同时触发风险与崩溃」的先后仍待裁定，
-			# 这里按事件实际发生登记，不额外回溯。
-			if _risk != null:
-				_risk.register_breakdown(i)
-			_emit("event_happened", {"kind": "breakdown", "i": i})
-		elif _broken[i] and _stress[i] < recover:
-			_broken[i] = false
-			if _phase_state.size() > i:
-				_phase_state[i] = "free"
-			_emit("event_happened", {"kind": "breakdown_recovered", "i": i})
+		if _broken[i] or _stress[i] <= enter:
+			continue
+		_broken[i] = true
+		_resting[i] = true
+		_fold_pending_unit(i)
+		_current_act[i] = null
+		_busy_act[i] = null
+		_busy_phase[i] = -1
+		_busy_until[i] = 0
+		# 崩溃休息：当天只睡觉。这种睡觉不作为邻座学习来源，也不产生学业收益（见 _unit_kind）。
+		_sleeping[i] = true
+		if _phase_state.size() > i:
+			_phase_state[i] = "broken"
+		_stats["breakdowns"] = int(_stats.get("breakdowns", 0)) + 1
+		if _risk != null:
+			_risk.register_breakdown(i)
+		# 心结（§5.3）：本人与当时固定座位的前后左右邻座获得，不含对角、不遍及全班；
+		# 记录当时对象，之后换座不转移标签。重复获得只刷新天数，不叠层。
+		_knot_days[i] = knot_days
+		_emit("tag_changed", {"id": i, "tag": "heart_knot"})
+		for j in _neighbor_idx[i]:
+			_knot_days[int(j)] = knot_days
+			_emit("tag_changed", {"id": int(j), "tag": "heart_knot"})
+		_emit("event_happened", {"kind": "breakdown", "i": i})
 
 
-## 邻座涓流（D01「周围有人学习 +5 压力」/ D04「每课间末读一次状态结算一次」）：
-## 周围 = 前后左右邻座（不含对角），效果可叠加；同一时点一次处理，不每秒重复累加。
 func _settle_neighbor_drip() -> void:
 	var drip := float(_acts["neighbor_study_stress"])
 	for i in range(_n):
@@ -885,7 +891,7 @@ func _seat_relation_between(i: int, j: int) -> String:
 
 
 ## 座位基础关系结算（D04 / §8.2、§8.4）：每个课间末读一次状态，结算一次。
-## 正交邻座双方好感 +1、对角不加、一圈以外双方 −1；学习者的正交娱乐邻座敌对 +5（不反向）。
+## 正交邻座双方好感 +2、对角不加、一圈以外双方 −1；学习者的正交娱乐邻座敌对 +5（不反向）。
 ## 只在不同学生之间写入，不对自身关系增减。
 func _settle_seat_relations() -> void:
 	var orth := float(_seat_rel.get("orthogonal_h", 0.0))
@@ -1029,11 +1035,12 @@ func _emit(type: String, payload: Dictionary) -> void:
 ##   p = burst_p_max × severity，severity = (stress − θ) / (100 − θ)。
 ## severity 同时放大波及范围与心结时长 —— 「拖得越久、压力越高、爆得越大」。
 func _try_burst() -> void:
+## 概率爆发（§8.3）：压力跨过阈值后每天判定一次，p = burst_p_max × severity。
+## 心结**不再**由爆发给出（§5.3 改为崩溃时本人与正交邻座获得），这里只做减压与统计。
 	var th := float(_thresholds_lookup.get("burst_stress", 70.0))
 	var pmax := float(_probs.get("burst_p_max", 0.0))
 	if pmax <= 0.0:
 		return
-	var tag: Dictionary = _status_tags.get("heart_knot", {})
 	for i in range(_n):
 		var s := _stress[i]
 		if s < th:
@@ -1042,17 +1049,11 @@ func _try_burst() -> void:
 		if _rng.random() >= pmax * severity:
 			continue
 		add_stress(i, -40.0)
-		if not tag.is_empty():
-			_knot_days[i] = maxi(_knot_days[i], _rint(float(tag["days"]) * (1.0 + severity)))
-			_emit("tag_changed", {"id": i, "tag": "heart_knot"})
-		_spread_knot(i, severity)
 		_stats["bursts"] = int(_stats["bursts"]) + 1
 		_emit("stress_burst", {"i": i})
 		_emit("event_happened", {"kind": "burst", "i": i, "severity": severity})
 
 
-## 爆发传染：把「心结」扩散给与 i 关系最鲜明的少数人（|A − H| 越大越容易被波及）。
-## 关系最鲜明者优先（稳定排序等价 Python list.sort：键值相同按 j 升序）。
 func _spread_knot(i: int, severity: float) -> void:
 	var tag: Dictionary = _status_tags.get("heart_knot", {})
 	if tag.is_empty():
@@ -1205,10 +1206,24 @@ func _is_exam_only_day() -> bool:
 func _settle_day() -> void:
 	var carry_stress := float(_psyche["carry_stress_cut"])
 	var carry_vitality := float(_psyche["carry_vitality_cut"])
+	var rest_stress_cut := float(_psyche["breakdown_rest_stress_cut"])
+	var rest_vitality_cut := float(_psyche["breakdown_rest_vitality_cut"])
 	var grade_max := float(_kp["grade_max"])
 	for i in range(_n):
-		add_stress(i, -carry_stress, false)
-		_vitality[i] = _clamp100(_vitality[i] - carry_vitality)
+		if _resting[i]:
+			# §5.3：崩溃后次日特殊恢复 —— 压力／动力各减固定值，替代普通跨天的 −20／−10；
+			# 不重复扣除，也不因这次减压额外联动一次动力（两者各自单独）。
+			add_stress(i, -rest_stress_cut, false)
+			add_vitality(i, -rest_vitality_cut)
+			_broken[i] = false
+			_resting[i] = false
+			_sleeping[i] = false
+			if _phase_state.size() > i:
+				_phase_state[i] = "free"
+			_emit("event_happened", {"kind": "breakdown_recovered", "i": i})
+		else:
+			add_stress(i, -carry_stress, false)
+			add_vitality(i, -carry_vitality)
 		_grade[i] = clampf(_grade[i] + _gain_today[i], 0.0, grade_max)
 		_gain_today[i] = 0.0
 	_try_burst()
