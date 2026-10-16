@@ -367,6 +367,11 @@ check("psych：压力 / 动力范围与阈值合法",
       and _ps["stat_min"] == 0 and _ps["stat_max"] == 100
       and _ps["vitality_play_threshold"] < _ps["vitality_study_threshold"]
       and _ps["breakdown_exit_stress"] < _ps["breakdown_enter_stress"])
+check("psyche：上课段学习阈值为正且不高于课间阈值",
+      0 < _ps.get("vitality_class_study_threshold", 0)
+      <= _ps.get("vitality_study_threshold", 0),
+      "上课阈值 %s / 课间阈值 %s"
+      % (_ps.get("vitality_class_study_threshold"), _ps.get("vitality_study_threshold")))
 check("psyche：跨天继承与联动标志存在",
       all(k in _ps for k in ("carry_stress_cut", "carry_vitality_cut", "vitality_equals_stress")))
 _grows = load("rules/grade_table.csv")

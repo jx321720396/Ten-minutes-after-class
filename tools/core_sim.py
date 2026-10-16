@@ -1483,8 +1483,9 @@ class Sim:
 
     def settle_units(self):
         """单位结算（D02）：按秒累计，每满一个单位结算一次；只对课间生效。"""
-        if self.phase != "break":
-            return
+        # D02 + 2026-10-16 裁定：学习单位在任何段都结算（上课也积累学业收益）；
+        # 娱乐 / 游戏状态只在课间结算（规格：上课不执行课间事件）。
+        in_break = self.phase == "break"
         study_seconds = self.acts["study_settle_seconds"]
         play_seconds = self.acts["play_settle_seconds"]
         unit_seconds = self.acts["unit_seconds"]
@@ -1492,6 +1493,9 @@ class Sim:
             kind = self.unit_kind(i)
             if kind == "":
                 self.settle_acc[i] = 0.0
+                continue
+            if kind != "study" and not in_break:
+                self.settle_acc[i] = 0.0  # 上课段只结算学习
                 continue
             self.settle_acc[i] += 1.0
             if kind == "study":
@@ -1858,13 +1862,21 @@ class Sim:
         self.stats["seat_settles"] = self.stats.get("seat_settles", 0) + 1
 
     def begin_phase_state(self):
-        """段首状态判定（D01）：动力 >60 学习、<30 游戏、之间自由；崩溃者停摆。"""
+        """段首状态判定（D01 + 2026-10-16 上课段裁定）。
+
+        课间：动力 >60 学习、<30 游戏、之间自由；崩溃者停摆。
+        上课：动力 > 上课阈值（30）→ 学习，否则自由（**不进入游戏状态**）；只在段首判定一次，
+        进入学习后本段**粘性**，中途动力跌破阈值也不退出。
+        """
         study_threshold = self.psyche["vitality_study_threshold"]
         play_threshold = self.psyche["vitality_play_threshold"]
+        class_threshold = self.psyche["vitality_class_study_threshold"]
         for i in range(self.N):
             self.settle_acc[i] = 0.0
             if self.Broken[i]:
                 self.phase_state[i] = "broken"
+            elif self.phase == "class":
+                self.phase_state[i] = "study" if self.Vitality[i] > class_threshold else "free"
             elif self.phase != "break":
                 self.phase_state[i] = "free"
             elif self.Vitality[i] > study_threshold:
