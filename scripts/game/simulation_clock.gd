@@ -32,6 +32,7 @@ const PHASES_TABLE := "rules/phases"
 const SETTLE_KIND := "settle"
 
 var _core: SimCore = null
+var _risk_attention := preload("res://scripts/game/risk_attention_snapshot.gd").new()
 var _tables: Dictionary = {}
 ## phase_id → 实时标称时长（秒）
 var _phase_seconds: Dictionary = {}
@@ -262,6 +263,21 @@ func continue_after_report() -> bool:
 	return true
 
 
+## 玩家在时间卡片上点一次：循环 1× → 2× → 3× → 1×。
+## 老师版没有自动加速，倍率只由这里（或 set_speed）改变；暂停另有时钟 hold 一条来源。
+func cycle_time_scale() -> float:
+	if not is_instance_valid(_time_flow):
+		return 1.0
+	var scale := float(_time_flow.cycle_speed())
+	time_updated.emit(snapshot())
+	return scale
+
+
+## 当前可选档位数（1× … N×），供界面按需展示。
+func time_scale_options() -> int:
+	return int(_time_flow.speed_options()) if is_instance_valid(_time_flow) else 1
+
+
 ## 只读快照：内核时间字段 + 时钟自身状态（mode / paused / remaining_seconds / progress / ended_day）。
 func snapshot() -> Dictionary:
 	var out: Dictionary = {}
@@ -291,6 +307,8 @@ func snapshot() -> Dictionary:
 	out["player_grade"] = int(_core.grade(_core.node_count() - 1)) if _core != null else 0
 	out.merge(_class_grade_snapshot())
 	out.merge(_attention_snapshot())
+	if _core != null:
+		out["risk_attention"] = _risk_attention.build(_core, _tables)
 	out["volume"] = _core.volume() if _core != null else 0.0
 	for row in _tables.get("rules/environment", {}).get("rows", []):
 		if row["param"] in ["volume_max", "volume_threshold"]:

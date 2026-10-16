@@ -342,10 +342,10 @@ check("movement.nav_cell_size ≤ player_radius",
 _time_flow = params("rules/time_flow.csv")
 check("时间流速：正常倍率必须为 1", _time_flow.get("normal_scale", 0.0) == 1.0,
       _time_flow.get("normal_scale"))
-check("时间流速：行动倍率有限且不小于正常倍率",
-      math.isfinite(_time_flow.get("player_action_scale", 0.0))
-      and _time_flow.get("player_action_scale", 0.0) >= _time_flow.get("normal_scale", 1.0),
-      _time_flow.get("player_action_scale"))
+check("时间流速：可选档位数为不小于 1 的整数",
+      float(_time_flow.get("speed_options", 0)).is_integer()
+      and _time_flow.get("speed_options", 0) >= 1,
+      _time_flow.get("speed_options"))
 
 # 14. 学业系统（§17.1）：成绩轴初始化常量 + 涓流分段表（2026-10-16：分布改由 rules/psyche.csv 给出）
 _kp = params("rules/kernel_params.csv")
@@ -472,9 +472,6 @@ check("老师：巡查点按先后顺序且在课间内", 0 < _teacher["visit_ch
 check("老师：没收只收正在读的一本", _teacher["confiscate_books_per_catch"] == 1)
 
 
-for key in ("study_speed_interval_seconds", "study_speed_step"):
-    check("时间流速：学习提速参数 " + key + " 为有限正数",
-          math.isfinite(_time_flow.get(key, 0.0)) and _time_flow.get(key, 0.0) > 0.0)
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)

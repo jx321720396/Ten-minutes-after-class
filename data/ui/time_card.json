@@ -31,6 +31,7 @@
     "lunch_break": "第二课间",
     "afternoon_break": "第三课间"
   },
+  "speed_hint": "点一下切换速度（1× → 2× → 3×）",
   "messages": {
     "break_remaining": "课间剩余",
     "class_remaining": "课堂剩余",
