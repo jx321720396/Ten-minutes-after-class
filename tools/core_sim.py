@@ -1794,6 +1794,18 @@ class Sim:
     def is_dropped_out(self, i):
         return 0 <= i < self.N and self.dropped[i]
 
+    def failure_reason(self):
+        """老师被辞退的原因（空串 = 尚未辞退）；与 GDScript 同口径。"""
+        if any(self.dropped):
+            return "退学：有学生累计崩溃超过 3 次，或正式触发霸凌／孤立后再次崩溃"
+        if not self.last_exam_passed():
+            best_day = max(self.exam_means) if self.exam_means else 0
+            return (
+                "首次考核不达标：全班均分 %d，低于目标均分 %d"
+                % (int(round(self.exam_means.get(best_day, 0.0))), int(round(self.exam_target_mean)))
+            )
+        return ""
+
     def class_failed(self):
         """老师是否被辞退：首次考核不达标（D05）或出现退学（D06）。"""
         if any(self.dropped):

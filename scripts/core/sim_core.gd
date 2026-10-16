@@ -1002,6 +1002,12 @@ func apply_seat_change(a: int, b: int) -> void:
 	var tmp: Variant = _seat_of[a]
 	_seat_of[a] = _seat_of[b]
 	_seat_of[b] = tmp
+	# Geometry is indexed by student too; it must follow their new assigned seats.
+	for geometry in [_seat_world, _seat_world_positions]:
+		if geometry.has(a) and geometry.has(b):
+			var previous: Variant = geometry[a]
+			geometry[a] = geometry[b]
+			geometry[b] = previous
 	_build_neighbor_idx()
 	_emit("event_happened", {"kind": "seat_changed", "a": a, "b": b})
 
@@ -1137,7 +1143,7 @@ func _shares_activity(i: int, j: int) -> bool:
 
 ## 学生是否在办公室（D07：在办公室期间不参与伤害）。
 func _is_in_office(i: int) -> bool:
-	return _teacher_commands.called_index() == i
+	return _teacher_commands.called_index() == i and not _teacher_commands.is_held()
 
 
 ## 老师制止（D07 §10）：老师完成现场制止 / 调解，或把伤害参与者召唤到办公室后，
@@ -1187,6 +1193,26 @@ func _risk_snapshot() -> Dictionary:
 
 func _is_dropped_out(i: int) -> bool:
 	return _risk != null and _risk.is_dropped(i)
+
+
+## 老师被辞退的**原因**（空串 = 尚未辞退）。§11.4 要求失败必须说明触发了哪个判据，
+## 并附上可查的证据（哪些学生退学、考核均分与目标的差距），不做无证据的随机辞退。
+func _failure_reason() -> String:
+	if _risk != null and _risk.has_dropout():
+		var names := _alias_list()
+		var who: PackedStringArray = PackedStringArray()
+		for i in range(_n):
+			if _risk.is_dropped(i):
+				who.append(str(names[i]) if i < names.size() else "某同学")
+		for i in range(_n):
+			if _risk.is_dropped(i):
+				return "退学：%s 累计崩溃超过 3 次，或正式触发霸凌／孤立后再次崩溃" % "、".join(who)
+	if _exam != null and not _exam.last_passed():
+		return (
+			"首次考核不达标：第八天全班均分 %d，低于目标均分 %d"
+			% [int(round(_exam.last_exam_mean())), int(round(_exam.target_mean()))]
+		)
+	return ""
 
 
 ## 老师是否被辞退：首次考核不达标（D05）或出现退学（D06）。
@@ -1665,7 +1691,13 @@ func _decide_and_act() -> void:
 		order.append(_k)
 	_rng.shuffle(order)
 	for i in order:
-		if _sleeping[i] or busy[i] or _global_tick < _busy_until[i] or is_moving(i):
+		if (
+			not is_present(i)
+			or _sleeping[i]
+			or busy[i]
+			or _global_tick < _busy_until[i]
+			or is_moving(i)
+		):
 			continue
 		_in_conversation[i] = false
 		# 段首状态（D01）：学习状态整课间学习、游戏状态整课间娱乐，且不被拉朋友规则改变；
@@ -1740,9 +1772,9 @@ func _decide_and_act() -> void:
 	_invite_friends_pass()
 
 
-## 节点此刻是否在教室里（§10.4）—— 老师版没有「玩家出门」，恒为 true（越界返回 false）。
+## 节点此刻是否在教室里；召唤／办公室／返程期间离场，上课挂起时回到课堂。
 func is_present(i: int) -> bool:
-	return i >= 0 and i < _n
+	return i >= 0 and i < _n and not _is_in_office(i)
 
 
 func inventory_of(i: int) -> Dictionary:
