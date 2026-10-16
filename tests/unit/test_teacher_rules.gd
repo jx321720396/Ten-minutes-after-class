@@ -174,16 +174,15 @@ func test_knot_raises_stress_and_vitality_daily_for_three_days() -> void:
 	assert_almost_eq(core.vitality(0), 30.0, 0.0001, "动力按一般规则同步 +10")
 
 
-func test_teacher_summon_and_office_chat_timings() -> void:
+func test_teacher_summon_arrives_instantly_then_office_chat_timings() -> void:
 	var core := _core()
 	var tc := core.teacher_commands()
 	assert_true(tc.summon(core, 3), "可以召唤一名学生（D03）")
-	assert_eq(tc.remaining_seconds(), 10, "召唤 10 秒到达（D03）")
+	assert_eq(tc.remaining_seconds(), 0, "召唤即时到达，不再等待路程（2026-10-16 裁定）")
+	assert_eq(tc.current_command(), "", "召唤当场完成")
+	assert_true(core._is_in_office(3), "被召唤的学生立刻在办公室")
 	assert_false(tc.summon(core, 5), "办公室同时只能召唤一名学生（D03）")
-	for _t in range(10):
-		tc.tick(core)
-	assert_eq(tc.current_command(), "", "10 秒后到达")
-	assert_true(tc.office_chat(core, "scold"), "到达后可以开始办公室聊天")
+	assert_true(tc.office_chat(core, "scold"), "到达后可以立即开始办公室聊天")
 	assert_eq(tc.remaining_seconds(), 20, "办公室聊天统一 20 秒（D03）")
 	var before := core.stress(3)
 	for _t in range(20):
@@ -205,7 +204,8 @@ func test_teacher_enter_classroom_once_per_break() -> void:
 func test_teacher_command_deferred_by_class() -> void:
 	var core := _core()
 	var tc := core.teacher_commands()
-	assert_true(tc.summon(core, 2))
+	assert_true(tc.summon(core, 2), "召唤即时到达（2026-10-16 裁定）")
+	assert_true(tc.office_chat(core, "scold"), "到达后立即开始 20 秒的办公室聊天")
 	tc.tick(core)
 	var remaining := tc.remaining_seconds()
 	tc.begin_class(core)
@@ -323,3 +323,14 @@ func test_failure_reason_reports_exam_failure_with_numbers() -> void:
 func test_no_failure_reason_when_no_trigger() -> void:
 	var core := _core()
 	assert_eq(core._failure_reason(), "", "没触发任何判据时没有辞退原因")
+
+
+func test_summon_is_immediately_sendable() -> void:
+	var core := _core()
+	var tc := core.teacher_commands()
+	assert_true(tc.summon(core, 2), "召唤即到（2026-10-16 裁定）")
+	assert_true(core._is_in_office(2), "学生立刻在办公室")
+	assert_true(tc.send_back(core), "无需等待即可遣返")
+	for _t in range(10):
+		tc.tick(core)
+	assert_false(core._is_in_office(2), "遣返完成后回到教室")

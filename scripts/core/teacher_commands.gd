@@ -67,17 +67,26 @@ func is_held() -> bool:
 # ------------------------------------------------------------------ 命令入口
 ## 召唤（D03 第 1 条）：一次只能叫一名学生；已在办公室的学生不重复召唤。
 func summon(core: Variant, index: int) -> bool:
-	if _held or _command != "" or index < 0 or index >= int(core.node_count()):
+	if _held or _command != "" or _called >= 0 or index < 0 or index >= int(core.node_count()):
 		return false
-	_command = "summon"
-	_remaining = int(_timing["summon_travel_seconds"])
+	core.interrupt_for_seat_change(index)
 	_called = index
+	var travel := int(_timing["summon_travel_seconds"])
+	if travel <= 0:
+		# 2026-10-16 裁定：叫同学来不再等待路程，学生**直接到办公室**（即时完成）。
+		# 学生从召唤发起时就已在办公室（见 _is_in_office），完成后即可谈话／遣返。
+		_command = ""
+		_remaining = 0
+		core._note_stopped(index)
+		return true
+	_command = "summon"
+	_remaining = travel
 	return true
 
 
 ## 遣返回教室（D03 第 1 条）：上课前剩余时间不足返程秒数时直接返回，不等完整流程。
 func send_back(core: Variant) -> bool:
-	if _command != "office_chat" and _command != "summon":
+	if _held or _called < 0 or _command != "":
 		return false
 	_command = "send_back"
 	var back := int(_timing["send_back_seconds"])
@@ -91,7 +100,7 @@ func send_back(core: Variant) -> bool:
 ## 办公室聊天（D03 第 2 条）：安抚 / 训斥 / 打听 / 鼓励统一耗时 20 秒；训斥按 D01 加压 +20。
 ## 参数 `_core` 保留为统一调用签名（与 summon / send_back 一致），本命令当下不需读内核状态。
 func office_chat(_core: Variant, kind: String) -> bool:
-	if _held or _command != "" and _command != "summon":
+	if _held or _command != "" or kind not in ["comfort", "scold", "ask", "encourage"]:
 		return false
 	if _called < 0:
 		return false
@@ -104,7 +113,7 @@ func office_chat(_core: Variant, kind: String) -> bool:
 ## 老师调解（D07）：任一方向敌对 >50 才执行（否则调用方不应扣耗时）；
 ## 完成后双方敌对各 −5，不抹去风险历史、不自动修复无冲突的敌对。
 func mediate(core: Variant, a: int, b: int) -> bool:
-	if _held or _command != "":
+	if _held or _command != "" or _called >= 0:
 		return false
 	if a < 0 or b < 0 or a == b or a >= int(core.node_count()) or b >= int(core.node_count()):
 		return false
@@ -126,7 +135,7 @@ func scold_class(core: Variant) -> void:
 
 ## 去教室（D03 第 3 条）：即时，不设固定耗时；每个课间首次进入 → 全班压力 +5（同一课间不重复）。
 func enter_classroom(core: Variant) -> bool:
-	if _entered_this_break:
+	if _held or _entered_this_break:
 		return false
 	_entered_this_break = true
 	var delta := float(_acts["teacher_enter_stress"])
@@ -137,7 +146,7 @@ func enter_classroom(core: Variant) -> bool:
 
 ## 调座位（D03 第 4 / 5 / 6 条）：发起后 10 秒生效；发起时打断参与者当前行为。
 func start_seat_change(core: Variant, a: int, b: int) -> bool:
-	if _held or _command != "":
+	if _held or _command != "" or _called >= 0:
 		return false
 	if a < 0 or b < 0 or a == b:
 		return false
