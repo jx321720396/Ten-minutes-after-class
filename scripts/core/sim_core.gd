@@ -165,6 +165,8 @@ var _psyche: Dictionary = {}
 var _acts: Dictionary = {}
 var _seat_rel: Dictionary = {}
 var _harm_events: RefCounted  # 伤害事件（D07），脚本见 harm_events.gd
+## D07 §10：本课间被老师制止（现场制止 / 调解 / 召唤到办公室）的学生，不能主动伤害。
+var _phase_stopped: Array = []
 var _risk: RefCounted  # 风险判定 / 预警 / 退学（D06），脚本见 risk_monitor.gd
 
 
@@ -498,7 +500,8 @@ func _begin_phase() -> void:
 	var row: Dictionary = _active_phases[_phase_index]
 	_phase = str(row["kind"])
 	_tick_in_phase = 0
-	# D07 §10：每课间重置「主动伤害一次」的计数。
+	# D07 §10：每课间重置「主动伤害一次」与「被老师制止」的名单。
+	_phase_stopped = []
 	if _harm_events != null:
 		_harm_events.begin_phase(_n)
 	# D03：课间开始恢复挂起命令与「首次进教室」机会；上课开始则把未完成命令挂起。
@@ -1115,12 +1118,18 @@ func _is_in_office(i: int) -> bool:
 	return _teacher_commands.called_index() == i
 
 
-## 老师制止（D07 §10）：本课间被老师单独处理过的学生不能再发起伤害。
-## 「制止」的具体范围合并稿未细化 —— 当前按「本课间被召唤到办公室」判定，列在待确认项。
+## 老师制止（D07 §10）：老师完成现场制止 / 调解，或把伤害参与者召唤到办公室后，
+## 涉及的学生本课间不能再主动伤害；仅仅进入教室不算制止、也不让全班自动停手。
 func _is_stopped_by_teacher(i: int) -> bool:
-	if _teacher_commands == null:
-		return false
-	return _teacher_commands.called_index() == i
+	return _phase_stopped.has(i)
+
+
+## 登记「本课间被老师制止」的学生（由 TeacherCommands 在命令完成时调用）。
+func _note_stopped(i: int) -> void:
+	if i < 0 or i >= _n:
+		return
+	if not _phase_stopped.has(i):
+		_phase_stopped.append(i)
 
 
 ## 学习锁定（D07：处于学习状态或正在学习的学生不参与伤害）。

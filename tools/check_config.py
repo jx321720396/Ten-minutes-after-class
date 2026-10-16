@@ -430,9 +430,9 @@ check("D07：恶语门槛 40 / 推搡门槛 70（且推搡更高）",
       _harm_cfg.get("aggression_hostility_threshold", -1) == 40
       and _harm_cfg.get("shove_hostility_threshold", -1) == 70)
 check("D07：伤害检查间隔为 10 秒", _harm_cfg.get("check_seconds", -1) == 10)
-check("D07：触发概率在 (0,1]",
-      0 < _harm_cfg.get("aggression_trigger_p", 0) <= 1
-      and 0 < _harm_cfg.get("shove_trigger_p", 0) <= 1)
+check("D07：触发概率与推搡选择概率在 (0,1]",
+      0 < _harm_cfg.get("trigger_p", 0) <= 1
+      and 0 < _harm_cfg.get("shove_choice_p", 0) <= 1)
 check("D07：友善交流 −2 / 调解门槛 50 / 调解 −5",
       _harm_cfg.get("friendly_chat_hostility_cut", -1) == 2
       and _harm_cfg.get("mediate_hostility_threshold", -1) == 50
@@ -446,6 +446,8 @@ check("D06：连续窗口 2 天、最早第 2 天判定",
 check("D06：孤立好感门槛 <20、每天被拒至少 2 次",
       _risk_cfg.get("isolate_affinity_threshold", -1) == 20
       and _risk_cfg.get("isolate_daily_rejects", -1) == 2)
+check("D06：考试日跳过判定但保留连续计数",
+      _risk_cfg.get("skip_exam_day", -1) == 1)
 check("D06：退学 = 累计崩溃超过 3 次（第 4 次）",
       _risk_cfg.get("dropout_breakdown_limit", -1) == 3)
 check("D04：座位基础好感增量为有限数",

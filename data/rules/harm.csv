@@ -1,18 +1,17 @@
 # 伤害事件与关系修复（《老师版规则合并稿》D07 / 主文档第十章）
 # 伤害只有「恶语攻击」与「推搡」两类：课间接触、发起者对目标敌对超过门槛、双方都不得处于
-# 学习锁定 / 办公室 / 崩溃；每 10 秒检查一次，满足条件后按固定概率随机触发。
-# ⚠️ 触发概率与各类增量为合并稿明确「待定」的参数，这里给的是可运行初值，须标定后替换。
+# 学习锁定 / 办公室 / 崩溃；每 10 秒检查一次，每名发起者先等概率随机选一个合格目标、再掷一次概率。
+# 2026-10-16 定稿：不对每个候选目标分别掷骰（否则周围人越多命中越高）。
 param,value,note
 check_seconds,10,伤害检查间隔（秒）
+trigger_p,0.05,每名发起者每 10 秒掷一次的触发概率（命中则对该课间随机选中的合格目标动手）
+shove_choice_p,0.5,敌对 >70 时选择推搡的概率（其余选恶语）；40 < 敌对 ≤ 70 只能恶语攻击
 aggression_hostility_threshold,40,恶语攻击：发起者对目标敌对 >40（恰好 40 不满足）
 shove_hostility_threshold,70,推搡：发起者对目标敌对 >70（恰好 70 不满足）
-aggression_trigger_p,0.05,恶语攻击触发概率（每次检查、每个候选对）——待定值
-shove_trigger_p,0.05,推搡触发概率（每次检查、每个候选对）——待定值
-aggression_target_stress,5,恶语攻击：目标压力增量——待定值
-aggression_hostility_gain,3,恶语攻击：目标对发起者敌对增量——待定值
-shove_target_stress,10,推搡：目标压力增量（大于恶语）——待定值
-shove_hostility_gain,5,推搡：目标对发起者敌对增量——待定值
-shove_preferred_when_both,1,两类条件同时满足时优先推搡（选择方式待定，暂定取更严重的一类）
+aggression_target_stress,5,恶语攻击：目标压力增量
+aggression_hostility_gain,3,恶语攻击：目标对发起者敌对增量
+shove_target_stress,10,推搡：目标压力增量（大于恶语）
+shove_hostility_gain,5,推搡：目标对发起者敌对增量
 friendly_chat_hostility_cut,2,友善交流：正常接纳并实际完成聊天时，对子双方敌对各 −2
 mediate_hostility_threshold,50,老师调解：任一方向敌对 >50 才执行，否则不扣耗时
 mediate_hostility_cut,5,老师调解完成后双方敌对各 −5

@@ -150,8 +150,8 @@ check("期末考也不改平时成绩", exam.Grade == grade_snapshot)
 print("=== 6b. D07 伤害与关系修复（《老师版规则合并稿》）===")
 harm = Sim(seed=12345, npc_count=8)
 harm.phase = "break"
-harm.harm["aggression_trigger_p"] = 1.0
-harm.harm["shove_trigger_p"] = 1.0
+harm.harm["trigger_p"] = 1.0
+harm.harm["shove_choice_p"] = 1.0
 harm.neighbor_idx[0] = [1]
 harm.neighbor_idx[1] = [0]
 harm.H[0][1] = 40.0
