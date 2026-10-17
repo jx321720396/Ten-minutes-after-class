@@ -19,6 +19,7 @@
     }
   ],
   "encounter_limit": 3,
+  "affinity_reveal_columns": 3,
   "portrait_art_height": 340,
   "portraits": {
     "01": {

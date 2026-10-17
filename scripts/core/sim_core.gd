@@ -23,6 +23,7 @@ const LEISURE_KINDS := {
 const _NEVER := -999  # 时间哨兵：「从未发生」（Python 参考用 -10**9 / -999；语义等价，统一 -999）
 const _FOREVER := 1000000000  # 时间哨兵：「忙碌到远超本段」（睡觉等整段占用的 busy_until，对齐 Python 10**9）
 const OBSERVER_LAYER = preload("res://scripts/systems/observer/observer_layer.gd")
+const PASSIVES = preload("res://scripts/core/passives.gd")
 const BEHAVIOR_CONTEXT = preload("res://scripts/systems/behaviors/behavior_context.gd")
 const BEHAVIOR_REGISTRY = preload("res://scripts/systems/behaviors/behavior_registry.gd")
 const ACTIVITY_SESSIONS = preload("res://scripts/core/activity_sessions.gd")
@@ -149,6 +150,8 @@ var _seat_world: Dictionary = {}
 var _leisure: Dictionary = {}
 var _book: Array = []
 var _teacher := TeacherPatrol.new()
+## 公开专属被动（主文档 §10）：角色 → 被动读 data/rules/passives.csv，数值读 rules/passive_params.csv。
+var _passives: RefCounted
 ## 老师命令与时间规则（D03）：召唤 / 遣返 / 办公室聊天 / 去教室 / 调座位 + 上课延后
 var _teacher_commands := TeacherCommands.new()
 # —— 老师版状态层（《老师版规则合并稿 D01至D07》D01 / D02）——
@@ -211,6 +214,8 @@ func _init(seed: int, npc_count: int, tables: Dictionary = {}) -> void:
 		_book.append(int(str(ch["book"])))
 
 	_alloc(n)
+	_passives = PASSIVES.new()
+	_passives.configure(tables, _character_ids())
 
 	_init_relations()
 	_init_grade()
@@ -707,18 +712,16 @@ func _settle_finished_actions() -> void:
 				_share_units[skey] = int(_share_units.get(skey, 0)) + 1
 				_snack_provider[i] = null
 				_stats["share_units"] = int(_stats.get("share_units", 0)) + 1
+			# 乐观（§10.2）：完成一次娱乐 → 压力单独额外 −3（不联动动力，不按单位重复发）。
+			var leisure_relief: float = _passives.leisure_completed(i)
+			if leisure_relief < 0.0:
+				add_stress(i, leisure_relief, false)
 			leisure_notifications.append(
 				{"kind": "leisure_finished", "i": i, "activity": _busy_act[i]}
 			)
 		# D07 友善交流：正常接纳并实际完成聊天 → 对子双方敌对各 −2（不额外加修复概率）。
 		if _busy_act[i] == "chat" and _conv_of.size() > i and _conv_of[i] != null:
-			var friendly_cut := float(_harm_events.friendly_cut())
-			for m in (_conv_of[i] as Dictionary)["members"] as Array:
-				var other := int(m)
-				if other == i:
-					continue
-				_h[i * _n + other] = _clamp100(_h[i * _n + other] - friendly_cut)
-				_h[other * _n + i] = _clamp100(_h[other * _n + i] - friendly_cut)
+			_settle_friendly_chat(i)
 			_stats["friendly_chats"] = int(_stats.get("friendly_chats", 0)) + 1
 		_current_act[i] = null
 		_busy_act[i] = null
@@ -729,6 +732,30 @@ func _settle_finished_actions() -> void:
 		_emit("event_happened", payload)
 	for payload in notifications:
 		_emit("event_happened", payload)
+
+
+## 友善聊天完成结算（D07 基础敌对修复 + 主文档 §10.2 的四条聊天被动）。
+## 口径与原有基础规则一致：以「完成者 i」为单位，对会话内每个其他成员各结算一次。
+##   · 健谈：本人对聊天对象的好感 +2
+##   · 讨人喜欢：聊天对象对本人好感 +2
+##   · 不记仇：本人对聊天对象的敌对在基础修复之上额外 −2
+##   · 善解人意：聊天对象的压力单独 −5（不联动动力）
+func _settle_friendly_chat(i: int) -> void:
+	var friendly_cut := float(_harm_events.friendly_cut())
+	var bonus: Dictionary = _passives.chat_completed(i)
+	var cut := friendly_cut - float(bonus["owner_hostility"])
+	for m in (_conv_of[i] as Dictionary)["members"] as Array:
+		var other := int(m)
+		if other == i:
+			continue
+		_h[i * _n + other] = _clamp100(_h[i * _n + other] - cut)
+		_h[other * _n + i] = _clamp100(_h[other * _n + i] - friendly_cut)
+		if float(bonus["owner_affinity"]) > 0.0:
+			_a[i * _n + other] = _clamp100(_a[i * _n + other] + float(bonus["owner_affinity"]))
+		if float(bonus["other_affinity"]) > 0.0:
+			_a[other * _n + i] = _clamp100(_a[other * _n + i] + float(bonus["other_affinity"]))
+		if float(bonus["other_stress"]) < 0.0:
+			add_stress(other, float(bonus["other_stress"]), false)
 
 
 func _tick() -> void:
@@ -778,12 +805,16 @@ func _settle_units() -> void:
 		if kind == "study":
 			while _settle_acc[i] >= study_seconds:
 				_settle_acc[i] -= study_seconds
-				_gain_today[i] += float(_acts["study_gain"])
-				add_vitality(i, -float(_acts["study_vitality_cost"]))
+				# 公开被动（§10.2）：专注翻倍收益增减 → 收放自如累计整数减半损失 → 自律少耗动力。
+				var unit: Dictionary = _passives.study_unit(
+					i, float(_acts["study_gain"]), float(_acts["study_vitality_cost"])
+				)
+				_gain_today[i] += float(unit["gain"])
+				add_vitality(i, -float(unit["cost"]))
 		elif kind == "play":
 			while _settle_acc[i] >= play_seconds:
 				_settle_acc[i] -= play_seconds
-				_gain_today[i] += float(_acts["play_gain"])
+				_gain_today[i] += _passives.play_gain(i, float(_acts["play_gain"]))
 				add_stress(i, -float(_acts["play_relief"]), false)
 		else:
 			while _settle_acc[i] >= unit_seconds:
@@ -868,13 +899,18 @@ func _settle_neighbor_drip() -> void:
 		if _teacher_commands.is_seat_changing(i):
 			continue
 		var studying := 0
+		var delta := 0.0
 		for j in _neighbor_idx[i]:
-			if _teacher_commands.is_seat_changing(int(j)):
+			var source := int(j)
+			if _teacher_commands.is_seat_changing(source):
 				continue
-			if _unit_kind(int(j)) == "study":
-				studying += 1
+			if _unit_kind(source) != "study":
+				continue
+			studying += 1
+			# §10.2：卷王（来源）与玻璃心（目标）各 +100%，加法叠加 —— 基础 5 点单项 10、双项 15。
+			delta += _passives.neighbor_drip(source, i, drip)
 		if studying > 0:
-			add_stress(i, drip * studying)
+			add_stress(i, delta)
 			_stats["neighbor_drip"] = int(_stats.get("neighbor_drip", 0)) + studying
 
 
@@ -986,12 +1022,18 @@ func teacher_commands() -> TeacherCommands:
 ## 压力写入的唯一入口（§4.1 一般联动）：一般事件压力 ±1 → 动力同向 ±1，两者各自钳制 0–100。
 ## 标注「单独」变化的效果传 linked = false（跨天继承、游戏状态减压等）。
 ## 反向不成立：单独改动力（见 add_vitality）不影响压力。不消耗随机数。
+## 弹簧（主文档 §10.2）：累计**获得**的压力每满 5 点，动力额外 +2 —— 只加动力、不反向产生压力，
+## 所以不会递归触发本函数；减压（delta < 0）不计入累计、也不回退已发放的动力。
 func add_stress(i: int, delta: float, linked: bool = true) -> void:
 	if i < 0 or i >= _n:
 		return
 	_stress[i] = _clamp100(_stress[i] + delta)
 	if linked:
 		_vitality[i] = _clamp100(_vitality[i] + delta)
+	if delta > 0.0 and _passives != null:
+		var bonus: float = _passives.spring(i, delta)
+		if bonus > 0.0:
+			add_vitality(i, bonus)
 
 
 ## 只改动力（§4.1「反向不成立」）：用于明确「单独」的动力变化，例如学习每次结算 −5 动力。
@@ -1140,6 +1182,15 @@ func _add_hostility(from_i: int, to_i: int, delta: float) -> void:
 	_h[from_i * _n + to_i] = _clamp100(_h[from_i * _n + to_i] + delta)
 
 
+## 同学来源的正向加压（伤害事件等）：目标有「玻璃心」时按 §10.2 额外 +100%。
+## 只修正正向加压，不扩大到减压；邻座学习涓流不走这里（那边已按来源 + 目标一次算好，避免双计）。
+func _add_peer_stress(target: int, base: float) -> void:
+	if _passives == null:
+		add_stress(target, base)
+		return
+	add_stress(target, _passives.peer_stress(target, base))
+
+
 ## 两人是否在同一场共同活动里（多人会话 / 学习组 / 零食分享组）。
 func _shares_activity(i: int, j: int) -> bool:
 	for conv in _conversations:
@@ -1180,6 +1231,17 @@ func _note_stopped(i: int) -> void:
 		return
 	if not _phase_stopped.has(i):
 		_phase_stopped.append(i)
+
+
+## 老师训斥**实际完成**时调用（D03 + 主文档 §10.2 听劝）：压力已由调用方按
+## office_scold_stress / class_scold_stress 结算；有「听劝」的学生动力额外 +10。
+## 只加动力（add_vitality）——不反向产生压力，也不触发弹簧的累计。
+func _note_scolded(i: int) -> void:
+	if i < 0 or i >= _n:
+		return
+	var bonus: float = _passives.scolded(i)
+	if bonus > 0.0:
+		add_vitality(i, bonus)
 
 
 ## 学习锁定（D07：处于学习状态或正在学习的学生不参与伤害）。
@@ -1256,7 +1318,6 @@ func _settle_day() -> void:
 	var carry_vitality := float(_psyche["carry_vitality_cut"])
 	var rest_stress_cut := float(_psyche["breakdown_rest_stress_cut"])
 	var rest_vitality_cut := float(_psyche["breakdown_rest_vitality_cut"])
-	var grade_max := float(_kp["grade_max"])
 	for i in range(_n):
 		if _resting[i]:
 			# §5.3：崩溃后次日特殊恢复 —— 压力／动力各减固定值，替代普通跨天的 −20／−10；
@@ -1272,7 +1333,7 @@ func _settle_day() -> void:
 		else:
 			add_stress(i, -carry_stress, false)
 			add_vitality(i, -carry_vitality)
-		_grade[i] = clampf(_grade[i] + _gain_today[i], 0.0, grade_max)
+		_settle_daily_gain(i)
 		_gain_today[i] = 0.0
 	_try_burst()
 	# D06：当天末判定霸凌 / 孤立（预警、正式触发）与退学；判定在关系衰减之前，
@@ -1315,6 +1376,35 @@ func _settle_day() -> void:
 	_term_record.settle_day(self, _day)
 	_day += 1
 	_emit("day_settled", {"day": _day - 1, "stats": _stats.duplicate(true)})
+
+
+## 当日学业收益并入成绩（《老师版规则合并稿》D01 + 主文档 §10.2 的日结类被动）。
+## 顺序：群策群力（当天学业收益 +1 / 名达标同学）→ 善于吸收（净收益为正再 +3 成绩）
+## → 钳制到 [0, grade_max] → 正反馈按**实际提高量**给动力（初始成绩赋值不算提高）。
+## 主文档 §10.2 把「群策群力与收益转成绩的先后」列为待确认项；此处按「先并入当天收益、再转成成绩」实现。
+func _settle_daily_gain(i: int) -> void:
+	var net := _gain_today[i]
+	if _passives.has(i, PASSIVES.TEAM_SPIRIT):
+		net += _passives.team_spirit_gain(i, _team_spirit_count(i))
+	var before := _grade[i]
+	_grade[i] = clampf(
+		_grade[i] + net + _passives.absorb_bonus(i, net), 0.0, float(_kp["grade_max"])
+	)
+	var raised := _grade[i] - before
+	if raised > 0.0:
+		var bonus: float = _passives.grade_raised(i, raised)
+		if bonus > 0.0:
+			add_vitality(i, bonus)
+
+
+## 群策群力：有多少名同学对 i 的好感**严格**超过阈值（恰好等于不计入）；只在日末算一次。
+func _team_spirit_count(i: int) -> int:
+	var threshold: float = _passives.team_spirit_threshold()
+	var count := 0
+	for j in range(_n):
+		if j != i and _a[j * _n + i] > threshold:
+			count += 1
+	return count
 
 
 # -------------------------------------------------- 统一影响公式（UIF，docs/design/统一影响公式.md）
@@ -2851,12 +2941,41 @@ func _alias_list() -> PackedStringArray:
 	return names
 
 
+## 本局节点顺序的角色编号（查 data/rules/passives.csv 的分配用；不参与行为判断）。
+func _character_ids() -> Array[String]:
+	var ids: Array[String] = []
+	for ch in _chars:
+		ids.append(str(ch.get("id", "")))
+	return ids
+
+
 ## i 在种子表里的编号（"01"…"24"）。
 ## 表现层用它查 data/characters/appearance.csv（外观绑定在 data/，不在脚本里判断角色名）。
 func character_id(i: int) -> String:
 	if i < 0 or i >= _chars.size():
 		return ""
 	return str(_chars[i].get("id", ""))
+
+
+## 公开专属被动的 id（主文档 §10.1：档案与行为预览直接显示；空串 = 本局没有分配到被动）。
+func passive_id_of(i: int) -> String:
+	if _passives == null:
+		return ""
+	return _passives.id_of(i)
+
+
+## 老师版学生档案的公开状态快照（§10.1）。只读：不写任何矩阵，也不经观察层过滤 —— 被动是公开信息。
+## reveals_incoming_affinity = 群策群力（§10.2）：该生可以看到所有其他同学对本人好感，
+## 由档案在只读预览里逐人读 affinity(j, i) 显示。
+func teacher_student_snapshot(i: int) -> Dictionary:
+	if i < 0 or i >= _n:
+		return {}
+	return {
+		"passive_id": _passives.id_of(i),
+		"grade_max": float(_kp["grade_max"]),
+		"reveals_incoming_affinity": _passives.reveals_incoming_affinity(i),
+		"well_informed_messages": _passives.well_informed_messages(i),
+	}
 
 
 ## i 坐的座位号（seats.csv 的 seat_id，如 "P7"）；越界 → 空串。
