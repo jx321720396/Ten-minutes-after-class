@@ -244,7 +244,9 @@ func _refresh_records() -> void:
 		var band := "unknown"
 		if not entry.is_empty():
 			band = (
-				_band_key(float(entry.value)) if str(entry.origin) == "known" else str(entry.band)
+				_band_key(float(entry.value))
+				if str(entry.origin) in ["known", "ask"]
+				else str(entry.band)
 			)
 		get_node("%" + base + "Value").text = words(band)
 		get_node("%" + base + "Time").text = (
@@ -258,8 +260,12 @@ func _refresh_records() -> void:
 			)
 		)
 		get_node("%" + base + "Time").tooltip_text = (
-			words("source", {"person": _core.alias(source)})
-			if not entry.is_empty() and str(entry.origin) == "known"
+			(
+				words("source", {"person": _core.alias(source)})
+				if str(entry.origin) == "known"
+				else words("ask_source", {"person": _core.alias(source)})
+			)
+			if not entry.is_empty() and str(entry.origin) in ["known", "ask"]
 			else words("guess")
 		)
 		for option in _config.judgment_bands:
@@ -275,7 +281,9 @@ func _render_history(history: Array) -> void:
 		%HistoryRows.add_child(_label(words("history_empty"), 24))
 	for entry in history:
 		var band := (
-			_band_key(float(entry.value)) if str(entry.origin) == "known" else str(entry.band)
+			_band_key(float(entry.value))
+			if str(entry.origin) in ["known", "ask"]
+			else str(entry.band)
 		)
 		var line := _label(
 			(

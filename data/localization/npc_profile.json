@@ -39,6 +39,8 @@
   "none": "暂无其他同学",
   "known": "已获知",
   "guess": "我的推测",
+  "ask": "打听获知",
+  "ask_source": "向{person}打听获知",
   "desk_side": "座位 · 讲桌旁",
   "reverse": "查看反向 ⇄",
   "forward": "查看正向 ⇄",

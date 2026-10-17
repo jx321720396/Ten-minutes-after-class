@@ -15,9 +15,10 @@ extends RefCounted
 ## 待确认（合并稿未定，本模块不擅自新增数值）：
 ##   · 延后命令是「保留已用时间继续」还是「重新计满」—— 当前按**保留已用时间继续**实现
 ##     （见 `_hold_for_class`）；确认后只改这一处。
-##   · 调解耗时、鼓励的效果数值 —— 鼓励只计时、不施加数值。
+##   · 调解耗时 —— 鼓励只计时、不直接施加数值（结束时生成一次聊天目标，见下方 D09）。
 ##     安抚减压、表扬只加动力、训斥走一般压力联动（压力与动力同加）。
-##     打听在谈话结束时给出关系消息，不改压力、动力或学业收益。
+##     打听在谈话结束时给出「一条优先消息 + 最多 ask_relation_max 条有向单轴关系信息」（D10），
+##     不改压力、动力、学业收益或真实关系矩阵；关系信息只进入档案观察笔记。
 
 var _timing: Dictionary = {}
 var _acts: Dictionary = {}
@@ -35,13 +36,30 @@ var _chat_kind := ""
 var _seat_change := {}
 ## 上课期间挂起的命令（下课后继续）
 var _held := false
-## 本局已经打听过的学生。再次打听同一人时消息从 3 条变为 5 条。
-var _asked: Dictionary = {}
+## 本课间是否已经成功完成一次打听（D10：全班每课间最多成功一次）。
+var _asked_this_break := false
+## 打听关系记录的专用随机流（独立于内核 _rng，避免污染模拟序列；种子取内核 seed）。
+var _ask_rng: MtRandom = null
+## 优先消息去重：已告知过的「消息类型:目标」，不反复让同一条未变化消息占用机会。
+var _told_messages: Dictionary = {}
+## 关系记录覆盖：已打听过的「受访者:对象:轴」，下次优先未打听过的方向/轴。
+var _asked_relations: Dictionary = {}
 ## 最近一次打听结果。界面只读，按序号显示一次。
 var _ask_lines: Array = []
+## 最近一次打听的有向单轴关系记录（供档案观察笔记写入，不改真实矩阵）。
+var _ask_records: Array = []
 var _ask_id := 0
 ## 本课间是否已经触发「首次进入教室」的全班加压
 var _entered_this_break := false
+# —— 鼓励目标（D09，2026-10-17）：老师 20 秒鼓励 → 一次聊天目标 ——
+## 目标对象索引（-1 = 自主模式尚未选人；>=0 = 指定或已选定的对象）
+var _encourage_target: Array = []
+## "specified"（老师指定对象）/ "auto"（自主找最近娱乐对象）
+var _encourage_mode: Array = []
+## 剩余课间次数（含当前课间；跨上课保留；考试日无课间不消耗）
+var _encourage_breaks: Array = []
+## "" = 无目标；"active" / "done" / "rejected" / "expired"（观察层只读）
+var _encourage_status: Array = []
 
 
 func configure(timing: Dictionary, activities: Dictionary) -> void:
@@ -49,11 +67,184 @@ func configure(timing: Dictionary, activities: Dictionary) -> void:
 	_acts = activities
 
 
+## 鼓励目标有效期（课间数，含当前课间）。
+func encourage_valid_breaks() -> int:
+	return int(_timing.get("encourage_valid_breaks", 4))
+
+
+# ------------------------------------------------------------------ 鼓励目标生命周期（D09）
+## 新局重置鼓励目标（每名学生一格；由内核 `_reset_runtime` 调用）。
+func reset_encourage(n: int) -> void:
+	_encourage_target.clear()
+	_encourage_mode.clear()
+	_encourage_breaks.clear()
+	_encourage_status.clear()
+	for _i in range(n):
+		_encourage_target.append(-1)
+		_encourage_mode.append("")
+		_encourage_breaks.append(0)
+		_encourage_status.append("")
+
+
+## 老师完成 20 秒鼓励后生成一次聊天目标。已有未结束目标时重复鼓励无效（不覆盖、不叠加）。
+## target >= 0 = 指定对象；target < 0 = 自主找最近娱乐对象。
+func start_encourage(i: int, target: int) -> bool:
+	if i < 0 or i >= _encourage_status.size():
+		return false
+	if _encourage_status[i] == "active":
+		return false
+	_encourage_target[i] = target
+	_encourage_mode[i] = "specified" if target >= 0 else "auto"
+	_encourage_breaks[i] = encourage_valid_breaks()
+	_encourage_status[i] = "active"
+	return true
+
+
+func has_active_encourage(i: int) -> bool:
+	return i >= 0 and i < _encourage_status.size() and _encourage_status[i] == "active"
+
+
+## 鼓励目标只读快照（观察层 / 界面；不回写内核）。
+## `wait_reason` 仅在 status == "active" 时有意义：空串 = 可尝试，非空 = 等待原因。
+func encourage_snapshot(core: Variant, i: int) -> Dictionary:
+	if i < 0 or i >= _encourage_status.size():
+		return {}
+	return {
+		"target": _encourage_target[i],
+		"mode": _encourage_mode[i],
+		"breaks_left": _encourage_breaks[i],
+		"status": _encourage_status[i],
+		"wait_reason": _wait_reason(core, i),
+	}
+
+
+## 交流目标展示文案（界面只读，观察层）。无目标时返回空串，由界面回落到「暂无」。
+func encourage_goal_text(core: Variant, i: int) -> String:
+	var snap := encourage_snapshot(core, i)
+	if snap.is_empty() or str(snap.get("status", "")) == "":
+		return ""
+	var status := str(snap["status"])
+	var mode := "指定" if str(snap["mode"]) == "specified" else "自主"
+	var target := int(snap["target"])
+	var breaks := int(snap["breaks_left"])
+	if status == "done":
+		return "鼓励交流 · 已完成（%s）" % str(core.alias(target))
+	if status == "rejected":
+		return "鼓励交流 · 被拒绝（%s）" % str(core.alias(target))
+	if status == "expired":
+		if target < 0:
+			return "鼓励交流 · 已到期"
+		return "鼓励交流 · 已到期（%s）" % str(core.alias(target))
+	# active：展示对象、模式、剩余课间次数，以及（若有）等待原因。
+	if target < 0:
+		return "鼓励交流 · %s · 待选对象 · 剩 %d 次课间" % [mode, breaks]
+	var line := "鼓励交流 · %s · %s · 剩 %d 次课间" % [mode, str(core.alias(target)), breaks]
+	var reason := str(snap["wait_reason"])
+	if reason != "":
+		line += " · " + reason
+	return line
+
+
+## 等待原因（仅在进行中且当前不可尝试时非空）。
+func _wait_reason(core: Variant, i: int) -> String:
+	if _encourage_status[i] != "active":
+		return ""
+	var t := int(_encourage_target[i])
+	if t < 0:
+		return "无合格对象"
+	if (
+		core._join_blocked(t)
+		or (core._phase_state.size() > t and str(core._phase_state[t]) in ["study", "broken"])
+	):
+		return "对象暂不可聊"
+	if core._global_tick < core._busy_until[t]:
+		return "对象忙碌中"
+	return ""
+
+
+## 课间末扣减鼓励目标有效期；归零即到期。只对「进行中」目标生效；
+## 考试日没有课间，`_end_phase` 不会调用本方法（不消耗次数）。
+func settle_encourage_breaks() -> void:
+	for i in range(_encourage_status.size()):
+		if _encourage_status[i] != "active":
+			continue
+		_encourage_breaks[i] -= 1
+		if _encourage_breaks[i] <= 0:
+			_encourage_status[i] = "expired"
+
+
+## 鼓励目标的一次尝试（D09）：返回 true = 本决策点被鼓励占满（成事或关系拒绝）；
+## false = 等待（无合格对象 / 对象忙碌 / 锁定），学生走正常决策。不强行打断锁定、崩溃或办公室状态。
+func try_encourage(core: Variant, i: int) -> bool:
+	if _encourage_status[i] != "active":
+		return false
+	if _encourage_target[i] < 0:
+		var picked := _pick_encourage_target(core, i)
+		if picked < 0:
+			return false  # 无合格对象，等待
+		_encourage_target[i] = picked
+	var t := int(_encourage_target[i])
+	# 目标此刻不能聊天（锁定 / 不在场 / 睡觉 / 忙碌）→ 等待，不打断、不算关系拒绝。
+	if (
+		core._join_blocked(t)
+		or (core._phase_state.size() > t and str(core._phase_state[t]) in ["study", "broken"])
+	):
+		return false
+	if core._global_tick < core._busy_until[t]:
+		return false  # 目标还在娱乐 / 忙碌，等其活动结束
+	var log_before: int = core._join_log.size()
+	core._propose_activity(i, t, "chat")
+	var stage := ""
+	if core._join_log.size() > log_before:
+		stage = str(core._join_log[-1]["stage"])
+	if stage == "vote_reject":
+		_encourage_status[i] = "rejected"
+		return true  # 关系拒绝：目标结束，本决策点到此为止
+	if core._conv_of[i] != null:
+		_encourage_status[i] = "done"
+		return true  # 聊天成功：目标完成
+	return false  # 条件不满足等：保持 active，下一决策点再试
+
+
+## 鼓励专用选人（D09）：距离最近、正在娱乐且符合聊天条件；并列带种子随机。
+func _pick_encourage_target(core: Variant, i: int) -> int:
+	var best: Array = []
+	var best_dist := 1e9
+	for j in range(int(core.node_count())):
+		if not _encourage_target_eligible(core, i, j):
+			continue
+		var d: float = core.distance_between(i, j)
+		if d < best_dist - 1e-6:
+			best_dist = d
+			best = [j]
+		elif abs(d - best_dist) <= 1e-6:
+			best.append(j)
+	if best.is_empty():
+		return -1
+	if best.size() == 1:
+		return int(best[0])
+	return int(core._rng.choice(best))
+
+
+func _encourage_target_eligible(core: Variant, i: int, j: int) -> bool:
+	if j == i or core._join_blocked(j):
+		return false
+	if core._phase_state.size() > j and str(core._phase_state[j]) in ["study", "broken"]:
+		return false
+	return _is_entertaining(core, j)
+
+
+## 正在娱乐 = 正在做休闲活动（LEISURE_KINDS 且占用未到）。
+func _is_entertaining(core: Variant, j: int) -> bool:
+	return core.LEISURE_KINDS.has(core._busy_act[j]) and core._global_tick < core._busy_until[j]
+
+
 # ------------------------------------------------------------------ 段边界（D03 第 8/9/10 条）
 ## 课间开始：解除挂起，重置「每课间首次进入教室」的生效机会。
 func begin_break() -> void:
 	_entered_this_break = false
 	_held = false
+	_asked_this_break = false
 
 
 ## 上课开始（D03 第 9 / 10 条）：未完成的命令不执行、不产生效果；召唤行程中断（学生先回课堂）。
@@ -118,6 +309,12 @@ func office_chat(_core: Variant, kind: String) -> bool:
 	if _held or _command != "" or kind not in ["comfort", "praise", "scold", "ask", "encourage"]:
 		return false
 	if _called < 0:
+		return false
+	# D09：已有未结束目标时重复鼓励无效，不覆盖、不叠加、也不扣 20 秒。
+	if kind == "encourage" and has_active_encourage(_called):
+		return false
+	# D10：全班每课间最多成功一次打听；本课间已打听过则不再扣 20 秒。
+	if kind == "ask" and _asked_this_break:
 		return false
 	_command = "office_chat"
 	_chat_kind = kind
@@ -203,7 +400,7 @@ func _finish(core: Variant) -> void:
 			_mediate_pair = {}
 		"office_chat":
 			# 训斥走一般联动（压力与动力同加）；安抚按一般联动减压；表扬只加动力。
-			# 打听只给出消息。鼓励仍只计时。
+			# 打听只给出消息；鼓励生成一次聊天目标（D09，自主模式：学生自己找最近娱乐对象）。
 			if _called >= 0 and _chat_kind == "scold":
 				core.add_stress(_called, float(_acts["office_scold_stress"]))
 				core._note_scolded(_called)
@@ -213,6 +410,8 @@ func _finish(core: Variant) -> void:
 				core.add_vitality(_called, float(_acts["office_praise_vitality"]))
 			elif _called >= 0 and _chat_kind == "ask":
 				_deliver_ask(core, _called)
+			elif _called >= 0 and _chat_kind == "encourage":
+				start_encourage(_called, -1)
 			# D07 §10：办公室处理（含现场制止类的训斥）完成后，该学生本课间不能主动伤害。
 			core._note_stopped(_called)
 			_chat_kind = ""
@@ -225,80 +424,216 @@ func _finish(core: Variant) -> void:
 	_remaining = 0
 
 
-## 打听不改数值。前两句是「我最喜欢」「我最讨厌」；其余同学不与这两人重复。
-## 随机句按显示用的整数分档：小于 10 是不怎么，10 到 29 是有一点，30 及以上是很。
-## 好感或敌对并列时取节点号较小者。随机抽取走内核随机序列，同一种子结果相同。
+## 打听（D10）：一条优先消息 + 最多 ask_relation_max 条有向单轴关系信息。
+## 优先消息按「正式霸凌 → 正式孤立 → 敌对隐患 → 低好感隐患 → 手机 → MP3 → 零食」取最高可用，
+## 且不反复给同一条未变化消息（按「类型:目标」去重）。
+## 关系信息方向固定为受访者 → 对象，每条只含好感或敌对一轴，优先未打听过的方向/轴；
+## 选取走独立的 _ask_rng（种子取内核 seed，不污染模拟随机序列）。不改真实矩阵。
 func _deliver_ask(core: Variant, index: int) -> void:
-	var repeat := bool(_asked.get(index, false))
-	_asked[index] = true
-	var lines: Array = []
-	var liked := _best_other(core, index, true)
-	var hated := _best_other(core, index, false)
-	if liked >= 0:
-		lines.append(_ask_favorite(core, index, liked))
-	if hated >= 0:
-		lines.append(_ask_rival(core, index, hated))
-	var random_slots := 3 if repeat else 1
+	_asked_this_break = true
+	if _ask_rng == null:
+		_ask_rng = MtRandom.new(core.seed())
+	var rel_cap := int(_timing.get("ask_relation_max", 3))
 	var informed := int(core.teacher_student_snapshot(index).get("well_informed_messages", 0))
-	random_slots = maxi(random_slots, informed - lines.size())
-	var pool: Array = []
-	for j in range(int(core.node_count())):
-		if j == index or j == liked or j == hated:
-			continue
-		pool.append(j)
-	for other in core._rng.sample(pool, random_slots):
-		lines.append(_ask_mixed(core, index, int(other)))
+	if informed > rel_cap:
+		rel_cap = informed  # 百事通：一次打听提供更多关系信息
+	var stamp: Dictionary = core.time_snapshot()
+	var lines: Array = []
+	var priority := _pick_priority_message(core, index)
+	if priority != "":
+		lines.append(priority)
+	var records := _pick_relation_records(core, index, rel_cap, stamp)
+	for rec in records:
+		lines.append(_relation_line(core, rec))
+	if lines.is_empty():
+		lines.append("暂无新的相关消息")
+	_ask_records = records
 	_ask_lines = lines
 	_ask_id += 1
 
 
-func _best_other(core: Variant, index: int, by_affinity: bool) -> int:
-	var best := -1
-	var best_value := -1.0
-	for j in range(int(core.node_count())):
+## 优先消息（D10）：按优先级从高到低取第一条「可提供且未告知」的消息；没有则返回空串。
+func _pick_priority_message(core: Variant, index: int) -> String:
+	# 1/2) 正式霸凌 → 正式孤立（读已有风险记录，不以一次打听生成正式风险）。
+	for kind in ["bully", "isolate"]:
+		for t in _triggered_of_kind(core, kind):
+			if _tell_once("risk_%s" % kind, t):
+				return _risk_text(core, kind, t)
+	# 3) 敌对隐患：≥ ask_hostility_hint_count 名其他学生对同一目标敌对 > 阈值。
+	for t in _hostility_hint_targets(core):
+		if _tell_once("hostility_hint", t):
+			return _hostility_hint_text(core, t)
+	# 4) 低好感隐患：≥ ask_low_affinity_count 名其他学生对目标好感 < 阈值（超过一周才开放）。
+	if int(core.day()) >= int(_timing.get("ask_low_affinity_open_day", 8)):
+		for t in _low_affinity_hint_targets(core):
+			if _tell_once("low_affinity_hint", t):
+				return _low_affinity_hint_text(core, t)
+	# 5-7) 物品消息：受访者对目标敌对 > 阈值，且「知道」其带对应物品（知情范围待定）。
+	for item in ["phone", "mp3", "snack"]:
+		for t in _item_hint_targets(core, index, item):
+			if _tell_once("item_%s" % item, t):
+				return _item_text(core, item, t)
+	return ""
+
+
+## 正式风险目标（只读）：已正式触发该类型的学生，按节点号升序。
+func _triggered_of_kind(core: Variant, kind: String) -> Array:
+	var out: Array = []
+	var risk: Dictionary = core._risk_snapshot()
+	var triggered: Array = risk.get("triggered", [])
+	var kinds: Array = risk.get("triggered_kind", [])
+	for i in range(int(core.node_count())):
+		if (
+			i < triggered.size()
+			and i < kinds.size()
+			and bool(triggered[i])
+			and str(kinds[i]) == kind
+		):
+			out.append(i)
+	return out
+
+
+## 敌对隐患目标：≥ 阈值人数的其他学生对同一目标敌对严格超过阈值。
+func _hostility_hint_targets(core: Variant) -> Array:
+	var threshold := float(_timing.get("ask_hostility_hint_threshold", 50))
+	var need := int(_timing.get("ask_hostility_hint_count", 2))
+	var n := int(core.node_count())
+	var out: Array = []
+	for k in range(n):
+		var count := 0
+		for j in range(n):
+			if j != k and float(core.hostility(j, k)) > threshold:
+				count += 1
+		if count >= need:
+			out.append(k)
+	return out
+
+
+## 低好感隐患目标：≥ 阈值人数的其他学生对目标好感严格低于阈值。
+func _low_affinity_hint_targets(core: Variant) -> Array:
+	var threshold := float(_timing.get("ask_low_affinity_threshold", 20))
+	var need := int(_timing.get("ask_low_affinity_count", 13))
+	var n := int(core.node_count())
+	var out: Array = []
+	for k in range(n):
+		var count := 0
+		for j in range(n):
+			if j != k and float(core.affinity(j, k)) < threshold:
+				count += 1
+		if count >= need:
+			out.append(k)
+	return out
+
+
+## 物品消息目标：受访者对目标敌对严格超过阈值，且「知道」其带对应物品。
+## 知情范围待定（无携带物品模型）：暂以「目标此刻正在做对应娱乐」作为「知道」的代理。
+func _item_hint_targets(core: Variant, index: int, item: String) -> Array:
+	var threshold := float(_timing.get("ask_item_hostility_threshold", 40))
+	var act: String = {"phone": "play_phone", "mp3": "listen_music", "snack": "eat_snack"}[item]
+	var n := int(core.node_count())
+	var out: Array = []
+	for k in range(n):
+		if k == index:
+			continue
+		if float(core.hostility(index, k)) <= threshold:
+			continue
+		if str(core._busy_act[k]) == act:
+			out.append(k)
+	return out
+
+
+## 去重并登记：同一条（类型:目标）只告知一次，返回是否可用。
+func _tell_once(kind: String, target: int) -> bool:
+	var key := "%s:%d" % [kind, target]
+	if _told_messages.has(key):
+		return false
+	_told_messages[key] = true
+	return true
+
+
+## 关系记录（D10）：最多 rel_cap 条，方向受访者→对象，单轴，优先未打听过的方向/轴。
+func _pick_relation_records(core: Variant, index: int, rel_cap: int, stamp: Dictionary) -> Array:
+	var uncovered: Array = []
+	var covered: Array = []
+	var n := int(core.node_count())
+	for j in range(n):
 		if j == index:
 			continue
-		var value := float(core.affinity(index, j) if by_affinity else core.hostility(index, j))
-		if best < 0 or value > best_value:
-			best = j
-			best_value = value
-	return best
+		for axis in ["affinity", "hostility"]:
+			var value: float = (
+				core.affinity(index, j) if axis == "affinity" else core.hostility(index, j)
+			)
+			var rec := {"source": index, "subject": j, "axis": axis, "value": value}
+			rec.merge(stamp, true)
+			if _asked_relations.has(_rel_key(index, j, axis)):
+				covered.append(rec)
+			else:
+				uncovered.append(rec)
+	var picked: Array = []
+	if uncovered.size() >= rel_cap:
+		picked = _ask_rng.sample(uncovered, rel_cap)
+	else:
+		picked = uncovered.duplicate()
+		var remaining := rel_cap - picked.size()
+		if remaining > 0 and not covered.is_empty():
+			picked.append_array(_ask_rng.sample(covered, mini(remaining, covered.size())))
+	for rec in picked:
+		_asked_relations[_rel_key(int(rec["source"]), int(rec["subject"]), str(rec["axis"]))] = true
+	picked.sort_custom(_relation_less)
+	return picked
 
 
-func _ask_favorite(core: Variant, index: int, other: int) -> String:
-	return "我最喜欢%s（好感值为：%d）" % [str(core.alias(other)), _ask_points(core.affinity(index, other))]
+func _rel_key(source: int, subject: int, axis: String) -> String:
+	return "%d:%d:%s" % [source, subject, axis]
 
 
-func _ask_rival(core: Variant, index: int, other: int) -> String:
-	return "我最讨厌%s（敌对值为：%d）" % [str(core.alias(other)), _ask_points(core.hostility(index, other))]
+func _relation_less(a: Dictionary, b: Dictionary) -> bool:
+	if int(a["subject"]) != int(b["subject"]):
+		return int(a["subject"]) < int(b["subject"])
+	return str(a["axis"]) < str(b["axis"])
 
 
-func _ask_mixed(core: Variant, index: int, other: int) -> String:
-	var name := str(core.alias(other))
-	var like := _ask_degree(core.affinity(index, other))
-	var hate := _ask_degree(core.hostility(index, other))
-	return "我%s喜欢%s也%s讨厌%s（好感值为：%d，敌对值为：%d）" % [
-		like,
-		name,
-		hate,
-		name,
-		_ask_points(core.affinity(index, other)),
-		_ask_points(core.hostility(index, other)),
-	]
+func _relation_line(core: Variant, rec: Dictionary) -> String:
+	var axis_label := "好感" if str(rec["axis"]) == "affinity" else "敌对"
+	return (
+		"我（%s）对%s的%s：%s"
+		% [
+			str(core.alias(int(rec["source"]))),
+			str(core.alias(int(rec["subject"]))),
+			axis_label,
+			_disclose_band(float(rec["value"])),
+		]
+	)
 
 
-## 与对话框里的整数一致：小于 10、10–29、30 及以上。
-func _ask_degree(value: float) -> String:
-	var shown := _ask_points(value)
-	if shown < 10:
-		return "不怎么"
-	if shown < 30:
-		return "有一点"
-	return "很"
+## 关系披露档位（待定：数值精度 vs 档位，当前按档位，阈值与档案档位一致）。
+func _disclose_band(value: float) -> String:
+	if value >= float(_timing.get("ask_disclose_very_high", 75)):
+		return "很高"
+	if value >= float(_timing.get("ask_disclose_high", 50)):
+		return "较高"
+	if value >= float(_timing.get("ask_disclose_medium", 25)):
+		return "一般"
+	return "较低"
 
 
-func _ask_points(value: float) -> int:
-	return int(round(value))
+func _risk_text(core: Variant, kind: String, t: int) -> String:
+	if kind == "bully":
+		return "听说%s最近一直被同学欺负" % str(core.alias(t))
+	return "听说%s最近持续被排斥" % str(core.alias(t))
+
+
+func _hostility_hint_text(core: Variant, t: int) -> String:
+	return "有几个同学对%s的敌意很深" % str(core.alias(t))
+
+
+func _low_affinity_hint_text(core: Variant, t: int) -> String:
+	return "班里很多同学不太喜欢%s" % str(core.alias(t))
+
+
+func _item_text(core: Variant, item: String, t: int) -> String:
+	var label: String = {"phone": "手机", "mp3": "MP3", "snack": "零食"}[item]
+	return "听说%s带了%s" % [str(core.alias(t)), label]
 
 
 func _seconds_left_in_break(core: Variant) -> int:
@@ -325,6 +660,7 @@ func snapshot() -> Dictionary:
 		"called": _called,
 		"chat_kind": _chat_kind,
 		"ask_lines": _ask_lines.duplicate(),
+		"ask_records": _ask_records.duplicate(true),
 		"ask_id": _ask_id,
 		"seat_change": _seat_change.duplicate(true),
 		"held_by_class": _held,

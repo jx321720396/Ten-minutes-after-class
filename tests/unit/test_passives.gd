@@ -52,6 +52,20 @@ func _act(key: String) -> float:
 	return 0.0
 
 
+## 把 a、b 放到一对正交邻座（前后左右，不含对角），让 _seat_relation_between 返回 "orthogonal"。
+func _seat_orthogonal(core: SimCore, a: int, b: int) -> void:
+	for sa in core._seat_pos:
+		var pa: Array = core._seat_pos[sa]
+		for sb in core._seat_pos:
+			if sa == sb:
+				continue
+			var pb: Array = core._seat_pos[sb]
+			if absi(int(pa[0]) - int(pb[0])) + absi(int(pa[1]) - int(pb[1])) == 1:
+				core._seat_of[a] = str(sa)
+				core._seat_of[b] = str(sb)
+				return
+
+
 # ------------------------------------------------------------------ 分配
 func test_every_student_has_one_distinct_passive() -> void:
 	var core := _core()
@@ -80,9 +94,7 @@ func test_focus_doubles_gain_and_loss_but_not_vitality_cost() -> void:
 	var unit: Dictionary = passives.study_unit(i, 1.0, 5.0)
 	assert_almost_eq(float(unit["gain"]), 1.0 * multiplier, 1e-9, "专注：基础 +1 学业收益翻倍")
 	assert_almost_eq(float(unit["cost"]), 5.0, 1e-9, "专注不翻倍动力消耗")
-	assert_almost_eq(
-		float(passives.play_gain(i, -1.0)), -1.0 * multiplier, 1e-9, "专注：游戏造成的损失同样翻倍"
-	)
+	assert_almost_eq(float(passives.play_gain(i, -1.0)), -1.0 * multiplier, 1e-9, "专注：游戏造成的损失同样翻倍")
 
 
 func test_self_discipline_cuts_study_vitality_cost() -> void:
@@ -138,13 +150,12 @@ func test_neighbor_drip_settles_both_sides_through_core() -> void:
 		core._phase_state[i] = "free"
 		core._current_act[i] = null
 	core._current_act[studious] = "study"
+	_seat_orthogonal(core, studious, fragile)  # 涓流只看固定座位前后左右：卷王、玻璃心必须是正交邻座
 	core._neighbor_idx[studious] = [fragile]
 	core._neighbor_idx[fragile] = [studious]
 	core._stress[fragile] = 0.0
 	core._settle_neighbor_drip()
-	assert_almost_eq(
-		core.stress(fragile), 15.0, 1e-9, "涓流接线：卷王来源 × 玻璃心目标 = 基础 5 的 3 倍"
-	)
+	assert_almost_eq(core.stress(fragile), 15.0, 1e-9, "涓流接线：卷王来源 × 玻璃心目标 = 基础 5 的 3 倍")
 
 
 ## 接线验证：学习单位在真实结算循环里就吃到专注翻倍（不是只测 passives 单点）。
@@ -160,7 +171,9 @@ func test_study_units_settle_focus_gain_through_core() -> void:
 	for _tick in range(int(_act("study_settle_seconds"))):
 		core._settle_units()
 	assert_almost_eq(
-		core.gain_today(i), _act("study_gain") * _number("focus_gain_multiplier"), 1e-9,
+		core.gain_today(i),
+		_act("study_gain") * _number("focus_gain_multiplier"),
+		1e-9,
 		"专注学生在真实单位结算里翻倍学业收益"
 	)
 
@@ -195,12 +208,7 @@ func test_spring_reads_gained_stress_through_add_stress() -> void:
 	core._vitality[i] = 10.0
 	core._stress[i] = 0.0
 	core.add_stress(i, per)
-	assert_almost_eq(
-		core.vitality(i),
-		10.0 + per + award,
-		1e-9,
-		"弹簧：一般加压照常联动动力，另按累计多 +2（不递归产生压力）"
-	)
+	assert_almost_eq(core.vitality(i), 10.0 + per + award, 1e-9, "弹簧：一般加压照常联动动力，另按累计多 +2（不递归产生压力）")
 
 
 # ------------------------------------------------------------------ 友善聊天
@@ -219,10 +227,7 @@ func test_forgiving_cuts_extra_hostility_on_friendly_chat() -> void:
 	var cut := _harm("friendly_chat_hostility_cut") + _number("forgiving_hostility_cut")
 	assert_almost_eq(core.hostility(i, other), 30.0 - cut, 1e-9, "不记仇：本人对聊天对象额外 −2")
 	assert_almost_eq(
-		core.hostility(other, i),
-		30.0 - _harm("friendly_chat_hostility_cut"),
-		1e-9,
-		"对方方向仍按基础 −2"
+		core.hostility(other, i), 30.0 - _harm("friendly_chat_hostility_cut"), 1e-9, "对方方向仍按基础 −2"
 	)
 
 
@@ -281,10 +286,7 @@ func test_empathetic_relieves_partner_stress_without_linking() -> void:
 	core._busy_until[i] = 0
 	core._settle_finished_actions()
 	assert_almost_eq(
-		core.stress(other),
-		50.0 - _number("empathetic_stress_relief"),
-		1e-9,
-		"善解人意：聊天对象压力额外 −5"
+		core.stress(other), 50.0 - _number("empathetic_stress_relief"), 1e-9, "善解人意：聊天对象压力额外 −5"
 	)
 	assert_almost_eq(core.vitality(other), 50.0, 1e-9, "善解人意的减压不联动动力")
 
@@ -302,10 +304,7 @@ func test_optimistic_relieves_stress_once_per_leisure() -> void:
 	core._busy_until[i] = 0
 	core._settle_finished_actions()
 	assert_almost_eq(
-		core.stress(i),
-		50.0 - _number("optimistic_stress_relief"),
-		1e-9,
-		"乐观：完成一次娱乐压力额外 −3"
+		core.stress(i), 50.0 - _number("optimistic_stress_relief"), 1e-9, "乐观：完成一次娱乐压力额外 −3"
 	)
 	assert_almost_eq(core.vitality(i), 50.0, 1e-9, "乐观的减压不联动动力")
 

@@ -184,7 +184,7 @@ func reveals_incoming_affinity(i: int) -> bool:
 	return has(i, TEAM_SPIRIT)
 
 
-## 百事通：一次打听的消息条数。普通打听是 3 条、再次打听同一人是 5 条；达到本值时补足随机同学。
+## 百事通：一次打听提供的有向单轴关系信息条数上限（D10；普通打听上限见 teacher_commands.csv 的 ask_relation_max）。
 func well_informed_messages(i: int) -> int:
 	if not has(i, WELL_INFORMED):
 		return 0
