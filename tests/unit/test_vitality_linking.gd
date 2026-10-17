@@ -95,9 +95,9 @@ func test_play_state_relief_is_unlinked() -> void:
 	core._busy_act[0] = "play_phone"
 	core._busy_phase[0] = 0
 	core._busy_until[0] = 10 ** 9
-	for _k in range(20):
+	for _k in range(40):
 		core._settle_units()
-	assert_almost_eq(core.stress(0), 45.0, 0.0001, "游戏状态每 20 秒 −5 压力")
+	assert_almost_eq(core.stress(0), 45.0, 0.0001, "游戏状态每 40 秒 −5 压力")
 	assert_almost_eq(core.vitality(0), 50.0, 0.0001, "游戏状态「不减少动力」，且不联动减压")
 
 
