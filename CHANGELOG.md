@@ -1,5 +1,14 @@
 # 变更记录
 
+## 2026-10-17 修复安卓包丢 CSV 导致的首次 tick 卡死，新增导出前导入模式校验
+
+- 现象：v0.3.1 安卓端点「新游戏」后帧率跌到 1、按钮无响应；同一份代码在桌面端正常。
+- 根因：老师版新增的 11 张 CSV（`rules/{activities,audio,chat_space,harm,passive_params,passives,psyche,risk,seat_relations,teacher_commands}` 与 `ui/pick_layers`）的 `.csv.import` 仍是 `importer="csv_translation"`，导出时被翻译导入器接管，**原始 CSV 不进 APK**（只剩 `.import` 存根）。安卓运行期 `ConfigLoader` 扫不到这些表：`_init_grade()` 首行报错中止 → `_broken=[]`、成绩/压力/动力全为 0；每帧数十次 `snapshot()` 各报 16 个越界错误（实测 109 万行日志）；`skip_class()` 缺 `class_gain` 反复失败 → 时钟卡在上课段。
+- 修复：11 个 `.csv.import` 改为 `importer="keep"`、`type=""` 并重新导入；重导出的 APK 内 41/41 CSV 齐全。桌面端直接读源码目录、不经过导入，所以此前未暴露。
+- 新增 `tools/check_export_imports.py`：校验全部 `data/**/*.csv` 都有 `.import`、导入模式为 keep、`type` 为空、`source_file` 指向真实 CSV、无孤儿存根；已接入 `tools/run_tests.sh`（导出前置检查）并写入 `AGENTS.md` / `tools/README.md`。
+- 验证：手机实测（v0.3.1 / code 4 覆盖安装）开局平均成绩 342.7、压力/动力正常结算，课间 → 上课 → 第二课间推进正常、按钮可点；`logcat` Godot 错误由 109 万行降至 18 行（剩余为 SVG 空图与 `LXGWWenKai` 字体缺失的既有问题，与本次无关）。`check_export_imports`（41/41）、`check_config`、`check_docs` 通过。
+- 检验一（换成脚本还成立吗）：本次只改导入 / 打包配置与离线检查，没有触碰玩法逻辑、数值或随机流。
+
 ## 2026-10-17 移除无存档时的「开始新游戏？」确认面板
 
 - 主菜单点「新游戏」：无存档直接开局，不再弹两键确认；有存档仍弹「检测到存档」三键（清除 / 保留 / 取消），避免误覆盖存档。
