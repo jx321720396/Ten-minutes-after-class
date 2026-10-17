@@ -294,9 +294,11 @@ func _process(_delta: float) -> void:
 			moving,
 			bool(_pose_core.is_present(index))
 		)
-		pose.show_pose(mode)
-		actor.get_node("Sprite").visible = mode == "stand"
-		_update_chair_depth(seat, mode == "stand" and at_home and not moving)
+		var applied: bool = pose.show_pose(mode, true)
+		# 贴图还在后台加载时保持站立表现（不闪空、不阻塞主线程）。
+		var standing: bool = mode == "stand" or not applied
+		actor.get_node("Sprite").visible = standing
+		_update_chair_depth(seat, standing and at_home and not moving)
 
 
 func _update_chair_depth(seat: Node3D, standing_at_seat: bool) -> void:
