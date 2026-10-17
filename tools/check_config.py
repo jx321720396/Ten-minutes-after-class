@@ -417,6 +417,8 @@ check("D02：单位时长与学习结算时长为正整数",
       and _acts_cfg.get("play_settle_seconds", 0) > 0)
 check("D02：学习收益为正、游戏收益为负",
       _acts_cfg.get("study_gain", 0) > 0 and _acts_cfg.get("play_gain", 0) < 0)
+check("D02：上课段固定学业收益为正整数",
+      _acts_cfg.get("class_gain", 0) > 0 and _acts_cfg.get("class_gain", 0) == int(_acts_cfg.get("class_gain", 0)))
 _seed_books = load("characters/seeds.csv")
 check("P0-3：课外书种子仅 0/1", all(r.get("book") in ("0", "1") for r in _seed_books))
 _roster = {r["key"]: r["value"] for r in load("rules/roster.csv")}

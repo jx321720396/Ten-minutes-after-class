@@ -2,12 +2,12 @@ extends GutTest
 ## 时间组件 Task 4 单测：日末简报停留、学期结束、时间状态存档边界。
 ##
 ## 依据：docs/superpowers/plans/2026-10-07-time-component.md §4（mode）、§6（存档边界）、Task 4。
-## 覆盖：日末进入 report 且时钟冻结、继续只进一天、30 天终止精确（14,400 tick / 29 次日报 /
+## 覆盖：日末进入 report 且时钟冻结、继续只进一天、30 天终止精确（9,000 tick / 29 次日报 /
 ## 1 次学期结束）、日末时间状态往返、坏存档载荷被拒。
 
 const SEED := 20261007
 const NPC_COUNT := 16
-const TICKS_PER_DAY := 480
+const TICKS_PER_DAY := 300
 const TERM_DAYS := 30
 
 
@@ -40,7 +40,7 @@ func test_day_end_enters_report_and_freezes_the_clock() -> void:
 	assert_eq(str(snap["mode"]), SimulationClock.MODE_REPORT, "第 1 天结束进入 report")
 	assert_eq(int(snap["ended_day"]), 1, "结束的是第 1 天")
 	assert_true(float(snap["report_hold_seconds"]) >= 0.0, "快照暴露日末停留时长（report_hold_seconds）")
-	assert_eq(int(core.time_snapshot()["global_tick"]), TICKS_PER_DAY, "一天正好 480 tick")
+	assert_eq(int(core.time_snapshot()["global_tick"]), TICKS_PER_DAY, "一天正好 300 tick")
 	assert_eq(snap["remaining_seconds"], 0.0, "简报等待不计时")
 
 	clock.pump(120.0)
@@ -84,7 +84,7 @@ func test_term_ends_after_30_days() -> void:
 	assert_eq(reports.size(), TERM_DAYS - 1, "前 29 天各发一次 report_ready")
 	assert_eq(str(clock.snapshot()["mode"]), SimulationClock.MODE_FINISHED, "学期结束进入 finished")
 	assert_eq(
-		int(core.time_snapshot()["global_tick"]), TICKS_PER_DAY * TERM_DAYS, "30 天共 14,400 tick"
+		int(core.time_snapshot()["global_tick"]), TICKS_PER_DAY * TERM_DAYS, "30 天共 9,000 tick"
 	)
 
 	clock.pump(600.0)

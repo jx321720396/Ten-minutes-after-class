@@ -1,5 +1,16 @@
 # 变更记录
 
+## 2026-10-17 上课段改为黑幕跳过：全员 +2 学业收益、不消耗动力
+
+- 按裁定「上课时间直接调用黑幕跳过」：上课段不再逐 tick 模拟，也不做段首状态判定；只保留两项效果 —— **全员固定 +2 学业收益**（每节课一次，上午＋下午每天 +4）与**崩溃判定**。压力涓流、睡觉、老师命令挂起、学习逐单位结算一律取消，**动力不消耗**。
+- 内核 `sim_core.gd` 新增 `skip_class()`：全员 `GainToday += class_gain`、跑一次 `_check_breakdown()`（零 RNG）、直接推进游标到下一段；不调 `_begin_phase`／`_end_phase`（避免 `roll_sleep` 消费随机数、课间结算重复一遍）。class 从不是末相位，不会误触发跨天结算。
+- 时钟 `simulation_clock.gd` 在 `pump()` 检测到 `kind == "class"` 即调用 `skip_class()` 并广播 `phase_changed`，转场黑幕照常切「上课了」→「下课了」，无需改动。
+- 配置 `activities.csv` 新增 `class_gain,2`；`check_config.py` 补一条「上课段固定学业收益为正整数」。
+- Python 对拍 `core_sim.py` 镜像 `skip_class()` 并在 `run_day()` 跳过 class 段，守住同种子对拍（两侧均零 RNG）。
+- 批处理 `advance_phase`/`advance_day`/`run_day` 同步跳课：单日 480 → 300 tick（课间 100×3，上课段跳过）；GDScript 单测（`test_sim_core`/`test_time_term`）、对拍导出工具（`export_ticks_gd`/`headless_export_ticks`）与时钟单测「上课段 1/6 秒推进 1 tick」一并更新到新口径。
+- 策划案同步：§3.1、§4.1 上课段描述改为黑幕跳过口径，`split_teacher_gdd.py` 重新生成分册。
+- 验证：`check_config` 172/0、`test_core` 96/0、`verify_formula` 9/0、`check_docs` 通过。`check_metrics`／`diversity_report` 仍红 —— 属旧学生版标定未迁移的**既有**失败（改动前 HEAD 即同款 0 压力 / 0 爆发），非本次引入，待老师版重标定。
+
 ## 2026-10-17 办公室送回即时、表扬实装、训斥改为 +30
 
 - 送回教室不再计返程：`send_back_seconds` 改为 0，学生当场离开办公室，不占用命令、不消耗课间时间。
