@@ -71,10 +71,10 @@ func test_play_state_costs_gain_and_relieves_stress_without_vitality_cost() -> v
 	core._vitality[0] = 30.0
 	core._phase_state[0] = "play"
 	var gain_before := core.gain_today(0)
-	for _t in range(20):
+	for _t in range(40):
 		core._settle_units()
-	assert_almost_eq(core.gain_today(0), gain_before - 1.0, 0.0001, "游戏每 20 秒 -1 学业收益（D02）")
-	assert_almost_eq(core.stress(0), 45.0, 0.0001, "游戏每 20 秒 -5 压力（D02）")
+	assert_almost_eq(core.gain_today(0), gain_before - 1.0, 0.0001, "游戏每 40 秒 -1 学业收益")
+	assert_almost_eq(core.stress(0), 45.0, 0.0001, "游戏每 40 秒 -5 压力")
 	assert_almost_eq(core.vitality(0), 30.0, 0.0001, "游戏不减少动力（D02）")
 
 
