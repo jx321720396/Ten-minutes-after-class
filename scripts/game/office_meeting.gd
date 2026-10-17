@@ -47,7 +47,7 @@ func setup(view: Control) -> void:
 		label.add_theme_font_size_override("font_size", int(_config.font_size))
 		rows.add_child(label)
 	_status.custom_minimum_size.y = float(_config.status_height)
-	for key in ["scold", "send_back", "comfort", "ask", "encourage"]:
+	for key in ["scold", "send_back", "praise", "ask", "encourage"]:
 		var button := Button.new()
 		button.text = _config.send_back_label if key == "send_back" else _config[key]
 		view.style_button(button)
@@ -59,7 +59,7 @@ func setup(view: Control) -> void:
 		button.pressed.connect(func() -> void: action_requested.emit(key))
 		rows.add_child(button)
 		_buttons[key] = button
-		if key in ["comfort", "ask", "encourage"]:
+		if key in ["ask", "encourage"]:
 			button.tooltip_text = _config.pending
 	_sprites = (
 		JSON
@@ -93,7 +93,7 @@ func refresh(core: Variant, snapshot: Dictionary) -> void:
 		)
 	for key in _buttons:
 		_buttons[key].disabled = (
-			not arrived or command != "" or key in ["comfort", "ask", "encourage"]
+			not arrived or command != "" or key in ["ask", "encourage"]
 		)
 
 
@@ -107,10 +107,10 @@ func status_text(snapshot: Dictionary) -> String:
 		return str(_config.held)
 	var command := str(snapshot.get("command", ""))
 	if not command.is_empty():
-		return (
-			_config.remaining
-			% [str(_config.get(command, command)), int(snapshot.remaining_seconds)]
-		)
+		var label := str(_config.get(command, command))
+		if command == "office_chat":
+			label = str(_config.get("%s_status" % str(snapshot.get("chat_kind", "")), label))
+		return _config.remaining % [label, int(snapshot.remaining_seconds)]
 	return str(_config.waiting if int(snapshot.get("called", -1)) >= 0 else _config.idle_status)
 
 

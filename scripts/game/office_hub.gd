@@ -136,13 +136,13 @@ func _refresh_profile_binding() -> void:
 
 
 func _on_action(action: String) -> void:
-	if action in ["scold", "send_back"]:
+	if action in ["scold", "praise", "send_back"]:
 		var core: Variant = _room.get_node("Actors").current_core()
 		var commands = core.teacher_commands()
-		if action == "scold":
-			commands.office_chat(core, "scold")
-		else:
+		if action == "send_back":
 			commands.send_back(core)
+		else:
+			commands.office_chat(core, action)
 		_process(0.0)
 	elif action in ["monitor", "classroom"]:
 		set_mode(action)
