@@ -278,6 +278,9 @@ func _build_ask_dialog() -> void:
 
 
 func bind_touch(button: Button) -> void:
+	if button.has_meta(TouchBind.META_BOUND):
+		return
+	button.set_meta(TouchBind.META_BOUND, true)
 	if not button.gui_input.is_connected(_button_touch.bind(button)):
 		button.gui_input.connect(_button_touch.bind(button))
 
