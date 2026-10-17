@@ -579,6 +579,11 @@ func advance_phase() -> int:
 	_transition_if_needed()
 	if _phase_index >= _active_phases.size():
 		return 0
+	# 上课段硬跳过（2026-10-17 裁定）：批处理同样跳过 class、不逐 tick（只做 class_gain 收益 + 崩溃判定），
+	# 保证 advance_day / run_day 与实时时钟 pump 走同一条「上课无 tick」口径，同种子对拍一致。
+	if str(_active_phases[_phase_index]["kind"]) == "class":
+		skip_class()
+		return 0
 	if not _phase_setup_done:
 		_begin_phase()
 	var ran := 0
@@ -649,6 +654,23 @@ func finish_time_boundary() -> Dictionary:
 ## 跑完一天（三段课间 + 两段上课），返回总 tick 数。等价 advance_day()。
 func run_day() -> int:
 	return advance_day()
+
+
+## 上课段硬跳过（2026-10-17 裁定）：上课时间黑幕一闪即过，不逐 tick 模拟，
+## 只保留两项效果 —— 全员固定学业收益 + 崩溃判定；压力涓流 / 睡觉 / 老师命令挂起 /
+## 学习逐单位结算全部取消（即上课段不消耗动力、不涨压力）。
+## 不调 _begin_phase（避免 roll_sleep 消费 RNG、begin_class 挂起、段首状态判定），
+## 也不调 _end_phase（class 从未开始、无占用可收尾；且此时 _phase 仍为上一段 "break"，
+## 误调会把课间结算重复一遍）。只推进游标到下一段；class 从不是末相位，故不会触发 _settle_day。
+func skip_class() -> void:
+	var gain := float(_acts["class_gain"])
+	for i in range(_n):
+		_gain_today[i] += gain
+	# 崩溃判定保留：跳过期间压力冻结，跳过时判一次 = class 结束时判一次（兜底边界的邻居涓流抬压）。
+	_check_breakdown()
+	_phase_index = (_phase_index + 1) % _active_phases.size()
+	_phase_setup_done = false
+	_tick_in_phase = 0
 
 
 ## 行为完成结算：把**已到期**的占用收尾（§10.4 / §12.2 行为耗时契约）。
@@ -757,7 +779,7 @@ func _tick() -> void:
 ## 单位结算（《老师版规则合并稿》D02）：按秒累计，每满一个单位结算一次；只对课间生效。
 ## · 学习：每 20 秒 +1 学业收益、-5 动力（不直接加成绩 —— 跨天由 _settle_day 把当日收益并入成绩）
 ## · 娱乐（吃零食 / 聊天 / 打闹 / 听歌 / 看课外书）：每 10 秒 -5 压力
-## · 游戏状态：每 20 秒 -1 学业收益、-5 压力（不减少动力）
+## · 游戏状态：每 40 秒 -1 学业收益、-5 压力（不减少动力）
 ## 未完成的余额不在这里结算：自然完成 / 被打断时由 _fold_pending_unit 按 D02 第 4 条折算。
 func _settle_units() -> void:
 	# D02 + 2026-10-16 裁定：学习单位在**任何段**都结算（上课也积累学业收益）；

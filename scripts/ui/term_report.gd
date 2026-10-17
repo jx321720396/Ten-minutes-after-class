@@ -46,6 +46,7 @@ func _ready() -> void:
 	layer = int(_cfg.layer)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
+	TouchBind.bind_tree(self)
 	hide()
 
 

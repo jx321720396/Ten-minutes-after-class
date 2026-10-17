@@ -26,6 +26,51 @@
 - 检验一（换成脚本还成立吗）：账目全部来自配置速率与相位长度，没有角色名／编号分支，也没有预设剧情；配置一改、脚本重跑即得新账 —— 换成脚本照样成立。
 - **同日修订**：取消普通跨天动力 −10 后，本条目数字更新为净支出 120/天、维持 3.8 人、缺口 2.1 倍（见顶部实装记录与预算文档）。
 
+## 2026-10-17 进教室加载优化：贴图与场景后台预载（6.6s → 4.3s）
+
+- 现象：点击「新游戏」到可操作约 6.6 秒；其中 16 名学生各 2 张约 1.5 MB 的坐姿贴图在 `classroom_actors.build()` 里同步 `load()`，单独占 2.2 秒。
+- 新增 `scripts/game/asset_preloader.gd`：主菜单 `_ready` 起用 `ResourceLoader.load_threaded_request` 后台预载 32 张坐姿贴图与教室场景；场景就绪时直接 `change_scene_to_packed`，省掉同步读盘。
+- `layered_student_pose` 改为登记路径、延迟到贴图就绪才切坐姿（未就绪返回 false，人物保持站立，不阻塞主线程）；`classroom_actors` 据此保留站立 Sprite。单测默认仍同步取贴图（`non_blocking=false`），旧语义不变。
+- 实测（同一设备、同一条件）：场景切换 531→176 ms、人物构建 2196→701 ms、首帧 1446→1133 ms，点击 → 可玩 6.58→4.30 s；菜单出现后立即点击，5 秒时已完整进入教室并开始结算。
+- 验证：GUT 353 通过 / 2 失败（均为改动前既有的教室美术资源用例）；`check_config` 185/0、`check_docs` 通过、`check_export_imports` 41/41。配合版本号 0.3.3（code 6）出包。
+- 检验一（换成脚本还成立吗）：只改加载时机与未就绪时的表现回退，不触碰玩法逻辑、数值与随机流。
+
+## 2026-10-17 游戏扣分间隔翻倍，上课加分改为 +3
+
+- 游戏状态结算间隔由 20 秒改为 40 秒，每次仍是学业收益 −1、压力 −5。一节 100 秒课间从扣 5 次变为扣 2 次。
+- 上课黑幕的固定学业收益由每节 +2 改为 +3，上午加下午每天 +6。
+
+## 2026-10-17 修复安卓包丢 CSV 导致的首次 tick 卡死，新增导出前导入模式校验
+
+- 现象：v0.3.1 安卓端点「新游戏」后帧率跌到 1、按钮无响应；同一份代码在桌面端正常。
+- 根因：老师版新增的 11 张 CSV（`rules/{activities,audio,chat_space,harm,passive_params,passives,psyche,risk,seat_relations,teacher_commands}` 与 `ui/pick_layers`）的 `.csv.import` 仍是 `importer="csv_translation"`，导出时被翻译导入器接管，**原始 CSV 不进 APK**（只剩 `.import` 存根）。安卓运行期 `ConfigLoader` 扫不到这些表：`_init_grade()` 首行报错中止 → `_broken=[]`、成绩/压力/动力全为 0；每帧数十次 `snapshot()` 各报 16 个越界错误（实测 109 万行日志）；`skip_class()` 缺 `class_gain` 反复失败 → 时钟卡在上课段。
+- 修复：11 个 `.csv.import` 改为 `importer="keep"`、`type=""` 并重新导入；重导出的 APK 内 41/41 CSV 齐全。桌面端直接读源码目录、不经过导入，所以此前未暴露。
+- 新增 `tools/check_export_imports.py`：校验全部 `data/**/*.csv` 都有 `.import`、导入模式为 keep、`type` 为空、`source_file` 指向真实 CSV、无孤儿存根；已接入 `tools/run_tests.sh`（导出前置检查）并写入 `AGENTS.md` / `tools/README.md`。
+- 验证：手机实测（v0.3.1 / code 4 覆盖安装）开局平均成绩 342.7、压力/动力正常结算，课间 → 上课 → 第二课间推进正常、按钮可点；`logcat` Godot 错误由 109 万行降至 18 行（剩余为 SVG 空图与 `LXGWWenKai` 字体缺失的既有问题，与本次无关）。`check_export_imports`（41/41）、`check_config`、`check_docs` 通过。
+- 检验一（换成脚本还成立吗）：本次只改导入 / 打包配置与离线检查，没有触碰玩法逻辑、数值或随机流。
+
+## 2026-10-17 办公室打听给出关系消息
+
+- 打听按钮可点击，仍走 20 秒办公室谈话。结束后弹出对话框，不改压力、动力或学业收益。
+- 第一次三条：我最喜欢、我最讨厌，再随机一名其他同学。再次打听同一人五条，前两句不变，后三条按第三句分档且不与前两句的人重复。小于 10 是不怎么，10 到 29 是有一点，30 及以上是很。
+- 百事通一次给出 6 条，多出的仍是不重复的真实同学，不编造关系。
+## 2026-10-17 移除无存档时的「开始新游戏？」确认面板
+
+- 主菜单点「新游戏」：无存档直接开局，不再弹两键确认；有存档仍弹「检测到存档」三键（清除 / 保留 / 取消），避免误覆盖存档。
+- `scripts/ui/main_menu.gd` 的 `_on_new_game()` 改为按 `Save.has_save()` 分支；`confirm_dialog` 组件的 `open(false)` 口径保留（主菜单不再调用，供单测与后续复用）。
+- 单测 `tests/unit/test_confirm_dialog.gd` 的主菜单流程用例同步：无存档断言面板不出现且直接调 `_start_new_game`。
+- 验证：`check_docs` 通过；GUT `test_confirm_dialog` 5/5 通过（Godot 4.7.2 + GUT 9.7.1）。
+
+## 2026-10-17 上课段改为黑幕跳过：全员 +2 学业收益、不消耗动力
+
+- 按裁定「上课时间直接调用黑幕跳过」：上课段不再逐 tick 模拟，也不做段首状态判定；只保留两项效果 —— **全员固定 +2 学业收益**（每节课一次，上午＋下午每天 +4）与**崩溃判定**。压力涓流、睡觉、老师命令挂起、学习逐单位结算一律取消，**动力不消耗**。
+- 内核 `sim_core.gd` 新增 `skip_class()`：全员 `GainToday += class_gain`、跑一次 `_check_breakdown()`（零 RNG）、直接推进游标到下一段；不调 `_begin_phase`／`_end_phase`（避免 `roll_sleep` 消费随机数、课间结算重复一遍）。class 从不是末相位，不会误触发跨天结算。
+- 时钟 `simulation_clock.gd` 在 `pump()` 检测到 `kind == "class"` 即调用 `skip_class()` 并广播 `phase_changed`，转场黑幕照常切「上课了」→「下课了」，无需改动。
+- 配置 `activities.csv` 新增 `class_gain,2`；`check_config.py` 补一条「上课段固定学业收益为正整数」。
+- Python 对拍 `core_sim.py` 镜像 `skip_class()` 并在 `run_day()` 跳过 class 段，守住同种子对拍（两侧均零 RNG）。
+- 批处理 `advance_phase`/`advance_day`/`run_day` 同步跳课：单日 480 → 300 tick（课间 100×3，上课段跳过）；GDScript 单测（`test_sim_core`/`test_time_term`）、对拍导出工具（`export_ticks_gd`/`headless_export_ticks`）与时钟单测「上课段 1/6 秒推进 1 tick」一并更新到新口径。
+- 策划案同步：§3.1、§4.1 上课段描述改为黑幕跳过口径，`split_teacher_gdd.py` 重新生成分册。
+- 验证：`check_config` 172/0、`test_core` 96/0、`verify_formula` 9/0、`check_docs` 通过。`check_metrics`／`diversity_report` 仍红 —— 属旧学生版标定未迁移的**既有**失败（改动前 HEAD 即同款 0 压力 / 0 爆发），非本次引入，待老师版重标定。
 ## 2026-10-17 游戏状态伙伴类娱乐实装（自主社交入口打通）
 
 - `scripts/core/sim_core.gd` 与 `tools/core_sim.py` 抽出 `_try_partner_activity`（闲聊 / 打闹的一次尝试：按 `chat`／`roughhouse_p` 概率掷骰 → 找伴 → 提议），游戏状态段首决策改为「先尝试伙伴类，未成立再选自指娱乐」；学习状态仍锁定学习，不进入该入口。收益口径不变：游戏状态仍按 §5.2 每 20 秒收益 −1、压力单独 −5、不减动力，不叠加自由娱乐基础减压，聊天／打闹的真实关系与完成效果按各自规则结算并去重。

@@ -21,6 +21,7 @@ var _picker_title: Label
 var _picker_kind := ""
 var _pair_first := -1
 var _saved_visible: Dictionary = {}
+var _ask_seen := 0
 
 
 func bind_classroom(room: Node) -> void:
@@ -105,6 +106,12 @@ func _process(_delta: float) -> void:
 	var snapshot: Dictionary = core.teacher_commands().snapshot()
 	_view.update_commands(core, snapshot)
 	_teacher.update_commands(snapshot, _view.command_status(snapshot))
+	var ask_id := int(snapshot.get("ask_id", 0))
+	if ask_id != _ask_seen:
+		_ask_seen = ask_id
+		var lines: Array = snapshot.get("ask_lines", [])
+		if not lines.is_empty():
+			_view.present_ask(lines)
 
 
 func _capture_classroom_state() -> void:
@@ -136,7 +143,7 @@ func _refresh_profile_binding() -> void:
 
 
 func _on_action(action: String) -> void:
-	if action in ["comfort", "scold", "praise", "send_back"]:
+	if action in ["comfort", "scold", "praise", "ask", "send_back"]:
 		var core: Variant = _room.get_node("Actors").current_core()
 		var commands = core.teacher_commands()
 		if action == "send_back":

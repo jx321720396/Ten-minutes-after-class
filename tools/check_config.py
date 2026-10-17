@@ -415,6 +415,8 @@ check("D02：单位时长与学习结算时长为正整数",
       and _acts_cfg.get("play_settle_seconds", 0) > 0)
 check("D02：学习收益为正、游戏收益为负",
       _acts_cfg.get("study_gain", 0) > 0 and _acts_cfg.get("play_gain", 0) < 0)
+check("D02：上课段固定学业收益为正整数",
+      _acts_cfg.get("class_gain", 0) > 0 and _acts_cfg.get("class_gain", 0) == int(_acts_cfg.get("class_gain", 0)))
 check("D03：办公室安抚按减压写入（压力 −20）",
       _acts_cfg.get("office_comfort_stress", 0) == -20)
 check("D03：办公室表扬只加动力、训斥加压为正",

@@ -15,8 +15,9 @@ max-line-length: 120            # 放宽（100 → 120）：表格 / 常量清�
 max-file-lines: 3200            # 放宽（2500 → 3000 → 3200）：sim_core.gd 是模拟内核本体（2026-10-17 被动接线后 3079 行）；
                                 # 被动只加了接线与结算入口，规则本体在 passives.gd —— 再涨必须优先拆类，不再抬
 
-max-public-methods: 65          # 放宽（40 → 60 → 65）：SimCore 的公开 API 多属结构使然；
-                                # 2026-10-10 +2（set_seat_zones / in_own_seat）—— 再涨应优先把空间查询拆出去
+max-public-methods: 68          # 放宽（40 → 60 → 65 → 68）：SimCore 的公开 API 多属结构使然；
+                                # 2026-10-10 +2（set_seat_zones / in_own_seat）；2026-10-17 +3（skip_class 由时钟调用、
+                                # passive_id_of 与 teacher_student_snapshot 供档案只读展示）—— 现 66 个。再涨必须拆类（空间查询 / 查询快照优先）
 
 max-returns: 15                 # 放宽（默认 6 → 15）：状态机式「逐条件早返回」是正常写法（player_interactions.commit / 菜单文案）；再涨应优先拆函数
 

@@ -48,6 +48,7 @@ func _ready() -> void:
 	details.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 	rows.add_child(details)
 	_build_details()
+	TouchBind.bind_tree(self)
 	refresh({})
 
 
@@ -167,6 +168,12 @@ func _open_details(kind: String) -> void:
 	_detail_kind = kind
 	_refresh_details()
 	_details.show()
+
+
+## 日末由 TimeHUD 转调：强制收起风险详情弹层，避免 layer 31 盖在推理板（layer 6）之上。
+func close_details() -> void:
+	if _details != null:
+		_details.hide()
 
 
 func _refresh_details() -> void:

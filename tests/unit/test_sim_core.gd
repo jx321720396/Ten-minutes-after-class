@@ -1,5 +1,5 @@
 extends GutTest
-## SimCore：单日时间系统（480 tick）、同种子确定性、绑定组初始化与只读访问器。
+## SimCore：单日时间系统（300 tick，上课段黑幕跳过）、同种子确定性、绑定组初始化与只读访问器。
 
 var _tables: Dictionary
 
@@ -23,8 +23,8 @@ func _alias_idx(core: SimCore, alias: String) -> int:
 func test_one_day_ticks() -> void:
 	var core := _core()
 	var total := core.run_day()
-	assert_eq(total, 480, "单日总 tick = 480（课间 100×3 + 上课 90×2）")
-	assert_eq(core.global_tick(), 480, "global_tick 累计 480")
+	assert_eq(total, 300, "单日总 tick = 300（课间 100×3，上课段跳过）")
+	assert_eq(core.global_tick(), 300, "global_tick 累计 300")
 	assert_eq(core.day(), 2, "结算后推进到第 2 天")
 	assert_eq(core.node_count(), 16, "一局 16 名学生（2026-10-16 起没有玩家节点）")
 
@@ -43,7 +43,7 @@ func test_advance_tick_phase_day() -> void:
 
 	var core3 := _core()
 	var total := core3.advance_day()
-	assert_eq(total, 480, "advance_day 单日 480 tick")
+	assert_eq(total, 300, "advance_day 单日 300 tick")
 	assert_eq(core3.day(), 2, "结算后推进到第 2 天")
 
 
@@ -52,7 +52,7 @@ func test_advance_day_twice() -> void:
 	var core := _core()
 	core.advance_day()
 	core.advance_day()
-	assert_eq(core.global_tick(), 960, "两天累计 960 tick")
+	assert_eq(core.global_tick(), 600, "两天累计 600 tick")
 	assert_eq(core.day(), 3, "推进到第 3 天")
 
 

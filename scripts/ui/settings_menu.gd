@@ -17,6 +17,7 @@ func _ready():
 	bgm_slider.value_changed.connect(_on_bgm_volume_changed)
 	sfx_slider.value = SFX.get_sfx_volume() * 100.0
 	sfx_slider.value_changed.connect(_on_sfx_volume_changed)
+	TouchBind.bind_tree(self)
 
 
 func _on_replay():

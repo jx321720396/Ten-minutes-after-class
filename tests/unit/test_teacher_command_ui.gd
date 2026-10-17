@@ -141,6 +141,21 @@ func test_real_ui_summons_displays_all_students_and_returns_them() -> void:
 	state.end_game()
 
 
+func test_ask_dialog_shows_the_reported_lines() -> void:
+	var view = load("res://scenes/game/office.tscn").instantiate()
+	add_child_autofree(view)
+	view.present_ask([
+		"我最喜欢甲（好感值为：90）",
+		"我最讨厌乙（敌对值为：80）",
+		"我有一点喜欢丙也有一点讨厌丙（好感值为：10，敌对值为：4）",
+	])
+	assert_true(view.ask_open(), "打听结束后弹出对话框")
+	assert_true(view.ask_text().contains("我最喜欢甲（好感值为：90）"))
+	assert_true(view.ask_text().contains("我最讨厌乙（敌对值为：80）"))
+	view.dismiss_ask()
+	assert_false(view.ask_open())
+
+
 func test_exports_include_office_command_and_portrait_configuration() -> void:
 	var presets := ConfigFile.new()
 	assert_eq(presets.load("res://export_presets.cfg"), OK)

@@ -15,8 +15,9 @@ extends RefCounted
 ## 待确认（合并稿未定，本模块不擅自新增数值）：
 ##   · 延后命令是「保留已用时间继续」还是「重新计满」—— 当前按**保留已用时间继续**实现
 ##     （见 `_hold_for_class`）；确认后只改这一处。
-##   · 调解耗时、打听 / 鼓励的效果数值 —— 相关命令只计时、不施加数值。
+##   · 调解耗时、鼓励的效果数值 —— 鼓励只计时、不施加数值。
 ##     安抚减压、表扬只加动力、训斥走一般压力联动（压力与动力同加）。
+##     打听在谈话结束时给出关系消息，不改压力、动力或学业收益。
 
 var _timing: Dictionary = {}
 var _acts: Dictionary = {}
@@ -34,6 +35,11 @@ var _chat_kind := ""
 var _seat_change := {}
 ## 上课期间挂起的命令（下课后继续）
 var _held := false
+## 本局已经打听过的学生。再次打听同一人时消息从 3 条变为 5 条。
+var _asked: Dictionary = {}
+## 最近一次打听结果。界面只读，按序号显示一次。
+var _ask_lines: Array = []
+var _ask_id := 0
 ## 本课间是否已经触发「首次进入教室」的全班加压
 var _entered_this_break := false
 
@@ -105,7 +111,8 @@ func send_back(core: Variant) -> bool:
 
 ## 办公室聊天（D03 第 2 条）：安抚 / 表扬 / 训斥 / 打听 / 鼓励统一耗时 20 秒。
 ## 安抚：压力与动力各减配置值（一般联动）。训斥：压力与动力各加配置值。
-## 表扬：只加该生动力，不加压力。打听 / 鼓励当下只计时。
+## 表扬：只加该生动力，不加压力。鼓励当下只计时。
+## 打听结束时给出消息：首次 3 条，再次打听同一人 5 条；百事通提高到配置条数。
 ## 参数 `_core` 保留为统一调用签名（与 summon / send_back 一致），本命令当下不需读内核状态。
 func office_chat(_core: Variant, kind: String) -> bool:
 	if _held or _command != "" or kind not in ["comfort", "praise", "scold", "ask", "encourage"]:
@@ -196,7 +203,7 @@ func _finish(core: Variant) -> void:
 			_mediate_pair = {}
 		"office_chat":
 			# 训斥走一般联动（压力与动力同加）；安抚按一般联动减压；表扬只加动力。
-			# 打听 / 鼓励仍只计时。
+			# 打听只给出消息。鼓励仍只计时。
 			if _called >= 0 and _chat_kind == "scold":
 				core.add_stress(_called, float(_acts["office_scold_stress"]))
 				core._note_scolded(_called)
@@ -204,6 +211,8 @@ func _finish(core: Variant) -> void:
 				core.add_stress(_called, float(_acts["office_comfort_stress"]))
 			elif _called >= 0 and _chat_kind == "praise":
 				core.add_vitality(_called, float(_acts["office_praise_vitality"]))
+			elif _called >= 0 and _chat_kind == "ask":
+				_deliver_ask(core, _called)
 			# D07 §10：办公室处理（含现场制止类的训斥）完成后，该学生本课间不能主动伤害。
 			core._note_stopped(_called)
 			_chat_kind = ""
@@ -214,6 +223,85 @@ func _finish(core: Variant) -> void:
 			_called = -1
 	_command = ""
 	_remaining = 0
+
+
+## 打听不改数值。前两句是「我最喜欢」「我最讨厌」；其余同学不与这两人重复。
+## 随机句按显示用的整数分档：小于 10 是不怎么，10 到 29 是有一点，30 及以上是很。
+## 好感或敌对并列时取节点号较小者。随机抽取走内核随机序列，同一种子结果相同。
+func _deliver_ask(core: Variant, index: int) -> void:
+	var repeat := bool(_asked.get(index, false))
+	_asked[index] = true
+	var lines: Array = []
+	var liked := _best_other(core, index, true)
+	var hated := _best_other(core, index, false)
+	if liked >= 0:
+		lines.append(_ask_favorite(core, index, liked))
+	if hated >= 0:
+		lines.append(_ask_rival(core, index, hated))
+	var random_slots := 3 if repeat else 1
+	var informed := int(core.teacher_student_snapshot(index).get("well_informed_messages", 0))
+	random_slots = maxi(random_slots, informed - lines.size())
+	var pool: Array = []
+	for j in range(int(core.node_count())):
+		if j == index or j == liked or j == hated:
+			continue
+		pool.append(j)
+	for other in core._rng.sample(pool, random_slots):
+		lines.append(_ask_mixed(core, index, int(other)))
+	_ask_lines = lines
+	_ask_id += 1
+
+
+func _best_other(core: Variant, index: int, by_affinity: bool) -> int:
+	var best := -1
+	var best_value := -1.0
+	for j in range(int(core.node_count())):
+		if j == index:
+			continue
+		var value := float(core.affinity(index, j) if by_affinity else core.hostility(index, j))
+		if best < 0 or value > best_value:
+			best = j
+			best_value = value
+	return best
+
+
+func _ask_favorite(core: Variant, index: int, other: int) -> String:
+	return "我最喜欢%s（好感值为：%d）" % [str(core.alias(other)), _ask_points(core.affinity(index, other))]
+
+
+func _ask_rival(core: Variant, index: int, other: int) -> String:
+	return "我最讨厌%s（敌对值为：%d）" % [str(core.alias(other)), _ask_points(core.hostility(index, other))]
+
+
+func _ask_mixed(core: Variant, index: int, other: int) -> String:
+	var name := str(core.alias(other))
+	var like := _ask_degree(core.affinity(index, other))
+	var hate := _ask_degree(core.hostility(index, other))
+	return (
+		"我%s喜欢%s也%s讨厌%s（好感值为：%d，敌对值为：%d）"
+		% [
+			like,
+			name,
+			hate,
+			name,
+			_ask_points(core.affinity(index, other)),
+			_ask_points(core.hostility(index, other)),
+		]
+	)
+
+
+## 与对话框里的整数一致：小于 10、10–29、30 及以上。
+func _ask_degree(value: float) -> String:
+	var shown := _ask_points(value)
+	if shown < 10:
+		return "不怎么"
+	if shown < 30:
+		return "有一点"
+	return "很"
+
+
+func _ask_points(value: float) -> int:
+	return int(round(value))
 
 
 func _seconds_left_in_break(core: Variant) -> int:
@@ -239,6 +327,8 @@ func snapshot() -> Dictionary:
 		"remaining_seconds": _remaining,
 		"called": _called,
 		"chat_kind": _chat_kind,
+		"ask_lines": _ask_lines.duplicate(),
+		"ask_id": _ask_id,
 		"seat_change": _seat_change.duplicate(true),
 		"held_by_class": _held,
 		"entered_this_break": _entered_this_break,
