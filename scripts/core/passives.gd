@@ -184,7 +184,7 @@ func reveals_incoming_affinity(i: int) -> bool:
 	return has(i, TEAM_SPIRIT)
 
 
-## 百事通：一次打听可获得的消息条数（打听消息系统尚未建立，当前只用于展示，不结算）。
+## 百事通：一次打听的消息条数。普通打听是 3 条、再次打听同一人是 5 条；达到本值时补足随机同学。
 func well_informed_messages(i: int) -> int:
 	if not has(i, WELL_INFORMED):
 		return 0

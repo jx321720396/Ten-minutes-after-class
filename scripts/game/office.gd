@@ -13,6 +13,8 @@ var _preview: TextureRect
 var _phase_names: Dictionary
 var _weekly_copy: Dictionary
 var _meeting: Control
+var _ask_layer: Control
+var _ask_body: Label
 
 
 func _ready() -> void:
@@ -69,6 +71,7 @@ func _ready() -> void:
 	_meeting.setup(self)
 	_fit()
 	_meeting.action_requested.connect(func(action: String) -> void: action_requested.emit(action))
+	_build_ask_dialog()
 
 
 func update_commands(core: Variant, snapshot: Dictionary) -> void:
@@ -206,6 +209,72 @@ func style_button(button: Button, primary: bool = false) -> void:
 	button.add_theme_constant_override("h_separation", int(config.gap))
 	button.expand_icon = true
 	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+
+func present_ask(lines: Array) -> void:
+	if _ask_layer == null:
+		return
+	_ask_body.text = "\n".join(lines)
+	_ask_layer.show()
+
+
+func ask_open() -> bool:
+	return _ask_layer != null and _ask_layer.visible
+
+
+func ask_text() -> String:
+	return "" if _ask_body == null else _ask_body.text
+
+
+func dismiss_ask() -> void:
+	if _ask_layer != null:
+		_ask_layer.hide()
+
+
+func _build_ask_dialog() -> void:
+	var layer := Control.new()
+	_ask_layer = layer
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.hide()
+	layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.35)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(dim)
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -460
+	panel.offset_top = -300
+	panel.offset_right = 460
+	panel.offset_bottom = 300
+	panel.add_theme_stylebox_override("panel", paper_style())
+	layer.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", int(config.gap))
+	panel.add_child(box)
+	var title := Label.new()
+	title.text = str(config.meeting.ask_title)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", FONTS.regular())
+	title.add_theme_color_override("font_color", Color(config.ink))
+	title.add_theme_font_size_override("font_size", int(config.title_font_size))
+	box.add_child(title)
+	var body := Label.new()
+	_ask_body = body
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.custom_minimum_size = Vector2(840, 0)
+	body.add_theme_font_override("font", FONTS.regular())
+	body.add_theme_color_override("font_color", Color(config.ink))
+	body.add_theme_font_size_override("font_size", int(config.small_font_size))
+	box.add_child(body)
+	var close := Button.new()
+	close.text = str(config.meeting.ask_close)
+	style_button(close)
+	close.custom_minimum_size.y = 88
+	close.pressed.connect(dismiss_ask)
+	box.add_child(close)
 
 
 func bind_touch(button: Button) -> void:
