@@ -64,10 +64,12 @@ func _has_save() -> bool:
 
 
 func _on_new_game():
-	# 2026-10-13：点「新游戏」一律先过确认面板——
-	# 有存档走「检测到存档」三键；无存档仅确认「开始新游戏？」。
-	# 确认（清除 / 保留 / 确定）都直接开局；老师版不选角色，取消留在主菜单。
-	confirm_dialog.open(_has_save())
+	# 2026-10-17：移除无存档时的「开始新游戏？」确认面板，点「新游戏」直接开局；
+	# 有存档仍走「检测到存档」三键（清除 / 保留 / 取消），避免误覆盖存档。
+	if _has_save():
+		confirm_dialog.open(true)
+	else:
+		_start_new_game()
 
 
 func _start_new_game() -> void:
