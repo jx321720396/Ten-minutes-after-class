@@ -7,6 +7,7 @@ signal closed
 
 func _ready():
 	back_btn.pressed.connect(_on_back)
+	TouchBind.bind_tree(self)
 
 
 func _on_back():

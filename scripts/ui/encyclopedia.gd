@@ -54,6 +54,7 @@ func _ready() -> void:
 	_load_data()
 	if not _entries.is_empty():
 		_show_entry(0)
+	TouchBind.bind_tree(self)
 
 
 func _unhandled_input(event: InputEvent) -> void:

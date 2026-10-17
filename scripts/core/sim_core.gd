@@ -90,7 +90,6 @@ var _kp: Dictionary = {}  # kernel 硬编码系数（kernel_params.csv）
 var _grade_bands: Array = []  # 成绩分段表（[band_upper, ticks_per_point]，按上界升序）
 var _probs: Dictionary = {}  # behavior_probs：行为 -> 基础概率
 var _thresholds_lookup: Dictionary = {}
-var _decay: Dictionary = {}
 var _behaviors: Dictionary = {}
 var _env: Dictionary = {}
 var _nw: Dictionary = {}
@@ -143,7 +142,6 @@ var _knot_days: Array = []
 ## 崩溃休息锁（§5.3）：崩溃当天只睡觉、不学习不社交、不参加座位结算；次日跨天时特殊恢复并解除。
 var _resting: Array = []
 var _vol_log: Array = []
-var _day_events: Dictionary = {}
 var _settled: Dictionary = {}
 var _stats: Dictionary = {}
 ## 每个节点的座位站位世界坐标（表现层注入；内核只读）
@@ -262,7 +260,6 @@ func _load_config(tables: Dictionary) -> void:
 	_grade_bands = _build_grade_bands(tables)
 	_probs = _build_behavior_probs(tables)
 	_thresholds_lookup = _build_thresholds(tables)
-	_decay = _params(tables, "rules/decay")
 	_behaviors = _build_behaviors(tables)
 	for kind in LEISURE_KINDS:
 		var prefix: String = LEISURE_KINDS[kind]
@@ -306,7 +303,6 @@ func _reset_runtime(n: int) -> void:
 	_phase_index = 0
 	_global_tick = 0
 	_vol_log = []
-	_day_events = {}
 	_settled = {}
 	_settled_boundary = Vector2i(-1, -1)
 	_interrupted_nodes = []
@@ -587,7 +583,7 @@ func advance_phase() -> int:
 	_transition_if_needed()
 	if _phase_index >= _active_phases.size():
 		return 0
-	# 上课段硬跳过（2026-10-17 裁定）：批处理同样跳过 class、不逐 tick（只做 +2 收益 + 崩溃判定），
+	# 上课段硬跳过（2026-10-17 裁定）：批处理同样跳过 class、不逐 tick（只做 class_gain 收益 + 崩溃判定），
 	# 保证 advance_day / run_day 与实时时钟 pump 走同一条「上课无 tick」口径，同种子对拍一致。
 	if str(_active_phases[_phase_index]["kind"]) == "class":
 		skip_class()
@@ -787,7 +783,7 @@ func _tick() -> void:
 ## 单位结算（《老师版规则合并稿》D02）：按秒累计，每满一个单位结算一次；只对课间生效。
 ## · 学习：每 20 秒 +1 学业收益、-5 动力（不直接加成绩 —— 跨天由 _settle_day 把当日收益并入成绩）
 ## · 娱乐（吃零食 / 聊天 / 打闹 / 听歌 / 看课外书）：每 10 秒 -5 压力
-## · 游戏状态：每 20 秒 -1 学业收益、-5 压力（不减少动力）
+## · 游戏状态：每 40 秒 -1 学业收益、-5 压力（不减少动力）
 ## 未完成的余额不在这里结算：自然完成 / 被打断时由 _fold_pending_unit 按 D02 第 4 条折算。
 func _settle_units() -> void:
 	# D02 + 2026-10-16 裁定：学习单位在**任何段**都结算（上课也积累学业收益）；
@@ -1002,12 +998,37 @@ func _settle_seat_relations() -> void:
 
 
 ## 游戏状态（D01 / D02）：动力 <30 的学生整课间处于游戏状态，结算走 play 口径（见 _settle_units）。
-## 这里只给表现层一个具体动作名 —— D02 没有指定「游戏状态做哪一项娱乐」，固定用「玩手机」，
-## 且**不消耗随机数**（确定性选择，避免两侧随机序列无意义漂移；是否改为随机属待确认项）。
+## 做哪一类自指娱乐由 `data/rules/behavior_probs.csv` 的 `*_p` 概率决定（2026-10-17：不再写死
+## 「玩手机」，游戏状态范围与自由状态娱乐共用同一张概率表；概率为 0 即移出该状态范围）。
+## 一次决策只掷一次随机数；没有可选娱乐时返回 false 且不消耗随机数。
 func _start_play_activity(i: int) -> bool:
-	if not _allowed("play_phone"):
+	var kinds: Array[String] = []
+	var weights: Array[float] = []
+	var total := 0.0
+	for kind in LEISURE_KINDS:
+		var prob_key: String = LEISURE_KINDS[kind] + "_p"
+		if not _probs.has(prob_key):
+			continue
+		var weight := float(_probs[prob_key])
+		if weight <= 0.0:
+			continue
+		if not _allowed(kind):
+			continue
+		if kind == "read_book" and _book[i] <= 0:
+			continue
+		kinds.append(kind)
+		weights.append(weight)
+		total += weight
+	if kinds.is_empty():
 		return false
-	return _start_leisure(i, "play_phone")
+	var roll := _rng.random() * total
+	var picked: String = kinds[kinds.size() - 1]
+	for index in range(kinds.size()):
+		roll -= weights[index]
+		if roll <= 0.0:
+			picked = kinds[index]
+			break
+	return _start_leisure(i, picked)
 
 
 ## 动力（0–100，D01）：>60 进入学习状态、<30 进入游戏状态。
@@ -1330,16 +1351,16 @@ func _is_exam_only_day() -> bool:
 	return _exam != null and _exam.exam_only_day() and _exam.is_exam_day(_day)
 
 
-## 跨天结算（§3.5 + 《老师版规则合并稿》D01）：压力/动力的固定继承 → 爆发判定 → 心结加压 → 各轴衰减。
-## D01：「跨天压力单独减少 20 点，动力单独减少 10 点，成绩提升数值为学业收益。」
+## 跨天结算（§3.5 + 《老师版规则合并稿》D01）：压力继承 → 爆发判定 → 心结加压。
+## D01（2026-10-17 修订）：跨天压力单独减少 20 点，**动力不再统一扣减**（保留前日剩余值）；
+## 关系不再跨天衰减（§4.2：好感恩对原值保留，变化只来自真实结算与干预）。
 func _settle_day() -> void:
 	var carry_stress := float(_psyche["carry_stress_cut"])
-	var carry_vitality := float(_psyche["carry_vitality_cut"])
 	var rest_stress_cut := float(_psyche["breakdown_rest_stress_cut"])
 	var rest_vitality_cut := float(_psyche["breakdown_rest_vitality_cut"])
 	for i in range(_n):
 		if _resting[i]:
-			# §5.3：崩溃后次日特殊恢复 —— 压力／动力各减固定值，替代普通跨天的 −20／−10；
+			# §5.3：崩溃后次日特殊恢复 —— 压力／动力各减固定值，替代普通跨天的 −20；
 			# 不重复扣除，也不因这次减压额外联动一次动力（两者各自单独）。
 			add_stress(i, -rest_stress_cut, false)
 			add_vitality(i, -rest_vitality_cut)
@@ -1351,12 +1372,10 @@ func _settle_day() -> void:
 			_emit("event_happened", {"kind": "breakdown_recovered", "i": i})
 		else:
 			add_stress(i, -carry_stress, false)
-			add_vitality(i, -carry_vitality)
 		_settle_daily_gain(i)
 		_gain_today[i] = 0.0
 	_try_burst()
-	# D06：当天末判定霸凌 / 孤立（预警、正式触发）与退学；判定在关系衰减之前，
-	# 用的是当天实际发生的事件与当天末的关系。
+	# D06：当天末判定霸凌 / 孤立（预警、正式触发）与退学。
 	if _risk != null:
 		_risk.settle_day(self, _day)
 	# 「心结」：爆发后的几天里，每天先加压（长线心理创伤，§3.5）。
@@ -1364,22 +1383,6 @@ func _settle_day() -> void:
 		if _knot_days[i] > 0:
 			add_stress(i, float(_status_tags["heart_knot"]["daily_stress"]))
 			_knot_days[i] -= 1
-	# 各轴衰减（§10.22）：好感/敌对按是否互动分档，压力保留系数。
-	var decay_h := float(_decay["decay_h"])
-	var decay_a_interact := float(_decay["decay_a_interact"])
-	var decay_a_no_interact := float(_decay["decay_a_no_interact"])
-	var interact_min := float(_decay["interact_min_events"])
-	var retain_s := float(_decay["retain_s"])
-	for i in range(_n):
-		for j in range(_n):
-			if i == j:
-				continue
-			var idx := i * _n + j
-			var interacted := float(_day_events.get("%d,%d" % [i, j], 0)) >= interact_min
-			_a[idx] *= decay_a_interact if interacted else decay_a_no_interact
-			_h[idx] *= decay_h
-		# D01：压力按固定 −20 继承（不再按 retain_s 比例保留；旧口径见 CHANGELOG 的冲突清单）。
-	_day_events.clear()
 	if _exam != null:
 		# D05 第 4 条：考试前一天全班压力 +20（考试日当天再照常跨天继承）。
 		if _exam.is_exam_eve(_day):
@@ -1527,8 +1530,6 @@ func _apply_event(i: int, j: int, event_id: String, scale: float = 1.0) -> bool:
 		_stats["dedup_skips"] = int(_stats["dedup_skips"]) + 1
 		return false
 	_settled[dkey] = true
-	var dekey := "%d,%d" % [i, j]
-	_day_events[dekey] = int(_day_events.get(dekey, 0)) + 1
 	var applied := false
 	var changes: Array = []
 	for row in _event_rows:
@@ -1840,9 +1841,12 @@ func _decide_and_act() -> void:
 			_do_study(i)
 			busy[i] = true
 			continue
-		if state == "play" and _start_play_activity(i):
-			busy[i] = true
-			continue
+		if state == "play":
+			# 游戏状态（动力 <30，D01）：伙伴类活动不受状态限制（2026-10-17 裁定）——
+			# 先按同一批概率尝试闲聊 / 打闹，未成立再落到自指娱乐；收益口径仍走 play（见 _unit_kind）。
+			if _try_partner_activity(i, busy) or _start_play_activity(i):
+				busy[i] = true
+				continue
 		# 鼓励目标（D09）：自由学生有未结束目标时优先尝试一次聊天（不打断锁定；
 		# 忙碌 / 条件不满足算等待、不算关系拒绝，学生可落回正常决策）。
 		if _teacher_commands.has_active_encourage(i):
@@ -1876,37 +1880,45 @@ func _decide_and_act() -> void:
 			_do_study(i)
 			busy[i] = true
 			continue
-		# 环境类：闲聊 —— 通用加入（§9.1.4）：找伴 → 提议 / 加入 / 跟随（确定投票 §9.1.2）
-		# 标签调制（§11、§18.9）：爱学习更少聊、爱聊天更多聊
-		var chat_gain := 1.0 + _tag_bias(i, "chat_bias") - _tag_bias(i, "study_bias")
-		chat_gain = maxf(0.1, chat_gain)
-		if _allowed("chat") and _rng.random() < float(_probs["chat"]) * chat_gain:
-			var tgt := _find_partner(i, "chat")
-			if tgt >= 0:
-				# 一个决策点只发起一次伙伴尝试：成败都到此为止（§9.1.4 循环与时序）
-				_propose_activity(i, tgt, "chat")
-				busy[i] = true
-				continue
-		# 意向类：追逐打闹（§9.2）—— 同走通用加入找伴；场地条件沿用旁观者门槛
-		var th_rc := int(_thresholds_lookup["roughhouse_count"])
-		if (
-			_allowed("roughhouse")
-			and _rng.random() < float(_probs["roughhouse_p"]) * _teacher.multiplier("roughhouse")
-		):
-			var tgt := _find_partner(i, "roughhouse")
-			if tgt >= 0:
-				var bys: Array = []
-				for k in range(n):
-					if k != i and k != tgt and not busy[k] and is_present(k) and not _sleeping[k]:
-						bys.append(k)
-				if bys.size() >= th_rc:
-					_propose_activity(i, tgt, "roughhouse")
-					busy[i] = true
-					continue
+		# 伙伴类活动（闲聊 / 打闹，§9.1.4）：自由状态与游戏状态共用同一入口
+		if _try_partner_activity(i, busy):
+			busy[i] = true
+			continue
 
 	# 带朋友（§9.1.3/§9.1.4）：活动组成员的邀请 pass；
 	# 随机数顺序固定（组按创建序、成员按节点号升序），同种子可复现。
 	_invite_friends_pass()
+
+
+## 伙伴类活动（闲聊 / 打闹）的一次尝试（§9.1.4）：按 behavior_probs 掷骰 → 找伴 → 提议。
+## 2026-10-17 裁定：游戏状态（动力 <30）也允许伙伴类娱乐，故自由状态与游戏状态共用本函数；
+## 学习状态仍锁定学习，不调用。返回 true 表示本决策点已被占用。
+func _try_partner_activity(i: int, busy: Array) -> bool:
+	# 标签调制（§11、§18.9）：爱学习更少聊、爱聊天更多聊
+	var chat_gain := 1.0 + _tag_bias(i, "chat_bias") - _tag_bias(i, "study_bias")
+	chat_gain = maxf(0.1, chat_gain)
+	if _allowed("chat") and _rng.random() < float(_probs["chat"]) * chat_gain:
+		var chat_tgt := _find_partner(i, "chat")
+		if chat_tgt >= 0:
+			# 一个决策点只发起一次伙伴尝试：成败都到此为止（§9.1.4 循环与时序）
+			_propose_activity(i, chat_tgt, "chat")
+			return true
+	# 意向类：追逐打闹（§9.2）—— 同走通用加入找伴；场地条件沿用旁观者门槛
+	var th_rc := int(_thresholds_lookup["roughhouse_count"])
+	if (
+		_allowed("roughhouse")
+		and _rng.random() < float(_probs["roughhouse_p"]) * _teacher.multiplier("roughhouse")
+	):
+		var rough_tgt := _find_partner(i, "roughhouse")
+		if rough_tgt >= 0:
+			var bys: Array = []
+			for k in range(_n):
+				if k != i and k != rough_tgt and not busy[k] and is_present(k) and not _sleeping[k]:
+					bys.append(k)
+			if bys.size() >= th_rc:
+				_propose_activity(i, rough_tgt, "roughhouse")
+				return true
+	return false
 
 
 ## 节点此刻是否在教室里；召唤／办公室／返程期间离场，上课挂起时回到课堂。

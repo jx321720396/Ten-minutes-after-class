@@ -57,6 +57,10 @@ func _ready():
 	if GameState.new_game_requested:
 		GameState.new_game_requested = false
 		_start_new_game.call_deferred()
+	TouchBind.bind_tree(self)
+	# 后台预加载：把进教室时约 2.2 秒的贴图读盘挪到主菜单停留期间。
+	AssetPreloader.request_textures(AssetPreloader.pose_texture_paths())
+	AssetPreloader.request_scene(SCENE_CLASSROOM)
 
 
 func _has_save() -> bool:
@@ -80,7 +84,13 @@ func _start_new_game() -> void:
 	# 教程由入口决定（28 章）：没看过、或设置里点了「重看」，这局进教室才弹。
 	GameState.tutorial_pending = not TutorialOverlay.is_seen() or GameState.replay_tutorial
 	GameState.replay_tutorial = false
-	var error := get_tree().change_scene_to_file(SCENE_CLASSROOM)
+	# 主菜单期间已后台预载教室场景时直接切 PackedScene，省掉约 0.5 秒同步读盘。
+	var packed := AssetPreloader.scene(SCENE_CLASSROOM)
+	var error := (
+		get_tree().change_scene_to_packed(packed)
+		if packed != null
+		else get_tree().change_scene_to_file(SCENE_CLASSROOM)
+	)
 	if error != OK:
 		push_error("无法进入教室：%s" % error_string(error))
 

@@ -73,6 +73,7 @@ func _ready() -> void:
 	# 场景加载即全黑：教室先渲染也不可见，首个黑幕在“已黑”状态上接续（转场黑幕任务）
 	visible = true
 	_build_ui()
+	TouchBind.bind_tree(self)
 
 
 func _exit_tree() -> void:

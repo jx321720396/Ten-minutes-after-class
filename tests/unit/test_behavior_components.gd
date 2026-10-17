@@ -90,8 +90,7 @@ func _digest(c: SimCore) -> PackedByteArray:
 		"_busy_act",
 		"_last_finished",
 		"_stats",
-		"_settled",
-		"_day_events"
+		"_settled"
 	]:
 		values.append(c.get(field))
 	values.append(c._rng._mt)

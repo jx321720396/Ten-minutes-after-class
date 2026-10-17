@@ -48,6 +48,7 @@ func _ready() -> void:
 	details.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
 	rows.add_child(details)
 	_build_details()
+	TouchBind.bind_tree(self)
 	refresh({})
 
 
