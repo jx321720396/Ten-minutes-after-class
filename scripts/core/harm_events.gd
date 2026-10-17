@@ -128,12 +128,13 @@ func _can_act(core: Variant, i: int) -> bool:
 
 func _apply(core: Variant, from_i: int, to_i: int, kind: String) -> void:
 	if kind == "shove":
-		core.add_stress(to_i, _shove_stress)
+		# 压力走 _add_peer_stress：目标若带「玻璃心」按 §10.2 额外 +100%。
+		core._add_peer_stress(to_i, _shove_stress)
 		core._add_hostility(to_i, from_i, _shove_hostility)
 		# 推搡额外中断目标当前活动（恶语不中断）。
 		core._interrupt_activity(to_i)
 	else:
-		core.add_stress(to_i, _aggression_stress)
+		core._add_peer_stress(to_i, _aggression_stress)
 		core._add_hostility(to_i, from_i, _aggression_hostility)
 	_last_events.append({"kind": kind, "from": from_i, "to": to_i, "tick": int(core.global_tick())})
 	# 霸凌判据要看「当天受到这些人中至少一人发起的伤害」→ 记到风险监控里。
