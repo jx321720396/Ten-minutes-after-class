@@ -18,6 +18,25 @@ func test_office_command_lifecycle_blocks_early_chat_and_duplicate_summons() -> 
 	assert_true(core.is_present(0))
 
 
+func test_office_comfort_lowers_stress_and_linked_vitality() -> void:
+	var core := SimCore.new(20261016, 16, ConfigLoader.new().load_all())
+	core._begin_phase_state()
+	core._stress[0] = 60.0
+	core._vitality[0] = 60.0
+	var commands := core.teacher_commands()
+	assert_true(commands.summon(core, 0))
+	assert_true(commands.office_chat(core, "comfort"), "安抚走办公室聊天，20 秒")
+	assert_eq(str(commands.snapshot().get("chat_kind", "")), "comfort")
+	for tick in range(19):
+		commands.tick(core)
+	assert_almost_eq(core.stress(0), 60.0, 0.001, "未满 20 秒不结算")
+	commands.tick(core)
+	assert_eq(commands.current_command(), "", "安抚满 20 秒完成")
+	assert_almost_eq(core.stress(0), 40.0, 0.001, "安抚减压 20")
+	assert_almost_eq(core.vitality(0), 40.0, 0.001, "减压按一般规则联动动力")
+	assert_true(commands.send_back(core), "安抚后可送回教室")
+
+
 func test_real_ui_summons_displays_all_students_and_returns_them() -> void:
 	var state = get_node("/root/GameState")
 	state.start_game(20261016, 16)
@@ -51,11 +70,30 @@ func test_real_ui_summons_displays_all_students_and_returns_them() -> void:
 			room.get_node("Actors")._seated_poses[index]._binding.idle,
 			"Office sprite must match each student's identity"
 		)
-	hub.office_view().action_requested.emit("scold")
+	# 行为按钮多于一屏：安抚 / 表扬 / 训斥 / 送回 / 打听 / 鼓励，全部落在可滚动区内。
+	# office.gd 持有 office_meeting 实例，按钮与滚动容器都在那一层。
+	var meeting: Control = hub.office_view()._meeting
+	var buttons: Dictionary = meeting.get("_buttons")
+	var scroll: Control = meeting.get("_scroll")
+	assert_true(buttons.has("comfort"), "行为按钮含安抚")
+	assert_true(scroll != null, "行为按钮区使用滚动容器")
+	assert_true(
+		scroll.get_child_count() == 1 and scroll.get_child(0).get_child_count() == buttons.size(),
+		"六个行为按钮都在滚动区内"
+	)
+	core._stress[0] = 60.0
+	core._vitality[0] = 60.0
+	buttons["comfort"].pressed.emit()
+	assert_eq(commands.current_command(), "office_chat")
+	assert_eq(str(commands.snapshot().get("chat_kind", "")), "comfort")
+	for tick in range(20):
+		commands.tick(core)
+	assert_almost_eq(core.stress(0), 40.0, 0.001, "安抚减压 20")
+	buttons["scold"].pressed.emit()
 	assert_eq(commands.current_command(), "office_chat")
 	for tick in range(20):
 		commands.tick(core)
-	hub.office_view().action_requested.emit("send_back")
+	buttons["send_back"].pressed.emit()
 	assert_eq(commands.current_command(), "", "送回教室当场完成")
 	assert_eq(commands.called_index(), -1)
 	hub._process(0.0)
