@@ -173,15 +173,30 @@ func test_harm_requires_break_contact() -> void:
 func test_friendly_finished_chat_cuts_hostility_by_two() -> void:
 	var core := _core()
 	core._begin_phase_state()
-	core._start_conversation(0, 1)
-	core._h[0 * core._n + 1] = 30.0
-	core._h[1 * core._n + 0] = 30.0
-	core._busy_act[0] = "chat"
-	core._busy_phase[0] = 0
-	core._busy_until[0] = 0
+	# 基础规则用例：挑两名**不带「不记仇」**的学生，免得被动额外 −2 混进基础断言
+	# （不记仇的追加修复见 tests/unit/test_passives.gd 的专用用例）。
+	var pair := _pair_without_forgiving(core)
+	core._start_conversation(pair[0], pair[1])
+	core._h[pair[0] * core._n + pair[1]] = 30.0
+	core._h[pair[1] * core._n + pair[0]] = 30.0
+	core._busy_act[pair[0]] = "chat"
+	core._busy_phase[pair[0]] = 0
+	core._busy_until[pair[0]] = 0
 	core._settle_finished_actions()
-	assert_almost_eq(core.hostility(0, 1), 28.0, 0.0001, "友善交流：双方敌对各 −2")
-	assert_almost_eq(core.hostility(1, 0), 28.0, 0.0001, "友善交流：双向各自 −2")
+	assert_almost_eq(core.hostility(pair[0], pair[1]), 28.0, 0.0001, "友善交流：双方敌对各 −2")
+	assert_almost_eq(core.hostility(pair[1], pair[0]), 28.0, 0.0001, "友善交流：双向各自 −2")
+
+
+## 两名不带「不记仇」被动的学生（该被动由 data/rules/passives.csv 分配到 08 号角色）。
+func _pair_without_forgiving(core: SimCore) -> Array:
+	var picked: Array = []
+	for i in range(core.node_count()):
+		if core.passive_id_of(i) == "forgiving":
+			continue
+		picked.append(i)
+		if picked.size() == 2:
+			break
+	return picked
 
 
 func test_mediate_cuts_hostility_only_above_50() -> void:

@@ -1,0 +1,23 @@
+# 公开专属被动分配（主文档 §10.4，2026-10-17 草案）
+# 依据：主文档 §10「公开专属被动」。每人一条，按角色编号顺序分配，后续可调整。
+# 铁律（§10.1）：本表只是**数据分配** —— 行为逻辑统一读 passive_id，
+#   禁止在脚本里按角色名 / 角色编号写专属分支（tests/invariants/check_no_character_id.py 会拦）。
+# 数值参数在 rules/passive_params.csv；显示文案在 data/localization/passives.json。
+# 列：character_id 角色编号 | passive_id 被动 id | note 备注
+character_id,passive_id,note
+01,focus,陈阳
+02,absorb,林晚
+03,talkative,张渊
+04,self_discipline,周敏
+05,optimistic,赵蕊
+06,moderate,孙悦
+07,likable,郑浩
+08,forgiving,许静
+09,empathetic,何川
+10,receptive,韩雪
+11,studious,沈浪
+12,team_spirit,顾言
+13,positive_feedback,叶梓
+14,spring,佳豪
+15,fragile,温雅
+16,well_informed,李峥

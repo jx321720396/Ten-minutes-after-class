@@ -26,6 +26,8 @@ data/
 │   ├─ seats.csv              座位表（seat_id / row / col / kind；决定相邻关系）✓
 │   ├─ stand_points.csv       站立点表（课间走动目标；世界坐标在场景 StandPoints/*）✓
 │   ├─ roster.csv             本局人数（`npc_count` = 16；一局全池入局）✓
+│   ├─ passives.csv           公开专属被动分配（角色编号 → passive_id；§10.4）✓
+│   ├─ passive_params.csv     公开专属被动数值参数（§10.2）✓
 │   ├─ player_interaction.csv 玩家交互几何与线索参数（闲聊范围 / 连线步长 / 拾取层 / 线索条数）✓
 │   ├─ player_invitation_kinds.csv 需要玩家自主接受／拒绝的行为类型（邀请等待不占用）✓
 │   ├─ social_events.csv      社会事件状态机（多阶段跨相位）✓
@@ -57,6 +59,8 @@ data/
 | `rules/time_runtime.csv` | `key`、`value`、`note`（`term_days` / `max_ticks_per_frame`） |
 | `rules/time_flow.csv` | `param`、`value`、`note`（`normal_scale` / `player_action_scale`；世界播放倍率，事件可持有正常速度） |
 | `rules/roster.csv` | `key`、`value`、`note`（`npc_count` = 一局 NPC 数 = 16） |
+| `rules/passives.csv` | `character_id`、`passive_id`、`note`（公开专属被动分配；一人一条，只作数据分配，脚本不按角色编号分支） |
+| `rules/passive_params.csv` | `param`、`value`、`unit`、`note`（被动数值；消费者只有 `scripts/core/passives.gd`） |
 | `rules/transmission.csv` | `theta_a`、`theta_h`、`sigma`、`beta_affinity`、`beta_hostility`、`epsilon` |
 | `rules/decay.csv` | `axis`、`no_interaction`、`interacted`、`note` |
 | `rules/phases.csv` | `phase_id`、`tick_count`、`active_rules`、`player_controllable` |

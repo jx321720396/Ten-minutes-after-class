@@ -11,6 +11,7 @@ const DATA = preload("res://scripts/ui/npc_profile_data.gd")
 const STYLE = preload("res://scripts/ui/npc_profile_theme.gd")
 const LAYOUT = preload("res://scripts/ui/npc_profile_layout.gd")
 const COPY_PATH := "res://data/localization/npc_profile.json"
+const PASSIVES_COPY_PATH := "res://data/localization/passives.json"
 const CONFIG_PATH := "res://data/ui/npc_profile.json"
 const DESIGN_SIZE := Vector2(1920, 1080)
 const AXIS_NODES := {"affinity": "Affinity", "hostility": "Hostility"}
@@ -20,6 +21,7 @@ var _actors: Node3D
 var _index := -1
 var _subject := -1
 var _copy: Dictionary = {}
+var _passives_copy: Dictionary = {}
 var _config: Dictionary = {}
 var _phase_names: Dictionary = {}
 var _seats: Dictionary = {}
@@ -32,6 +34,7 @@ var _roster: Array[int] = []
 
 func _ready() -> void:
 	_copy = _read_json(COPY_PATH)
+	_passives_copy = _read_json(PASSIVES_COPY_PATH)
 	_config = _read_json(CONFIG_PATH)
 	var loader := ConfigLoader.new()
 	_grade_max = float(_config.grade_max)
@@ -44,6 +47,7 @@ func _ready() -> void:
 		_seats[str(entry.seat_id)] = entry
 	LAYOUT.build(self, _config)
 	STYLE.apply(self)
+	%PassiveHeading.text = str(_passives_copy.get("heading", %PassiveHeading.text))
 	%Close.pressed.connect(close)
 	%Previous.pressed.connect(_step_person.bind(-1))
 	%Next.pressed.connect(_step_person.bind(1))
@@ -330,7 +334,7 @@ func _refresh_status() -> void:
 	elif not _core.is_present(_index):
 		activity = "absent"
 	%Activity.text = words("activity") + str(_config.activities.get(activity, "活动中"))
-	%Passive.text = str(snapshot.get("passive", words("passive_missing")))
+	%Passive.text = _passive_text(str(snapshot.get("passive_id", "")))
 	%Goal.text = str(snapshot.get("communication_goal", words("goal_missing")))
 	%StatusDetails.text = words(
 		"status_summary",
@@ -341,10 +345,48 @@ func _refresh_status() -> void:
 			"gain": _number(gain, true)
 		}
 	)
+	# 群策群力（主文档 §10.2）：该生可以看到所有其他同学对本人好感 —— 只读展示，不写矩阵。
+	# 放在状态摘要之后、明细之前，档案一打开就能看到，不用滚到底。
+	if bool(snapshot.get("reveals_incoming_affinity", false)):
+		%StatusDetails.text += (
+			"\n\n"
+			+ str(_passives_copy.get("reveal_heading", ""))
+			+ "\n"
+			+ _incoming_affinity_text(_index)
+		)
 	for key in ["gain_details", "trends", "attention", "interventions"]:
 		%StatusDetails.text += (
 			"\n\n" + words(key) + "\n" + str(snapshot.get(key, words("no_record")))
 		)
+
+
+## 档案里的公开被动：名称 + 效果（文案在 data/localization/passives.json，数值在 data/rules/）。
+func _passive_text(passive_id: String) -> String:
+	var entry: Dictionary = _passives_copy.get(passive_id, {})
+	if passive_id.is_empty() or entry.is_empty():
+		return str(_passives_copy.get("missing", words("passive_missing")))
+	return "%s\n%s" % [str(entry.get("name", passive_id)), str(entry.get("effect", ""))]
+
+
+## 群策群力可见性：按 config 的列数分行列出「同学 → 对本人好感」，只读内核真值。
+func _incoming_affinity_text(index: int) -> String:
+	if _core == null:
+		return ""
+	var columns := maxi(1, int(_config.get("affinity_reveal_columns", 3)))
+	var lines: PackedStringArray = PackedStringArray()
+	var row: PackedStringArray = PackedStringArray()
+	for other in _roster:
+		if other == index:
+			continue
+		row.append(
+			"%s %s" % [str(_core.alias(other)), str(roundi(float(_core.affinity(other, index))))]
+		)
+		if row.size() >= columns:
+			lines.append("、".join(row))
+			row = PackedStringArray()
+	if row.size() > 0:
+		lines.append("、".join(row))
+	return "\n".join(lines)
 
 
 func _show_page(status: bool) -> void:

@@ -1,0 +1,23 @@
+# 公开专属被动的数值参数（主文档 §10.2）
+# 依据：主文档 §10.2 被动草案表与「待后续明确的结算边界」；数值仍属草案，未做平衡标定。
+# 铁律：所有增量 / 系数只在这里改，脚本（scripts/core/passives.gd）只读不写死。
+# 列：param 参数名 | value 数值 | unit 单位 | note 说明
+param,value,unit,note
+focus_gain_multiplier,2,倍,专注：学业收益的增加与减少均翻倍（+1→+2、−1→−2）；不翻倍动力消耗
+absorb_grade_bonus,3,分,善于吸收：日结把当日学业收益转为成绩时，净收益为正则成绩额外 +3（每天一次）
+talkative_affinity_gain,2,点,健谈：每完成一次友善聊天，本人对聊天对象的好感额外 +2
+self_discipline_cost_cut,2,点,自律：完成一个学习单位，动力消耗少 2 点
+optimistic_stress_relief,3,点,乐观：每完成一次娱乐，压力单独额外 −3（不联动动力）
+moderate_loss_divisor,2,点,收放自如：学业收益损失按累计整数结算，每累计 2 点原始损失只实际扣 1 点
+likable_affinity_gain,2,点,讨人喜欢：每完成一次友善聊天，聊天对象对本人好感额外 +2
+forgiving_hostility_cut,2,点,不记仇：友善聊天产生敌对修复时，本人对聊天对象的敌对额外 −2
+empathetic_stress_relief,5,点,善解人意：每完成一次友善聊天，聊天对象的压力单独额外 −5
+receptive_vitality_gain,10,点,听劝：每受到一次老师训斥，动力额外 +10
+studious_drip_bonus_ratio,1.0,比例,卷王：学习时向正交邻座产生的学习压力涓流额外增加基础值的 100%（比例 1.0）
+team_spirit_affinity_threshold,60,点,群策群力：他人对本人好感严格超过该值才计数（恰好 60 不计入）
+team_spirit_gain,1,分,群策群力：每有一名达标同学，当天学业收益 +1（日末一次）
+positive_feedback_vitality_per_grade,1,点,正反馈：成绩每提高 1 点，动力 +1（按实际提高量的整数部分）
+spring_stress_per_vitality,5,点,弹簧：累计获得的压力每满 5 点
+spring_vitality_gain,2,点,弹簧：每满上述累计，动力额外 +2
+fragile_stress_bonus_ratio,1.0,比例,玻璃心：从同学处获得的压力额外增加基础值的 100%（比例 1.0）
+well_informed_messages,6,条,百事通：老师向本人完成一次打听可获得 6 条消息（打听消息系统未建立，运行时不结算）

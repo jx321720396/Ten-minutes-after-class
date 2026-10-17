@@ -8,6 +8,7 @@ var _portrait: TextureRect
 var _title: Label
 var _status: Label
 var _buttons: Dictionary = {}
+var _scroll: ScrollContainer
 var _identity := -1
 var _sprites: Dictionary
 var _appearance: Dictionary = {}
@@ -47,7 +48,19 @@ func setup(view: Control) -> void:
 		label.add_theme_font_size_override("font_size", int(_config.font_size))
 		rows.add_child(label)
 	_status.custom_minimum_size.y = float(_config.status_height)
-	for key in ["scold", "send_back", "praise", "ask", "encourage"]:
+	# 行为按钮多于一屏（安抚 / 表扬 / 训斥 / 送回 / 打听 / 鼓励），放进可滚动区：
+	# 面板高度固定，超出部分上下拖动查看，触摸拖动由 ScrollContainer 原生处理。
+	var scroll := ScrollContainer.new()
+	_scroll = scroll
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	rows.add_child(scroll)
+	var actions := VBoxContainer.new()
+	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_theme_constant_override("separation", int(view.config.gap))
+	scroll.add_child(actions)
+	for key in ["comfort", "praise", "scold", "send_back", "ask", "encourage"]:
 		var button := Button.new()
 		button.text = _config.send_back_label if key == "send_back" else _config[key]
 		view.style_button(button)
@@ -57,7 +70,7 @@ func setup(view: Control) -> void:
 			"font_disabled_color", Color(view.config.ink).lerp(Color(view.config.paper), 0.45)
 		)
 		button.pressed.connect(func() -> void: action_requested.emit(key))
-		rows.add_child(button)
+		actions.add_child(button)
 		_buttons[key] = button
 		if key in ["ask", "encourage"]:
 			button.tooltip_text = _config.pending
@@ -92,9 +105,7 @@ func refresh(core: Variant, snapshot: Dictionary) -> void:
 			)
 		)
 	for key in _buttons:
-		_buttons[key].disabled = (
-			not arrived or command != "" or key in ["ask", "encourage"]
-		)
+		_buttons[key].disabled = (not arrived or command != "" or key in ["ask", "encourage"])
 
 
 func status_text(snapshot: Dictionary) -> String:

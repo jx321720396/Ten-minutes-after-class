@@ -12,7 +12,8 @@
 
 max-line-length: 120            # 放宽（100 → 120）：表格 / 常量清单类文本行天然偏长
 
-max-file-lines: 3000            # 放宽（2500 → 3000）：sim_core.gd 是模拟内核本体（现 2519 行）；再涨应优先拆类
+max-file-lines: 3200            # 放宽（2500 → 3000 → 3200）：sim_core.gd 是模拟内核本体（2026-10-17 被动接线后 3079 行）；
+                                # 被动只加了接线与结算入口，规则本体在 passives.gd —— 再涨必须优先拆类，不再抬
 
 max-public-methods: 65          # 放宽（40 → 60 → 65）：SimCore 的公开 API 多属结构使然；
                                 # 2026-10-10 +2（set_seat_zones / in_own_seat）—— 再涨应优先把空间查询拆出去
