@@ -98,10 +98,18 @@ func test_day_carry_follows_d01() -> void:
 	core._stress[0] = 60.0
 	core._vitality[0] = 40.0
 	core._gain_today[0] = 8.0
+	core._a[0 * core.node_count() + 1] = 60.0
+	core._h[0 * core.node_count() + 1] = 40.0
 	var grade_before := core.grade(0)
 	core._settle_day()
 	assert_almost_eq(core.stress(0), 40.0, 0.0001, "跨天压力单独 −20（D01）")
-	assert_almost_eq(core.vitality(0), 30.0, 0.0001, "跨天动力单独 −10（D01）")
+	assert_almost_eq(core.vitality(0), 40.0, 0.0001, "跨天动力保留前日剩余（2026-10-17 起不再统一 −10）")
+	assert_almost_eq(
+		core.affinity(0, 1), 60.0, 0.0001, "好感跨天原值保留（2026-10-17 删除关系衰减）"
+	)
+	assert_almost_eq(
+		core.hostility(0, 1), 40.0, 0.0001, "敌对跨天原值保留（2026-10-17 删除关系衰减）"
+	)
 	assert_almost_eq(core.grade(0), minf(grade_before + 8.0, 750.0), 0.0001, "成绩 += 当日学业收益（D01）")
 	assert_almost_eq(core.gain_today(0), 0.0, 0.0001, "学业收益跨天清零（D01）")
 
@@ -168,10 +176,10 @@ func test_knot_raises_stress_and_vitality_daily_for_three_days() -> void:
 		core._stress[0] = 30.0
 		core._vitality[0] = 30.0
 		core._settle_day()
-	# 跨天 −20／−10 后再心结 +10（动力按一般规则同步 +10）
+	# 跨天压力 −20 后再心结 +10；动力不再跨天扣减，故只吃心结的 +10
 	assert_almost_eq(core._knot_days[0], 0.0, 0.0001, "第三次生效后心结结束")
 	assert_almost_eq(core.stress(0), 20.0, 0.0001, "每天压力净 −10（−20 跨天 +10 心结）")
-	assert_almost_eq(core.vitality(0), 30.0, 0.0001, "动力按一般规则同步 +10")
+	assert_almost_eq(core.vitality(0), 40.0, 0.0001, "动力按一般规则同步 +10（跨天不再扣动力）")
 
 
 func test_teacher_summon_arrives_instantly_then_office_chat_timings() -> void:

@@ -275,7 +275,8 @@ for _d in range(3):
     knot_day.settle_day()
 check("心结：连续 3 天后结束", knot_day.knot_days[0] == 0)
 check("心结每天压力净 −10（跨天 −20 后 +10）", abs(knot_day.Stress[0] - 20.0) < 1e-6)
-check("心结动力按一般规则同步 +10", abs(knot_day.Vitality[0] - 30.0) < 1e-6)
+check("心结动力按一般规则同步 +10（2026-10-17 起跨天不再扣动力）",
+      abs(knot_day.Vitality[0] - 40.0) < 1e-6)
 
 print("=== 6e. 辞退原因（§11.4）===")
 fail = Sim(seed=12345, npc_count=8)

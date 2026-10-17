@@ -6,7 +6,7 @@
 校验清单（依据各表内的「启动校验」注释与 UIF §2.5 / §2.6）：
   1. w_events：`tier` 与 `base` 档位一致（normal ∈ [1,3]、major ∈ [4,5]）；`class` ∈ A–E
   2. transmission：`feedback` ∈ [0,1]；`settle_interval` > 0
-  3. decay：`decay_a_*` / `decay_h` / `retain_s` ∈ (0,1]；`decay_a_interact` ≥ `decay_a_no_interact`
+  3. decay：**已移除**（2026-10-17 删除跨天关系衰减，好感／敌对原值保留，不再有 decay 表）
   4. behavior_thresholds：阈值键格式（行为名不得自带轴后缀，否则查表键会重复拼接）
   5. behavior_probs：概率类 ∈ [0,1]
   6. phases：课间 + 上课 tick 合计 = 480；`player_control` = 1 当且仅当 `kind` = break
@@ -71,11 +71,9 @@ tp = params("rules/transmission.csv")
 check("feedback ∈ [0,1]", 0.0 <= tp["feedback"] <= 1.0, tp["feedback"])
 check("settle_interval > 0", tp["settle_interval"] > 0, tp["settle_interval"])
 
-print("=== 3. decay ===")
-dc = params("rules/decay.csv")
-for k in ("decay_a_no_interact", "decay_a_interact", "decay_h", "retain_s"):
-    check("%s ∈ (0,1]" % k, 0.0 < dc[k] <= 1.0, dc[k])
-check("decay_a_interact ≥ decay_a_no_interact", dc["decay_a_interact"] >= dc["decay_a_no_interact"])
+print("=== 3. decay（已移除：跨天关系衰减 2026-10-17 删除）===")
+check("rules/decay.csv 不再存在（好感／敌对跨天原值保留）",
+      not os.path.exists(os.path.join(DATA, "rules/decay.csv")))
 
 print("=== 4. behavior_thresholds ===")
 rows = load("rules/behavior_thresholds.csv")
@@ -372,8 +370,8 @@ check("psyche：上课段学习阈值为正且不高于课间阈值",
       <= _ps.get("vitality_study_threshold", 0),
       "上课阈值 %s / 课间阈值 %s"
       % (_ps.get("vitality_class_study_threshold"), _ps.get("vitality_study_threshold")))
-check("psyche：跨天继承与联动标志存在",
-      all(k in _ps for k in ("carry_stress_cut", "carry_vitality_cut", "vitality_equals_stress")))
+check("psyche：跨天继承与联动标志存在（2026-10-17 起动力不再统一扣减，故无 carry_vitality_cut）",
+      all(k in _ps for k in ("carry_stress_cut", "vitality_equals_stress")))
 _grows = load("rules/grade_table.csv")
 _guppers = [float(r["band_upper"]) for r in _grows]
 _gtpp = [float(r["ticks_per_point"]) for r in _grows]

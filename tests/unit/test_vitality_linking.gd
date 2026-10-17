@@ -125,4 +125,4 @@ func test_day_carry_keeps_both_cuts_separate() -> void:
 	core._day = 6
 	core._settle_day()
 	assert_almost_eq(core.stress(0), 40.0, 0.0001, "跨天压力单独 −20")
-	assert_almost_eq(core.vitality(0), 50.0, 0.0001, "跨天动力单独 −10（不随压力的 −20 联动）")
+	assert_almost_eq(core.vitality(0), 60.0, 0.0001, "跨天动力不再扣减，也不随压力的 −20 联动（2026-10-17）")
