@@ -43,6 +43,9 @@ signal walk_finished
 ## 立绘节点名（classroom_actors.gd 生成时的约定名）
 @export var sprite_node_name: StringName = &"Sprite"
 
+## Optional spatial clearance supplied by the classroom; blocked steps retain the path.
+var step_allowed: Callable
+
 var _body: Node3D = null
 var _sprite: Sprite3D = null
 var _moving := false
@@ -195,6 +198,9 @@ func _advance_path(delta: float) -> void:
 			continue
 		var direction := flat / distance
 		var step := minf(remaining, distance)
+		if step_allowed.is_valid() and not step_allowed.call(pos, pos + direction * step):
+			_settle_height()
+			return
 		remaining -= step
 		var height := (_base_y + bob) - pos.y
 		_body.global_position = pos + direction * step + Vector3(0.0, height, 0.0)

@@ -174,21 +174,42 @@ func test_knot_raises_stress_and_vitality_daily_for_three_days() -> void:
 	assert_almost_eq(core.vitality(0), 30.0, 0.0001, "动力按一般规则同步 +10")
 
 
-func test_teacher_summon_and_office_chat_timings() -> void:
+func test_teacher_summon_arrives_instantly_then_office_chat_timings() -> void:
 	var core := _core()
 	var tc := core.teacher_commands()
 	assert_true(tc.summon(core, 3), "可以召唤一名学生（D03）")
-	assert_eq(tc.remaining_seconds(), 10, "召唤 10 秒到达（D03）")
+	assert_eq(tc.remaining_seconds(), 0, "召唤即时到达，不再等待路程（2026-10-16 裁定）")
+	assert_eq(tc.current_command(), "", "召唤当场完成")
+	assert_true(core._is_in_office(3), "被召唤的学生立刻在办公室")
 	assert_false(tc.summon(core, 5), "办公室同时只能召唤一名学生（D03）")
-	for _t in range(10):
-		tc.tick(core)
-	assert_eq(tc.current_command(), "", "10 秒后到达")
-	assert_true(tc.office_chat(core, "scold"), "到达后可以开始办公室聊天")
+	assert_true(tc.office_chat(core, "scold"), "到达后可以立即开始办公室聊天")
 	assert_eq(tc.remaining_seconds(), 20, "办公室聊天统一 20 秒（D03）")
 	var before := core.stress(3)
+	var vitality_before := core.vitality(3)
 	for _t in range(20):
 		tc.tick(core)
-	assert_almost_eq(core.stress(3), minf(before + 20.0, 100.0), 0.0001, "训斥 +20 压力（D01）")
+	assert_almost_eq(core.stress(3), minf(before + 30.0, 100.0), 0.0001, "训斥 +30 压力")
+	assert_almost_eq(core.vitality(3), minf(vitality_before + 30.0, 100.0), 0.0001, "训斥 +30 动力")
+
+
+func test_praise_adds_only_the_targets_vitality() -> void:
+	var core := _core()
+	var tc := core.teacher_commands()
+	core._stress[4] = 40.0
+	core._vitality[4] = 40.0
+	core._stress[5] = 40.0
+	core._vitality[5] = 40.0
+	assert_true(tc.summon(core, 4), "可以召唤被表扬的学生")
+	assert_true(tc.office_chat(core, "praise"), "表扬走与训斥相同的办公室聊天")
+	assert_eq(tc.remaining_seconds(), 20, "表扬同样耗时 20 秒")
+	for _t in range(19):
+		tc.tick(core)
+	assert_almost_eq(core.vitality(4), 40.0, 0.0001, "谈话未完成前不加动力")
+	tc.tick(core)
+	assert_almost_eq(core.vitality(4), 55.0, 0.0001, "表扬只给该生 +15 动力")
+	assert_almost_eq(core.stress(4), 40.0, 0.0001, "表扬不加压力")
+	assert_almost_eq(core.vitality(5), 40.0, 0.0001, "不影响其他学生的动力")
+	assert_almost_eq(core.stress(5), 40.0, 0.0001, "不影响其他学生的压力")
 
 
 func test_teacher_enter_classroom_once_per_break() -> void:
@@ -205,7 +226,8 @@ func test_teacher_enter_classroom_once_per_break() -> void:
 func test_teacher_command_deferred_by_class() -> void:
 	var core := _core()
 	var tc := core.teacher_commands()
-	assert_true(tc.summon(core, 2))
+	assert_true(tc.summon(core, 2), "召唤即时到达（2026-10-16 裁定）")
+	assert_true(tc.office_chat(core, "scold"), "到达后立即开始 20 秒的办公室聊天")
 	tc.tick(core)
 	var remaining := tc.remaining_seconds()
 	tc.begin_class(core)
@@ -296,3 +318,41 @@ func test_leisure_units_do_not_settle_during_class() -> void:
 	for _k in range(20):
 		core._settle_units()
 	assert_almost_eq(core.stress(0), 50.0, 0.0001, "上课不执行娱乐单位（不减压）")
+
+
+func test_failure_reason_reports_dropout_with_evidence() -> void:
+	var core := _core()
+	for _k in range(4):
+		core._risk.register_breakdown(3)
+	core._risk.settle_day(core, 3)
+	assert_true(core._risk.is_dropped(3), "累计第 4 次崩溃 → 退学（D06）")
+	var reason := core._failure_reason()
+	assert_ne(reason, "", "已辞退时必须给出原因")
+	assert_true(reason.contains("退学"), "原因说明触发了退学判据")
+	assert_true(reason.length() > 4, "原因附上涉及的学生，不是空泛结论")
+
+
+func test_failure_reason_reports_exam_failure_with_numbers() -> void:
+	var core := _core()
+	core._exam._means[8] = 300.0
+	core._exam._passed[8] = false
+	var reason := core._failure_reason()
+	assert_true(reason.contains("首次考核不达标"), "考核不达标时给出对应判据")
+	assert_true(reason.contains("300"), "原因给出实际均分")
+	assert_true(reason.contains("380"), "原因给出目标均分")
+
+
+func test_no_failure_reason_when_no_trigger() -> void:
+	var core := _core()
+	assert_eq(core._failure_reason(), "", "没触发任何判据时没有辞退原因")
+
+
+func test_summon_is_immediately_sendable() -> void:
+	var core := _core()
+	var tc := core.teacher_commands()
+	assert_true(tc.summon(core, 2), "召唤即到（2026-10-16 裁定）")
+	assert_true(core._is_in_office(2), "学生立刻在办公室")
+	assert_true(tc.send_back(core), "送回教室即时完成")
+	assert_eq(tc.current_command(), "", "送回教室不占用命令、不消耗时间")
+	assert_eq(tc.called_index(), -1, "学生立刻离开办公室")
+	assert_false(core._is_in_office(2), "送回后立刻回到教室")

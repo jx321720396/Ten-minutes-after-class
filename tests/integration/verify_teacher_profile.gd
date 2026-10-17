@@ -1,5 +1,6 @@
 extends SceneTree
 ## 独立老师档案回归，不依赖 GUT 版本，失败返回非零。
+const PROFILE_SCENE_PATH := "res://scenes/ui/npc_profile.tscn"
 var failures: Array[String] = []
 
 
@@ -17,7 +18,7 @@ func _verify() -> void:
 	var state := root.get_node("GameState")
 	state.start_game(12345, 16)
 	var core: SimCore = state.sim_core
-	var profile: Node = load("res://scenes/ui/npc_profile.tscn").instantiate()
+	var profile: Node = load(PROFILE_SCENE_PATH).instantiate()
 	root.add_child(profile)
 	profile.bind_sources(core, null, null)
 	var before := [
@@ -76,7 +77,7 @@ func _verify() -> void:
 	check([core._a, core._h, core._rng._mt, core._rng._mti] == before, "标注不得修改矩阵或随机序列")
 	profile.queue_free()
 	await process_frame
-	var reopened: Node = load("res://scenes/ui/npc_profile.tscn").instantiate()
+	var reopened: Node = load(PROFILE_SCENE_PATH).instantiate()
 	root.add_child(reopened)
 	reopened.bind_sources(core, null, null)
 	reopened.open_profile(0)

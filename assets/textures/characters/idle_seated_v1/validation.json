@@ -1,0 +1,178 @@
+[
+  {
+    "id": "01",
+    "name": "陈阳",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6853243509928385,
+    "sha256": "9a66b050f961f7216d8d0425fc1efe2fafbbf4c3a29ec8baacbe382600c1330e"
+  },
+  {
+    "id": "02",
+    "name": "林晚",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6561158498128256,
+    "sha256": "5b9e82819a5961f1cc1767141e3623ab5d4ac805f1e589117ac0d441eb35d24f"
+  },
+  {
+    "id": "03",
+    "name": "张渊",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6465835571289062,
+    "sha256": "3a76277671dac65910bc31eec2973ccfdbf1dcef5cb15c7dfc19cfce1230a7c9"
+  },
+  {
+    "id": "04",
+    "name": "周敏",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6722075144449869,
+    "sha256": "e6807b8a526f3db1de0cfd11adecb9d5df5626e285638db8f2f919456573358c"
+  },
+  {
+    "id": "05",
+    "name": "赵蕊",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.661797841389974,
+    "sha256": "ddac1f97577a379bd8d82de263442e62309218c493f0b030c1cc437ba4833e42"
+  },
+  {
+    "id": "06",
+    "name": "孙悦",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6705150604248047,
+    "sha256": "3fb92626c8e93e1ec7587ba1dd6764b6322ada3923d14eff0cf160bb1b867fc1"
+  },
+  {
+    "id": "07",
+    "name": "郑浩",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6177088419596354,
+    "sha256": "96d8cae10220a1b947a0aa61d473ab356abe772b4f0a2b6dbcd37004d2da1590"
+  },
+  {
+    "id": "08",
+    "name": "许静",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6794484456380209,
+    "sha256": "75119d121be9b49642880b03302278b00ef5a5c4c9c147ba3c26a7ec94639609"
+  },
+  {
+    "id": "09",
+    "name": "何川",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6505171457926432,
+    "sha256": "54b22c85874d7b4a2041b7bcfcba6e5fff06fc39f4bec58fb1af3964a4ab6035"
+  },
+  {
+    "id": "10",
+    "name": "韩雪",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6575984954833984,
+    "sha256": "0e5d11f313f5ea5a9a2e8723afe240aa070102665d0d4ac15b471b09de511d8b"
+  },
+  {
+    "id": "11",
+    "name": "沈浪",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6553764343261719,
+    "sha256": "4342bfbfdcc66262afe72cc1b4d0b7752c3329d97a24935954db9e8fa08b0e4f"
+  },
+  {
+    "id": "12",
+    "name": "顾言",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6453088124593099,
+    "sha256": "add76046533875798c5e49e499e7279d8c4a10fb361fe441743d0f8201944b8d"
+  },
+  {
+    "id": "13",
+    "name": "叶梓",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6667098999023438,
+    "sha256": "ee71086fd3ff623f988e8a0c131c4076fb033d82f0c73e5e2a74146be62ed782"
+  },
+  {
+    "id": "14",
+    "name": "佳豪",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6479117075602213,
+    "sha256": "7300965fa6f35eaa0c2e48555c8de7d8f06e760d209e60a75178e3d83e84e206"
+  },
+  {
+    "id": "15",
+    "name": "温雅",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.6701367696126302,
+    "sha256": "623a642093d646aff0c28c8752b7612bd5fb2ab38596a1f7b4d97786146bc6d6"
+  },
+  {
+    "id": "16",
+    "name": "李峥",
+    "mode": "RGBA",
+    "size": [
+      1024,
+      1536
+    ],
+    "transparent_fraction": 0.640960693359375,
+    "sha256": "919c22f6819a3af79d45570a68472eec25bb8417cffec184c447b50a829cf9c5"
+  }
+]

@@ -15,5 +15,8 @@ interrupt_stress_per_point_seconds,2,s,被打断：每 2 秒折算 1 点已得�
 gain_int_only,1,标志,学业收益只按整数单位结算（如 19 秒被打断 → 该单位不计入）
 neighbor_study_stress,5,点,涓流：周围（前后左右）有人学习 → 压力 +5，可叠加
 teacher_enter_stress,5,点,老师到教室 → 全班压力 +5
-office_scold_stress,20,点,办公室训斥 → 该生压力 +20
+office_scold_stress,30,点,办公室训斥 → 该生压力 +30，动力按一般规则联动 +30
+office_praise_vitality,15,点,办公室表扬 → 该生动力 +15，不加压力
+office_comfort_stress,-20,点,办公室安抚 → 该生压力 −20，动力按一般规则联动 −20（2026-10-17 裁定）
 class_scold_stress,30,点,全班训斥 → 全班压力 +30
+class_gain,2,分,上课段全员固定学业收益（每节课一次，替代学习逐单位结算）

@@ -27,10 +27,26 @@ func _init() -> void:
 	var n := core.node_count()
 
 	for _d in range(days):
-		for _t in range(480):
-			core.advance_tick()
-			print(JSON.stringify(_snapshot(core, n)))
+		_run_day_sampled(core, n, func(c: SimCore, n2: int) -> void:
+			print(JSON.stringify(_snapshot(c, n2))))
 	quit(0)
+
+
+## 跑完一天并逐 tick 采样，与 Python core_sim.run_day 同构：上课段黑幕硬跳过
+## （skip_class：全员固定学业收益 + 崩溃判定，无逐 tick 结算、不采样），
+## 课间段逐 tick 采样；段边界用 finish_time_boundary 推进，日末结算后返回。
+func _run_day_sampled(core: SimCore, n: int, sink: Callable) -> void:
+	while true:
+		var snap: Dictionary = core.time_snapshot()
+		if str(snap["kind"]) == "class":
+			core.skip_class()
+			continue
+		if int(snap["tick_in_phase"]) < int(snap["tick_count"]):
+			core.advance_tick()
+			sink.call(core, n)
+			continue
+		if bool(core.finish_time_boundary()["day_settled"]):
+			return
 
 
 ## 采样一行快照：字段与 export_ticks.py 的 snapshot() 一致。
@@ -115,11 +131,11 @@ func _py_round(v: float, ndigits: int) -> float:
 
 
 func _mul_err(v: float, b: float, p: float) -> float:
-	var C := 134217729.0
-	var tv := C * v
+	var split_c := 134217729.0
+	var tv := split_c * v
 	var v_hi := tv - (tv - v)
 	var v_lo := v - v_hi
-	var tb := C * b
+	var tb := split_c * b
 	var b_hi := tb - (tb - b)
 	var b_lo := b - b_hi
 	return ((v_hi * b_hi - p) + v_hi * b_lo + v_lo * b_hi) + v_lo * b_lo

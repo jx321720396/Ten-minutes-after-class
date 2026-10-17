@@ -1794,6 +1794,18 @@ class Sim:
     def is_dropped_out(self, i):
         return 0 <= i < self.N and self.dropped[i]
 
+    def failure_reason(self):
+        """老师被辞退的原因（空串 = 尚未辞退）；与 GDScript 同口径。"""
+        if any(self.dropped):
+            return "退学：有学生累计崩溃超过 3 次，或正式触发霸凌／孤立后再次崩溃"
+        if not self.last_exam_passed():
+            best_day = max(self.exam_means) if self.exam_means else 0
+            return (
+                "首次考核不达标：全班均分 %d，低于目标均分 %d"
+                % (int(round(self.exam_means.get(best_day, 0.0))), int(round(self.exam_target_mean)))
+            )
+        return ""
+
     def class_failed(self):
         """老师是否被辞退：首次考核不达标（D05）或出现退学（D06）。"""
         if any(self.dropped):
@@ -2007,11 +2019,28 @@ class Sim:
         self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
         self.begin_phase_state()          # D01 段首状态：学习 / 游戏 / 自由
 
+    def skip_class(self):
+        """上课段硬跳过（2026-10-17 裁定）：不逐 tick 模拟，只做「全员固定学业收益 + 崩溃判定」。
+
+        与 GDScript 内核 `skip_class()` 镜像：不调 begin_phase / 不逐 tick / 不调 end_phase，
+        只推进游标到下一段；class 从不是末相位，故不会触发 settle_day。零 RNG 消费。
+        """
+        gain = self.acts["class_gain"]
+        for i in range(self.N):
+            self.GainToday[i] += gain
+        self.check_breakdown()
+        self.phase_index = (self.phase_index + 1) % len(self.day_phases)
+        self.tick_in_phase = 0
+
     def run_day(self):
         total_ticks = 0
         for _ in range(len(self.day_phases)):
-            self.begin_phase()                      # ⑥⑦ 进入本段 + 新段判定
             _phase, ticks = self.day_phases[self.phase_index]
+            if _phase == "class":
+                # 上课段硬跳过：不 begin_phase、不逐 tick、不 end_phase、不采样音量。
+                self.skip_class()
+                continue
+            self.begin_phase()                      # ⑥⑦ 进入本段 + 新段判定
             for _ in range(ticks):
                 self.tick()
                 self.tick_in_phase += 1

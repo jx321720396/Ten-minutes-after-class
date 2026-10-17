@@ -11,6 +11,7 @@ const DATA = preload("res://scripts/ui/npc_profile_data.gd")
 const STYLE = preload("res://scripts/ui/npc_profile_theme.gd")
 const LAYOUT = preload("res://scripts/ui/npc_profile_layout.gd")
 const COPY_PATH := "res://data/localization/npc_profile.json"
+const PASSIVES_COPY_PATH := "res://data/localization/passives.json"
 const CONFIG_PATH := "res://data/ui/npc_profile.json"
 const DESIGN_SIZE := Vector2(1920, 1080)
 const AXIS_NODES := {"affinity": "Affinity", "hostility": "Hostility"}
@@ -20,11 +21,12 @@ var _actors: Node3D
 var _index := -1
 var _subject := -1
 var _copy: Dictionary = {}
+var _passives_copy: Dictionary = {}
 var _config: Dictionary = {}
 var _phase_names: Dictionary = {}
 var _seats: Dictionary = {}
 var _model: RefCounted = DATA.new()
-var _owns_pause := false
+var _grade_max := 0.0
 var _reverse := false
 var _snapshots: Dictionary = {}
 var _roster: Array[int] = []
@@ -32,14 +34,20 @@ var _roster: Array[int] = []
 
 func _ready() -> void:
 	_copy = _read_json(COPY_PATH)
+	_passives_copy = _read_json(PASSIVES_COPY_PATH)
 	_config = _read_json(CONFIG_PATH)
 	var loader := ConfigLoader.new()
+	_grade_max = float(_config.grade_max)
+	for entry in loader.get_table("rules/kernel_params").get("rows", []):
+		if str(entry.get("param", "")) == "grade_max":
+			_grade_max = float(entry.value)
 	for entry in loader.get_table("rules/time_presentation").get("rows", []):
 		_phase_names[str(entry.phase_id)] = str(entry.display_name)
 	for entry in loader.get_table("rules/seats").get("rows", []):
 		_seats[str(entry.seat_id)] = entry
 	LAYOUT.build(self, _config)
 	STYLE.apply(self)
+	%PassiveHeading.text = str(_passives_copy.get("heading", %PassiveHeading.text))
 	%Close.pressed.connect(close)
 	%Previous.pressed.connect(_step_person.bind(-1))
 	%Next.pressed.connect(_step_person.bind(1))
@@ -98,9 +106,6 @@ func enable_teacher_navigation() -> void:
 func open_profile(index: int) -> void:
 	if _core == null or not _roster.has(index):
 		return
-	if not is_open():
-		_owns_pause = not get_tree().paused
-		get_tree().paused = true
 	_index = index
 	%TargetPicker.hide()
 	_reverse = false
@@ -127,7 +132,6 @@ func close() -> void:
 		return
 	$Root.hide()
 	%TargetPicker.hide()
-	_release_pause()
 	closed.emit()
 
 
@@ -152,25 +156,10 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-func _exit_tree() -> void:
-	_release_pause()
-
-
-func _release_pause() -> void:
-	if not _owns_pause:
-		return
-	_owns_pause = false
-	var parent := get_parent()
-	if parent != null:
-		for sibling in parent.get_children():
-			if sibling == self:
-				continue
-			if sibling.has_method("is_open") and sibling.is_open():
-				return
-			if sibling.name == "PauseMenu" and sibling is Control and sibling.visible:
-				return
-	if is_inside_tree():
-		get_tree().paused = false
+## 档案只读实时状态，不持有或释放世界暂停。
+func _process(_delta: float) -> void:
+	if is_open() and _core != null and _index >= 0:
+		_refresh_status()
 
 
 func _step_person(direction: int) -> void:
@@ -309,10 +298,7 @@ func _refresh_status() -> void:
 	if _core.has_method("teacher_student_snapshot"):
 		snapshot.merge(_core.teacher_student_snapshot(_index), true)
 	var grade := float(_core.grade(_index))
-	var maximum := float(_config.grade_max)
-	for entry in ConfigLoader.new().get_table("rules/kernel_params").get("rows", []):
-		if str(entry.get("param", "")) == "grade_max":
-			maximum = float(entry.value)
+	var maximum := _grade_max
 	%GradeValue.text = (
 		"%s / %s"
 		% [
@@ -323,13 +309,13 @@ func _refresh_status() -> void:
 	var pressure: Variant = snapshot.get("pressure", _core.stress(_index))
 	%PressureValue.text = "%s / %s" % [_number(pressure), _number(_config.state_max)]
 	%PressureBar.value = float(pressure)
-	var motivation: Variant = snapshot.get("motivation")
+	var motivation: Variant = _core.vitality(_index)
 	%MotivationValue.text = (
 		"—" if motivation == null else "%s / %s" % [_number(motivation), _number(_config.state_max)]
 	)
 	%MotivationBar.visible = motivation != null
 	%MotivationBar.value = float(motivation) if motivation != null else 0.0
-	var gain: Variant = snapshot.get("academic_gain")
+	var gain: Variant = _core.gain_today(_index)
 	%GainValue.text = "—" if gain == null else _number(gain, true) + " 分"
 	%Settlement.text = (
 		words("settlement")
@@ -348,7 +334,7 @@ func _refresh_status() -> void:
 	elif not _core.is_present(_index):
 		activity = "absent"
 	%Activity.text = words("activity") + str(_config.activities.get(activity, "活动中"))
-	%Passive.text = str(snapshot.get("passive", words("passive_missing")))
+	%Passive.text = _passive_text(str(snapshot.get("passive_id", "")))
 	%Goal.text = str(snapshot.get("communication_goal", words("goal_missing")))
 	%StatusDetails.text = words(
 		"status_summary",
@@ -359,10 +345,48 @@ func _refresh_status() -> void:
 			"gain": _number(gain, true)
 		}
 	)
+	# 群策群力（主文档 §10.2）：该生可以看到所有其他同学对本人好感 —— 只读展示，不写矩阵。
+	# 放在状态摘要之后、明细之前，档案一打开就能看到，不用滚到底。
+	if bool(snapshot.get("reveals_incoming_affinity", false)):
+		%StatusDetails.text += (
+			"\n\n"
+			+ str(_passives_copy.get("reveal_heading", ""))
+			+ "\n"
+			+ _incoming_affinity_text(_index)
+		)
 	for key in ["gain_details", "trends", "attention", "interventions"]:
 		%StatusDetails.text += (
 			"\n\n" + words(key) + "\n" + str(snapshot.get(key, words("no_record")))
 		)
+
+
+## 档案里的公开被动：名称 + 效果（文案在 data/localization/passives.json，数值在 data/rules/）。
+func _passive_text(passive_id: String) -> String:
+	var entry: Dictionary = _passives_copy.get(passive_id, {})
+	if passive_id.is_empty() or entry.is_empty():
+		return str(_passives_copy.get("missing", words("passive_missing")))
+	return "%s\n%s" % [str(entry.get("name", passive_id)), str(entry.get("effect", ""))]
+
+
+## 群策群力可见性：按 config 的列数分行列出「同学 → 对本人好感」，只读内核真值。
+func _incoming_affinity_text(index: int) -> String:
+	if _core == null:
+		return ""
+	var columns := maxi(1, int(_config.get("affinity_reveal_columns", 3)))
+	var lines: PackedStringArray = PackedStringArray()
+	var row: PackedStringArray = PackedStringArray()
+	for other in _roster:
+		if other == index:
+			continue
+		row.append(
+			"%s %s" % [str(_core.alias(other)), str(roundi(float(_core.affinity(other, index))))]
+		)
+		if row.size() >= columns:
+			lines.append("、".join(row))
+			row = PackedStringArray()
+	if row.size() > 0:
+		lines.append("、".join(row))
+	return "\n".join(lines)
 
 
 func _show_page(status: bool) -> void:

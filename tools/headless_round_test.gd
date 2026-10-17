@@ -1,6 +1,9 @@
 extends SceneTree
 func _init() -> void:
-	var vals: Array[float] = [1.05, 1.15, 1.25, 1.35, 1.45, 1.55, 1.65, 1.75, 1.85, 1.95, 2.05, 2.15, 2.25, 2.35, 2.45, 2.55, 2.65, 2.75, 2.85, 2.95]
+	var vals: Array[float] = [
+		1.05, 1.15, 1.25, 1.35, 1.45, 1.55, 1.65, 1.75, 1.85, 1.95,
+		2.05, 2.15, 2.25, 2.35, 2.45, 2.55, 2.65, 2.75, 2.85, 2.95,
+	]
 	for v in vals:
 		var s: String = "%.1f" % v
 		var r_twoprod: float = _r1_twoprod(v)
@@ -26,8 +29,8 @@ func _r1_twoprod(v: float) -> float:
 	return (flr + 1.0) / 10.0
 
 func _mul10_err(v: float, p: float) -> float:
-	var C := 134217729.0
-	var t := C * v
+	var split_c := 134217729.0
+	var t := split_c * v
 	var a_hi := t - (t - v)
 	var a_lo := v - a_hi
 	return (a_hi * 10.0 - p) + a_lo * 10.0

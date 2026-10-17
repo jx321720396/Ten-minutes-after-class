@@ -3,12 +3,14 @@ extends CanvasLayer
 
 const OFFICE := preload("res://scenes/game/office.tscn")
 const TEACHER_UI := preload("res://scenes/ui/teacher_classroom.tscn")
+const TEACHER_PRESENCE := preload("res://scenes/components/teacher_presence.tscn")
 
 var _view: Control
 var _room: Node
 var _mode := "classroom"
 var _return: Button
 var _teacher: Control
+var _teacher_presence: Node3D
 var _touch_pick := -1
 var _touch_start := Vector2.ZERO
 var _picker_layer: CanvasLayer
@@ -17,7 +19,7 @@ var _students: VBoxContainer
 var _message: Label
 var _picker_title: Label
 var _picker_kind := ""
-var _owns_pause := false
+var _pair_first := -1
 var _saved_visible: Dictionary = {}
 
 
@@ -38,6 +40,8 @@ func bind_classroom(room: Node) -> void:
 	room.get_node("UI").layer = 4
 	_teacher = TEACHER_UI.instantiate()
 	add_child(_teacher)
+	_teacher_presence = TEACHER_PRESENCE.instantiate()
+	room.add_child(_teacher_presence)
 	# 2026-10-16 起本局没有玩家节点：不必再隐藏「玩家自己」的形象与拾取体。
 	_teacher.action_requested.connect(_on_teacher_action)
 	_teacher.profile_requested.connect(_room.get_node("UI/NpcProfile").open_profile)
@@ -67,11 +71,21 @@ func teacher_view() -> Control:
 func set_mode(next: String) -> void:
 	if next not in ["office", "monitor", "classroom"] or _room == null:
 		return
-	if next == "office" and _mode != "office":
+	var core: Variant = _room.get_node("Actors").current_core()
+	var commands = core.teacher_commands()
+	if next == "classroom" and _mode != "classroom":
+		if commands.current_command() != "" or commands.called_index() >= 0:
+			return
+		commands.enter_classroom(core)
+	# Office thumbnail keeps the last teacher-free monitor frame.
+	# Hiding a sprite cannot change the viewport image already rendered this frame.
+	if _mode == "monitor" and next != "monitor":
 		_view.capture_preview()
+	if next == "office" and _mode != "office":
 		_capture_classroom_state()
 		_room.get_node("ActionBar").backpack.close()
 	_mode = next
+	_teacher_presence.set_view_mode(next)
 	_view.visible = next == "office"
 	_teacher.visible = next != "office"
 	_teacher.set_mode(next)
@@ -81,6 +95,16 @@ func set_mode(next: String) -> void:
 		var node: Node = _room.get_node(path)
 		node.visible = _saved_visible[path] if path == "TimeHUD" and next != "office" else false
 	_refresh_profile_binding()
+	_process(0.0)
+
+
+func _process(_delta: float) -> void:
+	if _room == null or _view == null or _teacher == null:
+		return
+	var core: Variant = _room.get_node("Actors").current_core()
+	var snapshot: Dictionary = core.teacher_commands().snapshot()
+	_view.update_commands(core, snapshot)
+	_teacher.update_commands(snapshot, _view.command_status(snapshot))
 
 
 func _capture_classroom_state() -> void:
@@ -112,8 +136,18 @@ func _refresh_profile_binding() -> void:
 
 
 func _on_action(action: String) -> void:
-	if action in ["monitor", "classroom"]:
+	if action in ["comfort", "scold", "praise", "send_back"]:
+		var core: Variant = _room.get_node("Actors").current_core()
+		var commands = core.teacher_commands()
+		if action == "send_back":
+			commands.send_back(core)
+		else:
+			commands.office_chat(core, action)
+		_process(0.0)
+	elif action in ["monitor", "classroom"]:
 		set_mode(action)
+		if action == "classroom":
+			_enter_classroom()
 	elif action in ["pause", "settings"]:
 		var menu: Control = _room.get_node("UI/PauseMenu")
 		menu.show()
@@ -127,11 +161,25 @@ func _on_action(action: String) -> void:
 func _on_teacher_action(action: String) -> void:
 	if action in ["office", "classroom"]:
 		set_mode(action)
+		if action == "classroom":
+			_enter_classroom()
 	elif action == "private_chat":
 		set_mode("office")
 		open_tool("summon")
+	elif action in ["seats", "mediate"]:
+		_show_picker(action)
 	else:
 		open_tool(action)
+
+
+## D03：去教室按实际操作实时进行（无固定耗时）。**每个课间首次**到场 → 全班压力 +5，
+## 同一课间重复进入不再生效。此前这里只切视图、没有调用内核命令，入口看着可用却不产生效果。
+func _enter_classroom() -> void:
+	var core: Variant = _room.get_node("Actors").current_core()
+	if core == null:
+		return
+	core.teacher_commands().enter_classroom(core)
+	_process(0.0)
 
 
 func select_observed_student(index: int) -> void:
@@ -211,9 +259,12 @@ func _fit_picker() -> void:
 
 func _show_picker(kind: String) -> void:
 	_picker_kind = kind
+	_pair_first = -1
 	_picker_title.text = (
 		_view.config.copy.profile_picker if kind == "profile" else _view.config.copy.summon_picker
 	)
+	if kind in ["seats", "mediate"]:
+		_picker_title.text = _view.config.meeting["pair_" + kind]
 	_message.text = ""
 	for child in _students.get_children():
 		_students.remove_child(child)
@@ -225,8 +276,6 @@ func _show_picker(kind: String) -> void:
 		_view.style_button(button)
 		button.pressed.connect(select_student.bind(index))
 		_students.add_child(button)
-	_owns_pause = not get_tree().paused
-	get_tree().paused = true
 	_picker.show()
 	_students.get_parent().set_process_input(true)
 
@@ -242,16 +291,42 @@ func select_student(index: int) -> void:
 	if _picker_kind == "profile":
 		close_picker()
 		_room.get_node("UI/NpcProfile").open_profile(index)
+	elif _picker_kind in ["seats", "mediate"]:
+		if _pair_first < 0:
+			_pair_first = index
+			_picker_title.text = _view.config.meeting.pair_second % str(core.alias(index))
+			return
+		var commands = core.teacher_commands()
+		var accepted: bool = (
+			commands.start_seat_change(core, _pair_first, index)
+			if _picker_kind == "seats"
+			else commands.mediate(core, _pair_first, index)
+		)
+		if accepted:
+			close_picker()
+		else:
+			_message.text = (
+				_view.config.meeting.no_conflict
+				if (
+					_picker_kind == "mediate"
+					and _pair_first != index
+					and commands.current_command().is_empty()
+					and not commands.is_held()
+					and commands.called_index() < 0
+				)
+				else _view.config.meeting.rejected
+			)
 	else:
-		_message.text = _view.config.copy.summon_pending % str(core.alias(index))
+		if core.teacher_commands().summon(core, index):
+			close_picker()
+		else:
+			_message.text = _view.config.meeting.rejected
+	_process(0.0)
 
 
 func close_picker() -> void:
 	_picker.hide()
 	_students.get_parent().set_process_input(false)
-	if _owns_pause:
-		get_tree().paused = false
-	_owns_pause = false
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -84,6 +84,7 @@ var _actor_count := 0
 var _player_index := -1
 ## 课间走动速度（米 / 秒）—— data/rules/movement.csv 的 meters_per_tick
 var _speed := 1.6
+var _minimum_gap := 0.0
 ## 取不到导航路线而放弃走动的次数：持续增长说明烘焙产物或几何出了问题（诊断用）
 var _missed_walks := 0
 var _snapshot: Dictionary = {}
@@ -114,6 +115,9 @@ func _ready() -> void:
 	# 2026-10-16 起本局没有玩家节点：全部 16 名同学都由 Roam 驱动（原先的“末位是玩家”已废除）。
 	_player_index = -1
 	_speed = _load_speed()
+	for row in ConfigLoader.new().get_table(MOVEMENT_TABLE).get("rows", []):
+		if str(row.get("param", "")) == "student_min_gap":
+			_minimum_gap = float(str(row.get("value", "0")))
 	decide_interval = _load_decide_interval()
 	_collect_points()
 	_collect_actors()
@@ -254,6 +258,12 @@ func _sync_positions_to_core() -> void:
 		if actor == null:
 			continue
 		var pos := actor.global_position
+		if not _core.is_present(i):
+			if _walkers[i] != null:
+				_walkers[i].stop()
+			actor.global_position = _point_positions[str(_core.seat_of(i))]
+			_core.set_moving(i, false)
+			continue
 		_core.set_position(i, pos.x, pos.z)
 		if i != _player_index:
 			_core.set_moving(i, _walkers[i] != null and _walkers[i].is_moving())
@@ -342,6 +352,7 @@ func _collect_actors() -> void:
 		var walker := actor.get_node_or_null("Walker") as ActorWalker
 		_walkers.append(walker)
 		if walker != null and i != _player_index:
+			walker.step_allowed = _step_clear.bind(i)
 			walker.walk_started.connect(_on_walk_started.bind(i))
 			walker.walk_finished.connect(_on_walk_finished.bind(i))
 	_sync_positions_to_core()
@@ -419,7 +430,12 @@ func _decide_batch() -> void:
 	for i in range(_actor_count):
 		if i == _player_index:
 			continue
-		if _core.is_busy(i) or _core.session_of(i) >= 0 or _core._sleeping[i]:
+		if (
+			not _core.is_present(i)
+			or _core.is_busy(i)
+			or _core.session_of(i) >= 0
+			or _core._sleeping[i]
+		):
 			continue
 		var walker: ActorWalker = _walkers[i]
 		if walker == null or walker.is_moving():
@@ -446,6 +462,8 @@ func _pick_point(i: int) -> String:
 		if pid == str(_point_of_actor.get(i, "")):
 			continue
 		if _occupant.has(pid) and int(_occupant[pid]) != i:
+			continue
+		if not _point_clear(i, pid):
 			continue
 		var weight := _point_weight(i, pid)
 		ids.append(pid)
@@ -494,9 +512,48 @@ func _people_near(i: int, point_id: String) -> int:
 func _go_to_point(i: int, point_id: String) -> void:
 	if _core.is_busy(i) or _core.session_of(i) >= 0 or _core._sleeping[i]:
 		return
-	_release_point(i)
-	_occupy(point_id, i)
-	_move_actor_to(i, _point_positions[point_id], false)
+	if not _point_clear(i, point_id):
+		return
+	# Reserve only after a route succeeds; failed routes keep their previous occupancy.
+	if _send_to_point(i, _point_positions[point_id]):
+		_release_point(i)
+		_occupy(point_id, i)
+
+
+func _point_clear(i: int, point_id: String) -> bool:
+	var target: Vector3 = _point_positions[point_id]
+	var flat := Vector2(target.x, target.z)
+	for j in range(_actors.size()):
+		if j == i or _actors[j] == null:
+			continue
+		var pos := _actors[j].global_position
+		if flat.distance_to(Vector2(pos.x, pos.z)) < _minimum_gap:
+			return false
+	for other in _occupant:
+		if int(_occupant[other]) == i:
+			continue
+		var reserved: Vector3 = _point_positions[other]
+		if flat.distance_to(Vector2(reserved.x, reserved.z)) < _minimum_gap:
+			return false
+	return true
+
+
+func _step_clear(from: Vector3, to: Vector3, i: int) -> bool:
+	var start := Vector2(from.x, from.z)
+	var end := Vector2(to.x, to.z)
+	for j in range(_actors.size()):
+		if j == i or _actors[j] == null:
+			continue
+		var pos := _actors[j].global_position
+		var other := Vector2(pos.x, pos.z)
+		var nearest := Geometry2D.get_closest_point_to_segment(other, start, end)
+		if nearest.distance_to(other) >= _minimum_gap:
+			continue
+		# Already close: allow separating, never squeeze further into the other student.
+		if start.distance_to(other) < _minimum_gap and (end - start).dot(start - other) > 0.0:
+			continue
+		return false
+	return true
 
 
 func _move_actor_to(i: int, pos: Vector3, keep_occupancy: bool) -> void:

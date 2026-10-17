@@ -43,6 +43,8 @@ var _mode := MODE_RUNNING
 ## 暂停拥有者集合（同名重复添加不累计，全部释放才恢复）
 var _paused_by: Dictionary = {}
 var _ended_day := 0
+## 被辞退的原因（空串 = 正常进行）—— 由日末结算写入，快照输出给界面。
+var _failure_reason := ""
 var _term_days := 0
 var _max_ticks_per_frame := 1
 ## 日末提示停留秒数（`rules/time_runtime` 的 `report_hold_seconds`；0 = 立刻自动进入次日）。
@@ -182,6 +184,11 @@ func _runtime_value(rows: Array, key: String, fallback: float) -> float:
 func pump(delta_seconds: float) -> void:
 	if _core == null or _mode != MODE_RUNNING or is_paused():
 		return
+	# 上课段硬跳过（2026-10-17 裁定）：黑幕退场 release 后，下一帧检测到 class 即整段跳过，
+	# 只留全员固定学业收益 + 崩溃判定，随后 phase_changed 让转场黑幕切到「下课了」。
+	if str(_core.time_snapshot()["kind"]) == "class":
+		skip_class()
+		return
 	if delta_seconds <= 0.0:
 		return
 	if is_instance_valid(_time_flow):
@@ -229,6 +236,20 @@ func skip_absent_break() -> bool:
 		if bool(boundary["day_settled"]):
 			_ended_day = int(boundary["ended_day"])
 			_enter_report()
+	time_updated.emit(snapshot())
+	return true
+
+
+## 上课段黑幕跳过：内核硬跳过 class，并广播相位变化（供转场黑幕切到「下课了」）。
+## 只在当前相位确为上课时生效；调用后游标已推进到下一段课间。
+func skip_class() -> bool:
+	if _core == null or _mode != MODE_RUNNING or is_paused():
+		return false
+	if str(_core.time_snapshot()["kind"]) != "class":
+		return false
+	_core.skip_class()
+	_accumulator = 0.0
+	phase_changed.emit(snapshot())
 	time_updated.emit(snapshot())
 	return true
 
@@ -302,6 +323,7 @@ func snapshot() -> Dictionary:
 	out["remaining_seconds"] = _remaining_seconds(out) if running else 0.0
 	out["progress"] = _progress(out) if running else 0.0
 	out["ended_day"] = _ended_day
+	out["failure_reason"] = _failure_reason
 	out["term_days"] = _term_days
 	out["report_hold_seconds"] = _report_hold_seconds
 	out["player_grade"] = int(_core.grade(_core.node_count() - 1)) if _core != null else 0
@@ -328,11 +350,15 @@ func snapshot() -> Dictionary:
 func _class_grade_snapshot() -> Dictionary:
 	var total := 0.0
 	var pressure_total := 0.0
+	var motivation_total := 0.0
+	var gain_total := 0.0
 	var count := 0
 	if _core != null:
 		for index in range(_core.node_count()):
 			total += _core.grade(index)
 			pressure_total += _core.stress(index)
+			motivation_total += _core.vitality(index)
+			gain_total += _core.gain_today(index)
 			count += 1
 	var first_day := 0
 	for row in _tables.get("rules/exam", {}).get("rows", []):
@@ -348,6 +374,8 @@ func _class_grade_snapshot() -> Dictionary:
 		"student_count": count,
 		"class_average_grade": total / count if count > 0 else null,
 		"class_average_pressure": pressure_total / count if count > 0 else null,
+		"class_average_motivation": motivation_total / count if count > 0 else null,
+		"class_average_academic_gain": gain_total / count if count > 0 else null,
 		"grade_max": maximum,
 		"first_exam_day": first_day,
 	}
@@ -471,6 +499,16 @@ func _progress(snapshot_data: Dictionary) -> float:
 
 
 func _enter_report() -> void:
+	# 辞退终止（§11.4）：首次考核不达标或出现退学时，老师被辞退 —— 世界立刻停在日末，
+	# 并带上触发判据说明原因；此时不再继续下一天。
+	if _core != null:
+		var failure: String = str(_core._failure_reason())
+		if failure != "":
+			_failure_reason = failure
+			_mode = MODE_FINISHED
+			term_finished.emit(_ended_day)
+			report_ready.emit(_ended_day)
+			return
 	if _ended_day >= _term_days:
 		_mode = MODE_FINISHED
 		term_finished.emit(_ended_day)
