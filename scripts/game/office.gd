@@ -12,6 +12,7 @@ var _clock: Node
 var _preview: TextureRect
 var _phase_names: Dictionary
 var _weekly_copy: Dictionary
+var _meeting: Control
 
 
 func _ready() -> void:
@@ -62,6 +63,36 @@ func _ready() -> void:
 		row.add_theme_constant_override("separation", int(config.gap))
 	get_viewport().size_changed.connect(_fit)
 	_fit()
+	_meeting = preload("res://scripts/game/office_meeting.gd").new()
+	%Design.add_child(_meeting)
+	%Design.move_child(_meeting, 0)
+	_meeting.setup(self)
+	_fit()
+	_meeting.action_requested.connect(func(action: String) -> void: action_requested.emit(action))
+
+
+func update_commands(core: Variant, snapshot: Dictionary) -> void:
+	_meeting.refresh(core, snapshot)
+	_buttons.summon.disabled = (
+		int(snapshot.called) >= 0 or str(snapshot.command) != "" or bool(snapshot.held_by_class)
+	)
+	_buttons.classroom.disabled = int(snapshot.called) >= 0 or str(snapshot.command) != ""
+
+
+func meeting_visible() -> bool:
+	return _meeting.meeting_visible()
+
+
+func command_status(snapshot: Dictionary) -> String:
+	return _meeting.status_text(snapshot)
+
+
+func meeting_texture() -> Texture2D:
+	return _meeting.meeting_texture()
+
+
+func show_student(core: Variant, index: int) -> void:
+	_meeting.show_student(core, index)
 
 
 func bind_sources(clock: Node) -> void:
@@ -145,6 +176,8 @@ func _fit() -> void:
 	var factor := minf(size.x / design.x, size.y / design.y)
 	%Design.scale = Vector2.ONE * factor
 	%Design.position = (size - design * factor) / 2.0
+	if _meeting != null:
+		_meeting.fit_background(size, factor, %Design.position, design)
 
 
 func paper_style(primary: bool = false, hovered: bool = false) -> StyleBoxFlat:

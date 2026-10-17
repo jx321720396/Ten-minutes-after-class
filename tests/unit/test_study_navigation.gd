@@ -68,7 +68,7 @@ func test_all_six_routes_keep_one_window_and_resume_on_close() -> void:
 		button.pressed.emit()
 		assert_false(route[0].is_open(), "离开的界面应关闭")
 		assert_true(route[1].is_open(), "目标界面应显示")
-		assert_true(get_tree().paused, "查看资料始终暂停")
+		assert_eq(get_tree().paused, route[1] != _profile, "档案不停时，其他窗口沿用自身暂停规则")
 	assert_eq(_profile.selected_index(), 1, "跨界面保留当前人物")
 	assert_eq(_board.get_node("Board").displayed_page().events.size(), 1, "互通不清除当天观察")
 	assert_eq(_profile._model.state, before, "导航不改写档案笔记")
