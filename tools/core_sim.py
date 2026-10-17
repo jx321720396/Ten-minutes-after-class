@@ -159,8 +159,6 @@ class Sim:
         # 阈值查表：键为 `<behavior>_<metric>`（同一行为可有多个指标，如调侃的两档）
         self.thresholds_lookup = {"%s_%s" % (r["behavior"], r["metric"]): float(r["value"])
                                   for r in self.thresholds}
-        # decay.csv 采用 param,value 标量风格（注意键名已由 axis 改为 param）
-        self.decay = {r["param"]: float(r["value"]) for r in load_table("rules/decay.csv")}
         # 行为主表：行为 -> {duration, payoff, kind}（含“收益越大耗时越长”法则）
         self.behaviors = {r["behavior"]: {"duration": int(float(r["duration"])),
                                          "payoff": float(r["payoff"]),
@@ -310,7 +308,6 @@ class Sim:
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.resting = [False] * n      # 崩溃休息锁（§5.3）：当天只睡觉，次日跨天时特殊恢复
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
-        self.day_events = {}            # (i,j) -> 当天事件类结算次数，用于「有互动」判定
 
     def _build_neighbors(self):
         """按 8 邻域（相邻 ≤1 格）建立邻接表；讲桌旁（row 0）与第一排（row 1）相邻。
@@ -451,7 +448,6 @@ class Sim:
             self.stats["dedup_skips"] += 1
             return False
         self.settled.add(dkey)
-        self.day_events[(i, j)] = self.day_events.get((i, j), 0) + 1
         applied = False
         for row in self.event_rows:
             if row["event_id"] != event_id:
@@ -611,9 +607,12 @@ class Sim:
                 self.do_study(i)
                 busy.add(i)
                 continue
-            if state == "play" and self.start_play_activity(i):
-                busy.add(i)
-                continue
+            if state == "play":
+                # 游戏状态（动力 <30，D01）：伙伴类活动不受状态限制（2026-10-17 裁定）——
+                # 先按同一批概率尝试闲聊 / 打闹，未成立再落到自指娱乐；收益口径仍走 play。
+                if self._try_partner_activity(i, busy) or self.start_play_activity(i):
+                    busy.add(i)
+                    continue
             leisure_started = False
             for kind, prefix in LEISURE_KINDS.items():
                 prob_key = prefix + "_p"
@@ -640,32 +639,42 @@ class Sim:
                 self.do_study(i)
                 busy.add(i)
                 continue
-            # 环境类：闲聊 —— 通用加入（§9.1.4）：找伴 → 提议 / 加入 / 跟随（确定投票 §9.1.2）
-            # 标签调制（§11、§18.9）：爱学习 → 更少闲聊；爱聊天 → 更多闲聊
-            chat_gain = 1.0 + self.tag_bias(i, "chat_bias") - self.tag_bias(i, "study_bias")
-            chat_gain = max(0.1, chat_gain)
-            if self.allowed("chat") and self.rng.random() < self.probs["chat"] * chat_gain:
-                j = self._find_partner(i, "chat")
-                if j is not None:
-                    # 一个决策点只发起一次伙伴尝试：成败都到此为止（§9.1.4 循环与时序）
-                    self._propose_activity(i, j, "chat")
-                    busy.add(i)
-                    continue
-            # 意向类：追逐打闹（§9.2）—— 同走通用加入找伴；场地条件沿用旁观者门槛
-            th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
-            if self.allowed("roughhouse") and self.rng.random() < self.probs.get("roughhouse_p", 0.05) * self.teacher.multiplier("roughhouse"):
-                j = self._find_partner(i, "roughhouse")
-                if j is not None:
-                    bys = [k for k in range(n) if k not in (i, j) and k not in busy
-                           and not self.sleeping[k]]
-                    if len(bys) >= th_rc:
-                        self._propose_activity(i, j, "roughhouse")
-                        busy.add(i)
-                        continue
+            # 伙伴类活动（闲聊 / 打闹，§9.1.4）：自由状态与游戏状态共用同一入口
+            if self._try_partner_activity(i, busy):
+                busy.add(i)
+                continue
 
         # 带朋友（§9.1.3/§9.1.4）：活动组成员的邀请 pass；
         # 随机数顺序固定（组按创建序、成员按节点号升序），同种子可复现。
         self._invite_friends_pass()
+
+    def _try_partner_activity(self, i, busy):
+        """伙伴类活动（闲聊 / 打闹）的一次尝试（§9.1.4）：按 behavior_probs 掷骰 → 找伴 → 提议。
+
+        2026-10-17 裁定：游戏状态（动力 <30）也允许伙伴类娱乐，故自由状态与游戏状态共用本函数；
+        学习状态仍锁定学习，不调用。返回 True 表示本决策点已被占用。
+        """
+        # 标签调制（§11、§18.9）：爱学习 → 更少闲聊；爱聊天 → 更多闲聊
+        chat_gain = 1.0 + self.tag_bias(i, "chat_bias") - self.tag_bias(i, "study_bias")
+        chat_gain = max(0.1, chat_gain)
+        if self.allowed("chat") and self.rng.random() < self.probs["chat"] * chat_gain:
+            chat_tgt = self._find_partner(i, "chat")
+            if chat_tgt is not None:
+                # 一个决策点只发起一次伙伴尝试：成败都到此为止（§9.1.4 循环与时序）
+                self._propose_activity(i, chat_tgt, "chat")
+                return True
+        # 意向类：追逐打闹（§9.2）—— 同走通用加入找伴；场地条件沿用旁观者门槛
+        th_rc = int(self.thresholds_lookup.get("roughhouse_count", 2))
+        mult = self.teacher.multiplier("roughhouse")
+        if self.allowed("roughhouse") and self.rng.random() < self.probs.get("roughhouse_p", 0.05) * mult:
+            rough_tgt = self._find_partner(i, "roughhouse")
+            if rough_tgt is not None:
+                bys = [k for k in range(self.N) if k not in (i, rough_tgt) and k not in busy
+                       and not self.sleeping[k]]
+                if len(bys) >= th_rc:
+                    self._propose_activity(i, rough_tgt, "roughhouse")
+                    return True
+        return False
 
     def start_leisure(self, i, kind):
         if kind not in LEISURE_KINDS or not self.allowed(kind) or not self.can_interact_with(i):
@@ -1528,13 +1537,39 @@ class Sim:
             self.add_stress(i, -relief)
 
     def start_play_activity(self, i):
-        """游戏状态（D01 / D02）：固定用「玩手机」作为表现层动作（结算走 play 口径）。
+        """游戏状态（D01 / D02）：整课间做自指娱乐，选哪一类由 behavior_probs 的 *_p 概率决定。
 
-        确定性选择、不消耗随机数 —— 与 GDScript 参考实现一致，避免两侧随机序列无意义漂移。
+        2026-10-17：不再固定「玩手机」（原先写死并绕过 data），游戏状态范围与自由状态娱乐
+        共用同一张概率表，概率为 0 即移出该状态范围。一次决策只掷一次随机数；
+        没有可选娱乐时返回 False 且不消耗随机数 —— 与 GDScript 侧同序同次，便于同种子对拍。
         """
-        if not self.allowed("play_phone"):
+        kinds = []
+        weights = []
+        total = 0.0
+        for kind, prefix in LEISURE_KINDS.items():
+            prob_key = prefix + "_p"
+            if prob_key not in self.probs:
+                continue
+            weight = float(self.probs[prob_key])
+            if weight <= 0.0:
+                continue
+            if not self.allowed(kind):
+                continue
+            if kind == "read_book" and self.book[i] <= 0:
+                continue
+            kinds.append(kind)
+            weights.append(weight)
+            total += weight
+        if not kinds:
             return False
-        return self.start_leisure(i, "play_phone")
+        roll = self.rng.random() * total
+        picked = kinds[-1]
+        for index, kind in enumerate(kinds):
+            roll -= weights[index]
+            if roll <= 0.0:
+                picked = kind
+                break
+        return self.start_leisure(i, picked)
 
     def check_breakdown(self):
         """崩溃与恢复（§5.3，2026-10-16）：压力 > 阈值进入崩溃休息 —— 当天只睡觉、不学习不社交、
@@ -2055,15 +2090,15 @@ class Sim:
     def settle_day(self):
         """跨天结算（§3.5 + 《老师版规则合并稿》D01）
 
-        D01：「跨天压力单独减少 20 点，动力单独减少 10 点，成绩提升数值为学业收益。」
+        D01（2026-10-17 修订）：跨天压力单独减少 20 点，**动力不再统一扣减**（保留前日剩余值）；
+        关系不再跨天衰减（§4.2：好感恩对原值保留，变化只来自真实结算与干预）。
         """
         carry_stress = self.psyche["carry_stress_cut"]
-        carry_vitality = self.psyche["carry_vitality_cut"]
         rest_stress_cut = self.psyche["breakdown_rest_stress_cut"]
         rest_vitality_cut = self.psyche["breakdown_rest_vitality_cut"]
         for i in range(self.N):
             if self.resting[i]:
-                # §5.3：崩溃后次日特殊恢复，替代普通跨天的 −20／−10，不重复扣除、不联动动力。
+                # §5.3：崩溃后次日特殊恢复，替代普通跨天的 −20，不重复扣除、不联动动力。
                 self.add_stress(i, -rest_stress_cut, False)
                 self.add_vitality(i, -rest_vitality_cut)
                 self.Broken[i] = False
@@ -2072,28 +2107,17 @@ class Sim:
                 self.phase_state[i] = "free"
             else:
                 self.add_stress(i, -carry_stress, False)
-                self.add_vitality(i, -carry_vitality)
             self.Grade[i] = max(0.0, min(self.kp["grade_max"], self.Grade[i] + self.GainToday[i]))
             self.GainToday[i] = 0.0
         self.try_burst()                      # 每日一次：压力爆发按概率判定
-        # D06：当天末判定霸凌 / 孤立与退学；用当天实际事件与当天末关系，故在衰减之前。
+        # D06：当天末判定霸凌 / 孤立与退学；用当天实际事件与当天末关系。
         self.settle_risk(self.day)
-        d = self.decay
 
         # 「心结」：爆发后的 3 天里，每天先加 5 点压力（长线心理创伤，§3.5）
         for i in range(self.N):
             if self.knot_days[i] > 0:
                 self.add_stress(i, float(self.status_tags["heart_knot"]["daily_stress"]))
                 self.knot_days[i] -= 1
-        for i in range(self.N):
-            for j in range(self.N):
-                if i == j:
-                    continue
-                interacted = self.day_events.get((i, j), 0) >= d["interact_min_events"]
-                self.A[i][j] *= d["decay_a_interact"] if interacted else d["decay_a_no_interact"]
-                self.H[i][j] *= d["decay_h"]
-            # D01：压力按固定 −20 继承，不再乘 retain_s（旧口径见 CHANGELOG 冲突清单）
-        self.day_events.clear()          # 新的一天，重置「有互动」判定
         # D05 第 4 条：考试前一天全班压力 +20；考试结束全班压力 −30。
         if self.is_exam_eve(self.day):
             for i in range(self.N):

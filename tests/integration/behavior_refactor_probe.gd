@@ -26,7 +26,6 @@ const FIELDS := [
 	"_pos_z",
 	"_knot_days",
 	"_vol_log",
-	"_day_events",
 	"_settled",
 	"_stats",
 	"_volume",
