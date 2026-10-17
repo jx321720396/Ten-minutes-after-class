@@ -66,8 +66,9 @@ GDScript 约定：矩阵访问一律走 `Affinity(i,j)` 等访问器；风格与
 ## 提交与 PR
 
 - 提交信息：`<类型>(<范围>): <描述>`，类型见 `CONTRIBUTING.md`。
-- 改动必须同步更新受影响的 `docs/` 与 `CHANGELOG.md`。
-- 涉及玩法逻辑时，PR 描述需说明"检验一（换成脚本还成立吗）"如何通过。
+- **`main` 允许直接推送**（小团队主干开发，2026-10-08 起）：推送前跑**快门禁**（`check_config` / `test_core` / `verify_formula` / `check_docs`，秒级）+ `gdformat scripts/` + `gdlint scripts/`，**红灯不推** —— **仓库已移除 GitHub Actions（2026-10-09）**，没有 CI 兜底，全靠这一步。完整六道门（含多种子标定门，与 UI / 美术改动无关且有已知不达标项）需要时手动跑 `bash tools/run_tests.sh --no-godot`。跨模块大改或需要他人复看的改动仍推荐走 PR（`CONTRIBUTING.md` §8）。
+- **规格变更**必须同批更新受影响的 `docs/` 与 `CHANGELOG.md`；其余改动在同一批推送内补记即可，不要求每个提交都写条目。
+- 涉及玩法逻辑的改动，说明"检验一（换成脚本还成立吗）"如何通过。
 
 ## 当前状态
 
@@ -94,3 +95,13 @@ python tools/check_docs.py            # 文档一致性（未实现标记 / 参�
 ```
 
 > GDScript 侧对应门：GUT / gdUnit4 单测 + 同种子对拍（Python vs GDScript 关键指标误差 ≤ 1%）。
+
+### 导出 APK 前：CSV 导入模式检查
+
+```bash
+python tools/check_export_imports.py   # data/**/*.csv 的 .import 必须全部是 importer="keep"
+```
+
+否则 Godot 的 `csv_translation` 导入器会接管 CSV，**原始 CSV 不进包**，安卓运行期读不到这些表
+（2026-10-17 手机首次 tick 卡死即由此引起：老师版 11 张表缺失）。桌面端直接读源码目录不受影响，
+所以**桌面上跑得通不代表导出包没问题**。`tools/run_tests.sh` 已包含这一步。

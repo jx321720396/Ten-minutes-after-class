@@ -2,8 +2,8 @@
 # =============================================================================
 # tools/run_tests.sh —— 一键跑测试
 #
-# 顺序：① 离线六道门（tools/*.py） → ② 铁律测试（tests/invariants/）
-#       → ③ Godot 侧 GUT 单测（需要 Godot 可执行文件）
+# 顺序：① 离线六道门（tools/*.py） → ①b 导出前置检查（CSV 导入模式）
+#       → ② 铁律测试（tests/invariants/） → ③ Godot 侧 GUT 单测（需要 Godot 可执行文件）
 #
 # 本机没有 Godot 时，①② 照跑，③ 自动跳过并给出提示（不算失败）——
 # 这台机器上 Godot 未加入 PATH，所以「填 Godot 完整路径」是使用本脚本的关键一步。
@@ -208,6 +208,16 @@ for gate in $GATES; do
     mark_skip "门 $gate（tools/$gate.py 不存在）"
   fi
 done
+
+# ------------------------------------------------------- ①b 导出前置检查
+# 不属于六道门，但导出 APK 前必须通过：CSV 若不是 keep 模式，安卓包会丢表。
+printf '\n=== 导出前置检查 ===\n'
+if [ -f "tools/check_export_imports.py" ]; then
+  run_step "导出前检查 check_export_imports" "$PYTHON" "tools/check_export_imports.py"
+else
+  printf '\n=== 导出前检查 ===\n'
+  mark_skip "导出前检查（tools/check_export_imports.py 不存在）"
+fi
 
 # -------------------------------------------------------------- ② 铁律测试
 INVARIANTS="check_no_character_id check_observer_readonly check_magic_numbers"
