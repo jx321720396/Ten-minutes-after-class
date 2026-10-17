@@ -106,3 +106,5 @@ Blender 书架小样 v2：`build_school_bookshelf_blender.py` 由独立 JSON 配
 
 
 左上角时间／首次周考卡片截图：godot --path . -s tests/integration/capture_time_card.gd 使用真实教室和真实均分，输出 tools/out/time_card 中 1920×1080、1280×720 的教室及卡片截图，不修改正式存档。见 [验收说明](../docs/qa/时间周考卡片验收-2026-10-14.md)。
+
+风险关注卡片截图：`godot --path . --script tools/capture_risk_attention.gd` 在独立实例登记真实风险事件并结算，输出空状态、三类风险与详情在不同横屏尺寸的实机图到 `docs/art/concepts/risk_warning_20261016/`。夹具只用于截图，不进入正式开局。见 [验收说明](../docs/qa/风险关注卡片验收-2026-10-16.md)。
