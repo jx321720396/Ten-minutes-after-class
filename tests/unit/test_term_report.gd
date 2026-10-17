@@ -1,4 +1,5 @@
 extends GutTest
+const TERM_REPLAY_PATH := "res://scripts/game/term_replay.gd"
 
 
 func _core() -> SimCore:
@@ -54,7 +55,7 @@ func test_recording_captures_actual_changes_and_is_readonly() -> void:
 
 
 func test_playback_keeps_each_event_and_seek_does_not_accumulate() -> void:
-	var script = load("res://scripts/game/term_replay.gd")
+	var script = load(TERM_REPLAY_PATH)
 	assert_not_null(script)
 	if script == null:
 		return
@@ -118,7 +119,7 @@ func test_finished_report_is_automatic_and_world_stays_frozen() -> void:
 func test_completed_term_replays_to_true_final_matrices() -> void:
 	var core := _core()
 	core.run_day()
-	var replay = load("res://scripts/game/term_replay.gd").new()
+	var replay = load(TERM_REPLAY_PATH).new()
 	var history := core.term_record()
 	replay.configure(history)
 	replay.seek_tick(replay.last_tick())

@@ -1,13 +1,15 @@
 extends SceneTree
 
 const OUTPUT := "res://docs/art/concepts/roster_art_integration_20261015/"
+const STUDENT_POSES := "res://data/ui/student_poses.json"
+const STUDY_MANIFEST := "res://assets/textures/characters/study_front_v1/manifest.json"
 
 func _initialize() -> void:
 	call_deferred("capture")
 
 func capture() -> void:
-	var settings = JSON.parse_string(FileAccess.get_file_as_string("res://data/ui/student_poses.json"))
-	var rows = JSON.parse_string(FileAccess.get_file_as_string("res://assets/textures/characters/study_front_v1/manifest.json"))
+	var settings = JSON.parse_string(FileAccess.get_file_as_string(STUDENT_POSES))
+	var rows = JSON.parse_string(FileAccess.get_file_as_string(STUDY_MANIFEST))
 	var gallery := SubViewport.new()
 	gallery.size = Vector2i(1600, 2040)
 	gallery.disable_3d = true

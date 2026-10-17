@@ -1,5 +1,12 @@
 # 变更记录
 
+## 2026-10-17 工具与测试脚本静态检查清理
+
+- 清掉 `tools/` 与 `tests/` 的 8 处 gdlint 真问题：Dekker 拆分常数 `C` → `split_c`（三个浮点对拍脚本）、`headless_round_test.gd` 的取值表与 `test_phase_boundary_protocol.gd` 的超长注释行、`capture_roster_desk_contacts.gd` 改用路径常量、`verify_teacher_profile.gd` 与 `test_term_report.gd` 的重复 `load` 提为文件级常量。纯改名与提取，无逻辑改动。
+- `tests/invariants/fixtures/scripts/systems/observer/labeler.gd` 的 `A` 是**故意**违反铁律 2 的哨兵夹具，保持原样；`gdlint tools/ tests/` 仍会报这一项，属预期。
+- 口径不变：推送门禁只覆盖 `scripts/`（`.gdlintrc`、`CONTRIBUTING.md` §3）。`tools/`、`tests/` 的 20 个文件仍不符合 gdformat，本次不动其排版。
+- 验证：7 个改动文件经 gdtoolkit 解析通过，`gdlint tools/ tests/` 仅剩上述夹具 1 项；`gdformat --check scripts/`、`gdlint scripts/` 全绿；快门禁（`check_config` / `test_core` / `verify_formula` / `check_docs`）通过。
+
 ## 2026-10-17 老师版移动端策划按章整理
 
 - 新增 docs/gdd/teacher-mobile/ 总览与 15 章阅读分册，按当前老师版主策划原文拆分，修正分册相对链接并提供前后章导航。

@@ -139,11 +139,11 @@ func _py_round(v: float, ndigits: int) -> float:
 
 
 func _mul_err(v: float, b: float, p: float) -> float:
-	var C := 134217729.0
-	var tv := C * v
+	var split_c := 134217729.0
+	var tv := split_c * v
 	var v_hi := tv - (tv - v)
 	var v_lo := v - v_hi
-	var tb := C * b
+	var tb := split_c * b
 	var b_hi := tb - (tb - b)
 	var b_lo := b - b_hi
 	return ((v_hi * b_hi - p) + v_hi * b_lo + v_lo * b_hi) + v_lo * b_lo
