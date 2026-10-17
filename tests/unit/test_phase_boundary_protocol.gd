@@ -69,7 +69,7 @@ func test_crossing_bell_interrupts_without_completion() -> void:
 	assert_eq(core._last_finished[0], null, "无完成记录（不是完成）")
 
 
-# ------------------------------------------------------------------ ④ 清理：cleanup_phase 清掉 current_act / busy_act / in_conversation
+# ------------------------------------------------------------------ ④ 清理：cleanup_phase 清 current_act / busy_act / 会话
 
 
 func test_cleanup_clears_residual_action_state() -> void:
