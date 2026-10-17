@@ -82,7 +82,29 @@ func _on_report(ended: int) -> void:
 		transition.hide()
 	if is_instance_valid(_clock) and str(_clock.snapshot().mode) == "finished":
 		layer = int($Board.config.final_report_layer)
+	_close_other_overlays()
 	_open_day(ended)
+
+
+## 日末接管：先收起其它可能盖在推理板之上的弹层，再打开推理板。
+## 风险详情在 layer 31、档案 / 百科各自独立图层；若日末仍开着会压住推理板，
+## 且世界被 pause 后表现为「卡死」。
+func _close_other_overlays() -> void:
+	var room := get_parent().get_parent()
+	if room == null:
+		return
+	var profile := room.get_node_or_null("UI/NpcProfile")
+	if profile != null and profile.has_method("is_open") and profile.is_open():
+		profile.close()
+	var encyclopedia := room.get_node_or_null("UI/EncyclopediaEntry")
+	if encyclopedia != null and encyclopedia.has_method("is_open") and encyclopedia.is_open():
+		encyclopedia.close()
+	var hud := room.get_node_or_null("TimeHUD")
+	if hud != null and hud.has_method("close_attention_details"):
+		hud.close_attention_details()
+	var hub := room.get_node_or_null("OfficeHub")
+	if hub != null and hub.has_method("picker_visible") and hub.picker_visible():
+		hub.close_picker()
 
 
 func open() -> void:

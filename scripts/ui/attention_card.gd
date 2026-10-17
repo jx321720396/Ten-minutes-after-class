@@ -169,6 +169,12 @@ func _open_details(kind: String) -> void:
 	_details.show()
 
 
+## 日末由 TimeHUD 转调：强制收起风险详情弹层，避免 layer 31 盖在推理板（layer 6）之上。
+func close_details() -> void:
+	if _details != null:
+		_details.hide()
+
+
 func _refresh_details() -> void:
 	_detail_heading.text = str(_cfg.risk_heading)
 	var desired := {}
