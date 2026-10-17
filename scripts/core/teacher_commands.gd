@@ -126,11 +126,12 @@ func mediate(core: Variant, a: int, b: int) -> bool:
 	return true
 
 
-## 全班训斥（D01）：全班压力 +30。
+## 全班训斥（D01）：全班压力 +30；有「听劝」的学生动力额外 +10（§10.2，按实际完成结算）。
 func scold_class(core: Variant) -> void:
 	var delta := float(_acts["class_scold_stress"])
 	for i in range(int(core.node_count())):
 		core.add_stress(i, delta)
+		core._note_scolded(i)
 
 
 ## 去教室（D03 第 3 条）：即时，不设固定耗时；每个课间首次进入 → 全班压力 +5（同一课间不重复）。
@@ -189,6 +190,7 @@ func _finish(core: Variant) -> void:
 			# 训斥按 D01 加压 +20；安抚 / 打听 / 鼓励的幅度待确认，只计时不施加数值。
 			if _chat_kind == "scold" and _called >= 0:
 				core.add_stress(_called, float(_acts["office_scold_stress"]))
+				core._note_scolded(_called)
 			# D07 §10：办公室处理（含现场制止类的训斥）完成后，该学生本课间不能主动伤害。
 			core._note_stopped(_called)
 			_chat_kind = ""

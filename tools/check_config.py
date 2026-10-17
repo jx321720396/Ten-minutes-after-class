@@ -477,6 +477,61 @@ check("老师：巡查点按先后顺序且在课间内", 0 < _teacher["visit_ch
 check("老师：没收只收正在读的一本", _teacher["confiscate_books_per_catch"] == 1)
 
 
+# 14. 公开专属被动（主文档 §10.2 / §10.4）
+#     两条硬性要求：① 分配表覆盖每一名学生且一人一条；② 脚本读的键 = 表里的键（防静默回落）。
+print("=== 14. 公开专属被动（主文档 §10.2 / §10.4）===")
+_pv = load("rules/passives.csv")
+_pp = params("rules/passive_params.csv")
+_pv_map = {r["character_id"]: r["passive_id"] for r in _pv}
+_seed_ids = [r["id"] for r in load("characters/seeds.csv")]
+check("passives：每名角色各分配一条被动",
+      sorted(_pv_map) == sorted(_seed_ids),
+      "多/缺: %s" % sorted(set(_pv_map) ^ set(_seed_ids)))
+check("passives：一人一条（不重复分配）",
+      len(set(_pv_map.values())) == len(_pv_map),
+      "重复: %s" % sorted({v for v in _pv_map.values() if list(_pv_map.values()).count(v) > 1}))
+with open(os.path.join(DATA, "localization", "passives.json"), encoding="utf-8") as _pv_file:
+    _pv_text = json.load(_pv_file)
+_pv_meta = {"heading", "missing", "reveal_heading"}
+_pv_ids = set(_pv_map.values())
+check("passives：每条被动都有名称与效果文案",
+      not (_pv_ids - set(_pv_text)), "缺文案: %s" % sorted(_pv_ids - set(_pv_text)))
+check("passives：文案表没有未分配的被动",
+      set(_pv_text) - _pv_meta == _pv_ids, "多出: %s" % sorted(set(_pv_text) - _pv_meta - _pv_ids))
+_pp_required = (
+    "focus_gain_multiplier", "absorb_grade_bonus", "talkative_affinity_gain",
+    "self_discipline_cost_cut", "optimistic_stress_relief", "moderate_loss_divisor",
+    "likable_affinity_gain", "forgiving_hostility_cut", "empathetic_stress_relief",
+    "receptive_vitality_gain", "studious_drip_bonus_ratio", "team_spirit_affinity_threshold",
+    "team_spirit_gain", "positive_feedback_vitality_per_grade", "spring_stress_per_vitality",
+    "spring_vitality_gain", "fragile_stress_bonus_ratio", "well_informed_messages",
+)
+check("passive_params：必需键齐全",
+      all(k in _pp for k in _pp_required),
+      "缺: %s" % sorted(set(_pp_required) - set(_pp)))
+check("passive_params：翻倍 / 减半 / 加成比例都 > 1（否则等同没生效）",
+      all(_pp[k] > 1.0 for k in ("focus_gain_multiplier", "moderate_loss_divisor",
+                                 "spring_stress_per_vitality")),
+      "见 focus_gain_multiplier / moderate_loss_divisor / spring_stress_per_vitality")
+check("passive_params：改动量都为正",
+      all(_pp[k] > 0.0 for k in _pp_required if k not in
+          ("team_spirit_affinity_threshold",)),
+      "非正: %s" % sorted(k for k in _pp_required
+                          if k != "team_spirit_affinity_threshold" and _pp[k] <= 0.0))
+check("passive_params：群策群力好感门槛在 0–100 内",
+      0.0 < _pp["team_spirit_affinity_threshold"] < 100.0,
+      _pp["team_spirit_affinity_threshold"])
+check("passive_params：百分比加成口径为 1.0（即 +100%）",
+      _pp["studious_drip_bonus_ratio"] == 1.0 and _pp["fragile_stress_bonus_ratio"] == 1.0,
+      "%s / %s" % (_pp["studious_drip_bonus_ratio"], _pp["fragile_stress_bonus_ratio"]))
+_pv_src = read(os.path.join(ROOT, "scripts", "core", "passives.gd"))
+_pv_used = set(re.findall(r'_number\("([a-z_]+)"', _pv_src))
+check("passives.gd 读取的键都在 passives 参数表里",
+      _pv_used <= set(_pp), "无对应表项: %s" % sorted(_pv_used - set(_pp)))
+check("passive_params 的每个键都被 passives.gd 读取",
+      set(_pp) <= _pv_used, "写了没人读: %s" % sorted(set(_pp) - _pv_used))
+
+
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)
