@@ -1,0 +1,122 @@
+[
+  {
+    "id": "03",
+    "kind": "stand",
+    "sha256": "05c05d8d4c0a5fdcfac37c3aa314c0c7615324180540436f96b2a5e0c7cbe0ae",
+    "transparent_ratio": 0.7306410471598307
+  },
+  {
+    "id": "03",
+    "kind": "study",
+    "sha256": "4539dd038a4d662dd982f1407c507129e365115a78e05dd6ac11be61a7459f48",
+    "transparent_ratio": 0.6397329966227213
+  },
+  {
+    "id": "07",
+    "kind": "stand",
+    "sha256": "fd8f23c98c082322eb97baa5a59e69d59d54a05890264286e64e6596fb68239f",
+    "transparent_ratio": 0.7258001963297526
+  },
+  {
+    "id": "07",
+    "kind": "study",
+    "sha256": "3434b89cc9f20a93a9560778198a6716a8543898c66632c50dc5dec7b9e3bde7",
+    "transparent_ratio": 0.6349639892578125
+  },
+  {
+    "id": "08",
+    "kind": "stand",
+    "sha256": "b864bb28f1772cfd25a7fb3a4446de98fb9d1bb6b30b1d72275dd43a428c566b",
+    "transparent_ratio": 0.7460339864095052
+  },
+  {
+    "id": "08",
+    "kind": "study",
+    "sha256": "de7438dae7bc5db03d2cb9ca30f67e7c068a7df3e8ce4fcac6af34954d1c2d21",
+    "transparent_ratio": 0.6656627655029297
+  },
+  {
+    "id": "09",
+    "kind": "stand",
+    "sha256": "82f2ceef7992146ed09d4ebc986e3fe05c8cb04d0075987887e0562fbbedc1b7",
+    "transparent_ratio": 0.7211691538492838
+  },
+  {
+    "id": "09",
+    "kind": "study",
+    "sha256": "4199d91c36a9edf47170c49d6c9a6329421513e1d1a97fcf4931289fe9e9337b",
+    "transparent_ratio": 0.6536375681559244
+  },
+  {
+    "id": "10",
+    "kind": "stand",
+    "sha256": "bee2659cb0c94e58978c0f1134204fb80c0d2779bf0d59506a1c83c58961092e",
+    "transparent_ratio": 0.7321243286132812
+  },
+  {
+    "id": "10",
+    "kind": "study",
+    "sha256": "0990a2d8f8a75a9b89fdb88293b76796d68bdbc8e314f26857aab249f4b958ea",
+    "transparent_ratio": 0.6483949025472006
+  },
+  {
+    "id": "11",
+    "kind": "stand",
+    "sha256": "06d5bb2417d86b61f1feba6a83330b3733c12b943f7b22708410518199138552",
+    "transparent_ratio": 0.7231597900390625
+  },
+  {
+    "id": "11",
+    "kind": "study",
+    "sha256": "f08d4bf18274245f9bc319a4c9b920127cca2f2eaa576a26d9212634073bbbcd",
+    "transparent_ratio": 0.6497173309326172
+  },
+  {
+    "id": "12",
+    "kind": "stand",
+    "sha256": "454569d6d326fecac0f0a6ea0ae2b519a541c9382a71aa822c6aa840533a4d9f",
+    "transparent_ratio": 0.7247625986735026
+  },
+  {
+    "id": "12",
+    "kind": "study",
+    "sha256": "f73e6f12deaf8ff57433c51e5b516aab40033d2321d4cde8ded6d636e467b6b5",
+    "transparent_ratio": 0.6435152689615885
+  },
+  {
+    "id": "14",
+    "kind": "stand",
+    "sha256": "42c851e36a15fcf5ca79c9cab2423b578b4615174282d0ac1b3a1f39a442030c",
+    "transparent_ratio": 0.7287616729736328
+  },
+  {
+    "id": "14",
+    "kind": "study",
+    "sha256": "e95536a1d9542a049db65db12b9e9919e8b9d66347f6df8a53988f0710030bd7",
+    "transparent_ratio": 0.6508509318033854
+  },
+  {
+    "id": "15",
+    "kind": "stand",
+    "sha256": "396caddbaa76335488250a923a3f2e5689ebb7402244a7e57787f943e784f5a0",
+    "transparent_ratio": 0.7431252797444662
+  },
+  {
+    "id": "15",
+    "kind": "study",
+    "sha256": "b75f46b1cef66fe08d27a652f9d9f555b4aad6c7ff9172eeba22cdc8e265ac72",
+    "transparent_ratio": 0.6636505126953125
+  },
+  {
+    "id": "16",
+    "kind": "stand",
+    "sha256": "e8ea6295aeaaf850c2a15c3fe74e07580b7e17661939fb4ff6a22f3591c1e70f",
+    "transparent_ratio": 0.728705088297526
+  },
+  {
+    "id": "16",
+    "kind": "study",
+    "sha256": "97fb073b0c61860dc0fba32889050d443dc59690974a83fdfaaab39517c77ff9",
+    "transparent_ratio": 0.6466744740804037
+  }
+]

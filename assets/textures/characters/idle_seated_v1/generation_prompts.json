@@ -1,0 +1,120 @@
+{
+  "tool": "built-in image_gen",
+  "date": "2026-10-16",
+  "intent": "identity-preserve / relaxed seated idle",
+  "base": "Use case: identity-preserve. 编辑输入的单个人物坐姿PNG，生成同一个学生的【空闲坐姿】游戏透明素材。严格保留原图人物身份、脸型、发型、眼镜/发饰、校服款式与蓝白灰颜色、画风及全身比例。人物仍在原来的坐姿位置，髋部、膝盖、小腿和双鞋的像素位置与原图完全一致，画布1024x1536完整头到鞋，保持正面稍俯视的教室视角。唯一行为改动：移除书本、笔和一切学习用品；头自然稍抬起、颈肩放松，眼睛自然望向教室前方略偏一侧，不低头读书，不摆拍直盯镜头；上臂自然下垂，肘微弯，左右手分别轻放在各自大腿上，掌指自然放松，手腕肩膀连续，双手五指正确。不画桌子或椅子（由游戏3D场景提供），但必须明显是臀部坐着、双膝弯曲、脚踩地面的坐姿，不能站立。简洁柔和日系游戏插画，减弱头发高光和衣褶，无夸张表情。输出一张独立人物的真实透明RGBA PNG，人物轮廓之外alpha为0，禁止任何光晕、渐变背景、投影、黑底、边框、文字、名字、编号、海报或拼图。保留身份特征：",
+  "characters": [
+    {
+      "id": "01",
+      "name": "陈阳",
+      "sprite": "warm_male",
+      "reference": "res://assets/textures/characters/study_front_v1/char_01_study_down_v1.png",
+      "features": "温暖棕色蓬松碎发、柔和眉眼"
+    },
+    {
+      "id": "02",
+      "name": "林晚",
+      "sprite": "sensitive_female",
+      "reference": "res://assets/textures/characters/study_front_v1/char_02_study_down_v1.png",
+      "features": "黑色长直发、整齐薄刘海、柔和脸型"
+    },
+    {
+      "id": "03",
+      "name": "张渊",
+      "sprite": "quiet_male",
+      "reference": "res://assets/textures/characters/identity_v3/char_03_study_identity_v3.png",
+      "features": "整齐的黑色短发，厚实平直齐刘海，头发轮廓圆整不凌乱；黑色细长矩形眼镜；清瘦偏长的脸，较直眉毛，沉静细长眼。"
+    },
+    {
+      "id": "04",
+      "name": "周敏",
+      "sprite": "stern_female",
+      "reference": "res://assets/textures/characters/study_front_v1/char_04_study_down_v1.png",
+      "features": "低马尾、方框眼镜、利落眉眼"
+    },
+    {
+      "id": "05",
+      "name": "赵蕊",
+      "sprite": "lively_female",
+      "reference": "res://assets/textures/characters/study_front_v1/char_05_study_down_v1.png",
+      "features": "高棕色马尾、明亮杏眼"
+    },
+    {
+      "id": "06",
+      "name": "孙悦",
+      "sprite": "warm_female",
+      "reference": "res://assets/textures/characters/study_front_v1/char_06_study_down_v1.png",
+      "features": "短波波头、黄色星形发夹、圆眼"
+    },
+    {
+      "id": "07",
+      "name": "郑浩",
+      "sprite": "blunt_male",
+      "reference": "res://assets/textures/characters/identity_v3/char_07_study_identity_v3.png",
+      "features": "运动型男生，深栗棕色短刺发，鬓角很短，额头明显露出；较宽的方圆脸，小麦肤色，粗直眉毛，开朗笑容；不戴眼镜。"
+    },
+    {
+      "id": "08",
+      "name": "许静",
+      "sprite": "shy_female",
+      "reference": "res://assets/textures/characters/identity_v3/char_08_study_identity_v3.png",
+      "features": "女生，黑色齐刘海，头发改成两条低低的细编辫分置两肩前，发绳很细朴素；偏窄的心形脸，略微下垂的柔和眼角，害羞的神态；不戴眼镜。"
+    },
+    {
+      "id": "09",
+      "name": "何川",
+      "sprite": "sensitive_male",
+      "reference": "res://assets/textures/characters/identity_v3/char_09_study_identity_v3.png",
+      "features": "男生，柔软的黑色中分帘式短发，两侧略长遮到耳朵上缘，刘海从中间分开，发梢微弯；修长鹅蛋脸，略弯的眉毛和温和圆润眼形，温和内向笑容；无眼镜。"
+    },
+    {
+      "id": "10",
+      "name": "韩雪",
+      "sprite": "blunt_female",
+      "reference": "res://assets/textures/characters/identity_v3/char_10_study_identity_v3.png",
+      "features": "女生，利落的不对称黑色短精灵发型，一侧露耳，一侧短斜刘海，头顶不蓬乱；清晰小巧的下颌，细长锐利的眼睛，干练自信的眉毛，闭嘴轻笑；女性面孔，非男生，无眼镜。"
+    },
+    {
+      "id": "11",
+      "name": "沈浪",
+      "sprite": "shy_male",
+      "reference": "res://assets/textures/characters/identity_v3/char_11_study_identity_v3.png",
+      "features": "男生，灰黑色柔软小卷短发，一小撮明显向上的呆毛，前额不规则卷刘海；非常清楚的细圆形金属框眼镜，绝不画成方框；窄小脸，温和圆眼和较低的八字眉，羞怯神态。"
+    },
+    {
+      "id": "12",
+      "name": "顾言",
+      "sprite": "tsundere_male",
+      "reference": "res://assets/textures/characters/identity_v3/char_12_study_identity_v3.png",
+      "features": "男生，整齐的黑色偏分后梳短发，刘海向上向侧梳开露出大部分额头，耳朵两侧清爽；较长的棱角脸，略挑的细眉、狭长眼睛，含蓄自信的微笑；不戴眼镜。"
+    },
+    {
+      "id": "13",
+      "name": "叶梓",
+      "sprite": "quiet_female",
+      "reference": "res://assets/textures/characters/study_front_v1/char_13_study_down_v1.png",
+      "features": "肩上波浪短发、圆眼镜、秀气脸型"
+    },
+    {
+      "id": "14",
+      "name": "佳豪",
+      "sprite": "lively_male",
+      "reference": "res://assets/textures/characters/identity_v3/char_14_study_identity_v3.png",
+      "features": "男生，浅栗棕色整齐圆形锅盖短发，饱满柔顺的圆顶轮廓和平直略弯的厚刘海，无碎刺发；圆圆脸颊，较大的圆眼睛，鼻梁两侧极少量淡雀斑，开朗笑容；无眼镜。"
+    },
+    {
+      "id": "15",
+      "name": "温雅",
+      "sprite": "tsundere_female",
+      "reference": "res://assets/textures/characters/identity_v3/char_15_study_identity_v3.png",
+      "features": "女生，深栗棕色长发改成一条粗而柔顺的低侧编辫搭在一侧肩前，柔和的长侧刘海露出另一侧额头；柔和鹅蛋脸，细弯眉、温柔狭长眼睛，端静闭嘴笑；不戴眼镜。"
+    },
+    {
+      "id": "16",
+      "name": "李峥",
+      "sprite": "stern_male",
+      "reference": "res://assets/textures/characters/identity_v3/char_16_study_identity_v3.png",
+      "features": "男生，明显非常短的黑色寸头，短平顶，清楚的额头和发际线、两侧短鬓角，绝不是凌乱刘海；端正偏方的脸，粗而水平的直眉，沉稳眼神，下颌更宽，无笑容但不凶；无眼镜。"
+    }
+  ]
+}

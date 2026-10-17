@@ -1,0 +1,162 @@
+[
+  {
+    "id": "01",
+    "name": "陈阳",
+    "sprite": "warm_male",
+    "features": "温暖棕色蓬松碎发、柔和眉眼",
+    "reference": "res://assets/textures/characters/study_front_v1/char_01_study_down_v1.png",
+    "file": "char_01_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-3f79f9d0-762a-42e5-bc0b-d8c53d876c95.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "02",
+    "name": "林晚",
+    "sprite": "sensitive_female",
+    "features": "黑色长直发、整齐薄刘海、柔和脸型",
+    "reference": "res://assets/textures/characters/study_front_v1/char_02_study_down_v1.png",
+    "file": "char_02_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-53ad5b19-16b0-444e-a20c-59087a5b52b9.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "03",
+    "name": "张渊",
+    "sprite": "quiet_male",
+    "features": "整齐的黑色短发，厚实平直齐刘海，头发轮廓圆整不凌乱；黑色细长矩形眼镜；清瘦偏长的脸，较直眉毛，沉静细长眼。",
+    "reference": "res://assets/textures/characters/identity_v3/char_03_study_identity_v3.png",
+    "file": "char_03_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-0cdcf380-739c-4294-9605-0975566f13e9.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "04",
+    "name": "周敏",
+    "sprite": "stern_female",
+    "features": "低马尾、方框眼镜、利落眉眼",
+    "reference": "res://assets/textures/characters/study_front_v1/char_04_study_down_v1.png",
+    "file": "char_04_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-ed343490-3f9e-40b8-823a-44d9c3ca0a61.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "05",
+    "name": "赵蕊",
+    "sprite": "lively_female",
+    "features": "高棕色马尾、明亮杏眼",
+    "reference": "res://assets/textures/characters/study_front_v1/char_05_study_down_v1.png",
+    "file": "char_05_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-01e6ae42-3a6e-4bf2-8f2f-6a1da5f47689.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "06",
+    "name": "孙悦",
+    "sprite": "warm_female",
+    "features": "短波波头、黄色星形发夹、圆眼",
+    "reference": "res://assets/textures/characters/study_front_v1/char_06_study_down_v1.png",
+    "file": "char_06_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-5c24d733-18b2-4f1f-82b3-b4827c28d13b.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "07",
+    "name": "郑浩",
+    "sprite": "blunt_male",
+    "features": "运动型男生，深栗棕色短刺发，鬓角很短，额头明显露出；较宽的方圆脸，小麦肤色，粗直眉毛，开朗笑容；不戴眼镜。",
+    "reference": "res://assets/textures/characters/identity_v3/char_07_study_identity_v3.png",
+    "file": "char_07_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-21aafe18-8ec6-4b6d-892d-e75ba9549bc6.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "08",
+    "name": "许静",
+    "sprite": "shy_female",
+    "features": "女生，黑色齐刘海，头发改成两条低低的细编辫分置两肩前，发绳很细朴素；偏窄的心形脸，略微下垂的柔和眼角，害羞的神态；不戴眼镜。",
+    "reference": "res://assets/textures/characters/identity_v3/char_08_study_identity_v3.png",
+    "file": "char_08_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-f95e2336-4689-4d96-97a5-228d3915fcc4.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "09",
+    "name": "何川",
+    "sprite": "sensitive_male",
+    "features": "男生，柔软的黑色中分帘式短发，两侧略长遮到耳朵上缘，刘海从中间分开，发梢微弯；修长鹅蛋脸，略弯的眉毛和温和圆润眼形，温和内向笑容；无眼镜。",
+    "reference": "res://assets/textures/characters/identity_v3/char_09_study_identity_v3.png",
+    "file": "char_09_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-482301f6-3185-478a-a542-0f7a1ad8832b.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "10",
+    "name": "韩雪",
+    "sprite": "blunt_female",
+    "features": "女生，利落的不对称黑色短精灵发型，一侧露耳，一侧短斜刘海，头顶不蓬乱；清晰小巧的下颌，细长锐利的眼睛，干练自信的眉毛，闭嘴轻笑；女性面孔，非男生，无眼镜。",
+    "reference": "res://assets/textures/characters/identity_v3/char_10_study_identity_v3.png",
+    "file": "char_10_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-226ad69a-84c7-4deb-9ace-f6251fb696f4.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "11",
+    "name": "沈浪",
+    "sprite": "shy_male",
+    "features": "男生，灰黑色柔软小卷短发，一小撮明显向上的呆毛，前额不规则卷刘海；非常清楚的细圆形金属框眼镜，绝不画成方框；窄小脸，温和圆眼和较低的八字眉，羞怯神态。",
+    "reference": "res://assets/textures/characters/identity_v3/char_11_study_identity_v3.png",
+    "file": "char_11_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-8cce263a-c52f-4b1f-ad15-e73e943a7a7d.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "12",
+    "name": "顾言",
+    "sprite": "tsundere_male",
+    "features": "男生，整齐的黑色偏分后梳短发，刘海向上向侧梳开露出大部分额头，耳朵两侧清爽；较长的棱角脸，略挑的细眉、狭长眼睛，含蓄自信的微笑；不戴眼镜。",
+    "reference": "res://assets/textures/characters/identity_v3/char_12_study_identity_v3.png",
+    "file": "char_12_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-a3d62a0c-1548-4c70-af46-43a16ae10cc8.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "13",
+    "name": "叶梓",
+    "sprite": "quiet_female",
+    "features": "肩上波浪短发、圆眼镜、秀气脸型",
+    "reference": "res://assets/textures/characters/study_front_v1/char_13_study_down_v1.png",
+    "file": "char_13_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-98072755-4111-4f93-a1bb-8de7c0f956fe.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "14",
+    "name": "佳豪",
+    "sprite": "lively_male",
+    "features": "男生，浅栗棕色整齐圆形锅盖短发，饱满柔顺的圆顶轮廓和平直略弯的厚刘海，无碎刺发；圆圆脸颊，较大的圆眼睛，鼻梁两侧极少量淡雀斑，开朗笑容；无眼镜。",
+    "reference": "res://assets/textures/characters/identity_v3/char_14_study_identity_v3.png",
+    "file": "char_14_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-57fa55ef-784a-4ffb-9075-1b36a8140f89.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "15",
+    "name": "温雅",
+    "sprite": "tsundere_female",
+    "features": "女生，深栗棕色长发改成一条粗而柔顺的低侧编辫搭在一侧肩前，柔和的长侧刘海露出另一侧额头；柔和鹅蛋脸，细弯眉、温柔狭长眼睛，端静闭嘴笑；不戴眼镜。",
+    "reference": "res://assets/textures/characters/identity_v3/char_15_study_identity_v3.png",
+    "file": "char_15_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-45ad335e-59de-40b3-8218-e67c14157966.png",
+    "pose": "relaxed_seated_idle"
+  },
+  {
+    "id": "16",
+    "name": "李峥",
+    "sprite": "stern_male",
+    "features": "男生，明显非常短的黑色寸头，短平顶，清楚的额头和发际线、两侧短鬓角，绝不是凌乱刘海；端正偏方的脸，粗而水平的直眉，沉稳眼神，下颌更宽，无笑容但不凶；无眼镜。",
+    "reference": "res://assets/textures/characters/identity_v3/char_16_study_identity_v3.png",
+    "file": "char_16_idle_seated_v1.png",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a13d55-1e2e-7962-8070-090144154e01\\exec-f0526d25-91d4-4b6a-a920-0d040b0baea6.png",
+    "pose": "relaxed_seated_idle"
+  }
+]
