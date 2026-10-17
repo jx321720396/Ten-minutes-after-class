@@ -95,3 +95,13 @@ python tools/check_docs.py            # 文档一致性（未实现标记 / 参�
 ```
 
 > GDScript 侧对应门：GUT / gdUnit4 单测 + 同种子对拍（Python vs GDScript 关键指标误差 ≤ 1%）。
+
+### 导出 APK 前：CSV 导入模式检查
+
+```bash
+python tools/check_export_imports.py   # data/**/*.csv 的 .import 必须全部是 importer="keep"
+```
+
+否则 Godot 的 `csv_translation` 导入器会接管 CSV，**原始 CSV 不进包**，安卓运行期读不到这些表
+（2026-10-17 手机首次 tick 卡死即由此引起：老师版 11 张表缺失）。桌面端直接读源码目录不受影响，
+所以**桌面上跑得通不代表导出包没问题**。`tools/run_tests.sh` 已包含这一步。

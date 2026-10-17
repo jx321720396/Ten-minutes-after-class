@@ -97,6 +97,7 @@ func _ready() -> void:
 		bar_style.set_content_margin_all(0)
 		bar_style.shadow_size = 0
 		_progress_bar.add_theme_stylebox_override(state, bar_style)
+	TouchBind.bind_tree(self)
 	set_process_unhandled_input(true)
 
 

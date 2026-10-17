@@ -18,7 +18,6 @@ data/
 │   ├─ belief.csv             信念矩阵更新参数（eta0_* / sigma_max_* / prior_* / lambda_b）✓
 │   ├─ behavior_probs.csv     环境类行为每 tick 基础概率 ✓
 │   ├─ behavior_thresholds.csv 阈值类行为触发条件（举报 / 爆发 / 道歉 / 安慰）✓
-│   ├─ decay.csv              跨天衰减（有/无互动两档 + 压力保留 + 有互动门槛）✓
 │   ├─ status_tags.csv        状态标签（心结 / 秘密同盟；参数外置，避免硬编码）✓
 │   ├─ phases.csv             相位时长 + 规则启用子集 + 玩家操作权限 ✓
 │   ├─ time_presentation.csv  相位显示名 + 实时标称时长 + 游戏内时长（时间组件）✓
@@ -62,7 +61,6 @@ data/
 | `rules/passives.csv` | `character_id`、`passive_id`、`note`（公开专属被动分配；一人一条，只作数据分配，脚本不按角色编号分支） |
 | `rules/passive_params.csv` | `param`、`value`、`unit`、`note`（被动数值；消费者只有 `scripts/core/passives.gd`） |
 | `rules/transmission.csv` | `theta_a`、`theta_h`、`sigma`、`beta_affinity`、`beta_hostility`、`epsilon` |
-| `rules/decay.csv` | `axis`、`no_interaction`、`interacted`、`note` |
 | `rules/phases.csv` | `phase_id`、`tick_count`、`active_rules`、`player_controllable` |
 | `balance/w_events.csv` | `event_id`、`axis`、`delta`、`delta_min`、`delta_max`、`note` |
 | `rules/player_interaction.csv` | `param`、`value`、`unit`、`note`（`chat_range_m` / `seated_chat_range_m` / `seated_tolerance_m` / `range_step_m` / `clue_*` / 拾取层掩码；玩家与 NPC 共用聊天空间口径） |

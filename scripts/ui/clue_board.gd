@@ -402,7 +402,8 @@ func _fit() -> void:
 
 
 func _bind_touch(node: Node) -> void:
-	if node is Button:
+	if node is Button and not node.has_meta(TouchBind.META_BOUND):
+		node.set_meta(TouchBind.META_BOUND, true)
 		node.gui_input.connect(_touch_button.bind(node))
 	for child in node.get_children():
 		_bind_touch(child)

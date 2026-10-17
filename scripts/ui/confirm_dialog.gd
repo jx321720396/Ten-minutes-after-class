@@ -23,6 +23,7 @@ func _ready():
 	clear_btn.pressed.connect(_on_clear)
 	keep_btn.pressed.connect(_on_keep)
 	cancel_btn.pressed.connect(_on_cancel)
+	TouchBind.bind_tree(self)
 
 
 ## 打开确认面板并按「有无存档」切口径：
