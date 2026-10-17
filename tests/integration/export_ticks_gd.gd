@@ -28,9 +28,8 @@ func _initialize() -> void:
 		quit(1)
 		return
 	for _d in range(days):
-		for _t in range(480):
-			core.advance_tick()
-			f.store_line(JSON.stringify(_snapshot(core, n)))
+		_run_day_sampled(core, n, func(c: SimCore, n2: int) -> void:
+			f.store_line(JSON.stringify(_snapshot(c, n2))))
 	f.close()
 	quit(0)
 
@@ -45,6 +44,23 @@ func _parse_user_args() -> Dictionary:
 		if parts.size() == 2:
 			out[parts[0]] = parts[1]
 	return out
+
+
+## 跑完一天并逐 tick 采样，与 Python core_sim.run_day 同构：上课段黑幕硬跳过
+## （skip_class：全员固定学业收益 + 崩溃判定，无逐 tick 结算、不采样），
+## 课间段逐 tick 采样；段边界用 finish_time_boundary 推进，日末结算后返回。
+func _run_day_sampled(core: SimCore, n: int, sink: Callable) -> void:
+	while true:
+		var snap: Dictionary = core.time_snapshot()
+		if str(snap["kind"]) == "class":
+			core.skip_class()
+			continue
+		if int(snap["tick_in_phase"]) < int(snap["tick_count"]):
+			core.advance_tick()
+			sink.call(core, n)
+			continue
+		if bool(core.finish_time_boundary()["day_settled"]):
+			return
 
 
 ## 采样一行快照：字段与 export_ticks.py 的 snapshot() 一致。

@@ -184,6 +184,11 @@ func _runtime_value(rows: Array, key: String, fallback: float) -> float:
 func pump(delta_seconds: float) -> void:
 	if _core == null or _mode != MODE_RUNNING or is_paused():
 		return
+	# 上课段硬跳过（2026-10-17 裁定）：黑幕退场 release 后，下一帧检测到 class 即整段跳过，
+	# 只留全员固定学业收益 + 崩溃判定，随后 phase_changed 让转场黑幕切到「下课了」。
+	if str(_core.time_snapshot()["kind"]) == "class":
+		skip_class()
+		return
 	if delta_seconds <= 0.0:
 		return
 	if is_instance_valid(_time_flow):
@@ -231,6 +236,20 @@ func skip_absent_break() -> bool:
 		if bool(boundary["day_settled"]):
 			_ended_day = int(boundary["ended_day"])
 			_enter_report()
+	time_updated.emit(snapshot())
+	return true
+
+
+## 上课段黑幕跳过：内核硬跳过 class，并广播相位变化（供转场黑幕切到「下课了」）。
+## 只在当前相位确为上课时生效；调用后游标已推进到下一段课间。
+func skip_class() -> bool:
+	if _core == null or _mode != MODE_RUNNING or is_paused():
+		return false
+	if str(_core.time_snapshot()["kind"]) != "class":
+		return false
+	_core.skip_class()
+	_accumulator = 0.0
+	phase_changed.emit(snapshot())
 	time_updated.emit(snapshot())
 	return true
 

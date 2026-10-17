@@ -2019,11 +2019,28 @@ class Sim:
         self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
         self.begin_phase_state()          # D01 段首状态：学习 / 游戏 / 自由
 
+    def skip_class(self):
+        """上课段硬跳过（2026-10-17 裁定）：不逐 tick 模拟，只做「全员固定学业收益 + 崩溃判定」。
+
+        与 GDScript 内核 `skip_class()` 镜像：不调 begin_phase / 不逐 tick / 不调 end_phase，
+        只推进游标到下一段；class 从不是末相位，故不会触发 settle_day。零 RNG 消费。
+        """
+        gain = self.acts["class_gain"]
+        for i in range(self.N):
+            self.GainToday[i] += gain
+        self.check_breakdown()
+        self.phase_index = (self.phase_index + 1) % len(self.day_phases)
+        self.tick_in_phase = 0
+
     def run_day(self):
         total_ticks = 0
         for _ in range(len(self.day_phases)):
-            self.begin_phase()                      # ⑥⑦ 进入本段 + 新段判定
             _phase, ticks = self.day_phases[self.phase_index]
+            if _phase == "class":
+                # 上课段硬跳过：不 begin_phase、不逐 tick、不 end_phase、不采样音量。
+                self.skip_class()
+                continue
+            self.begin_phase()                      # ⑥⑦ 进入本段 + 新段判定
             for _ in range(ticks):
                 self.tick()
                 self.tick_in_phase += 1

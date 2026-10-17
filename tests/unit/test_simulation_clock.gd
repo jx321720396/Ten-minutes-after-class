@@ -44,18 +44,19 @@ func test_first_tick_needs_full_interval() -> void:
 	assert_eq(core.time_snapshot()["global_tick"], 1, "累计满 1 秒推进 1 tick")
 
 
-func test_class_interval_comes_from_presentation_table() -> void:
+func test_class_is_skipped_and_advances_to_next_break() -> void:
 	var core := _make_core()
 	var clock := _make_clock(core)
 	_pump_until_phase_change(clock, core)
 	var snap: Dictionary = core.time_snapshot()
-	assert_eq(snap["phase_id"], "morning_class", "课间跑满后进入上午上课")
+	assert_eq(snap["phase_id"], "morning_class", "课间跑满后进入上午上课（黑幕「上课了」）")
 	assert_eq(snap["tick_count"], 90)
 	assert_eq(snap["tick_in_phase"], 0, "边界后新相位 tick 归零（同帧不偷跑）")
 
-	# 上课 = 90 tick / 15 秒 → 每 tick 1/6 秒；1/6 秒刚好推进一个 tick
+	# 上课段硬跳过（2026-10-17）：下一帧检测到 class 即整段跳过，不逐 tick、不动 global_tick
 	clock.pump(1.0 / 6.0)
-	assert_eq(core.time_snapshot()["global_tick"], 101, "上课段 1/6 秒推进 1 tick")
+	assert_eq(core.time_snapshot()["phase_id"], "lunch_break", "上课段瞬间黑幕跳过到中午课间")
+	assert_eq(core.time_snapshot()["global_tick"], 100, "跳过上课段不产生任何 tick")
 
 
 func test_state_is_independent_of_delta_split() -> void:
