@@ -185,9 +185,31 @@ func test_teacher_summon_arrives_instantly_then_office_chat_timings() -> void:
 	assert_true(tc.office_chat(core, "scold"), "到达后可以立即开始办公室聊天")
 	assert_eq(tc.remaining_seconds(), 20, "办公室聊天统一 20 秒（D03）")
 	var before := core.stress(3)
+	var vitality_before := core.vitality(3)
 	for _t in range(20):
 		tc.tick(core)
-	assert_almost_eq(core.stress(3), minf(before + 20.0, 100.0), 0.0001, "训斥 +20 压力（D01）")
+	assert_almost_eq(core.stress(3), minf(before + 30.0, 100.0), 0.0001, "训斥 +30 压力")
+	assert_almost_eq(core.vitality(3), minf(vitality_before + 30.0, 100.0), 0.0001, "训斥 +30 动力")
+
+
+func test_praise_adds_only_the_targets_vitality() -> void:
+	var core := _core()
+	var tc := core.teacher_commands()
+	core._stress[4] = 40.0
+	core._vitality[4] = 40.0
+	core._stress[5] = 40.0
+	core._vitality[5] = 40.0
+	assert_true(tc.summon(core, 4), "可以召唤被表扬的学生")
+	assert_true(tc.office_chat(core, "praise"), "表扬走与训斥相同的办公室聊天")
+	assert_eq(tc.remaining_seconds(), 20, "表扬同样耗时 20 秒")
+	for _t in range(19):
+		tc.tick(core)
+	assert_almost_eq(core.vitality(4), 40.0, 0.0001, "谈话未完成前不加动力")
+	tc.tick(core)
+	assert_almost_eq(core.vitality(4), 55.0, 0.0001, "表扬只给该生 +15 动力")
+	assert_almost_eq(core.stress(4), 40.0, 0.0001, "表扬不加压力")
+	assert_almost_eq(core.vitality(5), 40.0, 0.0001, "不影响其他学生的动力")
+	assert_almost_eq(core.stress(5), 40.0, 0.0001, "不影响其他学生的压力")
 
 
 func test_teacher_enter_classroom_once_per_break() -> void:
@@ -330,7 +352,7 @@ func test_summon_is_immediately_sendable() -> void:
 	var tc := core.teacher_commands()
 	assert_true(tc.summon(core, 2), "召唤即到（2026-10-16 裁定）")
 	assert_true(core._is_in_office(2), "学生立刻在办公室")
-	assert_true(tc.send_back(core), "无需等待即可遣返")
-	for _t in range(10):
-		tc.tick(core)
-	assert_false(core._is_in_office(2), "遣返完成后回到教室")
+	assert_true(tc.send_back(core), "送回教室即时完成")
+	assert_eq(tc.current_command(), "", "送回教室不占用命令、不消耗时间")
+	assert_eq(tc.called_index(), -1, "学生立刻离开办公室")
+	assert_false(core._is_in_office(2), "送回后立刻回到教室")
