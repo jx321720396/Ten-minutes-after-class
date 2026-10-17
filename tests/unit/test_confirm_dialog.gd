@@ -1,8 +1,8 @@
 extends GutTest
 
-## confirm_dialog 双口径回归（2026-10-13）：「新游戏」一律先过确认面板。
+## confirm_dialog 双口径回归（2026-10-13，2026-10-17 起主菜单只在有存档时调用）。
 ## · open(true)：「检测到存档」三键，警示红按钮；
-## · open(false)：「开始新游戏？」两键，隐藏「保留存档」，确定键墨色；
+## · open(false)：「开始新游戏？」两键，隐藏「保留存档」，确定键墨色（组件保留能力）；
 ## · 信号链不变：confirmed_clear / confirmed_keep / cancelled，Esc 走 cancelled。
 
 const CONFIRM = preload("res://scenes/ui/confirm_dialog.tscn")
@@ -56,20 +56,19 @@ func test_keep_signal_still_available_in_save_mode() -> void:
 
 func test_main_menu_new_game_flow_matches_save_state() -> void:
 	# 自适应本机真实存档状态（Save 是 autoload，无法打桩，只能顺着真实存档状态分支）。
-	# 老师版无选角色：确认后直接开局；_start_new_game 打桩防测试真切场景。
+	# 2026-10-17：无存档不再弹「开始新游戏？」确认，点「新游戏」直接开局；
+	# 有存档仍弹三键，取消留在主菜单。_start_new_game 打桩防测试真切场景。
 	var menu: Control = partial_double(MAIN_MENU).instantiate()
 	add_child_autofree(menu)
 	stub(menu, "_start_new_game").to_do_nothing()
 	(menu.get_node("VBoxContainer/NewGame") as Button).pressed.emit()
-	assert_true(menu.confirm_dialog.visible, "两种情况都先弹确认面板")
 	if Save.has_save():
+		assert_true(menu.confirm_dialog.visible, "有存档仍先弹确认面板")
 		assert_eq(menu.confirm_dialog.title_label.text, "检测到存档")
 		assert_true(menu.confirm_dialog.keep_btn.visible, "有存档维持三键口径")
 		menu.confirm_dialog.cancel_btn.pressed.emit()  # 只取消，不动真实存档
 		assert_false(menu.confirm_dialog.visible, "取消后面板收起")
 		assert_not_called(menu, "_start_new_game")
 	else:
-		assert_eq(menu.confirm_dialog.title_label.text, menu.confirm_dialog.FRESH_TITLE)
-		menu.confirm_dialog.clear_btn.pressed.emit()  # 无存档：确定不删除任何文件
-		assert_false(menu.confirm_dialog.visible, "面板已收起")
-		assert_called(menu, "_start_new_game")  # 确认后直接开局，不再进性别选择
+		assert_false(menu.confirm_dialog.visible, "无存档不再弹确认面板")
+		assert_called(menu, "_start_new_game")  # 直接开局，不再进性别选择

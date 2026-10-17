@@ -98,6 +98,7 @@ func _ready() -> void:
 	_apply_paper_style()
 	_update_highlight()
 	_build_backpack()
+	TouchBind.bind_tree(self)
 	get_viewport().size_changed.connect(_layout_for_viewport)
 	_layout_for_viewport()
 

@@ -51,6 +51,7 @@ func _ready() -> void:
 	paper.content_margin_bottom = float(_cfg.margins[3])
 	add_theme_stylebox_override("panel", paper)
 	_build_details()
+	TouchBind.bind_tree(self)
 	refresh({})
 
 

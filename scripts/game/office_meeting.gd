@@ -72,7 +72,7 @@ func setup(view: Control) -> void:
 		button.pressed.connect(func() -> void: action_requested.emit(key))
 		actions.add_child(button)
 		_buttons[key] = button
-		if key in ["ask", "encourage"]:
+		if key == "encourage":
 			button.tooltip_text = _config.pending
 	_sprites = (
 		JSON
@@ -105,7 +105,7 @@ func refresh(core: Variant, snapshot: Dictionary) -> void:
 			)
 		)
 	for key in _buttons:
-		_buttons[key].disabled = (not arrived or command != "" or key in ["ask", "encourage"])
+		_buttons[key].disabled = not arrived or command != "" or key == "encourage"
 
 
 func status_text(snapshot: Dictionary) -> String:

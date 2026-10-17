@@ -63,6 +63,7 @@ func _ready() -> void:
 	layer = UI_LAYER
 	_cfg = _load_cfg()
 	_build_ui()
+	TouchBind.bind_tree(self)
 	visible = false
 
 

@@ -17,6 +17,7 @@ func _ready():
 	settings_panel.closed.connect(_on_close_settings)
 	panel.set_anchors_preset(Control.PRESET_CENTER)
 	_center_panel.call_deferred()
+	TouchBind.bind_tree(self)
 
 
 func _notification(what):
