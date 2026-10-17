@@ -1,5 +1,11 @@
 # 变更记录
 
+## 2026-10-17 办公室送回即时、表扬实装、训斥改为 +30
+
+- 送回教室不再计返程：`send_back_seconds` 改为 0，学生当场离开办公室，不占用命令、不消耗课间时间。
+- 左侧「安抚 · 待开放」改为可点击的「表扬」，走与训斥相同的 20 秒办公室聊天；完成后只给该生动力 +15，不加压力。
+- 办公室训斥由压力 +20（联动动力 +20）改为压力与动力各 +30。数值在 `activities.csv`。
+
 ## 2026-10-17 工具与测试脚本静态检查清理
 
 - 清掉 `tools/` 与 `tests/` 的 8 处 gdlint 真问题：Dekker 拆分常数 `C` → `split_c`（三个浮点对拍脚本）、`headless_round_test.gd` 的取值表与 `test_phase_boundary_protocol.gd` 的超长注释行、`capture_roster_desk_contacts.gd` 改用路径常量、`verify_teacher_profile.gd` 与 `test_term_report.gd` 的重复 `load` 提为文件级常量。纯改名与提取，无逻辑改动。

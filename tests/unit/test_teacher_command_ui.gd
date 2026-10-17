@@ -13,8 +13,7 @@ func test_office_command_lifecycle_blocks_early_chat_and_duplicate_summons() -> 
 	for tick in range(20):
 		commands.tick(core)
 	assert_true(commands.send_back(core), "Can send back a waiting student after conversation")
-	for tick in range(10):
-		commands.tick(core)
+	assert_eq(commands.current_command(), "", "送回教室当场完成")
 	assert_eq(commands.called_index(), -1)
 	assert_true(core.is_present(0))
 
@@ -57,9 +56,8 @@ func test_real_ui_summons_displays_all_students_and_returns_them() -> void:
 	for tick in range(20):
 		commands.tick(core)
 	hub.office_view().action_requested.emit("send_back")
-	assert_eq(commands.current_command(), "send_back")
-	for tick in range(10):
-		commands.tick(core)
+	assert_eq(commands.current_command(), "", "送回教室当场完成")
+	assert_eq(commands.called_index(), -1)
 	hub._process(0.0)
 	room.get_node("Actors")._process(0.0)
 	assert_false(hub.office_view().meeting_visible())
