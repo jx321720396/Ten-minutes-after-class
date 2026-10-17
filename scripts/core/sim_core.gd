@@ -583,7 +583,7 @@ func advance_phase() -> int:
 	_transition_if_needed()
 	if _phase_index >= _active_phases.size():
 		return 0
-	# 上课段硬跳过（2026-10-17 裁定）：批处理同样跳过 class、不逐 tick（只做 +2 收益 + 崩溃判定），
+	# 上课段硬跳过（2026-10-17 裁定）：批处理同样跳过 class、不逐 tick（只做 class_gain 收益 + 崩溃判定），
 	# 保证 advance_day / run_day 与实时时钟 pump 走同一条「上课无 tick」口径，同种子对拍一致。
 	if str(_active_phases[_phase_index]["kind"]) == "class":
 		skip_class()
@@ -783,7 +783,7 @@ func _tick() -> void:
 ## 单位结算（《老师版规则合并稿》D02）：按秒累计，每满一个单位结算一次；只对课间生效。
 ## · 学习：每 20 秒 +1 学业收益、-5 动力（不直接加成绩 —— 跨天由 _settle_day 把当日收益并入成绩）
 ## · 娱乐（吃零食 / 聊天 / 打闹 / 听歌 / 看课外书）：每 10 秒 -5 压力
-## · 游戏状态：每 20 秒 -1 学业收益、-5 压力（不减少动力）
+## · 游戏状态：每 40 秒 -1 学业收益、-5 压力（不减少动力）
 ## 未完成的余额不在这里结算：自然完成 / 被打断时由 _fold_pending_unit 按 D02 第 4 条折算。
 func _settle_units() -> void:
 	# D02 + 2026-10-16 裁定：学习单位在**任何段**都结算（上课也积累学业收益）；

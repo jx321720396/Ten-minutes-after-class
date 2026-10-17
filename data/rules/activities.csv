@@ -7,7 +7,7 @@ study_settle_seconds,20,s,学习每 20 秒结算一次
 study_gain,1,分,学习每次结算 +1 学业收益
 study_vitality_cost,5,点,学习每次结算 -5 动力
 relief_per_unit,5,点,娱乐每 10 秒减少 5 点压力
-play_settle_seconds,20,s,游戏状态每 20 秒结算一次
+play_settle_seconds,40,s,游戏状态每 40 秒结算一次（2026-10-17：扣分间隔翻倍）
 play_gain,-1,分,游戏每次结算 -1 学业收益（可为负，次日成绩下降）
 play_relief,5,点,游戏每次结算 -5 压力
 play_vitality_cost,0,点,游戏状态不减少动力
@@ -19,4 +19,4 @@ office_scold_stress,30,点,办公室训斥 → 该生压力 +30，动力按一�
 office_praise_vitality,15,点,办公室表扬 → 该生动力 +15，不加压力
 office_comfort_stress,-20,点,办公室安抚 → 该生压力 −20，动力按一般规则联动 −20（2026-10-17 裁定）
 class_scold_stress,30,点,全班训斥 → 全班压力 +30
-class_gain,2,分,上课段全员固定学业收益（每节课一次，替代学习逐单位结算）
+class_gain,3,分,上课段全员固定学业收益（每节课一次；2026-10-17 由 2 改为 3）
