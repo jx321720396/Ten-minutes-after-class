@@ -263,6 +263,21 @@ func _process(_delta: float) -> void:
 	var kind := str(_pose_core.time_snapshot().get("kind", ""))
 	for index in _seated_poses:
 		var actor := actor_for(int(index))
+		actor.visible = bool(_pose_core.is_present(index))
+		var current_seat := (
+			get_node(seat_root_path).get_node(str(_pose_core.seat_of(index))) as Node3D
+		)
+		if current_seat != seat_node_of(index):
+			_seat_of_actor[index] = current_seat
+			actor.get_node("Walker").stop()
+			actor.global_position = _stand_position(current_seat)
+			var home := actor.global_position
+			_pose_core.set_seat_position(index, Vector2(home.x, home.z))
+			_pose_core.set_position(index, home.x, home.z)
+			var roam := get_node_or_null("../Roam")
+			if roam != null:
+				roam._release_point(index)
+				roam._occupy(str(_pose_core.seat_of(index)), index)
 		var seat := seat_node_of(int(index))
 		var pose: Node3D = _seated_poses[index]
 		var walker := actor.get_node_or_null("Walker")

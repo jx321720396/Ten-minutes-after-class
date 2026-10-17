@@ -60,6 +60,8 @@ func _ready() -> void:
 	%Profile.pressed.connect(func() -> void: profile_requested.emit(_selected))
 	%Patrol.pressed.connect(func() -> void: action_requested.emit("classroom"))
 	%PrivateChat.pressed.connect(func() -> void: action_requested.emit("private_chat"))
+	%Seats.pressed.connect(func() -> void: action_requested.emit("seats"))
+	%Conflict.pressed.connect(func() -> void: action_requested.emit("mediate"))
 	%ProfileTool.pressed.connect(func() -> void: action_requested.emit("profile"))
 	%BookTool.pressed.connect(func() -> void: action_requested.emit("encyclopedia"))
 	%BoardTool.pressed.connect(func() -> void: action_requested.emit("board"))
@@ -95,6 +97,19 @@ func select_student(index: int, student_name: String) -> void:
 
 func selected_student() -> int:
 	return _selected
+
+
+func update_commands(snapshot: Dictionary, status: String) -> void:
+	var available := (
+		str(snapshot.command).is_empty()
+		and int(snapshot.called) < 0
+		and not bool(snapshot.held_by_class)
+	)
+	%Seats.disabled = not available
+	%Conflict.disabled = not available
+	%PrivateChat.disabled = not available
+	%Status.text = status
+	%Hint.text = str(config.copy.pending_hint)
 
 
 func _style_button(button: Button) -> void:

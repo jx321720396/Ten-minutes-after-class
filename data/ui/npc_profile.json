@@ -40,11 +40,11 @@
       ]
     },
     "03": {
-      "path": "res://assets/textures/characters/standing_front_v2/char_03_stand_natural_v2.png",
+      "path": "res://assets/textures/characters/identity_v3/char_03_stand_identity_v3.png",
       "region": [
-        256,
+        254,
         0,
-        512,
+        517,
         700
       ]
     },
@@ -76,56 +76,56 @@
       ]
     },
     "07": {
-      "path": "res://assets/textures/characters/standing_front_v2/char_07_stand_natural_v2.png",
+      "path": "res://assets/textures/characters/identity_v3/char_07_stand_identity_v3.png",
       "region": [
-        258,
+        257,
         0,
-        510,
+        515,
         700
       ]
     },
     "08": {
-      "path": "res://assets/textures/characters/standing_front_v2/char_08_stand_natural_v2.png",
+      "path": "res://assets/textures/characters/identity_v3/char_08_stand_identity_v3.png",
       "region": [
-        255,
+        293,
         0,
-        525,
+        462,
         700
       ]
     },
     "09": {
-      "path": "res://assets/textures/characters/standing_front_v2/char_09_stand_natural_v2.png",
+      "path": "res://assets/textures/characters/identity_v3/char_09_stand_identity_v3.png",
       "region": [
-        256,
+        250,
         0,
-        514,
+        523,
         700
       ]
     },
     "10": {
-      "path": "res://assets/textures/characters/standing_front_v2/char_10_stand_natural_v2.png",
+      "path": "res://assets/textures/characters/identity_v3/char_10_stand_identity_v3.png",
       "region": [
-        273,
+        272,
         0,
-        480,
+        483,
         700
       ]
     },
     "11": {
-      "path": "res://assets/textures/characters/standing_front_v2/char_11_stand_natural_v2.png",
+      "path": "res://assets/textures/characters/identity_v3/char_11_stand_identity_v3.png",
       "region": [
         258,
         0,
-        504,
+        505,
         700
       ]
     },
     "12": {
-      "path": "res://assets/textures/characters/standing_front_v2/char_12_stand_natural_v2.png",
+      "path": "res://assets/textures/characters/identity_v3/char_12_stand_identity_v3.png",
       "region": [
-        249,
+        248,
         0,
-        512,
+        514,
         700
       ]
     },
@@ -139,29 +139,29 @@
       ]
     },
     "14": {
-      "path": "res://assets/textures/characters/standing_front_v2/char_14_stand_natural_v2.png",
+      "path": "res://assets/textures/characters/identity_v3/char_14_stand_identity_v3.png",
       "region": [
-        261,
+        259,
         0,
-        509,
+        513,
         700
       ]
     },
     "15": {
-      "path": "res://assets/textures/characters/standing_front_v2/char_15_stand_natural_v2.png",
+      "path": "res://assets/textures/characters/identity_v3/char_15_stand_identity_v3.png",
       "region": [
-        260,
+        289,
         0,
-        512,
+        478,
         700
       ]
     },
     "16": {
-      "path": "res://assets/textures/characters/standing_front_v2/char_16_stand_natural_v2.png",
+      "path": "res://assets/textures/characters/identity_v3/char_16_stand_identity_v3.png",
       "region": [
-        264,
+        263,
         0,
-        502,
+        508,
         700
       ]
     }

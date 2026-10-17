@@ -104,7 +104,7 @@ func _process(_delta: float) -> void:
 	var core: Variant = _room.get_node("Actors").current_core()
 	var snapshot: Dictionary = core.teacher_commands().snapshot()
 	_view.update_commands(core, snapshot)
-	_teacher.update_commands(snapshot, _view._meeting.status_text(snapshot))
+	_teacher.update_commands(snapshot, _view.command_status(snapshot))
 
 
 func _capture_classroom_state() -> void:
@@ -307,7 +307,13 @@ func select_student(index: int) -> void:
 		else:
 			_message.text = (
 				_view.config.meeting.no_conflict
-				if _picker_kind == "mediate" and _pair_first != index
+				if (
+					_picker_kind == "mediate"
+					and _pair_first != index
+					and commands.current_command().is_empty()
+					and not commands.is_held()
+					and commands.called_index() < 0
+				)
 				else _view.config.meeting.rejected
 			)
 	else:

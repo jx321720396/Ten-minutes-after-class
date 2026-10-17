@@ -52,8 +52,8 @@ func test_orthogonal_neighbours_gain_affinity_on_both_sides() -> void:
 	var a01 := core.affinity(0, 1)
 	var a10 := core.affinity(1, 0)
 	core._settle_seat_relations()
-	assert_almost_eq(core.affinity(0, 1), a01 + 1.0, 0.0001, "正交邻座：0 对 1 好感 +1")
-	assert_almost_eq(core.affinity(1, 0), a10 + 1.0, 0.0001, "正交邻座：双方各自 +1")
+	assert_almost_eq(core.affinity(0, 1), a01 + 2.0, 0.0001, "正交邻座：0 对 1 好感 +2")
+	assert_almost_eq(core.affinity(1, 0), a10 + 2.0, 0.0001, "正交邻座：双方各自 +2")
 
 
 func test_diagonal_neighbours_gain_no_affinity() -> void:

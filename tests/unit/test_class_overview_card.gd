@@ -27,6 +27,7 @@ func test_card_does_not_fabricate_missing_metrics() -> void:
 	assert_not_null(card)
 	if card == null:
 		return
+	card.refresh({"class_average_pressure": 25.0})
 	assert_eq(card.find_child("MotivationValue", true, false).text, "—")
 	assert_eq(card.find_child("AcademicGainValue", true, false).text, "—")
 	assert_eq(card.find_child("PressureValue", true, false).text, "25")
@@ -66,3 +67,14 @@ func test_overview_button_opens_read_only_detail() -> void:
 	card.find_child("CloseOverview", true, false).pressed.emit()
 	assert_false(card.get_node("Details").visible)
 	assert_almost_eq(float(parts[1].snapshot().get("class_average_pressure", -1.0)), 25.0, 0.001)
+
+
+func test_live_core_metrics_reach_card() -> void:
+	var parts := _stack()
+	for i in range(parts[0].node_count()):
+		parts[0]._vitality[i] = 45.0
+		parts[0]._gain_today[i] = -2.0
+	parts[2]._on_time_updated(parts[1].snapshot())
+	var card: Node = parts[2].get_node("ClassOverviewCard")
+	assert_eq(card.find_child("MotivationValue", true, false).text, "45")
+	assert_eq(card.find_child("AcademicGainValue", true, false).text, "-2")

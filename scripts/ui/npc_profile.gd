@@ -24,7 +24,7 @@ var _config: Dictionary = {}
 var _phase_names: Dictionary = {}
 var _seats: Dictionary = {}
 var _model: RefCounted = DATA.new()
-var _owns_pause := false
+var _grade_max := 0.0
 var _reverse := false
 var _snapshots: Dictionary = {}
 var _roster: Array[int] = []
@@ -34,6 +34,10 @@ func _ready() -> void:
 	_copy = _read_json(COPY_PATH)
 	_config = _read_json(CONFIG_PATH)
 	var loader := ConfigLoader.new()
+	_grade_max = float(_config.grade_max)
+	for entry in loader.get_table("rules/kernel_params").get("rows", []):
+		if str(entry.get("param", "")) == "grade_max":
+			_grade_max = float(entry.value)
 	for entry in loader.get_table("rules/time_presentation").get("rows", []):
 		_phase_names[str(entry.phase_id)] = str(entry.display_name)
 	for entry in loader.get_table("rules/seats").get("rows", []):
@@ -98,9 +102,6 @@ func enable_teacher_navigation() -> void:
 func open_profile(index: int) -> void:
 	if _core == null or not _roster.has(index):
 		return
-	if not is_open():
-		_owns_pause = not get_tree().paused
-		get_tree().paused = true
 	_index = index
 	%TargetPicker.hide()
 	_reverse = false
@@ -127,7 +128,6 @@ func close() -> void:
 		return
 	$Root.hide()
 	%TargetPicker.hide()
-	_release_pause()
 	closed.emit()
 
 
@@ -152,25 +152,10 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-func _exit_tree() -> void:
-	_release_pause()
-
-
-func _release_pause() -> void:
-	if not _owns_pause:
-		return
-	_owns_pause = false
-	var parent := get_parent()
-	if parent != null:
-		for sibling in parent.get_children():
-			if sibling == self:
-				continue
-			if sibling.has_method("is_open") and sibling.is_open():
-				return
-			if sibling.name == "PauseMenu" and sibling is Control and sibling.visible:
-				return
-	if is_inside_tree():
-		get_tree().paused = false
+## 档案只读实时状态，不持有或释放世界暂停。
+func _process(_delta: float) -> void:
+	if is_open() and _core != null and _index >= 0:
+		_refresh_status()
 
 
 func _step_person(direction: int) -> void:
@@ -309,10 +294,7 @@ func _refresh_status() -> void:
 	if _core.has_method("teacher_student_snapshot"):
 		snapshot.merge(_core.teacher_student_snapshot(_index), true)
 	var grade := float(_core.grade(_index))
-	var maximum := float(_config.grade_max)
-	for entry in ConfigLoader.new().get_table("rules/kernel_params").get("rows", []):
-		if str(entry.get("param", "")) == "grade_max":
-			maximum = float(entry.value)
+	var maximum := _grade_max
 	%GradeValue.text = (
 		"%s / %s"
 		% [
@@ -323,13 +305,13 @@ func _refresh_status() -> void:
 	var pressure: Variant = snapshot.get("pressure", _core.stress(_index))
 	%PressureValue.text = "%s / %s" % [_number(pressure), _number(_config.state_max)]
 	%PressureBar.value = float(pressure)
-	var motivation: Variant = snapshot.get("motivation")
+	var motivation: Variant = _core.vitality(_index)
 	%MotivationValue.text = (
 		"—" if motivation == null else "%s / %s" % [_number(motivation), _number(_config.state_max)]
 	)
 	%MotivationBar.visible = motivation != null
 	%MotivationBar.value = float(motivation) if motivation != null else 0.0
-	var gain: Variant = snapshot.get("academic_gain")
+	var gain: Variant = _core.gain_today(_index)
 	%GainValue.text = "—" if gain == null else _number(gain, true) + " 分"
 	%Settlement.text = (
 		words("settlement")

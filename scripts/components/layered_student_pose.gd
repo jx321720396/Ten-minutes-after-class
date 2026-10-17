@@ -24,12 +24,15 @@ func configure(settings: Dictionary, binding: Dictionary) -> void:
 	visible = false
 
 
-func pose_for(activity: String, kind: String, at_home: bool, moving: bool, present: bool) -> String:
-	if not present or moving or not at_home:
+func pose_for(
+	activity: String, _kind: String, at_home: bool, _moving: bool, present: bool
+) -> String:
+	# Position decides sitting; a queued/blocked walk must not stand someone up at their desk.
+	if not present or not at_home:
 		return "stand"
-	if activity == "study" or (activity.is_empty() and kind == "class"):
+	if activity == "study":
 		return "study"
-	return "idle" if activity.is_empty() and _binding.has("idle") else "stand"
+	return "idle" if _binding.has("idle") else "stand"
 
 
 func show_pose(value: String) -> void:

@@ -114,9 +114,12 @@ func _run() -> void:
 	check(not profile_picker.visible, "Picking closes target picker")
 	check(scene.get_node("UI/NpcProfile").get_node("%Chat").text == "叫来办公室", "老师档案禁止旧学生闲聊")
 	scene.get_node("UI/NpcProfile").get_node("%Chat").pressed.emit()
-	check(hub.mode_name() == "office" and hub.picker_visible(), "档案叫来办公室跳转真实办公室入口")
+	check(
+		hub.mode_name() == "office" and core.teacher_commands().called_index() >= 0, "档案叫来办公室提交真实召唤"
+	)
 	check(not scene.get_node("UI/NpcProfile").is_open(), "办公室入口关闭档案")
 	hub.close_picker()
+	_finish_visit(core)
 	check(not paused, "关闭办公室选择器后释放导航暂停")
 	check(state.sim_core == core, "往返不重建内核")
 	hub.set_mode("office")
@@ -152,9 +155,10 @@ func _run() -> void:
 	paused = false
 	hub.open_tool("summon")
 	hub.select_student(0)
-	check(not scene.get_node("Player").enabled, "召唤占位不启动现场动作")
+	check(not scene.get_node("Player").enabled, "真实召唤不启用旧学生移动")
 	check(state.sim_core == core, "工具不换内核")
 	hub.close_picker()
+	_finish_visit(core)
 	var monitor_button: Button = hub.office_view().action_button("monitor")
 	var touch := InputEventScreenTouch.new()
 	touch.position = monitor_button.size / 2.0
@@ -236,3 +240,13 @@ func _run() -> void:
 		" failures)"
 	)
 	quit(0 if failures.is_empty() else 1)
+
+
+func _finish_visit(core: Variant) -> void:
+	var commands = core.teacher_commands()
+	for tick in range(commands.remaining_seconds()):
+		commands.tick(core)
+	if commands.called_index() >= 0:
+		commands.send_back(core)
+		for tick in range(commands.remaining_seconds()):
+			commands.tick(core)

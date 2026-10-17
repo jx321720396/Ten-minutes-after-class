@@ -3,6 +3,47 @@ extends GutTest
 const COMPONENT := "res://scenes/components/layered_student_pose.tscn"
 
 
+func test_all_students_have_idle_seated_pose_and_safe_transitions() -> void:
+	var settings = JSON.parse_string(
+		FileAccess.get_file_as_string("res://data/ui/student_poses.json")
+	)
+	var rows: Array = JSON.parse_string(
+		FileAccess.get_file_as_string(
+			"res://assets/textures/characters/idle_seated_v1/manifest.json"
+		)
+	)
+	assert_eq(rows.size(), 16)
+	for row in rows:
+		var binding: Dictionary = settings.bindings[row.sprite]
+		assert_eq(
+			binding.get("idle", ""),
+			"res://assets/textures/characters/idle_seated_v1/" + row.file,
+			"Each student must use their own idle image"
+		)
+		if not binding.has("idle"):
+			continue
+		var pose = load(COMPONENT).instantiate()
+		add_child_autofree(pose)
+		pose.configure(settings, binding)
+		assert_eq(pose.pose_for("", "break", true, false, true), "idle")
+		assert_eq(pose.pose_for("", "class", true, false, true), "idle")
+		assert_eq(pose.pose_for("study", "break", true, false, true), "study")
+		for activity in ["chat", "game", "sleep", "read"]:
+			assert_eq(pose.pose_for(activity, "break", true, false, true), "idle")
+			assert_eq(pose.pose_for(activity, "break", false, false, true), "stand")
+		assert_eq(pose.pose_for("", "break", true, true, true), "idle")
+		assert_eq(pose.pose_for("", "break", false, false, true), "stand")
+		assert_eq(pose.pose_for("", "break", true, false, false), "stand")
+		pose.show_pose("idle")
+		assert_true(pose.visible)
+		assert_false(pose.get_node("Foreground").visible, "Lap hands stay behind desktop")
+		assert_eq(pose.get_node("Upper").texture.atlas, pose._textures["idle"])
+		pose.show_pose("study")
+		assert_true(pose.get_node("Foreground").visible)
+		pose.show_pose("idle")
+		assert_false(pose.get_node("Foreground").visible)
+
+
 func test_full_roster_has_matching_standing_and_downward_study_assets() -> void:
 	var settings = JSON.parse_string(
 		FileAccess.get_file_as_string("res://data/ui/student_poses.json")
@@ -14,9 +55,7 @@ func test_full_roster_has_matching_standing_and_downward_study_assets() -> void:
 	)
 	assert_eq(settings.bindings.size(), 16, "16名同学全部接入")
 	var standing: Array = JSON.parse_string(
-		FileAccess.get_file_as_string(
-			"res://assets/textures/characters/standing_front_v2/manifest.json"
-		)
+		FileAccess.get_file_as_string("res://assets/textures/characters/identity_v3/manifest.json")
 	)
 	for row in manifest:
 		assert_true(settings.bindings.has(row.sprite), "当前名册外观必须有素材绑定")
@@ -30,7 +69,12 @@ func test_full_roster_has_matching_standing_and_downward_study_assets() -> void:
 		var texture := load(str(binding.standing)) as Texture2D
 		assert_gt(int(binding.standing_floor_pixel), 0)
 		assert_lte(int(binding.standing_floor_pixel), texture.get_height(), "鞋底标定不能超出原图")
-		assert_eq(binding.study, "res://assets/textures/characters/study_front_v1/" + row.file)
+		assert_eq(binding.study, standing_row.study, "站立与学习共享同一差异化外貌")
+		assert_eq(
+			standing_row.original_study,
+			"res://assets/textures/characters/study_front_v1/" + row.file
+		)
+		assert_false(str(standing_row.features).is_empty(), "每位同学须有可辨识的外貌特征")
 		assert_true(binding.has("layout"), "每图单独校准桌面和前景")
 	assert_almost_eq(float(settings.get("standing_scale", 0)), 1.3225, 0.0001)
 
@@ -60,12 +104,16 @@ func test_pose_respects_activity_presence_and_movement() -> void:
 		return
 	var pose = load(COMPONENT).instantiate()
 	add_child_autofree(pose)
-	assert_eq(pose.pose_for("", "class", true, false, true), "study")
+	var settings = JSON.parse_string(
+		FileAccess.get_file_as_string("res://data/ui/student_poses.json")
+	)
+	pose.configure(settings, settings.bindings.values()[0])
+	assert_eq(pose.pose_for("", "class", true, false, true), "idle")
 	assert_eq(pose.pose_for("study", "break", true, false, true), "study")
-	assert_eq(pose.pose_for("", "break", true, false, true), "stand")
-	assert_eq(pose.pose_for("chat", "class", true, false, true), "stand")
+	assert_eq(pose.pose_for("", "break", true, false, true), "idle")
+	assert_eq(pose.pose_for("chat", "class", true, false, true), "idle")
 	assert_eq(pose.pose_for("study", "break", false, false, true), "stand")
-	assert_eq(pose.pose_for("study", "class", true, true, true), "stand")
+	assert_eq(pose.pose_for("study", "class", true, true, true), "study")
 	assert_eq(pose.pose_for("study", "class", true, false, false), "stand")
 
 
@@ -183,8 +231,9 @@ func test_real_classroom_switches_without_moving_actor_or_writing_core() -> void
 	blocker.free()
 	core._current_act[index] = "chat"
 	actors._process(0.0)
-	assert_false(pose.visible, "聊天恢复站姿")
-	assert_true(actor.get_node("Sprite").visible)
+	assert_true(pose.visible, "在座聊天保持坐姿")
+	assert_eq(pose._pose, "idle")
+	assert_false(actor.get_node("Sprite").visible)
 	core._current_act[index] = "study"
 	actor.global_position += Vector3.RIGHT
 	actors._process(0.0)
