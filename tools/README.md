@@ -23,6 +23,7 @@
 | [`verify_formula.py`](verify_formula.py) | **公式对拍**：按 UIF §8 的 `(i,k,X,E,C,P,Δ)` 独立重算，与实现逐项比对（事件链 / 传导链 / 衰减链） | `python tools/verify_formula.py` |
 | [`calib_experiment.py`](calib_experiment.py) | **标定对照实验**：跑不同 `β` / 保留率 / 负反馈组合，输出均值、饱和率、SD（分化度） | `python tools/calib_experiment.py 25` |
 | [`check_config.py`](check_config.py) | **配置表启动校验**：档位一致性 / 取值域 / 门槛与先验关系 / 趋势性等，含导航烘焙口径（`nav_max_climb < nav_blocker_height`），可接 CI | `python tools/check_config.py` |
+| [`day_budget.py`](day_budget.py) | **一天收支预算（只算账）**：从 `data/rules/*.csv` 读速率与耗时，算一整天各状态的动力／压力／收益、老师一日动力上限、阈值维持成本、邻座涓流扩散上限与第八天 380 的算术可达性；不改任何数值 | `python tools/day_budget.py` |
 | [`bake_classroom_nav.gd`](bake_classroom_nav.gd) | **教室导航网格烘焙**（GDScript，需 Godot）：参数取自 `data/rules/movement.csv`，产物 `resources/navigation/classroom_nav.tres`；改了教室占位几何后必须重跑 | `godot --headless --path . --script tools/bake_classroom_nav.gd` |
 | [`md2docx.py`](md2docx.py) | **md → docx 导出**：标题 / 表格 / 代码块 / 行内格式，输出到 `docs/export/` | `python tools/md2docx.py --all` |
 | [`export_ticks.py`](export_ticks.py) | **逐 tick 状态导出（对拍基建）**：hook 内核 `tick`，导出同种子逐 tick 的关系三轴 / 透明度 / 压力统计与矩阵哈希，供 GDScript 移植后逐 tick 对拍（冲刺计划 D6–D9） | `python tools/export_ticks.py --days 3 --seed 12345 --npc 8` |
