@@ -4,7 +4,10 @@ extends Node3D
 var _settings: Dictionary
 var _binding: Dictionary
 var _pose := "stand"
+## 已应用的贴图（pose → Texture2D）；读盘由 AssetPreloader 在后台完成。
 var _textures: Dictionary = {}
+## pose → 贴图路径（configure 时登记，不读盘）。
+var _texture_paths: Dictionary = {}
 var _camera_transform := Transform3D.IDENTITY
 var _projection := Vector3.ZERO
 var _seat_transform := Transform3D.IDENTITY
@@ -18,9 +21,11 @@ func configure(settings: Dictionary, binding: Dictionary) -> void:
 	_pose = "stand"
 	_hit_image = null
 	_textures.clear()
+	_texture_paths.clear()
 	for key in ["study", "idle"]:
 		if binding.has(key):
-			_textures[key] = load(str(binding[key])) as Texture2D
+			_texture_paths[key] = str(binding[key])
+	AssetPreloader.request_textures(_texture_paths.values())
 	visible = false
 
 
@@ -35,17 +40,36 @@ func pose_for(
 	return "idle" if _binding.has("idle") else "stand"
 
 
-func show_pose(value: String) -> void:
+## 应用姿势；返回 false = 贴图仍在后台加载，调用方应保持原表现（下一帧再试）。
+## non_blocking=true（游戏内）不等待线程加载；默认阻塞，保持单测与旧的同步语义。
+func show_pose(value: String, non_blocking: bool = false) -> bool:
 	visible = value != "stand"
 	if not visible or value == _pose:
-		return
+		return true
+	var path := str(_texture_paths.get(value, ""))
+	var texture: Texture2D = (
+		null if path.is_empty() else AssetPreloader.texture(path, not non_blocking)
+	)
+	if texture == null:
+		return false
 	_pose = value
+	_textures[value] = texture
 	_hit_image = null
-	var texture: Texture2D = _textures[value]
 	_build_body(texture)
 	_build_foreground(texture)
 	_update_foreground()
 	get_node("Foreground").visible = value == "study"
+	return true
+
+
+## 坐姿贴图是否已就绪（stand / 未绑定视为就绪）。
+func texture_ready(value: String) -> bool:
+	if value == "stand":
+		return true
+	var path := str(_texture_paths.get(value, ""))
+	if path.is_empty():
+		return true
+	return AssetPreloader.is_ready(path)
 
 
 func _build_body(texture: Texture2D) -> void:
