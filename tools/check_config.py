@@ -417,6 +417,10 @@ check("D02：单位时长与学习结算时长为正整数",
       and _acts_cfg.get("play_settle_seconds", 0) > 0)
 check("D02：学习收益为正、游戏收益为负",
       _acts_cfg.get("study_gain", 0) > 0 and _acts_cfg.get("play_gain", 0) < 0)
+check("D03：办公室安抚按减压写入（压力 −20）",
+      _acts_cfg.get("office_comfort_stress", 0) == -20)
+check("D03：办公室表扬只加动力、训斥加压为正",
+      _acts_cfg.get("office_praise_vitality", 0) > 0 and _acts_cfg.get("office_scold_stress", 0) > 0)
 _seed_books = load("characters/seeds.csv")
 check("P0-3：课外书种子仅 0/1", all(r.get("book") in ("0", "1") for r in _seed_books))
 _roster = {r["key"]: r["value"] for r in load("rules/roster.csv")}

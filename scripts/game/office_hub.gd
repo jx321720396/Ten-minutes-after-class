@@ -136,7 +136,7 @@ func _refresh_profile_binding() -> void:
 
 
 func _on_action(action: String) -> void:
-	if action in ["scold", "praise", "send_back"]:
+	if action in ["comfort", "scold", "praise", "send_back"]:
 		var core: Variant = _room.get_node("Actors").current_core()
 		var commands = core.teacher_commands()
 		if action == "send_back":
