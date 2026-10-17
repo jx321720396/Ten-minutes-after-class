@@ -156,7 +156,11 @@ func _button(text: String) -> Button:
 
 
 func bind_touch(button: Button) -> void:
-	button.gui_input.connect(_on_button_touch.bind(button))
+	if button.has_meta(TouchBind.META_BOUND):
+		return
+	button.set_meta(TouchBind.META_BOUND, true)
+	if not button.gui_input.is_connected(_on_button_touch.bind(button)):
+		button.gui_input.connect(_on_button_touch.bind(button))
 
 
 func _on_button_touch(event: InputEvent, button: Button) -> void:

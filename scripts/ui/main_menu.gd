@@ -57,6 +57,7 @@ func _ready():
 	if GameState.new_game_requested:
 		GameState.new_game_requested = false
 		_start_new_game.call_deferred()
+	TouchBind.bind_tree(self)
 
 
 func _has_save() -> bool:
