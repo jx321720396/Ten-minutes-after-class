@@ -18,6 +18,21 @@ func mark(source: int, subject: int, axis: String, band: String, stamp: Dictiona
 		state.current.erase(_key(source, subject, axis))
 
 
+## 打听获知（D10）：方向 source→subject 的单轴真值，覆盖当前笔记、保留历史；不改真实矩阵。
+func record_ask(records: Array) -> void:
+	for rec in records:
+		if not rec is Dictionary:
+			continue
+		var source := int(rec.get("source", -1))
+		var subject := int(rec.get("subject", -1))
+		var axis := str(rec.get("axis", ""))
+		if source < 0 or subject < 0 or source == subject or not AXES.has(axis):
+			continue
+		var entry: Dictionary = rec.duplicate(true)
+		entry.merge({"origin": "ask"}, true)
+		_append(entry)
+
+
 func build(records: Array, source: int, subject: int) -> Dictionary:
 	var incoming: Array = []
 	for record in records:

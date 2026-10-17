@@ -181,6 +181,7 @@ class Sim:
         self.seat_rel = load_params("rules/seat_relations.csv")
         self.harm = load_params("rules/harm.csv")
         self.risk_cfg = load_params("rules/risk.csv")
+        self.tc = load_params("rules/teacher_commands.csv")
         # 成绩涓流分段表（§17.1.2）：band_upper 升序。
         self.grade_bands = sorted(
             [(float(r["band_upper"]), float(r["ticks_per_point"]))
@@ -233,6 +234,12 @@ class Sim:
         self.phase_stopped = []              # D07 §10：本课间被老师制止的学生
         self.phase_state = ["free"] * n  # 段首状态：study / play / free / broken
         self.settle_acc = [0.0] * n      # 单位结算游标（按秒累计）
+        self.study_start_tick = [-1] * n  # 学习开始 tick（请教「过半禁加入」：原学习者进度基准）
+        # 鼓励目标（D09）：老师 20 秒鼓励 → 一次聊天目标
+        self.encourage_target = [-1] * n      # 目标对象（-1 = 自主待选）
+        self.encourage_mode = [""] * n        # "specified" / "auto"
+        self.encourage_breaks = [0] * n       # 剩余课间次数
+        self.encourage_status = [""] * n      # "" / "active" / "done" / "rejected" / "expired"
 
         # --- 初始化 ---
         self._init_relations()
@@ -614,6 +621,11 @@ class Sim:
             if state == "play" and self.start_play_activity(i):
                 busy.add(i)
                 continue
+            # 鼓励目标（D09）：自由学生有未结束目标时优先尝试一次聊天（不打断锁定；
+            # 忙碌 / 条件不满足算等待、不算关系拒绝，学生可落回正常决策）。
+            if self.encourage_status[i] == "active" and self.try_encourage(i):
+                busy.add(i)
+                continue
             leisure_started = False
             for kind, prefix in LEISURE_KINDS.items():
                 prob_key = prefix + "_p"
@@ -666,6 +678,91 @@ class Sim:
         # 带朋友（§9.1.3/§9.1.4）：活动组成员的邀请 pass；
         # 随机数顺序固定（组按创建序、成员按节点号升序），同种子可复现。
         self._invite_friends_pass()
+
+    # ------------------------------------------------------------------ 鼓励目标（D09）
+    def start_encourage(self, i, target):
+        """老师完成 20 秒鼓励后生成一次聊天目标。已有未结束目标时重复无效（不覆盖、不叠加）。
+        target >= 0 = 指定对象；target < 0 = 自主找最近娱乐对象。"""
+        if i < 0 or i >= self.N:
+            return False
+        if self.encourage_status[i] == "active":
+            return False
+        self.encourage_target[i] = target
+        self.encourage_mode[i] = "specified" if target >= 0 else "auto"
+        self.encourage_breaks[i] = int(self.tc.get("encourage_valid_breaks", 4))
+        self.encourage_status[i] = "active"
+        return True
+
+    def has_active_encourage(self, i):
+        return 0 <= i < self.N and self.encourage_status[i] == "active"
+
+    def settle_encourage_breaks(self):
+        """课间末扣减鼓励目标有效期；归零即到期。只对「进行中」目标生效；考试日无课间不调用。"""
+        for i in range(self.N):
+            if self.encourage_status[i] != "active":
+                continue
+            self.encourage_breaks[i] -= 1
+            if self.encourage_breaks[i] <= 0:
+                self.encourage_status[i] = "expired"
+
+    def try_encourage(self, i):
+        """鼓励目标的一次尝试：返回 True = 本决策点被鼓励占满（成事或关系拒绝）；
+        False = 等待（无合格对象 / 对象忙碌 / 锁定），学生走正常决策。"""
+        if self.encourage_status[i] != "active":
+            return False
+        if self.encourage_target[i] < 0:
+            t = self._pick_encourage_target(i)
+            if t < 0:
+                return False  # 无合格对象，等待
+            self.encourage_target[i] = t
+        t = self.encourage_target[i]
+        # 目标此刻不能聊天（锁定 / 不在场 / 睡觉 / 忙碌）→ 等待，不打断、不算关系拒绝。
+        if self._join_blocked(t) or self.phase_state[t] in ("study", "broken"):
+            return False
+        if self.global_tick < self.busy_until[t]:
+            return False  # 目标还在娱乐 / 忙碌，等其活动结束
+        log_before = len(self.join_log)
+        self._propose_activity(i, t, "chat")
+        stage = ""
+        if len(self.join_log) > log_before:
+            stage = self.join_log[-1]["stage"]
+        if stage == "vote_reject":
+            self.encourage_status[i] = "rejected"
+            return True  # 关系拒绝：目标结束，本决策点到此为止
+        if self.conv_of[i] is not None:
+            self.encourage_status[i] = "done"
+            return True  # 聊天成功：目标完成
+        return False  # 条件不满足等：保持 active，下一决策点再试
+
+    def _pick_encourage_target(self, i):
+        """鼓励专用选人（D09）：距离最近、正在娱乐且符合聊天条件；并列带种子随机。"""
+        best = []
+        best_dist = 1e9
+        for j in range(self.N):
+            if not self._encourage_target_eligible(i, j):
+                continue
+            d = self.distance_between(i, j)
+            if d < best_dist - 1e-6:
+                best_dist = d
+                best = [j]
+            elif abs(d - best_dist) <= 1e-6:
+                best.append(j)
+        if not best:
+            return -1
+        if len(best) == 1:
+            return best[0]
+        return int(self.rng.choice(best))
+
+    def _encourage_target_eligible(self, i, j):
+        if j == i or self._join_blocked(j):
+            return False
+        if self.phase_state[j] in ("study", "broken"):
+            return False
+        return self._is_entertaining(j)
+
+    def _is_entertaining(self, j):
+        """正在娱乐 = 正在做休闲活动（LEISURE_KINDS 且占用未到）。"""
+        return self.busy_act[j] in LEISURE_KINDS and self.global_tick < self.busy_until[j]
 
     def start_leisure(self, i, kind):
         if kind not in LEISURE_KINDS or not self.allowed(kind) or not self.can_interact_with(i):
@@ -888,9 +985,20 @@ class Sim:
         """§9.1.2 个人同意门槛（data：join_vote_margin；不得硬编码）。"""
         return float(self.thresholds_lookup.get("join_vote_margin", 10.0))
 
-    def _join_cap(self):
-        """同一场活动的人数上限（data：join_max_members；防同一决策点无限连锁邀请）。"""
-        return int(self.thresholds_lookup.get("join_max_members", 4))
+    def _activity_past_half(self, akind, grp):
+        """发起者活动进度超过一半则拒绝新人（2026-10-17 交接「人数与时限」）：恰好一半允许。
+        目前只对学习（多人请教）生效，进度 = 原学习者已学时长 / 其整段学习时长（到课间末）。
+        """
+        if akind != "study":
+            return False
+        orig = grp.get("originator", -1)
+        start = grp.get("start_tick", -1)
+        if orig < 0 or start < 0:
+            return False
+        total = self.busy_until[orig] - start
+        if total <= 0:
+            return False
+        return (self.global_tick - start) * 2 > total
 
     def _invite_friend_p(self):
         """带朋友：活动组成员每决策点尝试邀请朋友的概率（data：invite_friend_p）。"""
@@ -898,10 +1006,11 @@ class Sim:
 
     def _join_blocked(self, j):
         """j 此刻不可被邀请（**条件不满足**，不算关系拒绝，§9.1.2/§9.1.4）：
-        睡觉、正在走动；崩溃等不可中断状态同理。"""
+        睡觉、正在走动、游戏锁定；崩溃等不可中断状态同理。"""
         return (
             self.sleeping[j]
             or (self.busy_act[j] == "move" and self.global_tick < self.busy_until[j])
+            or (self.phase_state[j] == "play")
         )
 
     def _find_partner(self, i, kind):
@@ -923,8 +1032,16 @@ class Sim:
         """j 的当前活动（只读，通用加入视角）。返回 (kind, group)；group 为 None 表示独自活动。
 
         ("idle", None) = 空闲；("solo", None) = 独自的不可共享活动（听歌 / 读课外书，
-        §9.1.4：共享方式未裁定，不自动开放加入；本人仍可在决策边界切换）。
+        §9.1.4：共享方式未裁定，不自动开放加入；本人仍可在决策边界切换）；
+        ("play", None) = 游戏锁定（不可被拉出，2026-10-17 交接）。
         """
+        # 状态锁定（D01）：学习锁定视同学习（可被请教、不被拉去别的活动）；
+        # 游戏锁定不可被拉出。崩溃 / 睡觉由 _join_blocked 排除，这里防御性再挡一次。
+        if not self.Broken[j] and not self.sleeping[j]:
+            if self.phase_state[j] == "study":
+                return ("study", self.study_of[j])
+            if self.phase_state[j] == "play":
+                return ("play", None)
         if self.conv_of[j] is not None:
             return ("chat", self.conv_of[j])
         if self.rough_of[j] is not None:
@@ -972,6 +1089,15 @@ class Sim:
         """
         self.stats["joins"] = self.stats.get("joins", 0) + 1
         akind, group = self._join_activity_of(j)
+        # 状态锁定（D01，2026-10-17 交接「不突破状态锁定」）：
+        # 游戏锁定不可被拉出；学习锁定只可被「请教加入」，不可被拉去别的活动。
+        # 注意这里读 phase_state 而非 akind：自由学生「正在学习」（phase_state=free、
+        # current_act=study）不是锁定，仍可被拉去别的活动（走下方跟随逻辑）。
+        if akind == "play":
+            self._log_join_event(i, [j], "condition_fail", kind, [], [], {"reason": "unshared"})
+            return False
+        if self.phase_state[j] == "study":
+            return self._apply_join_group(i, j, "study", group)
         if akind == "idle":
             # 两人新建活动：被邀请者是唯一现有成员，投票定夺（§9.1.2）
             ok, yes, no = self._vote_accept([j], i)
@@ -1025,8 +1151,8 @@ class Sim:
             if group is None:
                 return False
         members = sorted(group["members"])
-        if len(members) >= self._join_cap():
-            self._log_join_event(i, members, "condition_fail", akind, extra={"reason": "full"})
+        if self._activity_past_half(akind, group):
+            self._log_join_event(i, members, "condition_fail", akind, [], [], {"reason": "past_half"})
             return False
         ok, yes, no = self._vote_accept(members, i)
         if not ok:
@@ -1053,7 +1179,12 @@ class Sim:
             return self.conv_of[j]
         if akind == "study":
             if self.study_of[j] is None:
-                grp = {"members": {j}}
+                # 学习锁定但尚未轮到决策（被提前请教）：先按原学习者开始学习，保证过半进度基准正确。
+                if self.study_start_tick[j] < 0:
+                    self.do_study(j)
+                # originator = 原学习者（独自开始学习的发起者）；后续加入者为请教者（免动力，见 settle_units）。
+                # start_tick = 原学习者实际开始学习的 tick（过半禁加入的进度基准）。
+                grp = {"members": {j}, "originator": j, "start_tick": self.study_start_tick[j]}
                 self.study_groups.append(grp)
                 self.study_of[j] = grp
             return self.study_of[j]
@@ -1147,10 +1278,7 @@ class Sim:
         p = self._invite_friend_p()
         if p <= 0.0:
             return
-        cap = self._join_cap()
         for akind, grp in self._iter_join_groups():
-            if len(grp["members"]) >= cap:
-                continue
             for m in sorted(grp["members"]):
                 if self.joined_tick[m] >= self.global_tick:
                     continue
@@ -1179,6 +1307,9 @@ class Sim:
         best, best_a = None, None
         for f in range(self.N):
             if f == m or f in grp["members"] or self._join_blocked(f):
+                continue
+            # 状态锁定（D01，2026-10-17）：学习锁定／游戏锁定的朋友不能被拉入别的活动。
+            if self.phase_state[f] in ("study", "play"):
                 continue
             if (self.conv_of[f] is not None or self.rough_of[f] is not None
                     or self.study_of[f] is not None or self.snack_of[f] is not None):
@@ -1257,6 +1388,7 @@ class Sim:
         否则会被聊天／搭话强行拉走（聊天机制规格 A 验收点）。不设 busy_phase，故不计「被打断」。
         """
         self.current_act[i] = "study"
+        self.study_start_tick[i] = self.global_tick
         remaining = self.day_phases[self.phase_index][1] - self.tick_in_phase
         self.busy_until[i] = self.global_tick + remaining
         self.stats["studies"] = self.stats.get("studies", 0) + 1
@@ -1503,7 +1635,11 @@ class Sim:
                 while self.settle_acc[i] >= study_seconds:
                     self.settle_acc[i] -= study_seconds
                     self.GainToday[i] += self.acts["study_gain"]
-                    self.add_vitality(i, -self.acts["study_vitality_cost"])
+                    # 请教者免动力（2026-10-17 交接「多人请教」）：跟随者不消耗动力，原学习者照常扣。
+                    cost = (0.0 if (self.study_of[i] is not None
+                                    and self.study_of[i].get("originator", i) != i)
+                            else self.acts["study_vitality_cost"])
+                    self.add_vitality(i, -cost)
             elif kind == "play":
                 while self.settle_acc[i] >= play_seconds:
                     self.settle_acc[i] -= play_seconds
@@ -1563,13 +1699,25 @@ class Sim:
                 self.knot_days[j] = knot_days
 
     def settle_neighbor_drip(self):
-        """邻座涓流（D01 / D04）：课间末读一次状态 —— 前后左右有人学习 → 压力 +5，可叠加。"""
+        """邻座涓流（D01 / D04）：课间末读一次状态 —— 前后左右有人学习 → 压力 +5，可叠加。
+
+        涓流只看固定座位的前后左右（正交，不含对角），不随临时走动重建邻域；
+        来源与接收者都必须实际在自己座位（离座期间不作来源或接收者，临时走到别人旁
+        不成为邻座；2026-10-17 接入实际站位）。
+        """
         drip = self.acts["neighbor_study_stress"]
         for i in range(self.N):
-            if self.Broken[i]:
+            if self.Broken[i] or not self.in_own_seat(i):
                 continue
-            studying = sum(1 for j in self.neighbor_idx[i]
-                           if self.unit_kind(j) == "study")
+            studying = 0
+            for j in self.neighbor_idx[i]:
+                if self.seat_relation_between(i, j) != "orthogonal":
+                    continue
+                if not self.in_own_seat(j):
+                    continue
+                if self.unit_kind(j) != "study":
+                    continue
+                studying += 1
             if studying > 0:
                 self.add_stress(i, drip * studying)
                 self.stats["neighbor_drip"] = self.stats.get("neighbor_drip", 0) + studying
@@ -2001,6 +2149,7 @@ class Sim:
         if self.phase == "break" and not self.exam_only_today():
             self.settle_neighbor_drip()
             self.settle_seat_relations()
+            self.settle_encourage_breaks()
         self.settle_sleep()
         interrupted = self.check_interrupt()
         self.cleanup_phase(interrupted)

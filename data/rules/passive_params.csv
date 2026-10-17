@@ -20,4 +20,4 @@ positive_feedback_vitality_per_grade,1,点,正反馈：成绩每提高 1 点，�
 spring_stress_per_vitality,5,点,弹簧：累计获得的压力每满 5 点
 spring_vitality_gain,2,点,弹簧：每满上述累计，动力额外 +2
 fragile_stress_bonus_ratio,1.0,比例,玻璃心：从同学处获得的压力额外增加基础值的 100%（比例 1.0）
-well_informed_messages,6,条,百事通：老师向本人完成一次打听可获得 6 条消息（打听消息系统未建立，运行时不结算）
+well_informed_messages,6,条,百事通：老师向本人完成一次打听可获得多达 6 条有向单轴关系信息（D10；普通上限 ask_relation_max）

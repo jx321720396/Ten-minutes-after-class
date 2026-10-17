@@ -4,6 +4,7 @@ extends CanvasLayer
 const OFFICE := preload("res://scenes/game/office.tscn")
 const TEACHER_UI := preload("res://scenes/ui/teacher_classroom.tscn")
 const TEACHER_PRESENCE := preload("res://scenes/components/teacher_presence.tscn")
+const PROFILE_DATA := preload("res://scripts/ui/npc_profile_data.gd")
 
 var _view: Control
 var _room: Node
@@ -112,6 +113,19 @@ func _process(_delta: float) -> void:
 		var lines: Array = snapshot.get("ask_lines", [])
 		if not lines.is_empty():
 			_view.present_ask(lines)
+		_write_ask_records(snapshot.get("ask_records", []))
+
+
+## D10：打听获知的有向单轴关系真值写入档案笔记（NpcProfileData 只读笔记，不碰真实矩阵）。
+func _write_ask_records(records: Array) -> void:
+	if records.is_empty():
+		return
+	var state := get_node_or_null("/root/GameState")
+	if state == null:
+		return
+	var model: RefCounted = PROFILE_DATA.new()
+	model.state = state.profile_notebook
+	model.record_ask(records)
 
 
 func _capture_classroom_state() -> void:
@@ -143,7 +157,7 @@ func _refresh_profile_binding() -> void:
 
 
 func _on_action(action: String) -> void:
-	if action in ["comfort", "scold", "praise", "ask", "send_back"]:
+	if action in ["comfort", "scold", "praise", "ask", "encourage", "send_back"]:
 		var core: Variant = _room.get_node("Actors").current_core()
 		var commands = core.teacher_commands()
 		if action == "send_back":

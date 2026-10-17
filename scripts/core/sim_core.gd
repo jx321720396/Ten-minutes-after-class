@@ -8,8 +8,8 @@ extends RefCounted
 ##   · 状态一律 `PackedFloat64Array`（float64），与 Python 的 double 逐位一致；
 ##   · 所有阈值 / 系数都来自 data/（不落脚本，铁律 3）。
 ##
-## 索引约定：n = 本局入局 NPC 数 + 1（末位 n-1 为玩家；人数由调用方直接给出，
-## 正式玩法取 `data/rules/roster.csv` 的 16，角色池见 `characters/seeds.csv`）；矩阵平铺 A[i][j] → _a[i*n+j]；
+## 索引约定：n = 本局入局学生数（老师版 16 名学生、无玩家节点，末位也是普通学生；
+## 人数由调用方直接给出，正式玩法取 `data/rules/roster.csv` 的 16，角色池见 `characters/seeds.csv`）；矩阵平铺 A[i][j] → _a[i*n+j]；
 ##
 ## 老师版（2026-10-14）：删除四维/透明度/信任及信念矩阵、传导、深层敌对，以及从众/调侃/举报/
 ## 排挤/道歉/安慰/传纸条/学习圈/书礼/提问/讲题等学生版依赖子系统；只保留 A/H + 压力/动力/学业收益/成绩
@@ -128,6 +128,7 @@ var _snack_of: Array = []  # 节点 -> 零食分享组 dict
 var _snack_provider: Array = []  # 加入者 -> 分享者（自然完成单位后结算分享好感）
 var _share_units: Dictionary = {}  # Vector2i(provider, receiver) -> 已结算分享单位数（去重，只读观察）
 var _joined_tick: Array = []  # 最近一次加入活动的 tick（本决策点新加入者不带朋友，§9.1.4）
+var _study_start_tick: Array = []  # 学习开始 tick（请教「过半禁加入」：原学习者进度基准）
 var _next_action: Array = []
 var _busy_until: Array = []
 var _busy_phase: Array = []
@@ -369,8 +370,10 @@ func _reset_runtime(n: int) -> void:
 		_snack_of.append(null)
 		_snack_provider.append(null)
 		_joined_tick.append(-1)
+		_study_start_tick.append(-1)
 		_knot_days.append(0)
 		_resting.append(false)
+	_teacher_commands.reset_encourage(n)
 
 
 # ------------------------------------------------------------------ 初始化关系
@@ -495,6 +498,7 @@ func _end_phase() -> void:
 	if _phase == "break" and not _is_exam_only_day():
 		_settle_neighbor_drip()
 		_settle_seat_relations()
+		_teacher_commands.settle_encourage_breaks()
 	_settle_sleep()
 	_check_interrupt()
 	_cleanup_phase()
@@ -805,10 +809,13 @@ func _settle_units() -> void:
 		if kind == "study":
 			while _settle_acc[i] >= study_seconds:
 				_settle_acc[i] -= study_seconds
-				# 公开被动（§10.2）：专注翻倍收益增减 → 收放自如累计整数减半损失 → 自律少耗动力。
-				var unit: Dictionary = _passives.study_unit(
-					i, float(_acts["study_gain"]), float(_acts["study_vitality_cost"])
-				)
+				# 请教者免动力（2026-10-17 交接「多人请教」）：加入他人学习的跟随者
+				# 每满 20 秒 +1 收益、不消耗动力；原学习者（学习组 originator）照常扣动力。
+				# 收益仍走公开被动（§10.2：专注翻倍收益增减 → 收放自如减半 → 自律少耗动力）。
+				var cost := float(_acts["study_vitality_cost"])
+				if _study_of[i] != null and int(_study_of[i].get("originator", i)) != i:
+					cost = 0.0
+				var unit: Dictionary = _passives.study_unit(i, float(_acts["study_gain"]), cost)
 				_gain_today[i] += float(unit["gain"])
 				add_vitality(i, -float(unit["cost"]))
 		elif kind == "play":
@@ -893,7 +900,9 @@ func _check_breakdown() -> void:
 func _settle_neighbor_drip() -> void:
 	var drip := float(_acts["neighbor_study_stress"])
 	for i in range(_n):
-		if _broken[i] or not is_present(i):
+		# 涓流只看固定座位的前后左右，不含对角，不随临时走动重建邻域（交接 2026-10-17）。
+		# 接收者必须实际在自己座位：离座 / 办公室 / 崩溃 / 换座期间都不作接收者。
+		if _broken[i] or not is_present(i) or not in_own_seat(i):
 			continue
 		# D03 第 5 条：换座期间的学生不参加课间涓流（既不作接收者也不作来源）。
 		if _teacher_commands.is_seat_changing(i):
@@ -902,7 +911,13 @@ func _settle_neighbor_drip() -> void:
 		var delta := 0.0
 		for j in _neighbor_idx[i]:
 			var source := int(j)
+			# 来源也必须是正交邻座且实际在自己座位 —— 远处走到同学旁请教的人
+			# 能拿请教收益，但不因此成为邻座、不把学习加压传播给临时站在周围的人。
+			if _seat_relation_between(i, source) != "orthogonal":
+				continue
 			if _teacher_commands.is_seat_changing(source):
+				continue
+			if not in_own_seat(source):
 				continue
 			if _unit_kind(source) != "study":
 				continue
@@ -1053,10 +1068,14 @@ func interrupt_for_seat_change(i: int) -> void:
 	_busy_act[i] = null
 	_busy_phase[i] = -1
 	_busy_until[i] = 0
+	# 聊天会话：被叫走/调座者退出，其余成员沿原进度继续；剩不足 2 人则整场解散（交接 2026-10-17）。
+	if _conv_of.size() > i and _conv_of[i] != null:
+		_leave_conversation(i, _conv_of[i])
+	# 打闹组：同样只移出本人，不足 2 人则解散。
+	if _rough_of.size() > i and _rough_of[i] != null:
+		_dissolve_from_group(_rough_groups, _rough_of, i)
+	# 学习 / 零食组移出（人数不足时自然解散）。
 	_leave_solo_activity(i)
-	var sid := _sessions.session_of(i)
-	if sid >= 0:
-		_sessions.end(int(sid))
 
 
 ## 调座位生效（D03 第 4 条）：交换两人的座位号并重算邻接；不写任何关系矩阵。
@@ -1824,6 +1843,12 @@ func _decide_and_act() -> void:
 		if state == "play" and _start_play_activity(i):
 			busy[i] = true
 			continue
+		# 鼓励目标（D09）：自由学生有未结束目标时优先尝试一次聊天（不打断锁定；
+		# 忙碌 / 条件不满足算等待、不算关系拒绝，学生可落回正常决策）。
+		if _teacher_commands.has_active_encourage(i):
+			if _teacher_commands.try_encourage(self, i):
+				busy[i] = true
+				continue
 		var leisure_started := false
 		for kind in LEISURE_KINDS:
 			var prefix: String = LEISURE_KINDS[kind]
@@ -2017,6 +2042,7 @@ func session_end_tick(session_id: int) -> int:
 ## 起身 / 移动 / 相位切换即中断（`_cleanup_phase` 清 `_current_act`）。
 func _do_study(i: int) -> void:
 	_current_act[i] = "study"
+	_study_start_tick[i] = _global_tick
 	# 2026-10-14 学习置占用（聊天机制规格 A）：busy_until 覆盖本段剩余时间，
 	# 把「学习中」衔接进 _can_interact_with ↔ busy_until，否则会被聊天／搭话拉走。
 	var remaining := int(str(_active_phases[_phase_index]["tick_count"])) - _tick_in_phase
@@ -2225,9 +2251,20 @@ func _join_margin() -> float:
 	return float(_thresholds_lookup.get("join_vote_margin", 10.0))
 
 
-func _join_cap() -> int:
-	## 同一场活动的人数上限（data：join_max_members；防同一决策点无限连锁邀请）。
-	return int(_thresholds_lookup.get("join_max_members", 4))
+func _activity_past_half(akind: String, grp: Dictionary) -> bool:
+	## 发起者活动进度超过一半则拒绝新人（2026-10-17 交接「人数与时限」）：恰好一半允许。
+	## 目前只对学习（多人请教）生效，进度 = 原学习者已学时长 / 其整段学习时长（到课间末）。
+	## 聊天 / 打闹 / 零食的「发起者进度基准」待后续接入（聊天逐人结束替换为进度基准）。
+	if akind != "study":
+		return false
+	var orig := int(grp.get("originator", -1))
+	var start := int(grp.get("start_tick", -1))
+	if orig < 0 or start < 0:
+		return false
+	var total := int(_busy_until[orig]) - start
+	if total <= 0:
+		return false
+	return (_global_tick - start) * 2 > total
 
 
 func _invite_friend_p() -> float:
@@ -2237,13 +2274,14 @@ func _invite_friend_p() -> float:
 
 func _join_blocked(j: int) -> bool:
 	## j 此刻不可被邀请（**条件不满足**，不算关系拒绝，§9.1.2/§9.1.4）：
-	## 睡觉、不在场、出门、正在走动；崩溃等不可中断状态同理。
+	## 睡觉、不在场、出门、正在走动、游戏锁定；崩溃等不可中断状态同理。
 	return (
 		_sleeping[j]
 		or not is_present(j)
 		or _current_act[j] == "leave_class"
 		or is_moving(j)
 		or (_busy_act[j] == "move" and _global_tick < _busy_until[j])
+		or (_phase_state.size() > j and str(_phase_state[j]) == "play")
 	)
 
 
@@ -2269,7 +2307,15 @@ func _find_partner(i: int, kind: String) -> int:
 
 func _join_activity_of(j: int) -> Array:
 	## j 的当前活动（只读，通用加入视角）。返回 [kind, group]；group 为 null 表示独自活动。
-	## "idle" = 空闲；"solo" = 独自的不可共享活动（听歌/读课外书，§9.1.4 未开放加入）。
+	## "idle" = 空闲；"solo" = 独自的不可共享活动（听歌/读课外书，§9.1.4 未开放加入）；
+	## "play" = 游戏锁定（不可被拉出，2026-10-17 交接）。
+	# 状态锁定（D01，2026-10-17）：学习锁定视同学习（可被请教、不被拉去别的活动）；
+	# 游戏锁定不可被拉出。崩溃／睡觉由 _join_blocked 排除，这里防御性再挡一次。
+	if not _broken[j] and not _sleeping[j] and _phase_state.size() > j:
+		if str(_phase_state[j]) == "study":
+			return ["study", _study_of[j]]
+		if str(_phase_state[j]) == "play":
+			return ["play", null]
 	if _conv_of[j] != null:
 		return ["chat", _conv_of[j]]
 	if _rough_of[j] != null:
@@ -2348,17 +2394,19 @@ func _reject_join(
 func _propose_activity(i: int, j: int, kind: String) -> bool:
 	## i（空闲发起者）向 j 提议 / 申请加入活动 kind（§9.1.4 决策树）。
 	## 返回 true = i 已被占用（成事）；false = 未占用（条件不满足 / 关系拒绝 / 相等不合流）。
-	## 玩家伙伴走既有邀请机制（玩家自己决定是否接受），不进入投票。
 	_stats["joins"] = int(_stats["joins"]) + 1
-	if j == _n - 1:
-		if kind == "chat":
-			_do_chat(i, j)
-		else:
-			_do_roughhouse(i, j)
-		return true
 	var act := _join_activity_of(j)
 	var akind: String = act[0]
 	var group: Variant = act[1]
+	# 状态锁定（D01，2026-10-17 交接「不突破状态锁定」）：
+	# 游戏锁定不可被拉出；学习锁定只可被「请教加入」，不可被拉去别的活动。
+	# 注意这里读 _phase_state 而非 akind：自由学生「正在学习」（phase_state=free、
+	# current_act=study）不是锁定，仍可被拉去别的活动（走下方跟随逻辑）。
+	if akind == "play":
+		_log_join_event(i, [j], "condition_fail", kind, [], [], {"reason": "unshared"})
+		return false
+	if _phase_state.size() > j and str(_phase_state[j]) == "study":
+		return _apply_join_group(i, j, "study", group)
 	if akind == "idle":
 		# 两人新建活动：被邀请者是唯一现有成员，投票定夺（§9.1.2）
 		var vote := _vote_accept([j], i)
@@ -2414,8 +2462,8 @@ func _apply_join_group(i: int, anchor: int, akind: String, group: Variant) -> bo
 		return false
 	var members := (grp["members"] as Array).duplicate()
 	members.sort()
-	if members.size() >= _join_cap():
-		_log_join_event(i, members, "condition_fail", akind, [], [], {"reason": "full"})
+	if _activity_past_half(akind, grp):
+		_log_join_event(i, members, "condition_fail", akind, [], [], {"reason": "past_half"})
 		return false
 	var vote := _vote_accept(members, i)
 	if not vote["ok"]:
@@ -2452,7 +2500,12 @@ func _ensure_group(akind: String, j: int) -> Dictionary:
 		return _conv_of[j] if _conv_of[j] != null else {}
 	if akind == "study":
 		if _study_of[j] == null:
-			var grp := {"members": [j]}
+			# 学习锁定但尚未轮到决策（被提前请教）：先按原学习者开始学习，保证过半进度基准正确。
+			if _study_start_tick[j] < 0:
+				_do_study(j)
+			# originator = 原学习者（独自开始学习的发起者）；后续加入者为请教者（免动力，见 _settle_units）。
+			# start_tick = 原学习者实际开始学习的 tick（过半禁加入的进度基准）。
+			var grp := {"members": [j], "originator": j, "start_tick": _study_start_tick[j]}
 			_study_groups.append(grp)
 			_study_of[j] = grp
 		return _study_of[j]
@@ -2569,12 +2622,9 @@ func _invite_friends_pass() -> void:
 	var p := _invite_friend_p()
 	if p <= 0.0:
 		return
-	var cap := _join_cap()
 	for akind in ["chat", "roughhouse", "study", "snack"]:
 		var groups: Array = _groups_of_kind(akind)
 		for grp in groups:
-			if (grp["members"] as Array).has(_n - 1) or (grp["members"] as Array).size() >= cap:
-				continue
 			var members: Array = (grp["members"] as Array).duplicate()
 			members.sort()
 			for m in members:
@@ -2606,12 +2656,15 @@ func _groups_of_kind(akind: String) -> Array:
 
 func _find_friend_outside(m: int, grp: Dictionary) -> int:
 	## m 的组外最佳朋友（§9.1.1 找伴规则）：不邀请组内成员、不拉正在别组的人
-	## （不同时参与多个活动）、不邀请玩家（玩家走邀请 UI）。并列取最低节点号。
+	## （不同时参与多个活动）。并列取最低节点号。
 	var best := -1
 	var best_a := 0.0
 	var has_best := false
-	for f in range(_n - 1):
+	for f in range(_n):
 		if f == m or (grp["members"] as Array).has(f) or _join_blocked(f):
+			continue
+		# 状态锁定（D01，2026-10-17）：学习锁定／游戏锁定的朋友不能被拉入别的活动。
+		if _phase_state.size() > f and str(_phase_state[f]) in ["study", "play"]:
 			continue
 		if (
 			_conv_of[f] != null
@@ -2970,12 +3023,16 @@ func passive_id_of(i: int) -> String:
 func teacher_student_snapshot(i: int) -> Dictionary:
 	if i < 0 or i >= _n:
 		return {}
-	return {
+	var out := {
 		"passive_id": _passives.id_of(i),
 		"grade_max": float(_kp["grade_max"]),
 		"reveals_incoming_affinity": _passives.reveals_incoming_affinity(i),
 		"well_informed_messages": _passives.well_informed_messages(i),
 	}
+	var goal := _teacher_commands.encourage_goal_text(self, i)
+	if goal != "":
+		out["communication_goal"] = goal
+	return out
 
 
 ## i 坐的座位号（seats.csv 的 seat_id，如 "P7"）；越界 → 空串。
@@ -3085,7 +3142,6 @@ func _build_character_tags() -> Array:
 				if t != "":
 					row.append(t)
 		tags.append(row)
-	tags.append([])  # 玩家（末位）无标签
 	return tags
 
 

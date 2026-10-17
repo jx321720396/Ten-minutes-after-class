@@ -145,13 +145,13 @@ func test_ask_dialog_shows_the_reported_lines() -> void:
 	var view = load("res://scenes/game/office.tscn").instantiate()
 	add_child_autofree(view)
 	view.present_ask([
-		"我最喜欢甲（好感值为：90）",
-		"我最讨厌乙（敌对值为：80）",
-		"我有一点喜欢丙也有一点讨厌丙（好感值为：10，敌对值为：4）",
+		"听说小明最近一直被同学欺负",
+		"我（小华）对小刚的好感：很高",
+		"我（小华）对小刚的敌对：较低",
 	])
 	assert_true(view.ask_open(), "打听结束后弹出对话框")
-	assert_true(view.ask_text().contains("我最喜欢甲（好感值为：90）"))
-	assert_true(view.ask_text().contains("我最讨厌乙（敌对值为：80）"))
+	assert_true(view.ask_text().contains("听说小明最近一直被同学欺负"))
+	assert_true(view.ask_text().contains("我（小华）对小刚的好感：很高"))
 	view.dismiss_ask()
 	assert_false(view.ask_open())
 

@@ -73,10 +73,14 @@ func test_study_drip_raises_stress() -> void:
 	core._phase_state[1] = "free"
 	var seat0: String = str(core._seat_of[0])
 	var neighbor_seat := ""
+	# 涓流只看前后左右、不含对角：从 8 邻接里挑一个正交邻座（dr+dc == 1）。
 	for seat_id in core._neighbors[seat0]:
-		neighbor_seat = str(seat_id)
-		break
-	assert_ne(neighbor_seat, "", "4×4 网格里每个座位都有邻座")
+		var pa: Array = core._seat_pos[seat0]
+		var pb: Array = core._seat_pos[str(seat_id)]
+		if absi(int(pa[0]) - int(pb[0])) + absi(int(pa[1]) - int(pb[1])) == 1:
+			neighbor_seat = str(seat_id)
+			break
+	assert_ne(neighbor_seat, "", "4×4 网格里每个座位都有正交邻座")
 	core._seat_of[1] = neighbor_seat
 	core._build_neighbor_idx()
 	core._settle_neighbor_drip()

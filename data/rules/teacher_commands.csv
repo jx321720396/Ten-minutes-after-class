@@ -11,3 +11,15 @@ seat_change_seconds,10,s,调座位发起后 10 秒生效（上课前未完成则
 max_summoned_at_once,1,人,办公室同时只能召唤一名学生
 defer_until_next_break,1,标志,上课未完成的命令保留到下一个课间处理：上课期间不执行、不产生效果
 mediate_seconds,20,s,老师调解耗时（合并稿未定值，暂用 20 秒；改一处即可）
+encourage_valid_breaks,4,课间,鼓励目标有效期（含当前课间；跨上课保留；考试日无课间不消耗）
+# ---- 打听（D10）：消息优先级、关系隐患线索与关系记录（阈值为本轮新增，值集中此处）----
+ask_relation_max,3,条,打听每次最多提供的有向单轴关系信息条数（百事通被动可提高）
+ask_hostility_hint_threshold,50,点,敌对隐患：其他学生对同一目标敌对严格超过该值（恰好不算）
+ask_hostility_hint_count,2,人,敌对隐患：至少这么多名其他学生对目标敌对超过阈值
+ask_low_affinity_threshold,20,点,低好感隐患：其他学生对目标好感严格低于该值（恰好不算）
+ask_low_affinity_count,13,人,低好感隐患：至少这么多名其他学生对目标好感低于阈值
+ask_low_affinity_open_day,8,天,低好感隐患线索最早开放日次（超过一周；具体日次待定）
+ask_item_hostility_threshold,40,点,物品消息：受访者对目标敌对严格超过该值（知情范围待定）
+ask_disclose_medium,25,点,关系披露档位「一般」下限（低于为「较低」；与档案档位一致）
+ask_disclose_high,50,点,关系披露档位「较高」下限
+ask_disclose_very_high,75,点,关系披露档位「很高」下限
