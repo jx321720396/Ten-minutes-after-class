@@ -351,10 +351,16 @@ func close_picker() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if picker_visible() and event.is_action_pressed("ui_cancel"):
-		close_picker()
-		get_viewport().set_input_as_handled()
-		return
+	if event.is_action_pressed("ui_cancel"):
+		if picker_visible():
+			close_picker()
+			get_viewport().set_input_as_handled()
+			return
+		if _mode == "office":
+			# 办公室是教室的子页面：返回键回到上一个页面（教师监控视图）。
+			set_mode("monitor")
+			get_viewport().set_input_as_handled()
+			return
 	if _mode == "office" or get_tree().paused:
 		return
 	var point := Vector2.ZERO

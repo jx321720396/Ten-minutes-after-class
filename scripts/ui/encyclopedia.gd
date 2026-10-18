@@ -60,6 +60,8 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and visible:
 		_on_back()
+		# 消费掉本次返回：否则会继续传给教室，顺带打开暂停菜单。
+		get_viewport().set_input_as_handled()
 
 
 # ------------------------------------------------------------------ 供外部查询
