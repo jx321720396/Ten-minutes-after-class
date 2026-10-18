@@ -105,3 +105,15 @@ python tools/check_export_imports.py   # data/**/*.csv 的 .import 必须全部�
 否则 Godot 的 `csv_translation` 导入器会接管 CSV，**原始 CSV 不进包**，安卓运行期读不到这些表
 （2026-10-17 手机首次 tick 卡死即由此引起：老师版 11 张表缺失）。桌面端直接读源码目录不受影响，
 所以**桌面上跑得通不代表导出包没问题**。`tools/run_tests.sh` 已包含这一步。
+
+### 导出 APK 前：字体子集覆盖检查
+
+```bash
+python tools/subset_font.py   # UI 字体是子集化的（约 0.9 MiB），必须覆盖所有运行期文本
+```
+
+为了让包体从 233.5 MiB 降到 81.2 MiB，全局 UI 字体 HarmonyOS Sans SC 已子集化
+（2026-10-18）。**新增中文文案若出现字体里没有的字符，运行期会显示方框**；该检查会把这种情况
+变成推送前的失败。用 `python tools/subset_font.py --write` 重建子集（需要 fontTools），再重新导入
+并导出。上游字体本身就没有的字符登记在 `tools/font_subset_exceptions.txt`。
+`tools/run_tests.sh` 已包含这一步。

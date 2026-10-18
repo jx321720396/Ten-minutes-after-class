@@ -1,0 +1,17 @@
+# 上游 HarmonyOS Sans SC 本身就没有的字符。
+#
+# 这些字符在子集化之前也不在字体里（子集化没有让它们变少），运行时由系统字体回退
+# 或直接不显示。它们出现在数据表/脚本里时不应该让「字体子集覆盖检查」失败。
+# 每行格式：字符  # 说明（# 之后的内容只是注释）。多个字符可以写在同一行。
+#
+# 新增条目前请先确认：该字符确实不在 assets/fonts/harmonyos-sans/HarmonyOS_Sans_SC.ttf
+# 的 cmap 里（检查脚本会把它报出来），而不是仅仅忘了重建子集。
+
+‟  # 双高引号
+↔ ⇄ ⇔  # 关系/方向箭头（stand_points.csv、npc_profile.json、social_events.csv）
+▶  # 播放三角（transition_overlay.gd、encyclopedia.gd）
+♪ ♫  # 音符（behavior_particles.json）
+⚖ ⚠ ✅ ❌  # 符号/emoji（数据表与美术包 README）
+✓ ✕ ✗  # 勾/叉（chat_feedback_hud.gd）
+〜 〟 〰 〿  # 日文波浪线等标点（安全字符集里预置）
+📜  # 卷轴 emoji（美术包 README）
