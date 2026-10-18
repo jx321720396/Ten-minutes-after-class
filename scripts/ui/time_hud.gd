@@ -137,6 +137,8 @@ func _layout_left_cards() -> void:
 
 ## 日末停留期间的「提前进入」键：空格 / 回车（与转场黑幕的跳过键同一动作，仅 report 生效）。
 func _unhandled_input(event: InputEvent) -> void:
+	if is_instance_valid(_clock) and _clock.is_held_by(&"outcome_screen"):
+		return
 	if _last.is_empty() or str(_last.get("mode", "")) != SimulationClock.MODE_REPORT:
 		return
 	if event.is_action_pressed("ui_accept"):
@@ -224,6 +226,8 @@ func close_attention_details() -> void:
 ## 日末停留倒计时（`_process` 只是转调它，测试可直接驱动）：
 ## 到时自动发出 `continue_requested`，且**只发一次**；未到停留时长返回 false。
 func tick_report_hold(delta_seconds: float) -> bool:
+	if is_instance_valid(_clock) and _clock.is_held_by(&"outcome_screen"):
+		return false
 	if _report_hold_left < 0.0:
 		return false
 	_report_hold_left = maxf(0.0, _report_hold_left - maxf(delta_seconds, 0.0))

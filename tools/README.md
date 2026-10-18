@@ -34,6 +34,10 @@
 
 ## 一键跑测试
 
+结算真实场景流程验收：`godot --path . --script res://tools/smoke_outcome_flow.gd --rendering-method gl_compatibility --audio-driver Dummy`，实例化生产教室与时钟，检查考试／失败／结束及原生按钮接线，夹具仅限验收进程，保留玩家归档。使用图形渲染可避开无头 Dummy 渲染器的已有纹理初始化告警。
+
+考试／辞退／本局回顾截图：`godot --path . --script res://tools/capture_outcome_ui.gd --rendering-method gl_compatibility --audio-driver Dummy`，使用生产界面与独立数据夹具，输出至 `tools/out/outcome_ui/`；不覆盖玩家归档。详见 [验收记录](../docs/qa/考试与结束界面验收-2026-10-18.md)。
+
 [`run_tests.sh`](run_tests.sh) 把「六道门（`tools/*.py`）+ 导出前置检查（CSV 导入模式）+ 铁律测试（`tests/invariants/`）+ 逐 tick 对拍（`tests/integration/`）+ Godot 侧 GUT 单测」串成一条命令：
 
 ```bash

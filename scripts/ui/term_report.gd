@@ -50,14 +50,17 @@ func _ready() -> void:
 	hide()
 
 
-func bind_sources(core: Variant, clock: SimulationClock, actors: Node = null) -> void:
+func bind_sources(
+	core: Variant, clock: SimulationClock, actors: Node = null, auto_open: bool = true
+) -> void:
 	if _clock != null and _clock.term_finished.is_connected(_on_term_finished):
 		_clock.term_finished.disconnect(_on_term_finished)
 	_core = core
 	_clock = clock
 	_actors = actors
-	_clock.term_finished.connect(_on_term_finished)
-	if str(_clock.snapshot().mode) == SimulationClock.MODE_FINISHED:
+	if auto_open:
+		_clock.term_finished.connect(_on_term_finished)
+	if auto_open and str(_clock.snapshot().mode) == SimulationClock.MODE_FINISHED:
 		_on_term_finished(int(_clock.snapshot().ended_day))
 
 
@@ -76,8 +79,8 @@ func open_record(history: Dictionary) -> bool:
 		return false
 	_record = history.duplicate(true)
 	_replay.configure(_record)
-	_source = int(_record.player)
-	_target = 0
+	_source = 0 if _record.has("teacher_outcome") else int(_record.player)
+	_target = 1 if _record.has("teacher_outcome") else 0
 	_from.clear()
 	_to.clear()
 	for i in int(_record.count):
@@ -158,12 +161,13 @@ func _build_ui() -> void:
 	margin.add_child(paper)
 	paper.add_theme_stylebox_override("panel", CampusTheme.box("paper", "accent"))
 	var layout := _column(paper)
-	_label(layout, "下课十分钟 · 学期档案", int(_cfg.small_font_size))
-	_label(layout, "这学期结束了", int(_cfg.title_font_size))
-	_label(layout, "30天的课间，关系在小事里慢慢改变。", int(_cfg.font_size))
+	_label(layout, "下课十分钟 · 本局档案", int(_cfg.small_font_size))
+	_label(layout, "本局回顾", int(_cfg.title_font_size))
+	_label(layout, "每一段课间，关系在小事里慢慢改变。", int(_cfg.font_size))
 	var tabs := _row(layout)
 	for item in [["学期概览", "summary"], ["行为统计", "stats"], ["关系演变", "relations"]]:
-		_button(tabs, str(item[0]), _show_page.bind(str(item[1])))
+		var tab := _button(tabs, str(item[0]), _show_page.bind(str(item[1])))
+		tab.name = str(item[1]) + "Tab"
 	layout.add_child(HSeparator.new())
 	var body := _row(layout)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -183,7 +187,13 @@ func _build_ui() -> void:
 	var note := _label(footer, "学期已结束，回放展示双方的真实情感。", int(_cfg.small_font_size))
 	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_button(footer, "回主菜单", _return_to_menu)
+	_button(footer, "返回结算", _close_report)
 	_button(footer, "再玩一局 →", _new_game, true)
+
+
+func _close_report() -> void:
+	_playing = false
+	hide()
 
 
 func _build_relations() -> void:
@@ -244,6 +254,17 @@ func _build_relations() -> void:
 
 func _fill_sidebar() -> void:
 	_clear(_sidebar)
+	_root.find_child("statsTab", true, false).visible = not _record.has("teacher_outcome")
+	if _record.has("teacher_outcome"):
+		var data: Dictionary = _record.teacher_outcome
+		var card := _card(_sidebar, "带班记录")
+		_label(card, "共 %d 天" % int(data.day), int(_cfg.heading_font_size))
+		_label(card, "班级均分 %.1f" % float(data.mean), int(_cfg.heading_font_size))
+		_label(
+			card, "学生 %d 人 · 退学 %d 人" % [int(data.count), data.dropouts.size()], int(_cfg.font_size)
+		)
+		_label(card, "关系回放只读历史，不改变本局结果。", int(_cfg.small_font_size))
+		return
 	var summary := _card(_sidebar, "学期概览")
 	_label(summary, "学习时长\n%s" % _study_time(), int(_cfg.heading_font_size))
 	_label(
@@ -295,6 +316,18 @@ func _fill_stats() -> void:
 
 func _fill_summary() -> void:
 	_clear(_summary)
+	if _record.has("teacher_outcome"):
+		var data: Dictionary = _record.teacher_outcome
+		_label(_summary, "这一段课间，留下了什么", int(_cfg.heading_font_size))
+		_label(
+			_summary,
+			"带班 %d 天 · 班级均分 %.1f" % [int(data.day), float(data.mean)],
+			int(_cfg.title_font_size)
+		)
+		var reason := _label(_summary, str(data.reason), int(_cfg.font_size))
+		reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_button(_summary, "看看关系如何变化 →", _show_page.bind("relations"), true)
+		return
 	_label(_summary, "属于你的这个学期", int(_cfg.heading_font_size))
 	_label(_summary, "你完成了 %d 次交流。" % _communication_count(), int(_cfg.title_font_size))
 	_label(

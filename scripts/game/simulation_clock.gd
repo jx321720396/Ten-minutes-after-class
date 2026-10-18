@@ -86,6 +86,7 @@ func bind_core(core: SimCore, tables: Dictionary = {}) -> bool:
 	_mode = MODE_RUNNING
 	_paused_by.clear()
 	_ended_day = 0
+	_failure_reason = ""
 	time_updated.emit(snapshot())
 	return true
 
@@ -275,7 +276,7 @@ func is_held_by(who: StringName) -> bool:
 ## 表现层在日末停留（`report_hold_seconds`）结束后**自动**调用它（`time_hud.gd`），
 ## 玩家也可按空格提前进入；第 30 天结束时 mode 为 finished，本方法拒绝。
 func continue_after_report() -> bool:
-	if _mode != MODE_REPORT:
+	if _mode != MODE_REPORT or is_held_by(&"outcome_screen"):
 		return false
 	_mode = MODE_RUNNING
 	_accumulator = 0.0
@@ -499,7 +500,7 @@ func _progress(snapshot_data: Dictionary) -> float:
 
 
 func _enter_report() -> void:
-	# 辞退终止（§11.4）：首次考核不达标或出现退学时，老师被辞退 —— 世界立刻停在日末，
+	# 辞退终止（§11.4）：任一次考核不达标或出现退学时，老师被辞退 —— 世界立刻停在日末，
 	# 并带上触发判据说明原因；此时不再继续下一天。
 	if _core != null:
 		var failure: String = str(_core._failure_reason())
