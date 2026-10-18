@@ -3,13 +3,16 @@ extends RefCounted
 
 var _source_id := 0
 var _observed: Dictionary = {}
+var _cfg: Dictionary = JSON.parse_string(
+	FileAccess.get_file_as_string("res://data/ui/attention_card.json")
+)
 
 
 func build(core: SimCore, tables: Dictionary) -> Dictionary:
 	if core.get_instance_id() != _source_id:
 		_source_id = core.get_instance_id()
 		_observed.clear()
-	var result := {"bully": [], "isolate": [], "broken": []}
+	var result := {"bully": [], "isolate": [], "broken": [], "crash": []}
 	var rules := {}
 	for row in tables.get("rules/risk", {}).get("rows", []):
 		rules[str(row.param)] = float(row.value)
@@ -20,10 +23,11 @@ func build(core: SimCore, tables: Dictionary) -> Dictionary:
 		if event.get("kind") in ["warn", "trigger"]:
 			_observed[int(event.of)] = event.duplicate(true)
 	for index in range(core.node_count()):
+		var pressure := float(core.stress(index))
 		var entry := {
 			"index": index,
 			"name": core.alias(index),
-			"pressure": core.stress(index),
+			"pressure": pressure,
 			"breakdowns": int(risk.get("breakdowns", [])[index]),
 			"streak": int(risk.get("streak", [])[index]),
 			"formal": bool(risk.get("triggered", [])[index]),
@@ -43,4 +47,9 @@ func build(core: SimCore, tables: Dictionary) -> Dictionary:
 				result[entry.reason].append(entry.duplicate())
 			if core.is_broken(index):
 				result.broken.append(entry.duplicate())
+			elif (
+				pressure >= float(_cfg.crash_pressure_min)
+				and pressure <= float(_cfg.crash_pressure_max)
+			):
+				result.crash.append(entry.duplicate())
 	return result
