@@ -356,7 +356,7 @@ class Sim:
                 if i == j:
                     continue
                 self.A[i][j] = clamp100(20 + self.rng.random() * 20)
-                self.H[i][j] = clamp100(self.rng.random() * 15)
+                self.H[i][j] = clamp100(self.rng.random() * 40)
         # 环境事实（§11.3）：小情侣绑定、佳豪对外好感 50
         idx = {c["alias"]: k for k, c in enumerate(self.chars)}
         if "陈阳" in idx and "林晚" in idx:

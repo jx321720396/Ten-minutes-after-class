@@ -1,5 +1,12 @@
 # 变更记录
 
+## 2026-10-18 开局敌对值 15 → 40
+
+- 初始敌对 `init_hostility_spread` 由 **15 提到 40**：开局 `H[i][j] = random*40`（对角仍为 0、无基线、仍钳制到 [0,100]）。旧值下普通对子敌对长期均值仅约 0.11、单边 max 约 15，永远够不到排挤 / 霸凌等「需已有较高敌对」的判据门槛 —— 把开局分布上限抬到 40，给关系矩阵更多高敌对种子。
+- 三处同步改动：`data/rules/kernel_params.csv`（值 + note）、`tools/core_sim.py`（Python 参考实现，保同种子对拍）、`docs/gdd/v4/15-公式总表.md` §15.14.3 公式 `H[i][j] = rand×40`。
+- 验证：快门禁 `check_config` 180/0、`test_core` 132/0、`verify_formula` 9/0、`check_docs` 通过。
+- **遗留**：`docs/gdd/v4/09-人物设计.md` §普通对子敌对 / 总敌对 max 的标定数字（max 15.3 / 均值 15.8）是在 spread=15 下测的，本次调参后需重新多种子标定，暂未更新。
+
 ## 2026-10-18 修正坐姿与椅子重叠
 
 - 空闲正面与坐姿背影不再沿用旧立绘的固定前后深度，绑定实际座位 SitPoint；背影坐骨高度读取 Chair/Seat 网格上表面，避免用固定0.46m与移动端椅子约0.515m不一致。
@@ -56,7 +63,6 @@
 - 着色器使用本地 XZ 坐标，避免 UV 方向造成群体形状错位；区域外改为零透明度，修复本机 Mobile 渲染器 discard 路径下圈消失。
 - 半径由 0.3 m 调到 0.42 m、填充透明度由 0.32 调到 0.58；渲染容量覆盖全班 16 人及 120 条配对连线。
 - 圈层专项 11/11 通过，配置与文档检查通过；本机 Godot 4.6.3 与 GUT 有兼容报错，不代表目标 4.7.2 或安卓真机验收。截图工具已适配老师版入口并支持尺寸参数。
-
 ## 2026-10-18 「班级概况」「需要关注」两张纸卡文字居中
 
 - 两张卡片（`scripts/ui/class_overview_card.gd`、`scripts/ui/attention_card.gd`）内部文字统一改为**居中**：标题行（图标 + 标题）用 `HBoxContainer.alignment = ALIGNMENT_CENTER`；指标格的标签与数值同样居中（`heading` / `numbers` 两个 HBox）；风险行把「名称 + 人数」作为一组居中（标题不再 `EXPAND_FILL` 把人数推到右侧），副标题 `horizontal_alignment = CENTER`。

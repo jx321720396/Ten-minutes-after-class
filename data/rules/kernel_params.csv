@@ -5,7 +5,7 @@
 param,value,note
 init_affinity_base,20,初始好感基线：A = 20 + random*20
 init_affinity_spread,20,初始好感随机幅度
-init_hostility_spread,15,初始敌对：H = random*15
+init_hostility_spread,40,初始敌对：H = random*40
 saturated_threshold,95,报告统计「接近饱和」判定阈值
 grade_max,750,成绩上限（grade ∈ [0,750]，主文档 §17.1.1）
 # 开局成绩分布自 2026-10-16 起由 rules/psyche.csv 的 grade_init_min / grade_init_max 统一给出（D01：250–450，均值 350）。
