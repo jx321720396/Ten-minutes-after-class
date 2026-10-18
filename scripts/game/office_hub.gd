@@ -165,6 +165,10 @@ func _on_action(action: String) -> void:
 		else:
 			commands.office_chat(core, action)
 		_process(0.0)
+	elif action == "cancel_chat":
+		var core: Variant = _room.get_node("Actors").current_core()
+		core.teacher_commands().cancel_office_chat()
+		_process(0.0)
 	elif action in ["monitor", "classroom"]:
 		set_mode(action)
 		if action == "classroom":

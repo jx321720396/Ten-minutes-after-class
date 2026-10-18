@@ -333,6 +333,18 @@ func office_chat(core: Variant, kind: String) -> bool:
 	return true
 
 
+## 中断正在进行的办公室谈话：当作从未发生（谈话效果只在 _finish 结算，未到不结算）。
+## 打听／鼓励尚未结算，取消后可重新选择；已流逝的课间时间不退（期间其余学生仍在行动）。
+## 返回是否真的取消了一项在途谈话（无在途谈话返回 false）。
+func cancel_office_chat() -> bool:
+	if _command != "office_chat":
+		return false
+	_command = ""
+	_chat_kind = ""
+	_remaining = 0
+	return true
+
+
 ## 老师调解（D07）：任一方向敌对 >50 才执行（否则调用方不应扣耗时）；
 ## 完成后双方敌对各 −5，不抹去风险历史、不自动修复无冲突的敌对。
 func mediate(core: Variant, a: int, b: int) -> bool:
