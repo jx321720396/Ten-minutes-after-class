@@ -15,8 +15,12 @@
 [ext_resource type="AudioStream" uid="uid://chag8f3larx53" path="res://music/改1/save_complete.mp3" id="13_save"]
 [ext_resource type="AudioStream" uid="uid://cfu27rci2ppek" path="res://music/act_chat_start.mp3" id="14_chat"]
 [ext_resource type="AudioStream" uid="uid://35hlwafr82j" path="res://music/改1/chase_ruckus.mp3" id="15_chase"]
+[ext_resource type="AudioStream" uid="uid://dk42x745th4au" path="res://music/comfort_voice.mp3" id="16_comfort"]
+[ext_resource type="AudioStream" uid="uid://dfqrrfu4g1hiy" path="res://music/teacher_scold.mp3" id="17_scold"]
+[ext_resource type="AudioStream" uid="uid://d15rf6nax5jrl" path="res://music/teacher_praise.mp3" id="18_praise"]
 
 [node name="SFX" type="Node" unique_id=188820636]
+process_mode = 3
 script = ExtResource("1_script")
 
 [node name="ButtonClick" type="AudioStreamPlayer" parent="." unique_id=671408121]
@@ -85,4 +89,16 @@ bus = &"SFX"
 
 [node name="ChaseRuckus" type="AudioStreamPlayer" parent="." unique_id=1681363196]
 stream = ExtResource("15_chase")
+bus = &"SFX"
+
+[node name="ComfortVoice" type="AudioStreamPlayer" parent="." unique_id=114215184]
+stream = ExtResource("16_comfort")
+bus = &"SFX"
+
+[node name="TeacherScold" type="AudioStreamPlayer" parent="." unique_id=697740232]
+stream = ExtResource("17_scold")
+bus = &"SFX"
+
+[node name="TeacherPraise" type="AudioStreamPlayer" parent="." unique_id=1675603740]
+stream = ExtResource("18_praise")
 bus = &"SFX"

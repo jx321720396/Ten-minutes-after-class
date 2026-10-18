@@ -63,6 +63,10 @@ var _path_index := 0
 ## 折线推进速度（米 / 秒，来自 data/rules/movement.csv 的 meters_per_tick）
 var _nav_speed := 0.0
 var _time_flow: TimeFlow = null
+## 自动行走脚步声：每走 footstep_distance_m 米触发一次（data/rules/audio.csv；<=0 关闭）
+var _footstep_interval_m := 0.0
+var _footstep_travel := 0.0
+var _sfx: Node = null
 
 
 func bind_time_flow(flow: TimeFlow) -> void:
@@ -78,6 +82,10 @@ func _ready() -> void:
 	_base_y = _body.global_position.y
 	_to = _body.global_position
 	_from = _to
+	_sfx = get_node_or_null("/root/SFX")
+	for row in Config.get_table("rules/audio").get("rows", []):
+		if str(row.get("key", "")) == "footstep_distance_m":
+			_footstep_interval_m = float(str(row["value"]))
 
 
 ## 是否正在移动（自动行走中，或 WASD 手动步进期间）。
@@ -290,19 +298,34 @@ func _process(delta: float) -> void:
 		delta = _time_flow.scale_delta(delta)
 	if delta <= 0.0:
 		return
+	var prev := _body.global_position
 	# 导航折线优先；折线为空 = 原有直线语义（walk_to）
 	if not _path.is_empty():
 		_advance_path(delta)
+	else:
+		_elapsed += delta
+		var t := clampf(_elapsed / _duration, 0.0, 1.0)
+		var eased := _smoothstep(t) if ease_motion else t
+		var pos := _from.lerp(_to, eased)
+		_bob_time += delta
+		var bob := sin(_bob_time * TAU * bob_frequency) * bob_height
+		_body.global_position = Vector3(pos.x, _from.y + bob, pos.z)
+		if t >= 1.0:
+			_arrive()
+	_track_footsteps(prev)
+
+
+## 自动行走（NPC 走动 / 点地寻路）的脚步声：累计水平位移，每满一段播一次。
+## 玩家 WASD 手动步进在 PlayerController 里另挂，move_by 不在此计数（避免同一步双响）。
+func _track_footsteps(prev: Vector3) -> void:
+	if _footstep_interval_m <= 0.0 or _sfx == null or _body == null:
 		return
-	_elapsed += delta
-	var t := clampf(_elapsed / _duration, 0.0, 1.0)
-	var eased := _smoothstep(t) if ease_motion else t
-	var pos := _from.lerp(_to, eased)
-	_bob_time += delta
-	var bob := sin(_bob_time * TAU * bob_frequency) * bob_height
-	_body.global_position = Vector3(pos.x, _from.y + bob, pos.z)
-	if t >= 1.0:
-		_arrive()
+	var cur := _body.global_position
+	_footstep_travel += Vector2(cur.x - prev.x, cur.z - prev.z).length()
+	if _footstep_travel < _footstep_interval_m:
+		return
+	_footstep_travel = fmod(_footstep_travel, _footstep_interval_m)
+	_sfx.play_footstep()
 
 
 func _arrive() -> void:

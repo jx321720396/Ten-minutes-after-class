@@ -13,11 +13,15 @@ const SETTINGS_KEY := "sfx_volume_linear"
 var _volume := 1.0
 var _buttons: Array[BaseButton] = []
 var _pointer_pos := Vector2.INF
+## 脚步声全局节流：多个人物同时走时按最小间隔重播（<=0 关闭节流）
+var _footstep_gap_s := 0.0
+var _footstep_last := -INF
 
 
 func _ready() -> void:
 	_volume = _load_volume()
 	_apply_bus_volume()
+	_footstep_gap_s = _load_audio_value("footstep_min_gap_s", 0.0)
 	# 场景树里**之后与已存在**的每个按钮都挂 pressed：
 	# 鼠标、触屏、键盘激活与代码 emit 都会响，动态生成的面板同样覆盖。
 	get_tree().node_added.connect(_on_node_added)
@@ -53,6 +57,15 @@ func _on_event_happened(payload: Dictionary) -> void:
 func _on_day_settled(_summary: Dictionary) -> void:
 	_stop_player("AmbClass")
 	play_one_shot("AfterSchoolSettle")
+
+
+## 学期最终结算（正常第 30 天结束或被辞退）：放学声收尾。
+## 正常结束时与 day_settled 同帧到达 —— 已在播就不重播（重播会从头拍一下，听感是爆音）。
+func on_term_finished(_ended_day: int) -> void:
+	_stop_player("AmbClass")
+	var player := get_node_or_null(^"AfterSchoolSettle") as AudioStreamPlayer
+	if player != null and not player.playing:
+		player.play()
 
 
 func _on_game_saved() -> void:
@@ -99,8 +112,23 @@ func _play_button_click() -> void:
 	_button_player.play()
 
 
+## 脚步声：全局按 footstep_min_gap_s 节流（data/rules/audio.csv），多人同走不叠成噪音。
 func play_footstep() -> void:
+	if _footstep_gap_s > 0.0:
+		var now := float(Time.get_ticks_msec()) / 1000.0
+		if now - _footstep_last < _footstep_gap_s:
+			return
+		_footstep_last = now
 	_footstep_player.play()
+
+
+## 读 data/rules/audio.csv 的一个数值键；缺键时告警并用兜底值。
+func _load_audio_value(key: String, fallback: float) -> float:
+	for row in Config.get_table("rules/audio").get("rows", []):
+		if str(row.get("key", "")) == key:
+			return float(str(row["value"]))
+	push_warning("SFX：data/rules/audio.csv 缺少 %s，用兜底值 %s。" % [key, fallback])
+	return fallback
 
 
 ## 播一次子播放器（节点名见 sfx.tscn），缺失时静默（场景未接入音频时不报错）。
