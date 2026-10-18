@@ -38,7 +38,8 @@ func test_exam_uses_settled_scores_and_only_exam_can_continue() -> void:
 	if model == null:
 		return
 	var core := _core()
-	core._exam._target_means.clear()
+	if "_target_means" in core._exam:
+		core._exam._target_means.clear()
 	core._exam._target_mean = 0.0
 	core._exam.settle(8, core._grade, core._stress, core._alias_list())
 	var data: Dictionary = model.build(core, {"ended_day": 8, "mode": "report"})
@@ -54,7 +55,8 @@ func test_failed_exam_and_dropout_have_distinct_real_evidence() -> void:
 	if model == null:
 		return
 	var core := _core()
-	core._exam._target_means.clear()
+	if "_target_means" in core._exam:
+		core._exam._target_means.clear()
 	core._exam._target_mean = 750.0
 	core._exam.settle(8, core._grade, core._stress, core._alias_list())
 	var data: Dictionary = model.build(core, {"ended_day": 8, "mode": "finished"})
@@ -87,7 +89,8 @@ func test_open_exam_holds_clock_until_explicit_continue() -> void:
 	if not ResourceLoader.exists(SCREEN_PATH):
 		return
 	var core := _core()
-	core._exam._target_means.clear()
+	if "_target_means" in core._exam:
+		core._exam._target_means.clear()
 	core._exam._target_mean = 0.0
 	core._exam.settle(8, core._grade, core._stress, core._alias_list())
 	var clock := SimulationClock.new()
@@ -147,10 +150,10 @@ func test_teacher_archive_preserves_every_student_name_without_changing_history(
 	var before := var_to_bytes(core.term_record())
 	var data: Dictionary = model.build(core, {"ended_day": 5, "mode": "finished"})
 	var record: Dictionary = model.archive_record(core, data)
-	var archive := preload("res://scripts/game/term_archive.gd")
+	var ARCHIVE := preload("res://scripts/game/term_archive.gd")
 	var path := "user://outcome_name_test.dat"
-	assert_eq(archive.write(record, path), OK)
-	var saved := archive.read(path)
+	assert_eq(ARCHIVE.write(record, path), OK)
+	var saved := ARCHIVE.read(path)
 	for i in core.node_count():
 		assert_eq(record.names[i], core.alias(i))
 		assert_eq(saved.names[i], core.alias(i))
