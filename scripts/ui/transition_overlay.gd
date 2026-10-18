@@ -145,7 +145,12 @@ func _sync_with(snapshot_data: Dictionary) -> void:
 		if is_day_start:
 			if not _first_day_shown:
 				_first_day_shown = true
-				_show_overlay(display_name, "第 %d 天" % day, FLASH_HOLD_DAY)
+				if GameState.opening_day_shown:
+					# 主菜单开幕已显示过「第 N 天」：进场直接淡出，不再重复盖卡片。
+					GameState.opening_day_shown = false
+					_hide_overlay()
+				else:
+					_show_overlay(display_name, "第 %d 天" % day, FLASH_HOLD_DAY)
 			else:
 				# 晚自习过场不带阶段小字（已放学，"上午课间"字样不符）
 				_show_overlay("", TITLE_EVENING, FLASH_HOLD_BREAK)
@@ -159,6 +164,18 @@ func _sync_with(snapshot_data: Dictionary) -> void:
 ## 显示「第 N 天」黑幕并 hold 时钟；黑幕结束后的归位与停留由走动组件接管。
 func show_day_start(day: int, display_name: String) -> void:
 	_show_overlay(display_name, "第 %d 天" % day, FLASH_HOLD_DAY)
+
+
+## 主菜单开幕：显示「第 N 天」黑幕并常驻（加载完成后切场景，由教室接续淡出）。
+## 视觉与日首黑幕一致；不显示跳过键、不 hold 时钟（此时尚未绑定时钟）。
+func show_opening(title_text: String, subtitle_text: String) -> void:
+	_title.text = title_text
+	_subtitle.text = subtitle_text
+	_skip_button.visible = false
+	if _tween != null and _tween.is_valid():
+		_tween.kill()
+	_root.modulate.a = 1.0
+	visible = true
 
 
 # ------------------------------------------------------------------ 显示与跳过
@@ -215,7 +232,8 @@ func _begin_dismiss() -> void:
 ## ⚠️ 必须走 _hide_overlay（内含 _begin_dismiss 释放时钟）：
 ## 直接 fade 会杀掉尚未执行 _begin_dismiss 的补间，导致时钟永久暂停（倒计时卡死）。
 func _request_skip() -> void:
-	if not visible:
+	# 开幕黑幕没有跳过键：不可用空格提前退场（加载完成后由切场景收掉）。
+	if not visible or not _skip_button.visible:
 		return
 	skip_pressed.emit()
 	_hide_overlay()
