@@ -29,6 +29,7 @@ const TERM_REPORT_SCENE := preload("res://scenes/ui/term_report.tscn")
 @onready var tutorial: TutorialOverlay = $TutorialOverlay
 
 var _term_report: CanvasLayer
+var _outcome_screen: CanvasLayer
 ## 教程步进用：最近一次被选中的行为栏 kind（提交时连同状态一起转发给教程）
 var _tutorial_armed: StringName = &""
 
@@ -58,7 +59,11 @@ func _ready() -> void:
 	SFX.on_phase_changed(clock.snapshot())
 	_term_report = TERM_REPORT_SCENE.instantiate()
 	add_child(_term_report)
-	_term_report.bind_sources(core, clock, actors)
+	_term_report.bind_sources(core, clock, actors, false)
+	_outcome_screen = preload("res://scenes/ui/outcome_screen.tscn").instantiate()
+	add_child(_outcome_screen)
+	_outcome_screen.bind_sources(core, clock, _term_report)
+	_outcome_screen.continue_requested.connect(_on_continue_requested)
 	transition.bind_clock(clock)
 	_bind_clue_board()
 	# 黑幕开始退场的瞬间就应用挂起的相位（含上课 / 每日归位），不等淡出结束
@@ -71,9 +76,21 @@ func _ready() -> void:
 	_bind_feedback(core)
 	clock.time_updated.connect(_sync_state_mirror)
 	time_hud.continue_requested.connect(_on_continue_requested)
-	# 当前入口使用老师界面，学生版教程不能再指向已移除的行为栏。
-	GameState.tutorial_pending = false
 	_install_office()
+	_bind_opening_comic()
+
+
+func _bind_opening_comic() -> void:
+	var comic := preload("res://scripts/ui/opening_comic.gd").new()
+	comic.name = "OpeningComic"
+	add_child(comic)
+	var settings: Control = pause_menu.settings_panel
+	settings.replay_btn.disabled = false
+	settings.replay_btn.tooltip_text = ""
+	settings.replay_requested.connect(func(): comic.start(clock))
+	if GameState.tutorial_pending:
+		GameState.tutorial_pending = false
+		comic.start(clock)
 
 
 func _install_office() -> void:
@@ -177,6 +194,11 @@ func _inject_interaction_geometry(core: Variant) -> bool:
 ## 表现组件只读绑定：核心 / 人物 / 时钟，各自的可见性由内核真实会话决定。
 func _bind_feedback(core: Variant) -> void:
 	rings.bind_core(core)
+	rings.bind_actors(actors)
+	var facing := preload("res://scripts/game/group_facing_presenter.gd").new()
+	facing.name = "GroupFacing"
+	add_child(facing)
+	facing.bind_sources(core, actors)
 	chat_bubble.bind_core(core)
 	chat_bubble.bind_actors(actors)
 	chat_bubble.bind_clock(clock)
@@ -258,7 +280,7 @@ func _build_player_seat_rect(core: Variant, zones: Dictionary) -> void:
 ## 不假装成功（计划 §6：不提供虚假的成功恢复）。
 func _on_continue_requested() -> void:
 	if str(clock.snapshot().mode) == SimulationClock.MODE_FINISHED:
-		_term_report.open_record(_core_from_state().term_record())
+		_outcome_screen.show_overview()
 		return
 	if clock.continue_after_report():
 		# 转场黑幕任务：确认进入次日 → 显示「第 N 天」黑幕；
