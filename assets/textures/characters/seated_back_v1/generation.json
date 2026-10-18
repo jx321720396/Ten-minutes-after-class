@@ -1,0 +1,102 @@
+{
+  "tool": "image_gen built-in",
+  "prompt": "Edit target: supplied seated student game sprite. Produce ONE matching STRICT REAR VIEW of exactly this same seated student, rotated 180 degrees away from viewer, back of head and back of jacket visible, no face or looking over shoulder. Preserve exact hairstyle, length, color, personal build, blue-white Chinese school tracksuit, grey trousers and white-blue sneakers. Remain SEATED UPRIGHT on an invisible simple school chair: hips and thighs horizontal at seat height, knees bent 90 degrees, both feet planted on floor. Arms rest naturally forward on lap, hands mostly hidden by torso, no waving. NOT standing or crouching. Match source's seated body proportions, image scale, portrait 2:3 canvas, full body including both shoes, centered. Faithful anime linework and painterly cel shading matching reference. Plain back jacket, no text/logos. Isolated CHARACTER ONLY on true TRANSPARENT background: DO NOT draw chair, desk, scene, floor, ground shadow or glow; existing game already renders furniture. A clean production seated back sprite for front/back school-desk conversations.",
+  "assets": [
+    {
+      "student": 1,
+      "file": "char_01_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-d8d48846-307c-4a44-98cf-e48251891d0a.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_01_idle_seated_v1.png"
+    },
+    {
+      "student": 2,
+      "file": "char_02_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-67a12745-e476-482a-a4e8-1d9e89f73efb.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_02_idle_seated_v1.png"
+    },
+    {
+      "student": 3,
+      "file": "char_03_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-72b9f245-d624-4b37-9319-084cbb6f24c9.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_03_idle_seated_v1.png"
+    },
+    {
+      "student": 4,
+      "file": "char_04_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-e685d8d8-ed1f-4cd3-a930-5632bd6dcb2a.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_04_idle_seated_v1.png"
+    },
+    {
+      "student": 5,
+      "file": "char_05_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-856f1369-7265-4707-9bc2-f34de81dbed3.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_05_idle_seated_v1.png"
+    },
+    {
+      "student": 6,
+      "file": "char_06_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-d6e1b162-1dd5-4221-91e7-acc8a383fc32.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_06_idle_seated_v1.png"
+    },
+    {
+      "student": 7,
+      "file": "char_07_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-60c85504-c57a-49ed-a566-2d812b127f27.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_07_idle_seated_v1.png"
+    },
+    {
+      "student": 8,
+      "file": "char_08_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-f48af2b5-f132-4040-b24c-184492b89640.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_08_idle_seated_v1.png"
+    },
+    {
+      "student": 9,
+      "file": "char_09_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-4d519d3d-ff85-4e7b-91e0-1b3f529f4126.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_09_idle_seated_v1.png"
+    },
+    {
+      "student": 10,
+      "file": "char_10_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-60586a84-a9a7-4c44-bb22-1906498e207f.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_10_idle_seated_v1.png"
+    },
+    {
+      "student": 11,
+      "file": "char_11_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-920dfffc-90b2-4276-a11c-3ae4529a2ab4.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_11_idle_seated_v1.png"
+    },
+    {
+      "student": 12,
+      "file": "char_12_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-6f02ba9e-7409-4924-b6fc-5a501a229670.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_12_idle_seated_v1.png"
+    },
+    {
+      "student": 13,
+      "file": "char_13_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-7cef421d-e70e-4dc4-b63b-f985fe681552.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_13_idle_seated_v1.png"
+    },
+    {
+      "student": 14,
+      "file": "char_14_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-2b43c695-e6a4-4822-892d-9f79972399f7.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_14_idle_seated_v1.png"
+    },
+    {
+      "student": 15,
+      "file": "char_15_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-029cbcb3-0326-4638-bd66-dbc8e7682390.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_15_idle_seated_v1.png"
+    },
+    {
+      "student": 16,
+      "file": "char_16_seated_back_v1.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-56f46773-ff81-4247-93ee-b331bc2b3db4.png",
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/idle_seated_v1/char_16_idle_seated_v1.png"
+    }
+  ]
+}

@@ -254,6 +254,7 @@ func _attach_seated_pose(core: Variant, index: int, actor: Node3D) -> void:
 		)
 		binding["layout"] = layout
 	pose.configure(_pose_settings, binding)
+	pose.bind_seat(seat_node_of(index))
 	_seated_poses[index] = pose
 
 
@@ -287,6 +288,7 @@ func _process(_delta: float) -> void:
 			<= float(_pose_settings["at_home_radius"])
 		)
 		pose.global_transform = seat.global_transform
+		pose.bind_seat(seat)
 		var mode: String = pose.pose_for(
 			str(_pose_core.activity_of(index)),
 			kind,
@@ -432,6 +434,7 @@ func _build_actor(core: Variant, i: int) -> Node3D:
 	var character_id := str(core.character_id(i))
 	actor.name = "Actor_%s" % (character_id if not character_id.is_empty() else str(i))
 	var sprite_name := str(_appearances.get(character_id, ""))
+	actor.set_meta("appearance_sprite", sprite_name)
 	var texture := _load_texture(sprite_name)
 	var pose_binding: Dictionary = _pose_settings.get("bindings", {}).get(sprite_name, {})
 	if not pose_binding.is_empty():

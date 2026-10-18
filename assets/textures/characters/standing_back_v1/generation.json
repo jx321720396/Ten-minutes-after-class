@@ -1,0 +1,123 @@
+{
+  "tool": "image_gen built-in",
+  "prompt": "Edit target: the supplied single student front-view game sprite. Create ONE matching FULL-BODY STRICT REAR VIEW of exactly this same student, turned 180 degrees away from viewer, head facing straight away (no face, no over-shoulder glance). Preserve this character's exact hair color, hairstyle/length, body build, blue-and-white Chinese school tracksuit, dark grey trousers and white-blue sneakers. Faithful anime linework, painterly cel shading and same proportions as reference. Arms resting naturally at sides; standing, no props. Back of jacket is consistent with existing uniform, plain school sports jacket, no text/logos. Preserve reference's portrait 2:3 canvas and full-body scale: top of hair near top, both soles near bottom, centered feet baseline, entire shoes visible. Output single isolated sprite on TRUE TRANSPARENT BACKGROUND; no black background, no glow/halo, no ground shadow, no scene, no labels, no contact sheet. This is production art for the same game's back-facing sprite.",
+  "assets": [
+    {
+      "student": 1,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/standing_front_v2/char_01_stand_natural_v2.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-6ab3b626-87d7-4728-bec2-b64913155ba2.png",
+      "file": "char_01_stand_back_v1.png"
+    },
+    {
+      "student": 2,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/standing_front_v2/char_02_stand_natural_v2.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-745a90c9-6f27-4bd5-b400-71d4f326874b.png",
+      "file": "char_02_stand_back_v1.png"
+    },
+    {
+      "student": 3,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/identity_v3/char_03_stand_identity_v3.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-4d055046-5bbc-4070-8c8c-2b2edbe903bd.png",
+      "file": "char_03_stand_back_v1.png"
+    },
+    {
+      "student": 4,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/standing_front_v2/char_04_stand_natural_v2.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-36f463ac-cb25-45ff-bbe2-b75003a47b4a.png",
+      "file": "char_04_stand_back_v1.png"
+    },
+    {
+      "student": 5,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/standing_front_v2/char_05_stand_natural_v2.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-81a9c61e-178f-46df-ba64-d4997f18d4b5.png",
+      "file": "char_05_stand_back_v1.png"
+    },
+    {
+      "student": 6,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/standing_front_v2/char_06_stand_natural_v2.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-5f58245b-810e-475b-9ea9-34862052b194.png",
+      "file": "char_06_stand_back_v1.png"
+    },
+    {
+      "student": 7,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/identity_v3/char_07_stand_identity_v3.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-abc3b74d-a9e7-44a1-b6cc-61b0d77559c4.png",
+      "file": "char_07_stand_back_v1.png"
+    },
+    {
+      "student": 8,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/identity_v3/char_08_stand_identity_v3.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-0e533772-d35c-45dd-a980-4ea5fb6e85f3.png",
+      "file": "char_08_stand_back_v1.png"
+    },
+    {
+      "student": 9,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/identity_v3/char_09_stand_identity_v3.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-38285dab-d735-4fe2-9668-f7ae104c7332.png",
+      "file": "char_09_stand_back_v1.png"
+    },
+    {
+      "student": 10,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/identity_v3/char_10_stand_identity_v3.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-0df209a6-cebd-425f-a275-2b67e67df557.png",
+      "file": "char_10_stand_back_v1.png"
+    },
+    {
+      "student": 11,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/identity_v3/char_11_stand_identity_v3.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-9e03d9e2-4d86-4035-bde9-3f4c6225c66a.png",
+      "file": "char_11_stand_back_v1.png"
+    },
+    {
+      "student": 12,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/identity_v3/char_12_stand_identity_v3.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-f17cb558-cc58-442a-806b-2a02156a588b.png",
+      "file": "char_12_stand_back_v1.png"
+    },
+    {
+      "student": 13,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/standing_front_v2/char_13_stand_natural_v2.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-67249cce-9645-412b-bef9-0b0232232e7f.png",
+      "file": "char_13_stand_back_v1.png"
+    },
+    {
+      "student": 14,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/identity_v3/char_14_stand_identity_v3.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-7e1859c1-abb1-4124-a7ea-6899f999b879.png",
+      "file": "char_14_stand_back_v1.png"
+    },
+    {
+      "student": 15,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/identity_v3/char_15_stand_identity_v3.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-09591a5f-62c3-4535-844f-3d4e4f01d649.png",
+      "file": "char_15_stand_back_v1.png"
+    },
+    {
+      "student": 16,
+      "reference": "D:/game/下课十分钟-mobile/assets/textures/characters/identity_v3/char_16_stand_identity_v3.png",
+      "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cbd-0eb8-74c3-a0c1-653d7976a2ec\\exec-cc7554ba-cc65-473c-8a77-d6281604f9c2.png",
+      "file": "char_16_stand_back_v1.png"
+    }
+  ],
+  "prompt_applies_to_students": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "later_prompt": "Edit target: supplied student front-view game sprite. Create ONE FULL-BODY STRICT REAR VIEW of exactly this same student turned 180 degrees away, head straight away, NO face or looking back. Preserve exact hairstyle, hair length/color, body build, blue-and-white Chinese school tracksuit jacket, grey trousers, white-blue sneakers, anime linework and painterly cel shading. Arms resting naturally at sides, full-body standing, matching proportions and scale. Plain uniform back, no text/logos. Portrait 2:3 canvas, centered, top hair near top and both soles near bottom, both entire shoes visible. Single isolated production sprite on TRUE TRANSPARENT BACKGROUND, no black, no glow/halo, no ground shadow, no scene, no labels, no contact sheet.",
+  "later_prompt_applies_to_students": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ]
+}

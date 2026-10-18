@@ -85,6 +85,8 @@ var _player_index := -1
 ## 课间走动速度（米 / 秒）—— data/rules/movement.csv 的 meters_per_tick
 var _speed := 1.6
 var _minimum_gap := 0.0
+var _group_distance := 0.0
+var _group_spacing = preload("res://scripts/game/group_activity_spacing.gd").new()
 ## 取不到导航路线而放弃走动的次数：持续增长说明烘焙产物或几何出了问题（诊断用）
 var _missed_walks := 0
 var _snapshot: Dictionary = {}
@@ -118,6 +120,8 @@ func _ready() -> void:
 	for row in ConfigLoader.new().get_table(MOVEMENT_TABLE).get("rows", []):
 		if str(row.get("param", "")) == "student_min_gap":
 			_minimum_gap = float(str(row.get("value", "0")))
+		if str(row.get("param", "")) == "group_standing_distance":
+			_group_distance = float(str(row.get("value", "0")))
 	decide_interval = _load_decide_interval()
 	_collect_points()
 	_collect_actors()
@@ -162,6 +166,8 @@ func _process(delta: float) -> void:
 		_sync_positions_to_core()
 		return
 	_sync_positions_to_core()
+	if _group_distance > 0.0:
+		_group_spacing.update(_core, _actors, _walkers, self, _group_distance, _minimum_gap)
 	if _decides_remaining <= 0 or decide_interval <= 0.0:
 		return
 	_decide_timer += delta

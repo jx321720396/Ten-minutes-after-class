@@ -2,8 +2,13 @@ extends Node3D
 ## Pure presentation: one continuous pose texture supplies body and desk-side arms.
 
 var _settings: Dictionary
+var _base_settings: Dictionary
 var _binding: Dictionary
 var _pose := "stand"
+var _requested_pose := "stand"
+var _group_back := false
+var _seat: Node3D
+
 ## 已应用的贴图（pose → Texture2D）；读盘由 AssetPreloader 在后台完成。
 var _textures: Dictionary = {}
 ## pose → 贴图路径（configure 时登记，不读盘）。
@@ -14,15 +19,25 @@ var _seat_transform := Transform3D.IDENTITY
 var _hit_image: Image
 
 
+func bind_seat(seat: Node3D) -> void:
+	if _seat == seat:
+		return
+	_seat = seat
+	_pose = "stand"
+
+
 func configure(settings: Dictionary, binding: Dictionary) -> void:
 	_settings = settings.duplicate(true)
 	_settings.merge(binding.get("layout", {}), true)
+	_base_settings = _settings.duplicate(true)
 	_binding = binding
 	_pose = "stand"
+	_requested_pose = "stand"
+	_group_back = false
 	_hit_image = null
 	_textures.clear()
 	_texture_paths.clear()
-	for key in ["study", "idle"]:
+	for key in ["study", "idle", "idle_back"]:
 		if binding.has(key):
 			_texture_paths[key] = str(binding[key])
 	AssetPreloader.request_textures(_texture_paths.values())
@@ -43,6 +58,9 @@ func pose_for(
 ## 应用姿势；返回 false = 贴图仍在后台加载，调用方应保持原表现（下一帧再试）。
 ## non_blocking=true（游戏内）不等待线程加载；默认阻塞，保持单测与旧的同步语义。
 func show_pose(value: String, non_blocking: bool = false) -> bool:
+	_requested_pose = value
+	if value == "idle" and _group_back and _binding.has("idle_back"):
+		value = "idle_back"
 	visible = value != "stand"
 	if not visible or value == _pose:
 		return true
@@ -51,8 +69,24 @@ func show_pose(value: String, non_blocking: bool = false) -> bool:
 		null if path.is_empty() else AssetPreloader.texture(path, not non_blocking)
 	)
 	if texture == null:
+		if value == "idle_back" and _pose == "idle":
+			return true
 		return false
 	_pose = value
+	_settings = _base_settings.duplicate(true)
+	if value == "idle_back":
+		_settings.merge(_binding.get("idle_back_layout", {}), true)
+	if value in ["idle", "idle_back"] and is_instance_valid(_seat):
+		var anchor := _seat.get_node_or_null("SitPoint") as Node3D
+		if anchor != null:
+			_settings["body_depth"] = _seat.to_local(anchor.global_position).z
+		if value == "idle_back":
+			var cushion := _seat.get_node_or_null("Chair/Seat") as MeshInstance3D
+			if cushion != null:
+				var top := _seat.to_local(cushion.to_global(cushion.get_aabb().end)).y
+				var split := float(_settings["split_y"])
+				var lower := (texture.get_height() - split) * float(_settings["pixel_size"])
+				_settings["lower_height_gain"] = top - float(_settings["floor_y"]) - lower
 	_textures[value] = texture
 	_hit_image = null
 	_build_body(texture)
@@ -60,6 +94,11 @@ func show_pose(value: String, non_blocking: bool = false) -> bool:
 	_update_foreground()
 	get_node("Foreground").visible = value == "study"
 	return true
+
+
+func set_group_back(value: bool, non_blocking: bool = true) -> bool:
+	_group_back = value
+	return show_pose(_requested_pose, non_blocking)
 
 
 ## 坐姿贴图是否已就绪（stand / 未绑定视为就绪）。

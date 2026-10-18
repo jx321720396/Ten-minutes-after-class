@@ -3,6 +3,62 @@ extends GutTest
 const COMPONENT := "res://scenes/components/layered_student_pose.tscn"
 
 
+func test_seated_back_uses_actual_chair_anchor_and_cushion_height() -> void:
+	var settings: Dictionary = JSON.parse_string(
+		FileAccess.get_file_as_string("res://data/ui/student_poses.json")
+	)
+	var seat = load("res://scenes/components/desk_chair_compact.tscn").instantiate()
+	add_child_autofree(seat)
+	var pose = load(COMPONENT).instantiate()
+	add_child_autofree(pose)
+	pose.configure(settings, settings.bindings.values()[0])
+	assert_true(pose.has_method("bind_seat"), "坐姿必须绑定真实椅子")
+	if not pose.has_method("bind_seat"):
+		return
+	pose.bind_seat(seat)
+	pose.show_pose("idle")
+	pose.set_group_back(true, false)
+	var upper: Sprite3D = pose.get_node("Upper")
+	var lower: Sprite3D = pose.get_node("Lower")
+	var anchor: Node3D = seat.get_node("SitPoint")
+	var cushion: MeshInstance3D = seat.get_node("Chair/Seat")
+	var expected_top: float = cushion.position.y + cushion.get_aabb().end.y
+	assert_almost_eq(upper.position.z, anchor.position.z, 0.0001)
+	assert_almost_eq(lower.position.z, anchor.position.z, 0.0001)
+	var split: float = pose._settings["split_y"]
+	var hip: float = upper.position.y - split * upper.pixel_size * upper.scale.y * 0.5
+	assert_almost_eq(hip, expected_top, 0.0001, "坐骨落在实际坐垫上表面")
+
+
+func test_idle_can_turn_back_and_restore_without_standing_up() -> void:
+	var settings: Dictionary = JSON.parse_string(
+		FileAccess.get_file_as_string("res://data/ui/student_poses.json")
+	)
+	var binding: Dictionary = settings.bindings.values()[0].duplicate(true)
+	# 先复用已存在纹理验证切换协议，不依赖新素材导入进度。
+	binding["idle_back"] = binding["study"]
+	var pose = load(COMPONENT).instantiate()
+	add_child_autofree(pose)
+	pose.configure(settings, binding)
+	pose.show_pose("idle")
+	assert_true(pose.has_method("set_group_back"), "坐姿组件必须支持共同活动转背")
+	if not pose.has_method("set_group_back"):
+		return
+	pose.set_group_back(true, false)
+	assert_eq(pose._pose, "idle_back")
+	assert_true(pose.visible)
+	assert_false(pose.get_node("Foreground").visible)
+	pose.show_pose("idle")
+	assert_eq(pose._pose, "idle_back", "每帧刷新坐姿不能覆盖转身")
+	pose.set_group_back(false, false)
+	assert_eq(pose._pose, "idle")
+	pose.set_group_back(true, false)
+	pose.show_pose("study")
+	assert_eq(pose._pose, "study", "学习姿势不被聊天背影覆盖")
+	pose.show_pose("stand")
+	assert_false(pose.visible)
+
+
 func test_all_students_have_idle_seated_pose_and_safe_transitions() -> void:
 	var settings = JSON.parse_string(
 		FileAccess.get_file_as_string("res://data/ui/student_poses.json")
@@ -42,6 +98,13 @@ func test_all_students_have_idle_seated_pose_and_safe_transitions() -> void:
 		assert_true(pose.get_node("Foreground").visible)
 		pose.show_pose("idle")
 		assert_false(pose.get_node("Foreground").visible)
+		assert_true(binding.has("idle_back"), "全班每人必须绑定独立坐姿背影")
+		pose.set_group_back(true, false)
+		assert_eq(pose._pose, "idle_back")
+		assert_false(pose.get_node("Foreground").visible)
+		assert_eq(pose.get_node("Upper").texture.atlas.resource_path, str(binding["idle_back"]))
+		pose.set_group_back(false, false)
+		assert_eq(pose._pose, "idle")
 
 
 func test_full_roster_has_matching_standing_and_downward_study_assets() -> void:
