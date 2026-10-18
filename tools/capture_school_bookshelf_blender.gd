@@ -3,7 +3,7 @@ extends SceneTree
 
 const CONFIG := "res://data/ui/school_bookshelf_blender.json"
 const MODEL := "res://assets/models/bookshelf/prop_bookshelf_blender_v2.glb"
-const OUTPUT := "res://docs/art/concepts/school_bookshelf_blender/godot_preview.png"
+const OUTPUT := "res://docs/art/concepts/school_bookshelf_blender/godot_preview.webp"
 
 var _meshes: int = 0
 var _bounds := AABB()

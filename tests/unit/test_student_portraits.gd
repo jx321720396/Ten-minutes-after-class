@@ -51,7 +51,7 @@ func after_each() -> void:
 func test_missing_portrait_and_invalid_regions_return_no_texture() -> void:
 	var portraits = load("res://scripts/ui/student_portraits.gd")
 	assert_null(portraits.texture_for("missing", {}))
-	var path := "res://assets/textures/characters/fullbody_v1/char_01_body_base_v1.png"
+	var path := "res://assets/textures/characters/fullbody_v1/char_01_body_base_v1.webp"
 	for region in [[0, 0, 0, 700], [-1, 0, 400, 700], [0, 0, 1025, 700], [0, 0]]:
 		assert_null(
 			portraits.texture_for("01", {"portraits": {"01": {"path": path, "region": region}}})

@@ -189,7 +189,7 @@ func test_foreground_uses_same_texture_and_restores_standing_sprite() -> void:
 		FileAccess.get_file_as_string("res://data/ui/student_poses.json")
 	)
 	var binding: Dictionary = settings["bindings"].values()[0].duplicate(true)
-	binding["idle"] = "res://assets/textures/characters/seated_v1/char_01_idle.png"
+	binding["idle"] = "res://assets/textures/characters/seated_v1/char_01_idle.webp"
 	pose.configure(settings, binding)
 	pose.show_pose("study")
 	assert_true(pose.visible)

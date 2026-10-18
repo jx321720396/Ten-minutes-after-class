@@ -25,7 +25,7 @@ func capture() -> void:
 	scene.get_node("WindowKey").light_energy = 0.45
 	scene.get_node("SoftFill").light_energy = 0.15
 	var image = Image.load_from_file(
-		"res://docs/art/concepts/seated_front_20261015/char_01_study_connected.png"
+		"res://docs/art/concepts/seated_front_20261015/char_01_study_connected.webp"
 	)
 	var settings = JSON.parse_string(
 		FileAccess.get_file_as_string("res://data/ui/seated_front_preview.json")
@@ -117,7 +117,7 @@ func capture() -> void:
 		await process_frame
 	await RenderingServer.frame_post_draw
 	var error = root.get_texture().get_image().save_png(
-		"res://docs/art/concepts/seated_front_20261015/desk_preview_study_v5.png"
+		"res://docs/art/concepts/seated_front_20261015/desk_preview_study_v5.webp"
 	)
 	print("Layered screenshot result: ", error)
 	quit(error)
