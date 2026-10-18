@@ -5,6 +5,17 @@
 - 主策划新增 §5.1.1：学习加压／耗动力／加收益，普通娱乐减压／回动力／扣收益；学习、游戏整课间锁定，自由状态空闲选择点 50% 学习一个单位、50% 娱乐。取消旧游戏 ≥30 退出及默认压力动力联动，明确优先于旧实装说明。
 - 新增程序交接文档，列明未定数值、事件联动迁移、请教特例、去重及多策略验收；本次不改代码或配置，不宣称平衡通过。检验一要求关系与干预能改变局部选择和后果，不能由固定剧情替代。
 
+## 2026-10-18 移除末号学生节点残留的「玩家」特判，对齐 Python
+
+- 老师版 16 名学生、无玩家节点，但 GDScript 找伴路径仍残留学生版「玩家 = 末号节点 `_n-1`」三处特判，与 Python 参考实现不一致（同种子对拍漂移）：
+  - `sim_core.gd::_propose_activity` 原对末号节点绕过投票直接成事 → 删除，末号学生与其他学生一样走 `_join_activity_of` + 投票；
+  - `_invite_friends_pass` 原跳过含末号节点的组 → 删除，末号学生所在组照常带朋友；
+  - `_find_friend_outside` 原 `range(_n-1)` 永不邀请末号学生 → 改 `range(_n)`，与 Python `range(self.N)` 对齐；
+  - `_build_character_tags` 原追加一个空行给「玩家」→ 删除，标签行数与 Python `character_tags` 一致（每名学生一行）。
+- 同步更新文件头索引约定注释（「n = 入局 NPC 数 + 1（末位为玩家）」→「n = 入局学生数，末位也是普通学生」）。
+- 验证：GUT 全量 370/374（2 个仍是既有 3D 美术位存量红）；`check_config` 184/0、`test_core` 132/0、`verify_formula` 9/0、`check_docs` 通过；`gdformat` 干净（`gdlint` 的 `max-public-methods` 66>65 为既有问题）。
+- 注：对拍基建 `tools/headless_export_ticks.gd` / `export_ticks.py` 仍是学生版接口（`from_npc`/`trust`/`opacity`/传导），未迁移，本次未跑同种子逐 tick diff。
+
 ## 2026-10-17 三轴循环算账（只文档，未改代码）
 
 - 新增 `docs/production/三轴循环算账-2026-10-17.md`：把「娱乐＝减压＋回动力＋降收益；学习＝加压＋耗动力＋涨收益」这套设想逐轴对照当前参数算了一遍。
@@ -47,6 +58,30 @@
 - 局限：老师代理是实验策略（只挑动力最低者）；换座固定为「最低动力者换到最高动力学习者旁边」；请教链整轮为 0（共同学习组 0.0），需单独查请教入口；考试日能否操作属规格空白。
 - 上一版按 7 天＋三档（无干预／正常／集中）统计的旧数字作废：旧版「崩溃」误用了 `_stats["bursts"]`（压力爆发概率事件），不是崩溃；本版改用崩溃人·tick，并在考试日停止操作。
 - 检验一（换成脚本还成立吗）：三策略只改老师操作与座位安排，不预设剧情；学生反应仍由状态、关系与配置概率产生 —— 换成脚本照样成立。
+
+## 2026-10-17 验证同刻中断／上课边界／老师叫走／重复加入／风险消息／确定性 + 座位涓流 + 走动找伴（docx 第 4 项 / §座位涓流 / §走动与共同活动加入）
+
+- 新增 `tests/unit/test_teacher_rules_boundary.gd`（23 例），逐条验证交接第 4 项六个维度 + 多人请教 + 座位涓流 + 走动找伴：学习恰满 20 秒同时响铃不丢不重、鼓励目标跨上课保留且上课不消耗课间次数、三人聊天叫走一人其余成员继续、重复鼓励无效不扣 20 秒、低好感／物品／正式风险／优先去重四类打听消息、并列自主选人带种子可复现。
+- 多人请教补验（交接 §多人请教 验收 ①–⑧）：`test_study_follower_late_join_no_backpay_free_vitality` 对拍算例（原学习者 40 秒 2 单位、请教者第 10 秒加入 30 秒 1 单位不补奖、请教者免动力、原学习者扣动力）；`test_study_follower_exit_rejoin_does_not_recount_old_duration` 验证「退出重入不重算旧时长」—— 请教者退出时未完成余额经 `_fold_pending_unit` 折算清空，重入后从零起算，10+10 秒各自不足 20 秒不多发收益；`test_study_join_half_boundary_and_no_relationship_reject`（第 20 秒恰好一半允许、第 21 秒超半拒绝且不算关系拒绝）；`test_study_join_vote_tie_rejects`（好感−敌对≥门槛投同意、严格过半、平票拒绝）；`test_study_group_no_hard_member_cap`（5 人学习组无旧 3/4 人硬上限）；`test_study_follower_other_events_change_vitality`（免动力仅限请教本身，其他事件照常改动力）。
+- 座位涓流补验（交接 §座位涓流 第 75–90 条）：`test_drip_excludes_diagonal_neighbor`（对角也是 8 邻接、但涓流只认前后左右，对角邻座学习不传播压力）；`test_drip_neighborhood_is_fixed_seat_not_walk_position`（固定座位决定邻域，临时走到同学身边不重建邻域、不成为邻座）；`test_drip_off_seat_excludes_both_ways_then_returns`（结算瞬间离座双向排除、回座恢复资格）。换座期间无来源／接收已由 `test_seat_change_parks_neighbor_drip` 覆盖。
+- 顺带修复三个存量红的 D01 涓流测试（`test_vitality_linking`／`test_passives`／`test_sim_core_d8`）：原用例直接注入 `_neighbor_idx` 却不把两人放到正交邻座，在涓流改为「只看固定座位前后左右、不含对角」后失效；补齐正交座位摆放后全绿。内核 `_settle_neighbor_drip` 行为本就符合交接口径，未改内核。
+- 走动找伴补验（交接 §走动与共同活动加入 第 45–57 条）：`test_find_partner_prefers_highest_affinity_skips_play_locked`（自主找伴读发起者→候选者有向好感、选最高且可参与者，游戏锁定被跳过）；`test_propose_play_locked_target_is_condition_fail`（游戏锁定不被拉出，条件不满足不算关系拒绝）；`test_propose_study_locked_routes_to_study_join`（学习锁定只可被请教加入、不被拉去别的活动）；`test_vote_accept_joiner_does_not_vote`（加入者不投票，只有现有成员一票算数）；`test_find_friend_outside_skips_group_and_locked`（带朋友不邀请组内／别组／锁定者，选组外最高好感）。「关系拒绝后本决策点结束、不依次试第二第三对象」由 `_decide_and_act` 结构保证（每决策点只 `_propose_activity` 一次，无重试循环），与上述单测共同闭合。
+- 修复「老师叫走／调座」退出共同活动的口径：`sim_core.gd::interrupt_for_seat_change` 原用 `_sessions.end(sid)` 把整场聊天会话一锅端（三人群聊叫走一人，其余两人也被踢出），改为只移出本人 —— 聊天走 `_leave_conversation`、打闹组走 `_dissolve_from_group`、学习／零食组沿用 `_leave_solo_activity`，剩不足 2 人才整场解散（交接第 58 条）。
+- 检验一（换成脚本还成立吗）：被叫走者退出、其余成员继续由「实时会话成员」决定，不按角色名／编号分支、不消费内核随机序列（`_leave_conversation`／`_dissolve_from_group` 均零 RNG）；找伴读「发起者→候选者」有向好感与状态，不按角色名／固定 ID 分支，同种子对拍不受影响。
+- 验证：GUT `test_teacher_rules_boundary` 23/23 通过；全量 unit 370 通过 / 2 失败（2 个仍是既有 3D 美术位存量红，与本次无关）；本次改动的测试均过 `gdformat`／`gdlint`。
+
+## 2026-10-17 打听改为一条优先消息 + 有向单轴关系信息（D10）
+
+- 重做打听（取代下方旧「第一次三条 / 再次五条」格式）：办公室谈话 20 秒完成后，给**一条优先消息 + 最多 3 条有向单轴关系信息**（百事通提高到 6 条）；不改压力、动力、学业收益或真实关系矩阵。
+- 优先消息按「正式霸凌 → 正式孤立 → 敌对隐患 → 低好感隐患 → 手机 → MP3 → 零食」取最高可用，按“类型:目标”去重、不反复给未变化消息。敌对隐患 ≥2 人敌对 >50；低好感隐患 ≥13 人好感 <20（第 8 天起开放）；物品消息要求受访者对目标敌对 >40 且“知道”其带对应物品。
+- 关系信息方向固定受访者 → 对象、每轴独立，披露为档位（较低 / 一般 / 较高 / 很高，阈值 25/50/75 与档案一致），优先未打听过的方向／轴；选取走独立 `_ask_rng = MtRandom.new(core.seed())`，不污染内核模拟随机序列。无新消息时写“暂无新的相关消息”。
+- 全班每课间最多成功一次打听；本课间已打听过则不再扣 20 秒。
+- 档案笔记接入：`NpcProfileData.record_ask` 写入 `GameState.profile_notebook`（`office_hub.gd` 随 `ask_id` 变更调用），覆盖对应方向／轴当前标注、保留历史、不改矩阵；`npc_profile.gd` 将“ask”来源按“已获知”口径显示档位与“向 {person} 打听获知”来源。
+- 配置 `data/rules/teacher_commands.csv` 新增 `ask_relation_max` / `ask_hostility_hint_*` / `ask_low_affinity_*` / `ask_item_hostility_threshold` / `ask_disclose_*` 共 9 键；`passive_params.csv` 的百事通注释改为“提高关系信息条数上限”。
+- 待定（未擅自裁决，集中在 §6.4 / §15.3）：物品消息知情范围（暂以“目标正在做对应娱乐”为代理）、披露精度（档位 vs 数值）、低好感隐患开放日次（暂第 8 天）。
+- 单测：`test_teacher_rules.gd` 用 D10 口径重写打听用例（每课间一次、有向单轴记录、百事通 6 条、档位披露、敌对隐患优先消息、同种子确定性），替换旧的「第一次三条 / 再次五条」；`test_teacher_command_ui.gd` 的打听弹窗文案改用新格式。风险消息与确定性归入 docx 第 4 项「验证同刻中断／上课边界／老师叫走／重复加入／风险消息／确定性」。
+- 检验一（换成脚本还成立吗）：打听只读公开被动、当前状态、关系与环境，按“类型:目标”与“来源:对象:轴”去重，不写矩阵、不按角色名／编号分支；关系选取走独立随机流，同种子可复现、不影响模拟序列。
+- 验证：`check_config` 184/0、`test_core` 132/0、`verify_formula` 9/0、`check_docs` 通过、`split_teacher_gdd` 已重新生成分册；本次改动的 GDScript 均过 `gdformat`/`gdlint`。打听不消费内核 RNG，不影响同种子对拍。
 
 ## 2026-10-17 跨天修订实装：关系不再衰减、动力不再扣减
 

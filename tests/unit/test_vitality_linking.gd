@@ -16,6 +16,20 @@ func _set_axes(core: SimCore, i: int, stress: float, vitality: float) -> void:
 	core._vitality[i] = vitality
 
 
+## 把 a、b 放到一对正交邻座（前后左右，不含对角），让 _seat_relation_between 返回 "orthogonal"。
+func _seat_orthogonal(core: SimCore, a: int, b: int) -> void:
+	for sa in core._seat_pos:
+		var pa: Array = core._seat_pos[sa]
+		for sb in core._seat_pos:
+			if sa == sb:
+				continue
+			var pb: Array = core._seat_pos[sb]
+			if absi(int(pa[0]) - int(pb[0])) + absi(int(pa[1]) - int(pb[1])) == 1:
+				core._seat_of[a] = str(sa)
+				core._seat_of[b] = str(sb)
+				return
+
+
 func test_add_stress_links_vitality_one_to_one() -> void:
 	var core := _core()
 	_set_axes(core, 0, 40.0, 50.0)
@@ -64,6 +78,7 @@ func test_neighbor_drip_links_vitality() -> void:
 	var core := _core()
 	core._begin_phase_state()
 	_set_axes(core, 0, 40.0, 40.0)
+	_seat_orthogonal(core, 0, 1)  # 涓流只看固定座位前后左右：0、1 必须是正交邻座
 	# 直接把 1 号设为 0 号的正交邻座并让他处于学习状态（不依赖随机座位）。
 	core._neighbor_idx[0] = [1]
 	core._current_act[1] = "study"

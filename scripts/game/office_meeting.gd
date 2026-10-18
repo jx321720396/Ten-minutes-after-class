@@ -105,7 +105,7 @@ func refresh(core: Variant, snapshot: Dictionary) -> void:
 			)
 		)
 	for key in _buttons:
-		_buttons[key].disabled = not arrived or command != "" or key == "encourage"
+		_buttons[key].disabled = not arrived or command != ""
 
 
 func status_text(snapshot: Dictionary) -> String:

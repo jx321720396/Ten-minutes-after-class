@@ -216,78 +216,41 @@ func test_praise_adds_only_the_targets_vitality() -> void:
 	assert_almost_eq(core.stress(5), 40.0, 0.0001, "不影响其他学生的压力")
 
 
-func test_ask_gives_three_lines_then_five_for_the_same_student() -> void:
+func test_ask_once_per_break() -> void:
 	var core := _core()
 	var tc := core.teacher_commands()
-	var speaker := _student_without_extra_messages(core)
-	var n := core.node_count()
-	var liked := (speaker + 1) % n
-	var hated := (speaker + 2) % n
-	for j in range(n):
-		if j == speaker:
-			continue
-		core._a[speaker * n + j] = 10.0
-		core._h[speaker * n + j] = 10.0
-	core._a[speaker * n + liked] = 90.0
-	core._h[speaker * n + hated] = 80.0
-	var stress_before := core.stress(speaker)
-	var vitality_before := core.vitality(speaker)
-	assert_true(tc.summon(core, speaker), "可以召唤被打听的学生")
+	assert_true(tc.summon(core, 0), "可以召唤被打听的学生")
 	assert_true(tc.office_chat(core, "ask"), "打听走办公室聊天")
-	for _t in range(19):
-		tc.tick(core)
-	assert_eq(int(tc.snapshot()["ask_id"]), 0, "谈话未完成前不给出消息")
-	tc.tick(core)
-	var lines: Array = tc.snapshot()["ask_lines"]
-	assert_eq(lines.size(), 3, "第一次打听给出三条")
-	assert_eq(lines[0], "我最喜欢%s（好感值为：90）" % core.alias(liked), "第一句是好感最高的人")
-	assert_eq(lines[1], "我最讨厌%s（敌对值为：80）" % core.alias(hated), "第二句是敌对最高的人")
-	var third := _ask_subject(str(lines[2]))
-	assert_eq(str(lines[2]), "我有一点喜欢%s也有一点讨厌%s（好感值为：10，敌对值为：10）" % [third, third], "10 分用「有一点」")
-	assert_ne(third, core.alias(speaker), "随机对象不是本人")
-	assert_ne(third, core.alias(liked), "随机对象不与最喜欢的人重复")
-	assert_ne(third, core.alias(hated), "随机对象不与最讨厌的人重复")
-	assert_almost_eq(core.stress(speaker), stress_before, 0.0001, "打听不加压力")
-	assert_almost_eq(core.vitality(speaker), vitality_before, 0.0001, "打听不加动力")
-	assert_true(tc.office_chat(core, "ask"), "可以再次打听同一人")
+	assert_eq(tc.remaining_seconds(), 20, "打听耗时 20 秒")
 	for _t in range(20):
 		tc.tick(core)
-	var again: Array = tc.snapshot()["ask_lines"]
-	assert_eq(again.size(), 5, "再次打听同一人给出五条")
-	assert_eq(again[0], lines[0], "前两句仍是好感最高与敌对最高")
-	assert_eq(again[1], lines[1], "前两句仍是好感最高与敌对最高")
-	var seen := {}
-	for line in again.slice(2):
-		assert_true(str(line).begins_with("我有一点喜欢"), "后三条与第三句同一逻辑")
-		var subject := _ask_subject(str(line))
-		assert_ne(subject, core.alias(liked), "后三条不重复最喜欢的人")
-		assert_ne(subject, core.alias(hated), "后三条不重复最讨厌的人")
-		assert_false(seen.has(subject), "随机同学不重复")
-		seen[subject] = true
+	assert_gt(int(tc.snapshot()["ask_id"]), 0, "打听完成后给出消息")
+	assert_false(tc.office_chat(core, "ask"), "本课间已打听过，不再扣时")
+	assert_eq(tc.current_command(), "", "没有新命令")
+	tc.begin_break()
+	assert_true(tc.office_chat(core, "ask"), "新课间可再次打听")
 
 
-func test_ask_degree_words_follow_the_shown_number() -> void:
+func test_ask_relation_records_directed_single_axis() -> void:
 	var core := _core()
 	var tc := core.teacher_commands()
 	var speaker := _student_without_extra_messages(core)
-	var n := core.node_count()
-	for j in range(n):
-		if j == speaker:
-			continue
-		core._a[speaker * n + j] = 4.0
-		core._h[speaker * n + j] = 35.0
-	core._a[speaker * n + ((speaker + 1) % n)] = 90.0
-	core._h[speaker * n + ((speaker + 2) % n)] = 80.0
-	assert_true(tc.summon(core, speaker))
-	assert_true(tc.office_chat(core, "ask"))
+	assert_true(tc.summon(core, speaker), "召唤受访者")
+	assert_true(tc.office_chat(core, "ask"), "发起打听")
 	for _t in range(20):
 		tc.tick(core)
-	var line := str(tc.snapshot()["ask_lines"][2])
-	var subject := _ask_subject(line)
-	assert_eq(line, "我不怎么喜欢%s也很讨厌%s（好感值为：4，敌对值为：35）" % [subject, subject], "小于 10 是不怎么，30 及以上是很")
+	var records: Array = tc.snapshot()["ask_records"]
+	assert_eq(records.size(), 3, "普通学生恰 3 条有向单轴关系信息")
+	for rec in records:
+		assert_eq(int(rec["source"]), speaker, "方向固定受访者→对象")
+		assert_ne(int(rec["subject"]), speaker, "对象不是本人")
+		assert_true(str(rec["axis"]) in ["affinity", "hostility"], "每条只含一轴")
+		assert_true(rec.has("value") and rec.has("day") and rec.has("phase_id"), "带值、时间与来源")
+		var line := tc._relation_line(core, rec)
+		assert_true(line.contains("好感") or line.contains("敌对"), "关系文案含轴名")
 
 
-func test_well_informed_ask_reports_six_real_lines() -> void:
+func test_ask_well_informed_reports_up_to_six() -> void:
 	var core := _core()
 	var tc := core.teacher_commands()
 	var speaker := -1
@@ -299,15 +262,56 @@ func test_well_informed_ask_reports_six_real_lines() -> void:
 	assert_true(tc.office_chat(core, "ask"))
 	for _t in range(20):
 		tc.tick(core)
-	var lines: Array = tc.snapshot()["ask_lines"]
-	assert_eq(lines.size(), 6, "百事通一次打听 6 条")
-	assert_true(str(lines[0]).begins_with("我最喜欢"))
-	assert_true(str(lines[1]).begins_with("我最讨厌"))
-	var seen := {}
-	for line in lines.slice(2):
-		var subject := _ask_subject(str(line))
-		assert_false(seen.has(subject), "多出的仍是不重复的真实同学")
-		seen[subject] = true
+	var records: Array = tc.snapshot()["ask_records"]
+	assert_eq(records.size(), 6, "百事通一次打听 6 条关系信息")
+	for rec in records:
+		assert_eq(int(rec["source"]), speaker, "方向受访者→对象")
+
+
+func test_ask_discloses_band_not_raw_value() -> void:
+	var core := _core()
+	var tc := core.teacher_commands()
+	assert_eq(tc._disclose_band(80.0), "很高")
+	assert_eq(tc._disclose_band(50.0), "较高")
+	assert_eq(tc._disclose_band(25.0), "一般")
+	assert_eq(tc._disclose_band(24.0), "较低")
+	var rec := {"source": 0, "subject": 1, "axis": "affinity", "value": 80.0}
+	assert_eq(
+		tc._relation_line(core, rec), "我（%s）对%s的好感：很高" % [core.alias(0), core.alias(1)], "关系文案用档位"
+	)
+
+
+func test_ask_priority_hostility_hint() -> void:
+	var core := _core()
+	var tc := core.teacher_commands()
+	var n := core.node_count()
+	for j in range(n):
+		for k in range(n):
+			if j != k:
+				core._h[j * n + k] = 0.0
+	for j in range(n):
+		if j != 5:
+			core._h[j * n + 5] = 60.0
+	assert_eq(tc._hostility_hint_targets(core), [5], "仅目标 5 构成敌对隐患")
+	var msg := tc._pick_priority_message(core, 0)
+	assert_true(msg.contains(core.alias(5)), "优先消息指出敌对隐患目标")
+	assert_true(msg.contains("敌意"), "敌对隐患文案")
+
+
+func test_ask_deterministic_same_seed() -> void:
+	var core_a := _core()
+	var core_b := _core()
+	var tc_a := core_a.teacher_commands()
+	var tc_b := core_b.teacher_commands()
+	assert_true(tc_a.summon(core_a, 0))
+	assert_true(tc_b.summon(core_b, 0))
+	assert_true(tc_a.office_chat(core_a, "ask"))
+	assert_true(tc_b.office_chat(core_b, "ask"))
+	for _t in range(20):
+		tc_a.tick(core_a)
+		tc_b.tick(core_b)
+	assert_eq(tc_a.snapshot()["ask_lines"], tc_b.snapshot()["ask_lines"], "同种子打听结果一致")
+	assert_eq(tc_a.snapshot()["ask_records"], tc_b.snapshot()["ask_records"], "关系记录一致")
 
 
 func _student_without_extra_messages(core: SimCore) -> int:
@@ -316,15 +320,6 @@ func _student_without_extra_messages(core: SimCore) -> int:
 		if extra == 0:
 			return i
 	return 0
-
-
-func _ask_subject(line: String) -> String:
-	var mark := "喜欢"
-	var rest := line.substr(line.find(mark) + mark.length())
-	var end := rest.find("也")
-	if end < 0:
-		end = rest.find("（")
-	return rest.substr(0, end)
 
 
 func test_teacher_enter_classroom_once_per_break() -> void:

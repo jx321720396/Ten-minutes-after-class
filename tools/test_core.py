@@ -491,7 +491,7 @@ check("带朋友：A 拒 C 时 C 不能加入（邀请者不能替别人保证�
       3 not in friend_sim2.conversations[0]["members"])
 check("带朋友：被拒不占用被邀请者", friend_sim2.busy_until[3] == 0)
 
-# —— 8.7 满员与同刻竞争 ——
+# —— 8.7 无固定人数上限（取消旧 4 人上限；仍受现有成员投票与状态约束）——
 cap_sim = Sim(seed=20261015, npc_count=8)
 for i in range(cap_sim.N):
     for j in range(cap_sim.N):
@@ -502,11 +502,9 @@ for k in range(cap_sim.N):
         cap_sim.sleeping[k] = True
 cap_sim.do_chat(1, 2)
 cap_sim._apply_join_group(3, 1, "chat", cap_sim.conversations[0])   # 3 人
-ok4 = cap_sim._apply_join_group(4, 1, "chat", cap_sim.conversations[0])  # 4 人（= max_members）
-check("满员：人数上限内可加入（4 人）", ok4 and len(cap_sim.conversations[0]["members"]) == 4)
-check("满员：超过上限属条件不满足（不算关系拒绝）",
-      cap_sim._apply_join_group(0, 1, "chat", cap_sim.conversations[0]) is False
-      and cap_sim.join_log[-1]["stage"] == "condition_fail")
+cap_sim._apply_join_group(4, 1, "chat", cap_sim.conversations[0])   # 4 人
+ok5 = cap_sim._apply_join_group(0, 1, "chat", cap_sim.conversations[0])  # 5 人（旧上限为 4）
+check("无固定上限：第 5 人仍可加入（不再满员拒绝）", ok5 and len(cap_sim.conversations[0]["members"]) == 5)
 
 # —— 8.8 新加入者本决策点不能带朋友；每人每决策点最多一次邀请 ——
 cd_sim = Sim(seed=20261015, npc_count=8)
@@ -526,13 +524,285 @@ cd_sim.probs["invite_friend_p"] = 1.0
 cd_sim._invite_friends_pass()
 check("冷却：老成员（2 号）仍可带 0 号入会", 0 in cd_sim.conversations[0]["members"])
 
-# —— 8.9 同种子复现（新路径全量运行） ——
+# —— 8.9 多人请教：请教者免动力、原学习者正常扣动力 ——
+advice_sim = Sim(seed=20261015, npc_count=8)
+for i in range(advice_sim.N):
+    for j in range(advice_sim.N):
+        advice_sim.A[i][j] = 20.0
+        advice_sim.H[i][j] = 0.0
+for k in range(advice_sim.N):
+    if k not in (0, 1):
+        advice_sim.sleeping[k] = True
+advice_sim.do_study(1)                       # 1 = 原学习者（独自开始学习）
+grp = advice_sim._ensure_group("study", 1)
+advice_sim.A[1][0] = 60.0                    # 原学习者欢迎 0 加入
+ok = advice_sim._apply_join_group(0, 1, "study", grp)
+check("多人请教：请教者通过接纳加入学习组", ok and advice_sim.study_of[0] is advice_sim.study_of[1])
+check("多人请教：学习组记录 originator = 原学习者", advice_sim.study_of[1].get("originator", -1) == 1)
+advice_sim.Vitality[0] = 50.0
+advice_sim.Vitality[1] = 50.0
+advice_sim.settle_acc[0] = 0.0
+advice_sim.settle_acc[1] = 0.0
+g0, v0 = advice_sim.GainToday[0], advice_sim.Vitality[0]
+g1, v1 = advice_sim.GainToday[1], advice_sim.Vitality[1]
+for _ in range(20):
+    advice_sim.settle_units()
+check("请教者：每 20 秒 +1 收益、不扣动力",
+      abs(advice_sim.GainToday[0] - (g0 + 1.0)) < 1e-9 and abs(advice_sim.Vitality[0] - v0) < 1e-9)
+check("原学习者：每 20 秒 +1 收益、扣 5 动力",
+      abs(advice_sim.GainToday[1] - (g1 + 1.0)) < 1e-9 and abs(advice_sim.Vitality[1] - (v1 - 5.0)) < 1e-9)
+
+# —— 8.10 过半禁加入：原学习者进度 > 一半拒绝新人、恰好一半允许 ——
+half_sim = Sim(seed=20261015, npc_count=8)
+for i in range(half_sim.N):
+    for j in range(half_sim.N):
+        half_sim.A[i][j] = 20.0
+        half_sim.H[i][j] = 0.0
+for k in range(half_sim.N):
+    if k not in (0, 1):
+        half_sim.sleeping[k] = True
+half_sim.do_study(1)                       # 原学习者 1：学习窗口 0..100（busy_until=100）
+half_sim.A[1][0] = 60.0
+half_sim.global_tick = 50                  # 恰好一半 → 允许
+ok_half = half_sim._apply_join_group(0, 1, "study", None)
+check("过半禁加入：恰好一半允许加入", ok_half and half_sim.study_of[0] is half_sim.study_of[1])
+
+half_sim2 = Sim(seed=20261015, npc_count=8)
+for i in range(half_sim2.N):
+    for j in range(half_sim2.N):
+        half_sim2.A[i][j] = 20.0
+        half_sim2.H[i][j] = 0.0
+for k in range(half_sim2.N):
+    if k not in (0, 1):
+        half_sim2.sleeping[k] = True
+half_sim2.do_study(1)
+half_sim2.A[1][0] = 60.0
+half_sim2.global_tick = 51                  # 超过一半 → 拒绝（条件不满足，不算关系拒绝）
+ok_over = half_sim2._apply_join_group(0, 1, "study", None)
+check("过半禁加入：超过一半拒绝（条件不满足）",
+      ok_over is False and half_sim2.study_of[0] is None
+      and half_sim2.join_log[-1]["stage"] == "condition_fail")
+check("过半禁加入：拒绝不算关系拒绝（不占用发起者）", half_sim2.busy_until[0] == 0)
+
+# —— 8.11 同种子复现（新路径全量运行） ——
 sim_a = Sim(seed=777, npc_count=16)
 sim_b = Sim(seed=777, npc_count=16)
 for _ in range(2):
     sim_a.run_day()
     sim_b.run_day()
 check("通用加入：同种子同结果（可复现）", sim_a.stats == sim_b.stats and sim_a.A == sim_b.A)
+
+# —— 8.12 实际站位与涓流快照（正交 / 离座双向排除 / 回座恢复） ——
+# 手动构造 2×2 座位网格，精确控制「谁是谁的正交/对角邻座」与「谁实际在座」。
+drip_sim = Sim(seed=20261017, npc_count=4)
+# 座位网格 (row, col)：0=s0(0,0) 1=s1(0,1) 2=s2(1,1) 3=s3(1,0)
+drip_sim.seat_pos = {"s0": (0, 0), "s1": (0, 1), "s2": (1, 1), "s3": (1, 0)}
+drip_sim.seat_of = ["s0", "s1", "s2", "s3"]
+# 8 邻域（含对角）；涓流结算会再用正交关系过滤对角。
+drip_sim.neighbor_idx = [[1, 2, 3], [0, 2, 3], [0, 1, 3], [0, 1, 2]]
+# 每人座椅占位矩形 (x, z, w, h)；初始全部在座。
+drip_sim.seat_world = {0: (0.0, 0.0, 1.0, 1.0), 1: (0.0, 10.0, 1.0, 1.0),
+                       2: (10.0, 10.0, 1.0, 1.0), 3: (10.0, 0.0, 1.0, 1.0)}
+drip_sim.pos_x = [0.0, 0.0, 10.0, 10.0]
+drip_sim.pos_z = [0.0, 10.0, 10.0, 0.0]
+drip_sim.Broken = [False] * 4
+drip_sim.sleeping = [False] * 4
+drip_sim.phase_state = ["free", "free", "study", "free"]  # 只有学生 2 在学习
+drip_sim.Stress = [0.0, 0.0, 0.0, 0.0]
+
+# 学生 2 是学生 0 的对角（不计）、学生 1 的正交（计）。
+drip_sim.settle_neighbor_drip()
+check("涓流：对角邻座学习不施加压力（学生 0 无增益）", abs(drip_sim.Stress[0]) < 1e-9, drip_sim.Stress[0])
+check("涓流：正交邻座学习施加 +5 压力（学生 1 有增益）", abs(drip_sim.Stress[1] - 5.0) < 1e-9, drip_sim.Stress[1])
+
+# 学生 2 离座（走到别处）仍「在学习」，但不应再作为来源。
+drip_sim.pos_x[2] = 50.0
+drip_sim.pos_z[2] = 50.0
+drip_sim.Stress = [0.0, 0.0, 0.0, 0.0]
+drip_sim.settle_neighbor_drip()
+check("涓流：离座的学习者不作来源（学生 1 无增益）", abs(drip_sim.Stress[1]) < 1e-9, drip_sim.Stress[1])
+
+# 学生 2 回座；学生 1 离座 → 不作为接收者。
+drip_sim.pos_x[2] = 10.0
+drip_sim.pos_z[2] = 10.0
+drip_sim.pos_x[1] = 99.0
+drip_sim.pos_z[1] = 99.0
+drip_sim.Stress = [0.0, 0.0, 0.0, 0.0]
+drip_sim.settle_neighbor_drip()
+check("涓流：离座的学生不作接收者（学生 1 无增益）", abs(drip_sim.Stress[1]) < 1e-9, drip_sim.Stress[1])
+
+# 学生 1 回座 → 恢复资格。
+drip_sim.pos_x[1] = 0.0
+drip_sim.pos_z[1] = 10.0
+drip_sim.Stress = [0.0, 0.0, 0.0, 0.0]
+drip_sim.settle_neighbor_drip()
+check("涓流：回座恢复资格（学生 1 重新获得 +5）", abs(drip_sim.Stress[1] - 5.0) < 1e-9, drip_sim.Stress[1])
+
+# —— 8.13 状态锁定（D01：游戏锁定不可拉出 / 学习锁定只可请教，2026-10-17） ——
+# 8.13.1 游戏锁定：join_activity_of 视作 "play"，任何邀请都条件不满足、不算关系拒绝。
+lock_sim = Sim(seed=20261017, npc_count=8)
+for i in range(lock_sim.N):
+    for j in range(lock_sim.N):
+        lock_sim.A[i][j] = 20.0
+        lock_sim.H[i][j] = 0.0
+lock_sim.phase_state[1] = "play"
+check("状态锁定：游戏锁定者 join_activity_of 视作 play",
+      lock_sim._join_activity_of(1) == ("play", None))
+ok_play = lock_sim._propose_activity(0, 1, "chat")
+check("状态锁定：游戏锁定者不被拉入聊天（条件不满足，不算关系拒绝）",
+      ok_play is False and lock_sim.join_log[-1]["stage"] == "condition_fail"
+      and lock_sim.join_log[-1]["extra"].get("reason") == "unshared"
+      and lock_sim.conv_of[1] is None and lock_sim.busy_until[0] == 0)
+
+# 8.13.2 学习锁定：join_activity_of 视作 study；被邀请走「请教加入」而非聊天。
+lock_sim2 = Sim(seed=20261017, npc_count=8)
+for i in range(lock_sim2.N):
+    for j in range(lock_sim2.N):
+        lock_sim2.A[i][j] = 20.0
+        lock_sim2.H[i][j] = 0.0
+for k in range(lock_sim2.N):
+    if k not in (0, 1):
+        lock_sim2.sleeping[k] = True
+lock_sim2.phase_state[1] = "study"
+lock_sim2.study_of[1] = None
+lock_sim2.study_start_tick[1] = -1
+lock_sim2.A[1][0] = 60.0   # 原学习者欢迎 0 加入
+check("状态锁定：学习锁定者 join_activity_of 视作 study",
+      lock_sim2._join_activity_of(1) == ("study", None))
+check("状态锁定：学习锁定但尚未轮到决策时 study_start_tick 仍为未开始",
+      lock_sim2.study_start_tick[1] == -1)
+ok_study = lock_sim2._propose_activity(0, 1, "chat")  # 发起者想聊天，但只能请教加入
+check("状态锁定：学习锁定者不被拉入聊天、改走请教（study join）",
+      ok_study is True and lock_sim2.conv_of[0] is None and lock_sim2.conv_of[1] is None
+      and lock_sim2.study_of[0] is lock_sim2.study_of[1])
+check("状态锁定：请教未开始的学习锁定者，先按原学习者开始学习",
+      lock_sim2.study_start_tick[1] >= 0
+      and lock_sim2.study_of[1].get("originator", -1) == 1)
+check("状态锁定：请教后双方都进入学习态（发起者也是学习而非聊天）",
+      lock_sim2.current_act[0] == "study" and lock_sim2.current_act[1] == "study")
+
+# === 9. 鼓励目标生命周期（D09：生成 / 有效期 / 等待 / 拒绝 / 到期，2026-10-17）===
+# 注意：`settle_encourage_breaks` 是 `end_phase` 在课间末（非考试日）调用的扣减单元，这里直接测它。
+
+# —— 9.1 生成与有效期（含当前课间计第一次，四次课间后到期）——
+enc_sim = Sim(seed=20261017, npc_count=8)
+check("鼓励：无目标时 start_encourage 生效", enc_sim.start_encourage(0, -1) is True)
+check("鼓励：生成后 breaks=4（含当前课间）", enc_sim.encourage_breaks[0] == 4)
+check("鼓励：自主模式 mode=auto", enc_sim.encourage_mode[0] == "auto")
+enc_sim.settle_encourage_breaks()
+check("鼓励：第 1 次课间末剩 3（仍 active）",
+      enc_sim.encourage_breaks[0] == 3 and enc_sim.encourage_status[0] == "active")
+enc_sim.settle_encourage_breaks()
+enc_sim.settle_encourage_breaks()
+check("鼓励：第 3 次课间末剩 1", enc_sim.encourage_breaks[0] == 1)
+enc_sim.settle_encourage_breaks()
+check("鼓励：第 4 次课间末到期（expired，次数归零）",
+      enc_sim.encourage_status[0] == "expired" and enc_sim.encourage_breaks[0] == 0)
+
+# —— 9.2 重复无效（不覆盖、不叠加），完成后可再鼓励 ——
+rep_sim = Sim(seed=20261017, npc_count=8)
+rep_sim.start_encourage(0, 1)
+check("鼓励：已有目标时重复无效（不覆盖对象）",
+      rep_sim.start_encourage(0, 2) is False and rep_sim.encourage_target[0] == 1)
+rep_sim.encourage_status[0] = "done"
+check("鼓励：完成后可再鼓励（对象更新、重新激活）",
+      rep_sim.start_encourage(0, 3) is True and rep_sim.encourage_target[0] == 3
+      and rep_sim.encourage_status[0] == "active" and rep_sim.encourage_breaks[0] == 4)
+
+# —— 9.3 指定对象成功 → done；关系拒绝 → rejected（一次有效尝试，不无限重试）——
+ok_sim = Sim(seed=20261017, npc_count=8)
+for i in range(ok_sim.N):
+    for j in range(ok_sim.N):
+        ok_sim.A[i][j] = 20.0
+        ok_sim.H[i][j] = 0.0
+for k in range(ok_sim.N):
+    if k not in (0, 1):
+        ok_sim.sleeping[k] = True
+ok_sim.A[1][0] = 60.0   # 对象 1 欢迎 0
+ok_sim.start_encourage(0, 1)
+ok_res = ok_sim.try_encourage(0)
+check("鼓励：指定对象且被欢迎 → 聊天成功 done",
+      ok_res is True and ok_sim.encourage_status[0] == "done" and ok_sim.conv_of[0] is not None)
+
+rej_sim = Sim(seed=20261017, npc_count=8)
+for i in range(rej_sim.N):
+    for j in range(rej_sim.N):
+        rej_sim.A[i][j] = 20.0
+        rej_sim.H[i][j] = 0.0
+for k in range(rej_sim.N):
+    if k not in (0, 1):
+        rej_sim.sleeping[k] = True
+rej_sim.A[1][0] = 0.0   # 对象 1 不欢迎 0（好感−敌对 < 10）
+rej_sim.start_encourage(0, 1)
+rej_res = rej_sim.try_encourage(0)
+check("鼓励：指定对象但被拒绝 → rejected（不再重试）",
+      rej_res is True and rej_sim.encourage_status[0] == "rejected" and rej_sim.conv_of[0] is None)
+
+# —— 9.4 忙碌等待与关系拒绝区分（等待不占对方、不算关系拒绝）——
+wait_sim = Sim(seed=20261017, npc_count=8)
+for i in range(wait_sim.N):
+    for j in range(wait_sim.N):
+        wait_sim.A[i][j] = 20.0
+        wait_sim.H[i][j] = 0.0
+wait_sim.A[1][0] = 60.0
+wait_sim.start_encourage(0, 1)
+wait_sim.busy_act[1] = "play_phone"   # 目标正在娱乐（忙碌）
+wait_sim.busy_until[1] = 999
+wait_res = wait_sim.try_encourage(0)
+check("鼓励：目标忙碌 → 等待（不尝试、不算关系拒绝、不占对方）",
+      wait_res is False and wait_sim.encourage_status[0] == "active"
+      and wait_sim.conv_of[0] is None and wait_sim.busy_act[0] is None)
+wait_sim.busy_act[1] = None
+wait_sim.busy_until[1] = 0
+wait_res2 = wait_sim.try_encourage(0)
+check("鼓励：目标空闲后再次尝试成功",
+      wait_res2 is True and wait_sim.encourage_status[0] == "done")
+
+# —— 9.5 锁定者不被强拉（学习锁定 / 游戏锁定都等待）——
+lock_enc = Sim(seed=20261017, npc_count=8)
+lock_enc.A[1][0] = 60.0
+lock_enc.start_encourage(0, 1)
+lock_enc.phase_state[1] = "study"
+lres = lock_enc.try_encourage(0)
+check("鼓励：学习锁定者不被强拉（等待，目标仍是学习）",
+      lres is False and lock_enc.encourage_status[0] == "active" and lock_enc.current_act[1] != "chat")
+
+lock_enc2 = Sim(seed=20261017, npc_count=8)
+lock_enc2.A[1][0] = 60.0
+lock_enc2.start_encourage(0, 1)
+lock_enc2.phase_state[1] = "play"
+lres2 = lock_enc2.try_encourage(0)
+check("鼓励：游戏锁定者不被强拉（等待）",
+      lres2 is False and lock_enc2.encourage_status[0] == "active" and lock_enc2.conv_of[0] is None)
+
+# —— 9.6 未指定选最近娱乐对象（普通找伴仍选最高好感，见 8.x 既有断言）——
+auto_sim = Sim(seed=20261017, npc_count=4)
+for i in range(auto_sim.N):
+    for j in range(auto_sim.N):
+        auto_sim.A[i][j] = 20.0
+        auto_sim.H[i][j] = 0.0
+auto_sim.pos_x = [0.0, 3.0, 1.0, 2.0]
+auto_sim.pos_z = [0.0, 0.0, 0.0, 0.0]
+for k in range(1, auto_sim.N):
+    auto_sim.busy_act[k] = "play_phone"
+    auto_sim.busy_until[k] = 999
+auto_sim.A[2][0] = 60.0   # 最近者（学生 2）欢迎 0
+auto_sim.start_encourage(0, -1)
+auto_res = auto_sim.try_encourage(0)
+check("鼓励：自主模式选距离最近的娱乐对象（学生 2）", auto_sim.encourage_target[0] == 2)
+check("鼓励：目标还在娱乐 → 等待", auto_res is False and auto_sim.encourage_status[0] == "active")
+auto_sim.busy_act[2] = None
+auto_sim.busy_until[2] = 0
+auto_res2 = auto_sim.try_encourage(0)
+check("鼓励：目标空闲后聊天成功", auto_res2 is True and auto_sim.encourage_status[0] == "done")
+
+# —— 9.7 上课跳过不消耗次数（跨上课保留目标）——
+keep_sim = Sim(seed=20261017, npc_count=8)
+keep_sim.start_encourage(0, 1)
+keep_sim.skip_class()
+check("鼓励：上课跳过不消耗次数、不改变目标",
+      keep_sim.encourage_status[0] == "active" and keep_sim.encourage_breaks[0] == 4
+      and keep_sim.encourage_target[0] == 1)
 
 print("  通过 %d 项，失败 %d 项" % (len(PASSED), len(FAILED)))
 if FAILED:
