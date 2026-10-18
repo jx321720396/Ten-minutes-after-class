@@ -812,6 +812,8 @@ func _settle_units() -> void:
 				_settle_acc[i] -= play_seconds
 				_gain_today[i] += _passives.play_gain(i, float(_acts["play_gain"]))
 				add_stress(i, -float(_acts["play_relief"]), false)
+				# 2026-10-17：游戏状态回复动力 —— 与学习消耗对称，让动力能自动循环。
+				add_vitality(i, float(_acts["play_vitality_gain"]))
 		else:
 			while _settle_acc[i] >= unit_seconds:
 				_settle_acc[i] -= unit_seconds
@@ -1330,6 +1332,12 @@ func _class_failed() -> bool:
 ## D05：考试当天只有考试 —— 当天不发生普通事件与相关结算（座位、涓流、学生行为）。
 func _is_exam_only_day() -> bool:
 	return _exam != null and _exam.exam_only_day() and _exam.is_exam_day(_day)
+
+
+## D05（2026-10-17 裁定）：考试当天只有考试 —— 老师命令层据此拒绝一切操作，
+## 在途命令由 `TeacherCommands.tick` 冻结，考试结束后继续。
+func is_exam_only_day() -> bool:
+	return _is_exam_only_day()
 
 
 ## 跨天结算（§3.5 + 《老师版规则合并稿》D01）：压力继承 → 爆发判定 → 心结加压。

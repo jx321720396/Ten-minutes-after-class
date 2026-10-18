@@ -98,7 +98,7 @@ func test_play_state_relief_is_unlinked() -> void:
 	for _k in range(40):
 		core._settle_units()
 	assert_almost_eq(core.stress(0), 45.0, 0.0001, "游戏状态每 40 秒 −5 压力")
-	assert_almost_eq(core.vitality(0), 50.0, 0.0001, "游戏状态「不减少动力」，且不联动减压")
+	assert_almost_eq(core.vitality(0), 55.0, 0.0001, "游戏状态每 20 秒 +5 动力（2026-10-17：与学习消耗对称）")
 
 
 func test_study_cost_only_changes_vitality() -> void:

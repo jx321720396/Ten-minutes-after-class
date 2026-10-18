@@ -64,7 +64,7 @@ func test_leisure_relieves_every_10_seconds() -> void:
 	assert_almost_eq(core.stress(0), 45.0, 0.0001, "娱乐每 10 秒 -5 压力（D02）")
 
 
-func test_play_state_costs_gain_and_relieves_stress_without_vitality_cost() -> void:
+func test_play_state_costs_gain_relieves_stress_and_restores_vitality() -> void:
 	var core := _core()
 	_isolate_others(core)
 	core._stress[0] = 50.0
@@ -75,7 +75,7 @@ func test_play_state_costs_gain_and_relieves_stress_without_vitality_cost() -> v
 		core._settle_units()
 	assert_almost_eq(core.gain_today(0), gain_before - 1.0, 0.0001, "游戏每 40 秒 -1 学业收益")
 	assert_almost_eq(core.stress(0), 45.0, 0.0001, "游戏每 40 秒 -5 压力")
-	assert_almost_eq(core.vitality(0), 30.0, 0.0001, "游戏不减少动力（D02）")
+	assert_almost_eq(core.vitality(0), 35.0, 0.0001, "游戏每 20 秒 +5 动力（2026-10-17）")
 
 
 func test_interrupted_activity_folds_by_time() -> void:
@@ -104,12 +104,8 @@ func test_day_carry_follows_d01() -> void:
 	core._settle_day()
 	assert_almost_eq(core.stress(0), 40.0, 0.0001, "跨天压力单独 −20（D01）")
 	assert_almost_eq(core.vitality(0), 40.0, 0.0001, "跨天动力保留前日剩余（2026-10-17 起不再统一 −10）")
-	assert_almost_eq(
-		core.affinity(0, 1), 60.0, 0.0001, "好感跨天原值保留（2026-10-17 删除关系衰减）"
-	)
-	assert_almost_eq(
-		core.hostility(0, 1), 40.0, 0.0001, "敌对跨天原值保留（2026-10-17 删除关系衰减）"
-	)
+	assert_almost_eq(core.affinity(0, 1), 60.0, 0.0001, "好感跨天原值保留（2026-10-17 删除关系衰减）")
+	assert_almost_eq(core.hostility(0, 1), 40.0, 0.0001, "敌对跨天原值保留（2026-10-17 删除关系衰减）")
 	assert_almost_eq(core.grade(0), minf(grade_before + 8.0, 750.0), 0.0001, "成绩 += 当日学业收益（D01）")
 	assert_almost_eq(core.gain_today(0), 0.0, 0.0001, "学业收益跨天清零（D01）")
 
@@ -247,11 +243,7 @@ func test_ask_gives_three_lines_then_five_for_the_same_student() -> void:
 	assert_eq(lines[0], "我最喜欢%s（好感值为：90）" % core.alias(liked), "第一句是好感最高的人")
 	assert_eq(lines[1], "我最讨厌%s（敌对值为：80）" % core.alias(hated), "第二句是敌对最高的人")
 	var third := _ask_subject(str(lines[2]))
-	assert_eq(
-		str(lines[2]),
-		"我有一点喜欢%s也有一点讨厌%s（好感值为：10，敌对值为：10）" % [third, third],
-		"10 分用「有一点」"
-	)
+	assert_eq(str(lines[2]), "我有一点喜欢%s也有一点讨厌%s（好感值为：10，敌对值为：10）" % [third, third], "10 分用「有一点」")
 	assert_ne(third, core.alias(speaker), "随机对象不是本人")
 	assert_ne(third, core.alias(liked), "随机对象不与最喜欢的人重复")
 	assert_ne(third, core.alias(hated), "随机对象不与最讨厌的人重复")
@@ -292,11 +284,7 @@ func test_ask_degree_words_follow_the_shown_number() -> void:
 		tc.tick(core)
 	var line := str(tc.snapshot()["ask_lines"][2])
 	var subject := _ask_subject(line)
-	assert_eq(
-		line,
-		"我不怎么喜欢%s也很讨厌%s（好感值为：4，敌对值为：35）" % [subject, subject],
-		"小于 10 是不怎么，30 及以上是很"
-	)
+	assert_eq(line, "我不怎么喜欢%s也很讨厌%s（好感值为：4，敌对值为：35）" % [subject, subject], "小于 10 是不怎么，30 及以上是很")
 
 
 func test_well_informed_ask_reports_six_real_lines() -> void:
@@ -483,3 +471,22 @@ func test_summon_is_immediately_sendable() -> void:
 	assert_eq(tc.current_command(), "", "送回教室不占用命令、不消耗时间")
 	assert_eq(tc.called_index(), -1, "学生立刻离开办公室")
 	assert_false(core._is_in_office(2), "送回后立刻回到教室")
+
+
+## D05（2026-10-17 裁定）：考试当天只有考试 —— 老师命令一律不接受。
+func test_teacher_commands_rejected_on_exam_day() -> void:
+	var core := _core()
+	core._day = 8
+	for i in range(core.node_count()):
+		core._stress[i] = 0.0
+	var tc := core.teacher_commands()
+	assert_true(core.is_exam_only_day(), "第 8 天是纯考试日（D05）")
+	assert_false(tc.summon(core, 1), "考试日不能召唤")
+	assert_false(tc.enter_classroom(core), "考试日不能去教室（否则全班 +5 压力）")
+	assert_false(tc.office_chat(core, "praise"), "考试日不能办公室聊天")
+	assert_false(tc.start_seat_change(core, 0, 1), "考试日不能调座位")
+	assert_false(tc.mediate(core, 0, 1), "考试日不能调解")
+	tc.scold_class(core)
+	assert_almost_eq(core.stress(0), 0.0, 0.0001, "考试日老师操作不改变压力")
+	assert_almost_eq(core.stress(5), 0.0, 0.0001, "考试日全班训斥也不生效")
+	assert_eq(tc.called_index(), -1, "考试日不建立召唤状态")

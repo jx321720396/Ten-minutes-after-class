@@ -35,6 +35,8 @@ def main():
     study_gain_rate = float(acts["study_gain"]) / float(acts["study_settle_seconds"])
     play_relief_rate = float(acts["play_relief"]) / float(acts["play_settle_seconds"])
     play_gain_rate = float(acts["play_gain"]) / float(acts["play_settle_seconds"])
+    # 2026-10-17：游戏状态回复动力（与学习消耗对称），让动力能自动循环。
+    play_vitality_rate = float(acts["play_vitality_gain"]) / float(acts["play_settle_seconds"])
     leisure_rate = float(acts["relief_per_unit"]) / float(acts["unit_seconds"])
 
     play_threshold = float(psyche["vitality_play_threshold"])
@@ -48,6 +50,7 @@ def main():
     study_day_gain = study_gain_rate * day_ticks
     play_day_relief = play_relief_rate * break_ticks          # 游戏只在课间结算
     play_day_gain = play_gain_rate * break_ticks
+    play_day_vitality = play_vitality_rate * break_ticks      # 游戏回动力（2026-10-17）
     leisure_day_relief = leisure_rate * break_ticks
     leisure_day_vitality = leisure_day_relief                 # 自由娱乐减压按一般联动扣动力
 
@@ -92,8 +95,8 @@ def main():
     print("[1] 单位速率（来自 activities.csv）")
     print("  学习：收益 +%.2f/s，动力 %+.2f/s（每 %d s 一单位）" % (
         study_gain_rate, -study_cost_rate, int(acts["study_settle_seconds"])))
-    print("  游戏：收益 %+.2f/s，压力 %+.2f/s（不联动动力；只在课间结算）" % (
-        play_gain_rate, -play_relief_rate))
+    print("  游戏：收益 %+.2f/s，压力 %+.2f/s，动力 %+.2f/s（只在课间结算）" % (
+        play_gain_rate, -play_relief_rate, play_vitality_rate))
     print("  自由娱乐：压力 %+.2f/s，动力 %+.2f/s（按一般联动）" % (
         -leisure_rate, -leisure_rate))
     print("")
@@ -101,8 +104,8 @@ def main():
     print("  全天学习：收益 %+.0f，动力 %+.0f，跨天再 %+.0f → 净动力 %+.0f" % (
         study_day_gain, -study_day_vitality, -carry_vitality,
         -study_day_vitality - carry_vitality))
-    print("  全天游戏：收益 %+.0f，压力 %+.0f（不联动动力），跨天动力 %+.0f" % (
-        play_day_gain, -play_day_relief, -carry_vitality))
+    print("  全天游戏：收益 %+.0f，压力 %+.0f，动力 %+.0f（2026-10-17 起回动力）" % (
+        play_day_gain, -play_day_relief, play_day_vitality))
     print("  全天自由娱乐：压力 %+.0f，动力 %+.0f，跨天再 %+.0f" % (
         -leisure_day_relief, -leisure_day_vitality, -carry_vitality))
     print("  压力跨天再减 %.0f" % carry_stress)
@@ -125,6 +128,8 @@ def main():
         study_day_vitality, carry_vitality, study_sustain, study_sustain / scold))
     print("  老师上限能维持的全天学习人数：%.0f ÷ %.0f = %.1f 人（且不做其它操作）" % (
         vitality_ceiling, study_sustain, vitality_ceiling / study_sustain))
+    print("  自动循环：全天游戏回 %.0f 动力，全天学习耗 %.0f → 需 %.1f 天游戏补 1 天学习" % (
+        play_day_vitality, study_day_vitality, study_day_vitality / max(1.0, play_day_vitality)))
     print("")
     print("[5] 扩散通道（邻座学习涓流，每课间末一次 ×%d 段）" % break_count)
     print("  每名学习邻座带来 压力 %+.0f／天（动力按联动同值）" % drip_day)

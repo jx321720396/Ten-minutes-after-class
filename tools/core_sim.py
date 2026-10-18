@@ -1517,7 +1517,9 @@ class Sim:
                 while self.settle_acc[i] >= play_seconds:
                     self.settle_acc[i] -= play_seconds
                     self.GainToday[i] += self.acts["play_gain"]
+                    # 2026-10-17：游戏状态回复动力 —— 与学习消耗对称，让动力能自动循环。
                     self.add_stress(i, -self.acts["play_relief"], False)
+                    self.add_vitality(i, self.acts["play_vitality_gain"])
             else:
                 while self.settle_acc[i] >= unit_seconds:
                     self.settle_acc[i] -= unit_seconds

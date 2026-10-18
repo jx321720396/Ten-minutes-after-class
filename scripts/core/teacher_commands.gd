@@ -71,9 +71,16 @@ func is_held() -> bool:
 	return _held
 
 
+## D05（2026-10-17 裁定）：考试当天只有考试 —— 老师命令一律不接受，在途命令冻结到考后。
+func _exam_blocked(core: Variant) -> bool:
+	return core != null and core.has_method("is_exam_only_day") and bool(core.is_exam_only_day())
+
+
 # ------------------------------------------------------------------ 命令入口
 ## 召唤（D03 第 1 条）：一次只能叫一名学生；已在办公室的学生不重复召唤。
 func summon(core: Variant, index: int) -> bool:
+	if _exam_blocked(core):
+		return false
 	if _held or _command != "" or _called >= 0 or index < 0 or index >= int(core.node_count()):
 		return false
 	core.interrupt_for_seat_change(index)
@@ -93,6 +100,8 @@ func summon(core: Variant, index: int) -> bool:
 
 ## 送回教室：返程秒数为 0 时当场离开办公室，不再占用命令、不消耗课间时间。
 func send_back(core: Variant) -> bool:
+	if _exam_blocked(core):
+		return false
 	if _held or _called < 0 or _command != "":
 		return false
 	var back := int(_timing["send_back_seconds"])
@@ -114,7 +123,9 @@ func send_back(core: Variant) -> bool:
 ## 表扬：只加该生动力，不加压力。鼓励当下只计时。
 ## 打听结束时给出消息：首次 3 条，再次打听同一人 5 条；百事通提高到配置条数。
 ## 参数 `_core` 保留为统一调用签名（与 summon / send_back 一致），本命令当下不需读内核状态。
-func office_chat(_core: Variant, kind: String) -> bool:
+func office_chat(core: Variant, kind: String) -> bool:
+	if _exam_blocked(core):
+		return false
 	if _held or _command != "" or kind not in ["comfort", "praise", "scold", "ask", "encourage"]:
 		return false
 	if _called < 0:
@@ -128,6 +139,8 @@ func office_chat(_core: Variant, kind: String) -> bool:
 ## 老师调解（D07）：任一方向敌对 >50 才执行（否则调用方不应扣耗时）；
 ## 完成后双方敌对各 −5，不抹去风险历史、不自动修复无冲突的敌对。
 func mediate(core: Variant, a: int, b: int) -> bool:
+	if _exam_blocked(core):
+		return false
 	if _held or _command != "" or _called >= 0:
 		return false
 	if a < 0 or b < 0 or a == b or a >= int(core.node_count()) or b >= int(core.node_count()):
@@ -143,6 +156,8 @@ func mediate(core: Variant, a: int, b: int) -> bool:
 
 ## 全班训斥（D01）：全班压力 +30；有「听劝」的学生动力额外 +10（§10.2，按实际完成结算）。
 func scold_class(core: Variant) -> void:
+	if _exam_blocked(core):
+		return
 	var delta := float(_acts["class_scold_stress"])
 	for i in range(int(core.node_count())):
 		core.add_stress(i, delta)
@@ -151,6 +166,8 @@ func scold_class(core: Variant) -> void:
 
 ## 去教室（D03 第 3 条）：即时，不设固定耗时；每个课间首次进入 → 全班压力 +5（同一课间不重复）。
 func enter_classroom(core: Variant) -> bool:
+	if _exam_blocked(core):
+		return false
 	if _held or _entered_this_break:
 		return false
 	_entered_this_break = true
@@ -162,6 +179,8 @@ func enter_classroom(core: Variant) -> bool:
 
 ## 调座位（D03 第 4 / 5 / 6 条）：发起后 10 秒生效；发起时打断参与者当前行为。
 func start_seat_change(core: Variant, a: int, b: int) -> bool:
+	if _exam_blocked(core):
+		return false
 	if _held or _command != "" or _called >= 0:
 		return false
 	if a < 0 or b < 0 or a == b:
@@ -178,6 +197,8 @@ func start_seat_change(core: Variant, a: int, b: int) -> bool:
 
 # ------------------------------------------------------------------ 推进（每秒一次）
 func tick(core: Variant) -> void:
+	if _exam_blocked(core):
+		return
 	if _command == "" or _held:
 		return
 	_remaining -= 1
