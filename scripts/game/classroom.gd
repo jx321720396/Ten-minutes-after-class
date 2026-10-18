@@ -48,6 +48,9 @@ func _ready() -> void:
 		push_error("Classroom：时钟绑定失败（时间配置有问题），时间系统未启动。")
 		transition.force_hide()
 		return
+	# ⚠️ 开幕漫画必须早于 transition.bind_clock 与 _wait_navigation：前者会让黑幕立刻
+	# 淡出、后者要等导航网格就绪（可能数秒）。排在它们之后会出现「教室先露脸、漫画后出现」。
+	_bind_opening_comic()
 	# 存档接线：把时钟引用交给 GameState（存档用）；读档时应用暂存时钟状态；日末自动存档。
 	GameState.clock = clock
 	if not GameState.pending_clock_state.is_empty():
@@ -83,7 +86,12 @@ func _ready() -> void:
 	transition.dismiss_started.connect(_on_transition_dismiss_started)
 	# ⚠️ 绑定 Roam 之前先等导航就绪：bind_clock 会立刻触发一次相位回调（上课归位），
 	#    地图没同步时那批走动会被全部判成「取不到路线」。
-	if await _wait_navigation():
+	var nav_ok := await _wait_navigation()
+	if not is_inside_tree():
+		# 等待期间场景已被释放（回主菜单 / 重建教室 / 无头 smoke 脚本）：不再继续绑定，
+		# 否则会在已释放的节点上访问子节点配置并报错。
+		return
+	if nav_ok:
 		roam.bind_clock(clock)
 	# 读档落在课间时（GameState.load_game 置位）：绑定后立即强制一批离座决策，
 	# 而不是被 Roam 当成一天之始、首批离座顺延 0.7 秒。
@@ -94,7 +102,6 @@ func _ready() -> void:
 	_bind_feedback(core)
 	clock.time_updated.connect(_sync_state_mirror)
 	_install_office()
-	_bind_opening_comic()
 
 
 func _bind_opening_comic() -> void:

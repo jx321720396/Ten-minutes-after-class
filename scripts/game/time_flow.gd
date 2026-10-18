@@ -6,6 +6,7 @@ extends Node
 ## - 暂停只有一条来源：时钟 hold（日末简报、学期结束等）或 `get_tree().paused`（打开百科全书）。
 ##   没有"暂停档"：按你的裁定，暂停不属于速度选项。
 ## - 事件（简报、转笔演出等）仍可按 owner 临时持有**正常速度**；锁期间强制 1×，不被自选档位覆盖。
+## - 老师谈话进行中由表现层自动持有「快进」锁、临时加速到 fast_forward_scale，结束自动还原；优先级在正常速度锁之下、自选档之上。
 ##
 ## 2026-10-16 移除学生版残留：玩家占用型行为自动 3×、连续学习每 10 秒逐档加速（玩家节点已不存在，
 ## 旧逻辑实际绑在末位学生身上，会造成莫名三倍速且学习时不封顶）。
@@ -23,6 +24,8 @@ var _options := 3
 var _player_scale := 1.0
 var _multiplier := 1.0
 var _normal_owners: Dictionary = {}
+var _fast_forward_scale := 1.0
+var _fast_forward_owners: Dictionary = {}
 var _frame_scale := 1.0
 
 
@@ -37,24 +40,29 @@ func bind_sources(core: SimCore, clock: SimulationClock, tables: Dictionary = {}
 		params[str(row.get("param", ""))] = float(str(row.get("value", "0")))
 	var normal := float(params.get("normal_scale", 0.0))
 	var options := int(params.get("speed_options", 0))
-	if core == null or clock == null or not _valid_config(normal, options):
+	var fast := float(params.get("fast_forward_scale", normal))
+	if core == null or clock == null or not _valid_config(normal, options, fast):
 		_core = null
 		_clock = null
 		_set_multiplier(0.0)
-		push_error("TimeFlow：需要有效内核与时钟，normal_scale 必须为 1，speed_options 必须为不小于 1 的整数。")
+		push_error("TimeFlow：需要有效内核与时钟；normal_scale=1、speed_options≥1、fast_forward_scale≥1 且有限。")
 		return false
 	_core = core
 	_clock = clock
 	_normal_scale = normal
 	_options = options
+	_fast_forward_scale = fast
 	_player_scale = _normal_scale
 	_normal_owners.clear()
+	_fast_forward_owners.clear()
 	refresh()
 	return true
 
 
-func _valid_config(normal: float, options: int) -> bool:
-	return is_finite(normal) and normal == 1.0 and options >= 1
+func _valid_config(normal: float, options: int, fast: float) -> bool:
+	return (
+		is_finite(normal) and normal == 1.0 and options >= 1 and is_finite(fast) and fast >= normal
+	)
 
 
 func _process(_delta: float) -> void:
@@ -89,13 +97,15 @@ func set_speed(scale: float) -> bool:
 	return true
 
 
-## 每帧采样：暂停 → 0；事件持有正常速度锁 → 1×；否则用玩家自选档位。
+## 每帧采样：暂停 → 0；事件持有正常速度锁 → 1×；快进锁 → 快进倍速；否则用玩家自选档位。
 func refresh() -> void:
 	var speed := _player_scale
 	if _world_stopped():
 		speed = 0.0
 	elif not _normal_owners.is_empty():
 		speed = _normal_scale
+	elif not _fast_forward_owners.is_empty():
+		speed = _fast_forward_scale
 	_set_multiplier(speed)
 	_frame_scale = speed
 
@@ -138,4 +148,18 @@ func request_normal_speed(owner: StringName) -> void:
 
 func release_normal_speed(owner: StringName) -> void:
 	_normal_owners.erase(owner)
+	refresh()
+
+
+## 老师谈话进行中的临时快进锁（表现层自动持有）；同名 owner 幂等，多个 owner 互不解除。
+## 优先级低于正常速度锁：事件（简报、演出等）期间强制 1×，不被快进覆盖。
+func request_fast_forward(owner: StringName) -> void:
+	if owner == &"":
+		return
+	_fast_forward_owners[owner] = true
+	refresh()
+
+
+func release_fast_forward(owner: StringName) -> void:
+	_fast_forward_owners.erase(owner)
 	refresh()

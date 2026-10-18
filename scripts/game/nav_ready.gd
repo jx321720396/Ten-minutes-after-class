@@ -52,6 +52,10 @@ static func wait(node: Node3D, probe: Vector3, max_frames: int = DEFAULT_MAX_FRA
 				return true
 		else:
 			stable = 0
+		# 等待期间场景可能被释放（回主菜单 / 重建教室 / 无头 smoke 脚本）：帧信号等不到，
+		# 直接按「未就绪」失败返回，避免在已释放节点上取 get_tree()。
+		if not is_instance_valid(node) or not node.is_inside_tree():
+			return false
 		await node.get_tree().physics_frame
 	return false
 

@@ -108,6 +108,7 @@ func _process(_delta: float) -> void:
 	var snapshot: Dictionary = core.teacher_commands().snapshot()
 	_view.update_commands(core, snapshot)
 	_teacher.update_commands(snapshot, _view.command_status(snapshot))
+	_apply_talk_fast_forward(snapshot)
 	var ask_id := int(snapshot.get("ask_id", 0))
 	if ask_id != _ask_seen:
 		_ask_seen = ask_id
@@ -115,6 +116,17 @@ func _process(_delta: float) -> void:
 		if not lines.is_empty():
 			_view.present_ask(lines)
 		_write_ask_records(snapshot.get("ask_records", []))
+
+
+## 谈话（office_chat）进行中自动快进：老师版没有「快进」按钮，改成「谈话期间临时加速到 fast_forward_scale」，
+## 谈话结束（命令清空）自动还原到玩家自选档。逐帧按 owner 请求/释放，TimeFlow 的 owner-hold 幂等，重复调用安全。
+func _apply_talk_fast_forward(snapshot: Dictionary) -> void:
+	var talking := str(snapshot.get("command", "")) == "office_chat"
+	var clock: Node = _room.get_node("Clock")
+	if talking:
+		clock.request_fast_forward(&"office_chat")
+	else:
+		clock.release_fast_forward(&"office_chat")
 
 
 ## D10：打听获知的有向单轴关系真值写入档案笔记（NpcProfileData 只读笔记，不碰真实矩阵）。

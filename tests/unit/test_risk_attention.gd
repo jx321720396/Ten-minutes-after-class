@@ -111,3 +111,20 @@ func test_exam_keeps_warning_and_formal_risk_remains_after_no_harm_day() -> void
 	if not entries.is_empty():
 		assert_true(entries[0].formal)
 		assert_eq(entries[0].streak, 0)
+
+
+func test_crash_warn_uses_pressure_band() -> void:
+	var parts := _stack()
+	var core: SimCore = parts[0]
+	core._stress[2] = 74.0
+	core._stress[3] = 75.0
+	core._stress[4] = 89.9
+	core._stress[5] = 90.0
+	core._stress[6] = 90.1
+	var snapshot: Dictionary = parts[1].snapshot()
+	var crash: Array = snapshot.get("risk_attention", {}).get("crash", [])
+	assert_eq(crash.size(), 3, "仅 75 ≤ 压力 ≤ 90 计入崩溃预警（74 与 90.1 排除）")
+	var card := Card.new()
+	add_child_autofree(card)
+	card.refresh(snapshot)
+	assert_eq(card.find_child("CrashCount", true, false).text, "3人")

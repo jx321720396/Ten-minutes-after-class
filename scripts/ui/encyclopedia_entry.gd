@@ -35,7 +35,8 @@ var _owns_pause := false
 
 
 func _ready() -> void:
-	layer = 2  # 与时间 HUD 同层
+	# 必须高于时间 HUD（layer 2）：同层时 HUD 后入树、画在上层，会盖住百科左侧目录。
+	layer = 3
 	process_mode = Node.PROCESS_MODE_ALWAYS  # 暂停时本节点仍要能响应
 	_build_button()
 

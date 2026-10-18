@@ -1,5 +1,11 @@
 # 变更记录
 
+## 2026-10-19 合并远端并修复导航等待期间的场景销毁错误
+
+- 合并 `origin/main-mobile`（老师谈话自动快进 4×、需要关注卡新增「崩溃预警」行、百科层级高于时间 HUD、开幕漫画提前绑定）。
+- 修复合并后 `smoke_outcome_flow` 暴露的脚本错误：`Classroom._ready` 在 `_wait_navigation()` 等待期间场景被销毁（回主菜单／重建教室／无头冒烟）时，`NavReady.wait` 每帧 `node.get_tree()` 取到 null，并继续在已销毁节点上绑定办公室，连带 `office.gd`／`office_hub.gd` 访问空 `config` 报错。现在 `NavReady.wait` 发现节点离开场景树即按「未就绪」返回，`Classroom._ready` 在 await 之后先检查 `is_inside_tree()` 再继续绑定。
+- 门禁：`check_config` 191 项、`test_core` 133 项、`verify_formula` 9 项、`check_docs` 全绿；`gdformat` / `gdlint`、两套字体覆盖通过；相关 GUT 13/13；`smoke_outcome_flow` PASS 且不再有脚本错误。
+
 ## 2026-10-18 贴图压缩
 
 - 压缩 303 张彩色 WebP（quality 80，较原图至少节省 5% 才替换），源文件 47,170,936 → 34,900,708 字节，约减少 26%。逐张验证尺寸、模式及完整透明通道一致；不改变文件路径、分辨率或人物标定。
@@ -66,7 +72,17 @@
 - 原因：推理板的公开事件白名单（chat／comfort／tease／apologize／roughhouse）与内核事件流对不上——内核 `event_happened` 只发 `roughhouse` 且 payload 不含对方索引（`clue_board_data.record_event` 要求 i≠j 都在场），实测 5 天 0 条可录入事件，板上只剩玩家自己在档案里打的关系标注；同时它每天放学强制弹出并暂停世界，收益接近零。判定：整体删除，不保留。
 - 保留：档案内的关系标注（`GameState.profile_notebook`）与档案↔百科互通、教室黑板涂鸦 `clue_board_1.tscn`（与推理板无关）均原样保留。
 - 文档：主文档 §12.6 与 `teacher-mobile/12` 改为「已移除」说明，`03`／`13`／`15` 里提到推理板的位置同步清理；百科词条 `ui.board` 与其交叉引用移除。
+## 2026-10-19 修复教室浮层层级与开幕漫画顺序
 
+- 百科全书面板 CanvasLayer 由 2 提到 3：此前与时间 HUD 同层，而 `TimeHUD` 在 `classroom3D` 中后入树、画在上层，铺满屏幕的百科左侧目录被时间卡、班级概况与需要关注遮挡；档案（5）、推理板（6）、书包（8）层级不变，模态互斥关系不变。
+- 教室 `_bind_opening_comic()` 提前到 `transition.bind_clock` 与 `_wait_navigation` 之前，避免教室先露脸数秒后才出现开幕漫画。
+- 验收：真实 `classroom3D` 1536×850 截图确认目录完整、HUD 不再遮挡；快门禁 check_config 187/0、test_core 133/0、verify_formula 9/0、check_docs 0 失败。本机未安装 gdtoolkit，`gdformat`／`gdlint` 未执行。
+
+## 2026-10-18 老师谈话自动快进（不是跳过）
+
+- 办公室谈话（安慰／表扬／训斥／打听／鼓励，`office_chat`）进行期间**自动**把整个世界按 `fast_forward_scale`（默认 4×）逐 tick 加速，谈话结束自动还原到玩家自选档；无 UI 按钮，时间照常流逝、事件照常结算，不是「跳过课间」式跳变。
+- 倍速集中到 `data/rules/time_flow.csv` 的 `fast_forward_scale`；叠加优先级为「暂停 > 事件正常速度锁 > 快进 > 玩家自选档」。`TimeFlow` 新增 `request_fast_forward`／`release_fast_forward`，`SimulationClock` 透传，`office_hub._process` 按当前命令自动持有/释放。
+- 新增 GUT 单测 `test_time_flow_fast_forward.gd`；`check_config` 增加快进倍率校验。
 ## 2026-10-19 回退课间行动额度机制
 
 - 删除每课间行动额度：`data/rules/activities.csv` 的 `break_action_quota`、`SimCore._break_action_quota`／`_actions_used`、`LeisureActions.actions_left`／`use_action`／`start_rest`（额度用完趴桌）、以及 `TeacherCommands.summon()` 里「叫去办公室也占一件」的调用。
@@ -118,6 +134,11 @@
 
 - 使用男老师巡视教室新版插画作为项目图标，同步生成 Windows 多尺寸 ICO、Android 192 像素启动图标及 432 像素自适应前景／背景；前景保留居中 288 像素安全区。
 - 更新项目和导出预设引用；保留旧图标文件。
+## 2026-10-18 需要关注纸卡新增「崩溃预警」
+
+- 「需要关注」纸卡在霸凌预警／孤立预警／崩溃中三行之外新增第四行「崩溃预警」：记录压力 ≥75 且 ≤90（崩溃线之上尚未崩溃）的学生，模板、配色与交互同前三行（黄色预警样式，区别于崩溃中的红色）。
+- 数据落在 `data/ui/attention_card.json`（`crash_label` / `crash_pressure_min=75` / `crash_pressure_max=90` 及字幕、空态、下一步、处理方向文案）；判定在 `scripts/game/risk_attention_snapshot.gd`，`75 ≤ 压力 ≤ 90` 且非崩溃者计入，纯观察层、不回写内核。区间两端互斥：崩溃中（压力 >90）不重复计入预警行。
+- 新增 GUT 边界回归 `test_crash_warn_uses_pressure_band`（74 排除、75 计入、89.9 计入、90 计入、90.1 排除）；`test_risk_attention` 6/6 通过。
 
 ## 2026-10-18 开局敌对值 15 → 40
 

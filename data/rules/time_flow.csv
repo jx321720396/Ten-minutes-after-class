@@ -6,3 +6,4 @@
 param,value,note
 normal_scale,1,正常速度；事件持有正常速度锁（简报、演出等）期间也用它
 speed_options,3,可选倍速档位数：1× … N×；点一次时间卡片按 1→2→…→N→1 循环
+fast_forward_scale,4,谈话自动快进的临时倍速（老师谈话进行中）；结束自动还原

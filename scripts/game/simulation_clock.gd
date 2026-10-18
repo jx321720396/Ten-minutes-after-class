@@ -322,6 +322,17 @@ func time_scale_options() -> int:
 	return int(_time_flow.speed_options()) if is_instance_valid(_time_flow) else 1
 
 
+## 老师命令进行中的临时快进锁（「快进」按钮）；转发给 TimeFlow，scale_changed 会自动刷新 HUD。
+func request_fast_forward(owner: StringName) -> void:
+	if is_instance_valid(_time_flow):
+		_time_flow.request_fast_forward(owner)
+
+
+func release_fast_forward(owner: StringName) -> void:
+	if is_instance_valid(_time_flow):
+		_time_flow.release_fast_forward(owner)
+
+
 ## 只读快照：内核时间字段 + 时钟自身状态（mode / paused / remaining_seconds / progress / ended_day）。
 func snapshot() -> Dictionary:
 	var out: Dictionary = {}
