@@ -1,5 +1,11 @@
 # 变更记录
 
+## 2026-10-19 修复教室浮层层级与开幕漫画顺序
+
+- 百科全书面板 CanvasLayer 由 2 提到 3：此前与时间 HUD 同层，而 `TimeHUD` 在 `classroom3D` 中后入树、画在上层，铺满屏幕的百科左侧目录被时间卡、班级概况与需要关注遮挡；档案（5）、推理板（6）、书包（8）层级不变，模态互斥关系不变。
+- 教室 `_bind_opening_comic()` 提前到 `transition.bind_clock` 与 `_wait_navigation` 之前，避免教室先露脸数秒后才出现开幕漫画。
+- 验收：真实 `classroom3D` 1536×850 截图确认目录完整、HUD 不再遮挡；快门禁 check_config 187/0、test_core 133/0、verify_formula 9/0、check_docs 0 失败。本机未安装 gdtoolkit，`gdformat`／`gdlint` 未执行。
+
 ## 2026-10-19 回退课间行动额度机制
 
 - 删除每课间行动额度：`data/rules/activities.csv` 的 `break_action_quota`、`SimCore._break_action_quota`／`_actions_used`、`LeisureActions.actions_left`／`use_action`／`start_rest`（额度用完趴桌）、以及 `TeacherCommands.summon()` 里「叫去办公室也占一件」的调用。

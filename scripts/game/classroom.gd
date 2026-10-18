@@ -48,6 +48,9 @@ func _ready() -> void:
 		push_error("Classroom：时钟绑定失败（时间配置有问题），时间系统未启动。")
 		transition.force_hide()
 		return
+	# ⚠️ 开幕漫画必须早于 transition.bind_clock 与 _wait_navigation：前者会让黑幕立刻
+	# 淡出、后者要等导航网格就绪（可能数秒）。排在它们之后会出现「教室先露脸、漫画后出现」。
+	_bind_opening_comic()
 	# 存档接线：把时钟引用交给 GameState（存档用）；读档时应用暂存时钟状态；日末自动存档。
 	GameState.clock = clock
 	if not GameState.pending_clock_state.is_empty():
@@ -95,7 +98,6 @@ func _ready() -> void:
 	_bind_feedback(core)
 	clock.time_updated.connect(_sync_state_mirror)
 	_install_office()
-	_bind_opening_comic()
 
 
 func _bind_opening_comic() -> void:
