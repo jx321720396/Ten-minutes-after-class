@@ -32,9 +32,9 @@ func _run() -> void:
 		quit(1)
 		return
 	check(not scene.get_node("Player").enabled, "安装办公室不得解除原有输入禁用")
-	check(hub.mode_name() == "monitor", "开局教室默认监控视角")
-	check(not hub.teacher_view().get_node("%Frame").visible, "监控不显示老师行动和当前对象面板")
-	check(hub._return.is_visible_in_tree(), "监控仍有关闭入口")
+	check(hub.mode_name() == "classroom", "开局直接进教室（2026-10-18 裁定，不再是监控视角）")
+	check(hub.teacher_view().get_node("%Frame").visible, "开局即显示老师行动和当前对象面板")
+	check(hub._return.is_visible_in_tree(), "教室仍显示返回办公室入口")
 	check(not scene.get_node("ActionBar").visible, "老师教室不显示学生行为栏")
 	check(not scene.get_node("ChatHUD").visible, "老师界面移除旧学生事件反馈")
 	check(not scene.get_node("ChatHUD").is_processing(), "旧邀请不能继续刷新弹窗")
@@ -180,23 +180,22 @@ func _run() -> void:
 	hub.open_tool("profile")
 	await process_frame
 	await process_frame
-	var student_button: Button = hub._students.get_child(0)
+	var student_button: Button = hub._picker.cards[0]
 	touch = touch.duplicate()
 	touch.canceled = false
 	touch.pressed = true
-	touch.position = student_button.get_global_rect().get_center()
-	hub._students.get_parent()._input(touch)
+	touch.position = student_button.size / 2.0
 	var button_touch: InputEventScreenTouch = touch.duplicate()
 	button_touch.position = student_button.size / 2.0
 	student_button.gui_input.emit(button_touch)
 	await process_frame
-	check(student_button.has_meta("office_touch"), "触摸测试应命中真实学生按钮")
+	check(student_button.has_meta(TouchBind.META_INDEX), "触摸测试应命中真实学生按钮")
 	var drag := InputEventScreenDrag.new()
 	drag.position = touch.position + Vector2(0, -40)
 	drag.relative = Vector2(0, -40)
-	hub._students.get_parent()._input(drag)
+	student_button.gui_input.emit(drag)
 	await process_frame
-	check(not student_button.has_meta("office_touch"), "滚动开始必须取消学生按钮按下记录")
+	check(not student_button.has_meta(TouchBind.META_INDEX), "拖动必须取消学生按钮按下记录")
 	touch = touch.duplicate()
 	touch.pressed = false
 	touch.position = drag.position

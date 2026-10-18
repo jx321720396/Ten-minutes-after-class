@@ -8,7 +8,9 @@ const PROFILE_DATA := preload("res://scripts/ui/npc_profile_data.gd")
 
 var _view: Control
 var _room: Node
-var _mode := "classroom"
+# ⚠️ 初值必须不是 "classroom"：bind_classroom() 末尾以 classroom 开局，而 set_mode 只在
+#    `_mode != "classroom"` 时才调用 enter_classroom（D03 的首次进场全班 +5 压力）。
+var _mode := ""
 var _return: Button
 var _teacher: Control
 var _teacher_presence: Node3D
@@ -52,7 +54,9 @@ func bind_classroom(room: Node) -> void:
 	replay.tooltip_text = _teacher.config.copy.disabled_tutorial
 	_build_picker()
 	_capture_classroom_state()
-	set_mode("monitor")
+	# 2026-10-18 裁定：开局老师直接进教室，不再以监控视角开场；
+	# 走真实 enter_classroom，含 D03「每个课间首次进入 → 全班压力 +5」。
+	set_mode("classroom")
 
 
 func mode_name() -> String:

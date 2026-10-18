@@ -18,7 +18,7 @@ func test_teacher_back_only_in_classroom_and_stays_out_of_student_roster() -> vo
 	if back == null:
 		state.end_game()
 		return
-	assert_false(back.visible, "Initial monitor hides teacher")
+	assert_true(back.visible, "开局直接进教室：老师背影可见（2026-10-18 裁定）")
 	var fixed_position: Vector3 = back.global_position
 	var tick = state.sim_core.time_snapshot().global_tick
 	for mode in ["classroom", "monitor", "office", "classroom"]:
