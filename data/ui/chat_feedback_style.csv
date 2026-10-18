@@ -14,8 +14,8 @@ menu_width_px,320,px,右侧行为栏宽度
 menu_margin_px,24,px,行为卡片与屏幕边缘的间距
 bubble_follow_height_m,1.5,m,无字气泡在世界里的锚点高度（人物头顶以上）
 progress_bar_height_px,10,px,底部聊天进度条高度
-ring_radius_m,0.3,m,人物个人圈半径（个人圈与融合区一致）
-ring_fill_alpha,0.32,,圈填充透明度：轻透群体色填充，保留地砖纹理
+ring_radius_m,0.42,m,人物个人圈半径（个人圈与融合区一致）
+ring_fill_alpha,0.58,,圈填充透明度：移动端增强个人与群体辨识，保留地砖纹理
 ring_blend_radius_m,0.12,m,平滑并集宽度：越大两人相接处越圆润
 toast_seconds,4.0,s,线索与完成提示的停留时长
 emotion_positive_affinity_delta,1.0,分,判定「正面」的玩家自身好感增量门槛

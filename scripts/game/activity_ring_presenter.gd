@@ -31,8 +31,8 @@ const RING_HEIGHT := 0.016
 ## 平滑并集宽度（米）：越大，两人相接处越圆润
 const BLEND_RADIUS := 0.12
 ## 最大成员数 / 边数（与着色器数组一致）
-const MAX_MEMBERS := 8
-const MAX_LINKS := 8
+const MAX_MEMBERS := 16
+const MAX_LINKS := 120
 
 ## 会话存续期间保留配色槽；不按人物、行为或长期簇标签上色。
 var _personal_color := Color.WHITE
@@ -51,7 +51,7 @@ var _ring_radius := 0.3
 var _blend_radius := BLEND_RADIUS
 var _fill_alpha := 0.0
 var _shader: Shader = null
-var _refresh_timer := 0.0
+var _actors: Node3D
 
 
 func _ready() -> void:
@@ -80,14 +80,28 @@ func set_enabled(value: bool) -> void:
 		_clear_all()
 
 
-func _process(delta: float) -> void:
+func bind_actors(actors: Node3D) -> void:
+	_actors = actors
+	# 行走组件默认优先级为 0，在其更新后读取本帧脚底位置。
+	process_priority = 1
+
+
+func _position_of(index: int) -> Vector2:
+	if is_instance_valid(_actors):
+		var actor: Node3D = _actors.actor_for(index)
+		if is_instance_valid(actor):
+			var pos := actor.global_position
+			var sprite := actor.get_node_or_null("Sprite") as Sprite3D
+			if sprite != null and not sprite.visible:
+				pos = _actors.sit_position_of(index)
+			return Vector2(pos.x, pos.z)
+	return _core.position_of(index)
+
+
+func _process(_delta: float) -> void:
 	if not _enabled or _core == null:
 		return
-	# 圈只跟位置与真实会话走，不需要每帧重建：10 Hz 足够，且避免频繁创建着色器材质
-	_refresh_timer += delta
-	if _refresh_timer < 0.1:
-		return
-	_refresh_timer = 0.0
+	# 节点与材质均池化；每帧同步几何，避免移动时脚底与圈脱节。
 	refresh()
 
 
@@ -158,8 +172,8 @@ func refresh() -> void:
 		if merged_indices.has(index):
 			ring.visible = false
 			continue
-		var pos: Vector2 = _core.position_of(index)
-		ring.visible = true
+		var pos: Vector2 = _position_of(index)
+		ring.visible = bool(_core.is_present(index))
 		ring.global_position = Vector3(pos.x, RING_HEIGHT, pos.y)
 		_set_material(ring, [index], [], _ring_radius, _personal_color)
 	_sync_merged()
@@ -232,6 +246,8 @@ func _visible_members(session: Dictionary) -> Array:
 			continue
 		if index < 0 or index >= int(_core.node_count()):
 			continue
+		if not _core.is_present(index):
+			continue
 		out.append(index)
 	return out
 
@@ -239,7 +255,7 @@ func _visible_members(session: Dictionary) -> Array:
 func _center_of(members: Array) -> Vector2:
 	var center := Vector2.ZERO
 	for index in members:
-		center += _core.position_of(int(index))
+		center += _position_of(int(index))
 	return center / float(members.size())
 
 
@@ -249,7 +265,7 @@ func _quad_size_of(members: Array) -> Vector2:
 	var center := _center_of(members)
 	var half := Vector2(radius, radius)
 	for index in members:
-		var offset: Vector2 = _core.position_of(int(index)) - center
+		var offset: Vector2 = _position_of(int(index)) - center
 		half = half.max(offset.abs() + Vector2(radius, radius))
 	return half * 2.0
 
@@ -307,7 +323,7 @@ func _set_material(
 	var count := mini(members.size(), MAX_MEMBERS)
 	for i in range(count):
 		var index := int(members[i])
-		var position: Vector2 = _core.position_of(index)
+		var position: Vector2 = _position_of(index)
 		points[i] = position - offset
 	var link_a := PackedVector2Array()
 	var link_b := PackedVector2Array()
@@ -322,8 +338,8 @@ func _set_material(
 		var second := int(link[1])
 		if not members.has(first) or not members.has(second):
 			continue
-		link_a[link_count] = _core.position_of(first) - offset
-		link_b[link_count] = _core.position_of(second) - offset
+		link_a[link_count] = _position_of(first) - offset
+		link_b[link_count] = _position_of(second) - offset
 		link_count += 1
 	material.set_shader_parameter("ring_color", color)
 	material.set_shader_parameter("fill_alpha", _fill_alpha)

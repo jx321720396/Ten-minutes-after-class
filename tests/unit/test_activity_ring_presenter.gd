@@ -12,6 +12,28 @@ const SEED := 12345
 const NPC := 8
 
 
+func test_full_class_session_keeps_all_members_and_links() -> void:
+	var core := SimCore.new(SEED, 16, ConfigLoader.new().load_all())
+	var presenter: ActivityRingPresenter = await _presenter(core)
+	var members: Array = range(16)
+	var session_id := core._sessions.begin("chat", members, 100)
+	presenter.refresh()
+	var region := presenter.get_node("MergedRegion_%d" % session_id) as MeshInstance3D
+	var material := region.material_override as ShaderMaterial
+	assert_eq(int(material.get_shader_parameter("member_count")), 16)
+	assert_eq(int(material.get_shader_parameter("link_count")), 120)
+
+
+func test_ring_tracks_movement_on_next_frame() -> void:
+	var core := _core()
+	var presenter: ActivityRingPresenter = await _presenter(core)
+	presenter.refresh()
+	core.set_position(0, 2.0, 3.0)
+	presenter._process(0.016)
+	var ring := _ring_node(presenter, 0)
+	assert_eq(Vector2(ring.global_position.x, ring.global_position.z), Vector2(2.0, 3.0))
+
+
 ## 呈现器必须进树（Node3D 的 global_position 只在树里有效）。
 func _presenter(core: Variant) -> ActivityRingPresenter:
 	var presenter: ActivityRingPresenter = add_child_autofree(ActivityRingPresenter.new())

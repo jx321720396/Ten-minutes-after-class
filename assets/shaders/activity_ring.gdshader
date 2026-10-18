@@ -27,18 +27,19 @@ uniform float blend_radius : hint_range(0.0, 0.6) = 0.18;
 uniform float edge_softness : hint_range(0.001, 0.08) = 0.025;
 // 这块 quad 的尺寸（米），用于把 UV 换算成局部坐标
 uniform vec2 quad_size = vec2(1.0, 1.0);
-// 成员圆（最多 8 个：一场课间闲聊不会更多）
-uniform vec2 members[8];
-uniform int member_count : hint_range(0, 8) = 0;
-// 连接胶囊的端点对（最多 8 条边）
-uniform vec2 link_a[8];
-uniform vec2 link_b[8];
-uniform int link_count : hint_range(0, 8) = 0;
+// 成员圆（覆盖全班 16 人；不限制内核会话）
+uniform vec2 members[16];
+uniform int member_count : hint_range(0, 16) = 0;
+// 连接胶囊的端点对（16 人两两相连，共 120 条）
+uniform vec2 link_a[120];
+uniform vec2 link_b[120];
+uniform int link_count : hint_range(0, 120) = 0;
 
 varying vec2 ring_pos;
 
 void vertex() {
-	ring_pos = (UV - vec2(0.5)) * quad_size;
+	// PlaneMesh 的 UV 方向不等于本地 XZ；直接使用顶点坐标以免群体形状镜像。
+	ring_pos = VERTEX.xz;
 }
 
 float sd_capsule(vec2 p, vec2 a, vec2 b, float r) {
@@ -58,28 +59,24 @@ float smin(float a, float b, float k) {
 }
 
 void fragment() {
-	float d = 1e9;
-	for (int i = 0; i < 8; i++) {
+	// 移动渲染器可能使用半精度；1e9 会溢出并让平滑并集产生 NaN。
+	float d = 1000.0;
+	for (int i = 0; i < 16; i++) {
 		if (i >= member_count) {
 			break;
 		}
 		float di = length(ring_pos - members[i]) - radius;
 		d = (i == 0) ? di : smin(d, di, blend_radius);
 	}
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < 120; i++) {
 		if (i >= link_count) {
 			break;
 		}
 		d = smin(d, sd_capsule(ring_pos, link_a[i], link_b[i], radius), blend_radius);
 	}
-	if (d > 10.0) {
-		discard;
-	}
 	// 半透明实色填充：内外同色，没有描边。
 	float a = (1.0 - smoothstep(-edge_softness, edge_softness, d)) * fill_alpha * ring_color.a;
-	if (a <= 0.004) {
-		discard;
-	}
+	// 区域外使用零透明度，避免移动渲染器 discard 路径吞掉整块区域。
 	ALBEDO = ring_color.rgb;
 	ALPHA = a;
 }

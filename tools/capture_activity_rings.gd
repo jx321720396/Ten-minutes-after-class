@@ -10,31 +10,38 @@ func _initialize() -> void:
 
 func _capture() -> void:
 	root.size = Vector2i(1920, 1080)
+	var args := OS.get_cmdline_user_args()
+	if args.size() >= 2:
+		root.size = Vector2i(int(args[0]), int(args[1]))
 	var state: Variant = root.get_node("GameState")
 	state.start_game(20261007, 16)
 	var scene: Node3D = load("res://scenes/game/classroom3D.tscn").instantiate()
 	root.add_child(scene)
 	current_scene = scene
 	for frame in range(180):
-		if scene.get_node("Interaction")._core != null:
+		if scene.get_node("Rings")._core != null:
 			break
 		await physics_frame
 	scene.get_node("TransitionOverlay").bind_clock(null)
 	scene.get_node("TransitionOverlay").force_hide()
 	scene.get_node("TransitionOverlay").visible = false
 	scene.process_mode = Node.PROCESS_MODE_DISABLED
+	for pose in scene.get_node("Actors")._seated_poses.values():
+		pose.hide()
+	for index in range(16):
+		scene.get_node("Actors").actor_for(index).get_node("Sprite").show()
 	var core: SimCore = state.sim_core
 	core._sessions.clear()
 	var positions := [
-		Vector2(-0.4, 1.85),
-		Vector2(0.4, 1.85),
-		Vector2(0.0, 1.25),
-		Vector2(-1.85, -0.3),
-		Vector2(-1.85, 0.4),
-		Vector2(-2.6, -3.5),
-		Vector2(-1.9, -3.5),
-		Vector2(-3.9, 1.6),
-		Vector2(1.8, -3.5)
+		Vector2(-0.4, -4.8),
+		Vector2(0.4, -4.8),
+		Vector2(0.0, -4.1),
+		Vector2(-2.0, 3.6),
+		Vector2(-2.0, 4.4),
+		Vector2(2.0, 3.4),
+		Vector2(2.6, 4.1),
+		Vector2(-2.9, 2.7),
+		Vector2(2.7, 2.7)
 	]
 	for index in range(positions.size()):
 		var pos: Vector2 = positions[index]
@@ -45,10 +52,15 @@ func _capture() -> void:
 	core._sessions.begin("chat", [3, 4], 100)
 	core._sessions.begin("chat", [5, 6], 100)
 	scene.get_node("Rings").refresh()
+	for frame in range(8):
+		await process_frame
 	await process_frame
 	await RenderingServer.frame_post_draw
 	DirAccess.make_dir_recursive_absolute(OUTPUT)
 	var result := root.get_texture().get_image().save_png(OUTPUT + "classroom.png")
+	root.get_texture().get_image().save_png(
+		OUTPUT + "classroom_%dx%d.png" % [root.size.x, root.size.y]
+	)
 	print("activity rings screenshot: ", result)
 	current_scene = null
 	scene.queue_free()
