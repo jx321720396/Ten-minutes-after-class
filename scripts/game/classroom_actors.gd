@@ -51,10 +51,10 @@ const NAME_FONTS: Array[String] = [
 @export_group("名字牌")
 @export var show_name_tags: bool = true
 @export var name_font_size: int = 64
-@export var name_pixel_size: float = 0.0035
+@export var name_pixel_size: float = 0.0026
 @export var name_outline_size: int = 10
 ## 名字牌离头顶的高度（米）
-@export var name_gap: float = 0.14
+@export var name_gap: float = 0.05
 @export var name_color: Color = Color(0.13, 0.14, 0.18)
 @export var name_outline_color: Color = Color(1, 1, 1)
 ## 玩家自己的名字牌颜色（与 NPC 区分）
@@ -255,6 +255,10 @@ func _attach_seated_pose(core: Variant, index: int, actor: Node3D) -> void:
 		binding["layout"] = layout
 	pose.configure(_pose_settings, binding)
 	_seated_poses[index] = pose
+	# 名字牌要知道坐姿图在哪：坐姿时它要贴到这张图的左侧、与图中心对齐。
+	var tag := actor.get_node_or_null("NameTag") as ActorNameTag
+	if tag != null:
+		tag.seat_pose = pose
 
 
 func _process(_delta: float) -> void:
@@ -452,9 +456,7 @@ func _build_actor(core: Variant, i: int) -> Node3D:
 		actor.add_child(standing)
 	if show_name_tags:
 		var tag := _build_name_tag(str(core.alias(i)), name_color)
-		var sprite := actor.get_node_or_null("Sprite") as Sprite3D
-		if sprite != null:
-			tag.position.y = sprite.position.y * 2.0 + name_gap
+		tag.stand_sprite = actor.get_node_or_null("Sprite") as Sprite3D
 		actor.add_child(tag)
 	return actor
 
@@ -489,20 +491,38 @@ func _build_sprite(texture: Texture2D, height_scale: float = 1.0) -> Sprite3D:
 	return sprite
 
 
-func _build_name_tag(text: String, color: Color) -> Label3D:
-	var tag := Label3D.new()
+func _build_name_tag(text: String, color: Color) -> ActorNameTag:
+	var tag := ActorNameTag.new()
 	tag.name = "NameTag"
-	tag.text = text
+	# 坐姿竖排（窄、贴图片左侧），站姿横排（头顶上方一行）—— 由 ActorNameTag 按姿态切换。
+	tag.seat_text = _vertical_text(text)
+	tag.stand_text = text
+	tag.text = tag.seat_text
 	tag.font = _name_font()
 	tag.font_size = name_font_size
 	tag.pixel_size = name_pixel_size
 	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	# 对齐/位置每帧由 ActorNameTag 按坐姿、站姿分别设定，这里只给个居中初值。
+	tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# 近大远小：不设 fixed_size —— 名字跟人一样随距离缩小（幅度由 ActorNameTag 的曲线控制）。
+	tag.fixed_size = false
 	tag.outline_size = name_outline_size
 	tag.modulate = color
 	tag.outline_modulate = name_outline_color
 	tag.no_depth_test = true
 	tag.position = Vector3(0.0, character_height + name_gap, 0.0)
 	return tag
+
+
+## 竖排：一个字一行（Label3D 没有竖排属性，用换行实现；两字名就是两行）。
+func _vertical_text(text: String) -> String:
+	var chars: Array[String] = []
+	for i in text.length():
+		var ch := text.substr(i, 1)
+		if ch == " ":
+			continue
+		chars.append(ch)
+	return "\n".join(chars)
 
 
 func _name_font() -> Font:
