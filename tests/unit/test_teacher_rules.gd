@@ -231,6 +231,23 @@ func test_ask_once_per_break() -> void:
 	assert_true(tc.office_chat(core, "ask"), "新课间可再次打听")
 
 
+func test_cancel_office_chat_treats_conversation_as_never_happened() -> void:
+	var core := _core()
+	var tc := core.teacher_commands()
+	core._stress[0] = 60.0
+	core._vitality[0] = 60.0
+	assert_true(tc.summon(core, 0), "召唤后学生在办公室")
+	assert_true(tc.office_chat(core, "scold"), "发起训斥")
+	for _t in range(5):
+		tc.tick(core)
+	assert_true(tc.cancel_office_chat(), "在途谈话可取消")
+	assert_eq(tc.current_command(), "", "取消后无在途命令")
+	assert_almost_eq(core.stress(0), 60.0, 0.001, "训斥未结算，压力不变")
+	assert_almost_eq(core.vitality(0), 60.0, 0.001, "训斥未结算，动力不变")
+	assert_false(tc.cancel_office_chat(), "无在途谈话时取消返回 false")
+	assert_true(tc.office_chat(core, "comfort"), "取消后可重新选择谈话类型")
+
+
 func test_ask_relation_records_directed_single_axis() -> void:
 	var core := _core()
 	var tc := core.teacher_commands()

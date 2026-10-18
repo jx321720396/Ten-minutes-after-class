@@ -139,3 +139,16 @@ func _apply(core: Variant, from_i: int, to_i: int, kind: String) -> void:
 	_last_events.append({"kind": kind, "from": from_i, "to": to_i, "tick": int(core.global_tick())})
 	# 霸凌判据要看「当天受到这些人中至少一人发起的伤害」→ 记到风险监控里。
 	core._note_harm(from_i, to_i, kind)
+
+
+# ------------------------------------------------------------------ 存档
+## 导出「每人每课间最多主动伤害一次」的计数（跨 tick 持久）。_last_events 是瞬态，不存。
+func export_state() -> Dictionary:
+	return {"struck_this_phase": _struck_this_phase.duplicate()}
+
+
+func restore_state(data: Dictionary) -> void:
+	_struck_this_phase = []
+	for v in data.get("struck_this_phase", []):
+		_struck_this_phase.append(bool(v))
+	_last_events = []

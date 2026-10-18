@@ -220,12 +220,14 @@ func pump(delta_seconds: float) -> void:
 		time_updated.emit(snapshot())
 
 
-## 暂停：按拥有者集合管理，可重入；同名重复添加不累计，最后一个释放才恢复。
-func skip_absent_break() -> bool:
-	if _core == null or _mode != MODE_RUNNING or is_paused() or not _core._player_absent:
+## 跳过当前课间剩余时间（快进）：把本段剩余 tick 一次性跑完，再走一次段末结算。
+## 事件一个不少，同种子与实时跑完完全一致（复用 advance_tick，不另写结算）。
+## 仅 running + 课间 + 玩家有控制权（player_control=1）时生效；上课／日末／暂停返回 false。
+func skip_break_remaining() -> bool:
+	if _core == null or _mode != MODE_RUNNING or is_paused():
 		return false
 	var before := _core.time_snapshot()
-	if str(before["kind"]) != "break":
+	if str(before["kind"]) != "break" or not bool(before["player_control"]):
 		return false
 	var remaining := int(before["tick_count"]) - int(before["tick_in_phase"])
 	for _i in range(remaining):
@@ -255,6 +257,7 @@ func skip_class() -> bool:
 	return true
 
 
+## 暂停：按拥有者集合管理，可重入；同名重复添加不累计，最后一个释放才恢复。
 func hold(who: StringName) -> void:
 	_paused_by[who] = true
 
@@ -424,8 +427,9 @@ func save_state() -> Dictionary:
 	}
 
 
-## 恢复时间状态：只接受「版本与配置指纹一致 + mode=report」的日末边界快照；
-## 其余情况返回 false —— 那需要完整内核序列化，本任务把它明确交接给存档任务。
+## 恢复时间状态：接受「版本与配置指纹一致」的运行中（running）与日末简报（report）快照，
+## 以及期末（finished）。恢复须在 bind_core 之后调用（snapshot 要读 _core）。
+## running 恢复 _accumulator（相位内真实秒累计），report/finished 清空累计。
 func restore_state(data: Dictionary) -> bool:
 	if int(data.get("version", 0)) != SAVE_VERSION:
 		push_warning("SimulationClock：存档版本不一致，拒绝恢复时间状态。")
@@ -433,12 +437,20 @@ func restore_state(data: Dictionary) -> bool:
 	if str(data.get("config_fingerprint", "")) != _config_fingerprint():
 		push_warning("SimulationClock：配置指纹不一致，拒绝恢复时间状态。")
 		return false
-	if str(data.get("mode", MODE_RUNNING)) != MODE_REPORT:
-		push_warning("SimulationClock：只有日末简报边界可单独恢复（mode 需为 report）。")
-		return false
-	_mode = MODE_REPORT
+	var mode := str(data.get("mode", MODE_RUNNING))
 	_ended_day = int(data.get("ended_day", 0))
-	_accumulator = 0.0
+	if mode == MODE_REPORT:
+		_mode = MODE_REPORT
+		_accumulator = 0.0
+	elif mode == MODE_RUNNING:
+		_mode = MODE_RUNNING
+		_accumulator = float(data.get("accumulator", 0.0))
+	elif mode == MODE_FINISHED:
+		_mode = MODE_FINISHED
+		_accumulator = 0.0
+	else:
+		push_warning("SimulationClock：未知 mode（%s），拒绝恢复时间状态。" % mode)
+		return false
 	time_updated.emit(snapshot())
 	return true
 

@@ -57,10 +57,62 @@
 - 半径由 0.3 m 调到 0.42 m、填充透明度由 0.32 调到 0.58；渲染容量覆盖全班 16 人及 120 条配对连线。
 - 圈层专项 11/11 通过，配置与文档检查通过；本机 Godot 4.6.3 与 GUT 有兼容报错，不代表目标 4.7.2 或安卓真机验收。截图工具已适配老师版入口并支持尺寸参数。
 
+## 2026-10-18 「班级概况」「需要关注」两张纸卡文字居中
+
+- 两张卡片（`scripts/ui/class_overview_card.gd`、`scripts/ui/attention_card.gd`）内部文字统一改为**居中**：标题行（图标 + 标题）用 `HBoxContainer.alignment = ALIGNMENT_CENTER`；指标格的标签与数值同样居中（`heading` / `numbers` 两个 HBox）；风险行把「名称 + 人数」作为一组居中（标题不再 `EXPAND_FILL` 把人数推到右侧），副标题 `horizontal_alignment = CENTER`。
+- 两个详情弹层同步：标题（「全班概况」/「风险详情」）与正文（含风险条目、证据、下一步）都居中，`autowrap` 长句也随之居中。
+- 只动对齐与 `size_flags`，不改任何文本内容、字号、颜色与卡片尺寸；没有动 `data/ui/*.json`。
+- 验证：1280×720 教室截图（卡片本体 + 两个弹层，临时脚本跑完即删）—— 标题、指标、风险行、弹层正文均居中且无截断。快门禁 `check_config` 180/0、`test_core` 132/0、`check_docs` 通过；`gdformat` / `gdlint` 干净。
+
+## 2026-10-18 角色名字牌：坐姿贴图片左侧居中、站姿回到头顶（竖排 + 缓和近大远小）
+
+- **两种布局，每帧按姿态切换**：**坐姿**用**竖排**（每字一行），整体摆在**坐姿图片的屏幕左侧**、**垂直与上半身贴图的中心（胸口高度）对齐**（`side_offset` = 0.34 米），不挡脸也不挡身体；**站姿**改用**横排**一行（`stand_text`），放在**头顶正上方**（`head_gap` = 0.04 米，横向居中于角色）。姿态判定只看 `Sprite.visible`（`ClassroomActors` 每帧按坐/站切换它），没有按角色名分支。
+- **坐姿锚点取上半身（`Upper`）而不是整体盒**：分层坐姿节点里 `Lower` 连同桌面、腿一起算，整体 AABB 的中心正好落在**桌面高度**（约 0.75 米），名字就会停在桌角；改用 `Upper` 那张上半身贴图的中心后锚点升到约 **1.14 米**（Upper 范围 0.77 ~ 1.52），与胸口平齐。
+- **坐标口径**：名字改 `top_level = true`，每帧用**世界坐标**重算位置 —— 坐姿图挂在座位分层节点里、站姿贴图挂在 actor 上，两者不是同一个坐标系。头顶高度与坐姿图片中心都**实时读 `Sprite3D.get_aabb()`**：build 阶段 sprite 还没入树、`get_aabb()` 是空的，那时算好写死会偏到肩膀高度（首版实测 head_y 0.91，实际头顶 1.75）。
+- **竖排**：每字一行（`_vertical_text()`），并用 `line_spacing = -18` 收紧行距（默认行距两字名会拉得很散）；`vertical_alignment` 随姿态切换（坐姿 CENTER / 站姿 BOTTOM）。
+- **近大远小与字号**：`clampf(12.0 / distance, 0.82, 0.95)` —— 近处不再额外放大（前排本来就吃透视放大），远处最少缩到 0.82，比首版（0.7 ~ 1.25）平缓得多；不设 `fixed_size`，名字仍随距离变化（不在屏幕上固定大小）。字号 `name_pixel_size` 0.0035 → **0.0026**，前排名字不再过大。
+- **文件**：新增 `scripts/game/actor_name_tag.gd`；改 `scripts/game/classroom_actors.gd`（`_build_name_tag()` 同时准备竖排 `seat_text` 与横排 `stand_text` 并接 `ActorNameTag`、新增 `_vertical_text()`、`_attach_seated_pose()` 把坐姿节点交给名字牌；删掉已过时的 `_head_top_y()`）。参数：`name_pixel_size` 0.0035 → 0.0026、`name_gap` 0.14 → 0.05 米（名字牌组内 export 仍可调）。
+- **口径**：纯表现层，只读相机位置与贴图包围盒，不读写任何矩阵 / 时间数值；`no_depth_test` 保留（名字不被课桌挡住）。
+- 验证：1280×720 教室默认视角多时点截图 + 逐角色诊断（临时脚本跑完即删）—— 12 名坐姿角色名字在图片左侧并与图片中心对齐、4 名走动角色名字落在头顶上方，均未压到人物。快门禁 `check_config` 180/0、`test_core` 132/0、`check_docs` 通过；`gdformat` / `gdlint` 干净。
+
+## 2026-10-18 移动端包体瘦身：233.5 → 81.2 MiB（贴图有损 / 3D 降分辨率 / 字体子集）
+
+- **背景**：0.3.4 包体 233.8 MiB，贴图占 166 MiB（角色立绘 72.3、3D 教室 PBR 48.0），字体 15.5 MiB。10-15～10-17 新增的多姿态立绘使包体较 10-13 实测的 152.6 MiB 增长约 81 MiB。
+- **贴图**：71 张角色立绘 `compress/mode 0→1`、`lossy_quality=0.85`（72.3→8.7 MiB，不透明区 PSNR 37.3 dB）；14 张 3D 教室贴图 `process/size_limit=1024`（48→12 MiB）；80 张其余无损贴图 `mode=1`、`q=0.9`（小于 100 KiB 的保持无损）。导入参数是工程级设置，**Windows 导出的画质一并变化**。
+- **字体**：HarmonyOS Sans SC 子集化到 0.87 MiB（原 19.7 MiB；扫描 1604 个运行期字符，相对原字体零丢失）。新增 `tools/subset_font.py`（默认做覆盖检查，`--write` 重建）与 `tools/font_subset_exceptions.txt`，并接入 `tools/run_tests.sh` 导出前检查。
+- **音频**：6 首 BGM 重编码为 96 kbps Ogg（9.7→4.6 MiB）。
+- **排除**：两个预设追加 6 条规则（classroom_2d_motion 样例链条、classroom_2d 样例贴图、备用 logo、旧窗口图标），详见 `docs/production/包体资源排除清单-2026-10-13.md`；新增 512px 窗口图标并改 `project.godot` 的 `config/icon`。
+- **验证**：headless 启动无资源错误；主菜单截图确认中文字形与背景渲染正常；`python tools/subset_font.py` 通过；实测导出 `build/android/下课十分钟0.3.4-slim.apk` 85,442,960 B（81.2 MiB）。
+
+## 2026-10-18 百科全书重写为老师版（8 分类 / 66 词条 / 上线 63）
+
+- 原有 25 条词条全部是学生版（转学生视角）——「你走近点一个人」「打开书包」这类叙事，且与老师版规则直接冲突（把「孤立」写成只是画给你看的标签、把「情绪表情」写成唯一的信息窗口、把周考写成未实装、免罚卷／奖项按可上线内容描述）。按《老师版百科全书重构执行方案 v1》整文件重写，**只改数据文件，不动任何代码与场景**。
+  - **数据**：`data/localization/encyclopedia.json` 升级 `schema_version 2 → 3`，25 条 → **66 条**（63 条上线、3 条 `implemented:false` 留档），分 8 类：状态与数值 7 ／ 课间与日常 11 ／ 老师的手段 11 ／ 座位与关系 3 ／ 崩溃与伤害 3 ／ 风险与结局 8 ／ 公开被动 17 ／ 记录与界面 6。
+  - **口径**：视角改为班主任；压力、动力、今日学业收益、成绩、公开被动与各判据阈值写具体数字（§12.1）；好感／敌对不写实时数值，只写「打听获知 + 档案标注」的观察口径（§12.5）。
+  - **删除**：`tag.emotion`、`res.penalty_free_pass` ／ `end.awards`（§6.3 不迁入）、`act.observe` ／ `act.move` ／ `act.chat_join` ／ `ev.committee_election`；学生版遗留字段 `player_usable` 一并移除。删除前已做全仓引用体检：无任何 `.gd` ／ `.tscn` 实际调用这些 id。
+  - **数值对齐**（对 `origin/main-mobile` 的 2026-10-17 规则修订）：上课段固定收益每节 +2 → **+3**（一天 +6，`class_gain`）、游戏状态结算间隔 20 → **40 秒**（`play_settle_seconds`）且每结算**动力单独 +5**（`play_vitality_gain`，「游戏回动力、学习耗动力」让动力自动循环）、跨天改为**压力单独 −20 且动力保留前日剩余值**（`carry_stress_cut`，`decay.csv` 已删）。
+  - **未定项留白**：睡觉的减压数值、搜包耗时与归还规则、调解 20 秒（暂用值）、第八天之后的考核与 30 天成功条件、打听消息系统形态 —— 均**未**写进词条。
+  - **遗留**：`scripts/ui/encyclopedia.gd` 第 6 行注释仍列着已删除的 `player_usable` 字段名（本次不改 `.gd`，未动）；「期末考」「多结局」「学期总结」三条保持 `implemented:false`，不对外上线。
+  - **验证**：校验脚本「词条总数 66，上线 63，分类 8 ／ 全部检查通过」；headless 冒烟 —— 可见 63 条、首条「压力」、8 个分类顺序正确，抽查「崩溃」「邻座学习压力」「百事通」无 `[t]` 残留与 Markdown 星号。
+
 ## 2026-10-18 学习娱乐循环与自由状态选择（策划交接）
 
 - 主策划新增 §5.1.1：学习加压／耗动力／加收益，普通娱乐减压／回动力／扣收益；学习、游戏整课间锁定，自由状态空闲选择点 50% 学习一个单位、50% 娱乐。取消旧游戏 ≥30 退出及默认压力动力联动，明确优先于旧实装说明。
 - 新增程序交接文档，列明未定数值、事件联动迁移、请教特例、去重及多策略验收；本次不改代码或配置，不宣称平衡通过。检验一要求关系与干预能改变局部选择和后果，不能由固定剧情替代。
+
+## 2026-10-18 存档机制最小可用闭环：内核完整序列化往返 + 单槽手动/自动存档 + 主菜单「继续」
+
+- 新增 `scripts/core/sim_core_serializer.gd`（`SimCoreSerializer`，RefCounted 静态方法）：`export_state(core)` / `restore_state(core, data)` / `config_fingerprint(tables)`。把内核序列化从 `sim_core.gd` 拆出，规避 gdlint 的 `max-file-lines` / `max-public-methods` 上限（`.gdlintrc` 明令「再涨必须优先拆类，不再抬」），`sim_core.gd` 回到 3200 行内、公法数不超。
+- 序列化范围：关系矩阵 A/H、压力/动力/学业收益/成绩/音量、相位与日游标、座位/活动/会话/零食分享/心结/学习等运行态数组、事件去重表 `_stats`/`_settled`（丢失会重复结算）、分享去重 `_share_units`（Vector2i 键转字符串）、组引用数组（按 `is_same` 身份存下标再重接）、双随机流（内核 `_rng` + 打听 `_ask_rng`）与全部子组件 `export_state`/`restore_state`（mt_random / teacher_patrol / teacher_commands / harm_events / risk_monitor / exam_settle / passives / term_record / activity_sessions）。
+- 恢复路径契约：先 `SimCore.new(seed, n, tables)` 确定性重建初始态，再 `restore_state` 覆盖可变运行时态；版本 / 配置指纹 / seed / 人数不一致即拒绝。JSON 往返把 int 变 float、Vector2i 变字符串，恢复时逐个 `int()`/`bool()` 还原；`_mti` clamp 到 `[0,624]`。
+- 配置指纹 `config_fingerprint`：对全部 `data/**/*.csv` 做「表名排序 + 行内字段排序」的 sha256，读档与旧档比对，数据表变更即拒绝（防旧档静默跑错数据）。
+- 存储层 `save.gd::atomic_save`：写 `.tmp` → 回读校验 → `DirAccess.rename_absolute` 原子替换，失败保留旧档；`save()` 仅成功后发 `saved` 并返回 bool。
+- 编排层 `game_state.gd`：`save_snapshot()`（打包 fingerprint/seed/n/core/clock/journal）→ `Save.save`；`auto_save()`（日末简报边界）；`load_game(data)`（校验指纹 → 重建内核 → 回填时钟/笔记）。
+- 时钟 `simulation_clock.gd`：`restore_state` 由「仅日末 report」扩展为 running（恢复 `_accumulator`）/report/finished 三态，未知 mode 拒绝。
+- UI：`main_menu.gd::_on_continue` 读档 → `GameState.load_game` → 进教室（读档不弹教程）；`pause_menu` 加「保存」按钮（轻提示「已保存」）；`classroom.gd` 接 `report_ready → GameState.auto_save()` 与读档时钟状态应用。
+- 第一版范围：**不恢复场景侧 NPC 移动位置**（读档后 NPC 回座位布局），不含多槽位 / 原位置续玩 / 备份迁移（见 [主文档第二十六章](docs/gdd/v4/26-完整存档机制.md)）。
+- 测试：新增 `tests/unit/test_save_roundtrip.gd`（7 例：随机流往返、课间中途往返、续推一致、跨天往返、seed/版本拒绝、配置指纹稳定）；`test_time_term.gd` 补「运行中时钟恢复保持相位内秒累计」+ 坏载荷拒绝改为「未知 mode」。
+- 验证：GUT `test_save_roundtrip` 7/7、`test_time_term` 6/6；全量 unit 387/391 通过，2 项失败仍是既有 `test_classroom_art` 3D 美术位存量红（书包位置 / 重建不叠加模型），与本次无关；`check_config` 180/0、`test_core` 132/0、`verify_formula` 9/0、`check_docs` 通过；本次改动均过 `gdformat`/`gdlint`。
 
 ## 2026-10-18 移除末号学生节点残留的「玩家」特判，对齐 Python
 

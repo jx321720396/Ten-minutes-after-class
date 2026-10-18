@@ -48,11 +48,21 @@ func _ready() -> void:
 		push_error("Classroom：时钟绑定失败（时间配置有问题），时间系统未启动。")
 		transition.force_hide()
 		return
+	# 存档接线：把时钟引用交给 GameState（存档用）；读档时应用暂存时钟状态；日末自动存档。
+	GameState.clock = clock
+	if not GameState.pending_clock_state.is_empty():
+		clock.restore_state(GameState.pending_clock_state)
+		GameState.pending_clock_state = {}
+	clock.report_ready.connect(_on_report_ready)
 	if not _bind_time_flow(core):
 		clock.hold(&"time_flow_config")
 		transition.force_hide()
 		return
 	time_hud.bind_clock(clock)
+	# 读档进入 report 边界时，HUD 会立刻开始「自动进入次日」倒计时；continue_requested 必须
+	# 在 _wait_navigation 之前接上 —— 否则导航就绪慢于一倍 report_hold_seconds 时，信号在
+	# 无人监听时发出，时钟会永远停在 report，NPC 归位后不再走动。
+	time_hud.continue_requested.connect(_on_continue_requested)
 	# 相位环境声：上课循环 amb_class（每天第一节课加晨鸟叫），课间 / 放学停。
 	# bind_core 不会补发 phase_changed，所以连上后先按当前快照复查一次。
 	clock.phase_changed.connect(SFX.on_phase_changed)
@@ -72,10 +82,14 @@ func _ready() -> void:
 	#    地图没同步时那批走动会被全部判成「取不到路线」。
 	if await _wait_navigation():
 		roam.bind_clock(clock)
+	# 读档落在课间时（GameState.load_game 置位）：绑定后立即强制一批离座决策，
+	# 而不是被 Roam 当成一天之始、首批离座顺延 0.7 秒。
+	if GameState.force_roam_decide:
+		GameState.force_roam_decide = false
+		roam.force_decide()
 	player.bind_clock(clock)
 	_bind_feedback(core)
 	clock.time_updated.connect(_sync_state_mirror)
-	time_hud.continue_requested.connect(_on_continue_requested)
 	_install_office()
 	_bind_opening_comic()
 
@@ -294,6 +308,11 @@ func _on_continue_requested() -> void:
 ## 黑幕开始退场：立刻应用挂起的相位（含上课 / 每日归位），避免淡出期间闪现旧位置。
 func _on_transition_dismiss_started() -> void:
 	roam.flush_pending_phase()
+
+
+## 日末简报边界自动存档（mode=report，时钟可安全恢复的边界）。
+func _on_report_ready(_ended_day: int) -> void:
+	GameState.auto_save()
 
 
 func _core_from_state() -> Variant:

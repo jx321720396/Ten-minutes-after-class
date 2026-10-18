@@ -65,7 +65,7 @@ func _ready() -> void:
 		row.add_theme_constant_override("separation", int(config.gap))
 	get_viewport().size_changed.connect(_fit)
 	_fit()
-	_meeting = preload("res://scripts/game/office_meeting.gd").new()
+	_meeting = preload("res://scenes/game/office_meeting.tscn").instantiate()
 	%Design.add_child(_meeting)
 	%Design.move_child(_meeting, 0)
 	_meeting.setup(self)

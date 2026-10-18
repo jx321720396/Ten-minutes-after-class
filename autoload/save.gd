@@ -12,19 +12,39 @@ const DEFAULT_PATH := "user://savegame.dat"
 const SAVE_VERSION := 1
 
 
-## 写入存档：{version, saved_at, data}。
-func save(data: Dictionary, path: String = DEFAULT_PATH) -> void:
+## 写入存档：{version, saved_at, data}。saved 信号仅在原子写入成功后发出；返回是否成功。
+func save(data: Dictionary, path: String = DEFAULT_PATH) -> bool:
 	var payload := {
 		"version": SAVE_VERSION,
 		"saved_at": Time.get_unix_time_from_system(),
 		"data": data,
 	}
-	var f := FileAccess.open(path, FileAccess.WRITE)
+	if atomic_save(payload, path):
+		saved.emit()
+		return true
+	return false
+
+
+## 原子写：先写 .tmp，回读校验，再原子改名替换；任一步失败保留旧档并返回 false。
+func atomic_save(payload: Dictionary, path: String) -> bool:
+	var text := JSON.stringify(payload)
+	var tmp := path + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
-		push_error("Save: 无法写入 %s" % path)
-		return
-	f.store_string(JSON.stringify(payload))
-	saved.emit()
+		push_error("Save: 无法写入临时文件 %s" % tmp)
+		return false
+	f.store_string(text)
+	f.close()
+	var check := FileAccess.open(tmp, FileAccess.READ)
+	if check == null or check.get_as_text() != text:
+		push_error("Save: 临时文件回读校验失败 %s" % tmp)
+		return false
+	check.close()
+	var err := DirAccess.rename_absolute(tmp, path)
+	if err != OK:
+		push_error("Save: 原子改名失败 %s → %s（%s）" % [tmp, path, error_string(err)])
+		return false
+	return true
 
 
 ## 读取存档；文件缺失或损坏返回空字典。

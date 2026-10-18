@@ -3,7 +3,8 @@
 # tools/run_tests.sh —— 一键跑测试
 #
 # 顺序：① 离线六道门（tools/*.py） → ①b 导出前置检查（CSV 导入模式）
-#       → ② 铁律测试（tests/invariants/） → ③ Godot 侧 GUT 单测（需要 Godot 可执行文件）
+#       → ①c 导出前置检查（字体子集覆盖） → ② 铁律测试（tests/invariants/）
+#       → ③ Godot 侧 GUT 单测（需要 Godot 可执行文件）
 #
 # 本机没有 Godot 时，①② 照跑，③ 自动跳过并给出提示（不算失败）——
 # 这台机器上 Godot 未加入 PATH，所以「填 Godot 完整路径」是使用本脚本的关键一步。
@@ -217,6 +218,17 @@ if [ -f "tools/check_export_imports.py" ]; then
 else
   printf '\n=== 导出前检查 ===\n'
   mark_skip "导出前检查（tools/check_export_imports.py 不存在）"
+fi
+
+# ------------------------------------------------------- ①c 字体子集覆盖检查
+# 包体内的 UI 字体是子集化的（2026-10-18 起，约 0.9 MiB）。新增文案若出现新字符，
+# 运行期会显示方框；这里提前失败，提示重建子集（python tools/subset_font.py --write）。
+printf '\n=== 字体子集覆盖检查 ===\n'
+if [ -f "tools/subset_font.py" ]; then
+  run_step "字体子集 check_font_subset" "$PYTHON" "tools/subset_font.py"
+else
+  printf '\n=== 字体子集覆盖检查 ===\n'
+  mark_skip "字体子集检查（tools/subset_font.py 不存在）"
 fi
 
 # -------------------------------------------------------------- ② 铁律测试

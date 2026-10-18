@@ -38,6 +38,7 @@
     "break_ending": "即将上课",
     "class_ending": "即将下课",
     "paused": "已暂停",
+    "skip_break": "跳过课间",
     "week_future": "周考还有 %d 天",
     "week_today": "今天周考",
     "week_past": "首次周考已结束",

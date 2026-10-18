@@ -233,3 +233,28 @@ func _zeros(count: int) -> Array[float]:
 
 func _rows(tables: Dictionary, name: String) -> Array:
 	return tables.get(name, {}).get("rows", [])
+
+
+# ------------------------------------------------------------------ 存档
+## 导出跨天累计的「收放自如 / 弹簧」已付额（其余由 configure + 角色重建）。
+func export_state() -> Dictionary:
+	return {
+		"loss_total": _loss_total.duplicate(),
+		"loss_paid": _loss_paid.duplicate(),
+		"spring_total": _spring_total.duplicate(),
+		"spring_paid": _spring_paid.duplicate(),
+	}
+
+
+func restore_state(data: Dictionary) -> void:
+	_loss_total = _floats(data.get("loss_total", []))
+	_loss_paid = _floats(data.get("loss_paid", []))
+	_spring_total = _floats(data.get("spring_total", []))
+	_spring_paid = _floats(data.get("spring_paid", []))
+
+
+func _floats(raw: Array) -> Array[float]:
+	var out: Array[float] = []
+	for v in raw:
+		out.append(float(v))
+	return out

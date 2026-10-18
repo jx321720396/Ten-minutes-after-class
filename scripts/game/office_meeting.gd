@@ -3,65 +3,55 @@ extends Control
 
 signal action_requested(action: String)
 
+@onready var _clip: Control = $Clip
+@onready var _portrait: TextureRect = $Clip/Portrait
+@onready var _panel: PanelContainer = $Panel
+@onready var _title: Label = $Panel/Rows/Title
+@onready var _status: Label = $Panel/Rows/Status
+@onready var _cancel: Button = $Panel/Rows/Cancel
+@onready var _scroll: ScrollContainer = $Panel/Rows/Scroll
+
 var _config: Dictionary
-var _portrait: TextureRect
-var _title: Label
-var _status: Label
 var _buttons: Dictionary = {}
-var _scroll: ScrollContainer
 var _identity := -1
 var _sprites: Dictionary
 var _appearance: Dictionary = {}
-var _panel: PanelContainer
-var _clip: Control
 
 
 func setup(view: Control) -> void:
 	_config = view.config.meeting
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var clip := Control.new()
-	_clip = clip
-	clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	clip.clip_contents = true
-	_set_rect(clip, _config.clip_rect)
-	add_child(clip)
-	_portrait = TextureRect.new()
+	_set_rect(_clip, _config.clip_rect)
+	_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_clip.clip_contents = true
 	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_set_rect(_portrait, _config.portrait_rect)
-	clip.add_child(_portrait)
-	var panel := PanelContainer.new()
-	_panel = panel
-	_set_rect(panel, _config.panel_rect)
-	panel.add_theme_stylebox_override("panel", view.paper_style())
-	add_child(panel)
-	var rows := VBoxContainer.new()
+	_set_rect(_panel, _config.panel_rect)
+	_panel.add_theme_stylebox_override("panel", view.paper_style())
+	var rows := _panel.get_node("Rows") as VBoxContainer
 	rows.add_theme_constant_override("separation", int(view.config.gap))
-	panel.add_child(rows)
-	_title = Label.new()
-	_status = Label.new()
 	for label in [_title, _status]:
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.add_theme_font_override("font", preload("res://scripts/ui/game_fonts.gd").regular())
 		label.add_theme_color_override("font_color", Color(view.config.ink))
 		label.add_theme_font_size_override("font_size", int(_config.font_size))
-		rows.add_child(label)
 	_status.custom_minimum_size.y = float(_config.status_height)
-	# 行为按钮多于一屏（安抚 / 表扬 / 训斥 / 送回 / 打听 / 鼓励），放进可滚动区：
-	# 面板高度固定，超出部分上下拖动查看，触摸拖动由 ScrollContainer 原生处理。
-	var scroll := ScrollContainer.new()
-	_scroll = scroll
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.follow_focus = true
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rows.add_child(scroll)
-	var actions := VBoxContainer.new()
+	_cancel.text = _config.cancel_chat
+	view.style_button(_cancel)
+	_cancel.custom_minimum_size.y = float(_config.button_height)
+	_cancel.add_theme_font_size_override("font_size", int(_config.small_size))
+	_cancel.visible = false
+	_cancel.pressed.connect(func() -> void: action_requested.emit("cancel_chat"))
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.follow_focus = true
+	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var actions := _scroll.get_node("Actions") as VBoxContainer
 	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_theme_constant_override("separation", int(view.config.gap))
-	scroll.add_child(actions)
 	for key in ["comfort", "praise", "scold", "send_back", "ask", "encourage"]:
-		var button := Button.new()
+		var button := actions.get_node(_button_name(key)) as Button
 		button.text = _config.send_back_label if key == "send_back" else _config[key]
 		view.style_button(button)
 		button.custom_minimum_size.y = float(_config.button_height)
@@ -70,7 +60,6 @@ func setup(view: Control) -> void:
 			"font_disabled_color", Color(view.config.ink).lerp(Color(view.config.paper), 0.45)
 		)
 		button.pressed.connect(func() -> void: action_requested.emit(key))
-		actions.add_child(button)
 		_buttons[key] = button
 		if key == "encourage":
 			button.tooltip_text = _config.pending
@@ -83,6 +72,10 @@ func setup(view: Control) -> void:
 		_appearance[str(row.id)] = str(row.sprite)
 	_portrait.hide()
 	refresh(null, {})
+
+
+func _button_name(key: String) -> String:
+	return "SendBack" if key == "send_back" else key.capitalize()
 
 
 func refresh(core: Variant, snapshot: Dictionary) -> void:
@@ -106,6 +99,7 @@ func refresh(core: Variant, snapshot: Dictionary) -> void:
 		)
 	for key in _buttons:
 		_buttons[key].disabled = not arrived or command != ""
+	_cancel.visible = command == "office_chat"
 
 
 func status_text(snapshot: Dictionary) -> String:

@@ -32,6 +32,8 @@ func _ready() -> void:
 	rows.add_theme_constant_override("separation", int(_cfg.row_gap))
 	add_child(rows)
 	var heading := HBoxContainer.new()
+	# 文字居中：图标 + 标题整体居中
+	heading.alignment = BoxContainer.ALIGNMENT_CENTER
 	heading.add_theme_constant_override("separation", int(_cfg.icon_gap))
 	rows.add_child(heading)
 	var warning := TextureRect.new()
@@ -117,18 +119,20 @@ func _risk_button(kind: String) -> Button:
 	content.add_child(texts)
 	var line := HBoxContainer.new()
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 行内文字居中：标题 + 人数作为一组居中（不再把人数推到右侧）
+	line.alignment = BoxContainer.ALIGNMENT_CENTER
 	texts.add_child(line)
 	var title := _label(str(_cfg[kind + "_label"]), int(_cfg.row_font_size))
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.add_theme_font_override("font", GameFonts.demibold())
 	line.add_child(title)
 	var count := _label("", int(_cfg.row_font_size))
 	count.name = prefix + "Count"
 	count.custom_minimum_size.x = float(_cfg.count_width)
-	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	line.add_child(count)
 	var subtitle := _label("", int(_cfg.subtitle_size))
 	subtitle.name = prefix + "Subtitle"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	texts.add_child(subtitle)
 	var arrow := _label("›", int(_cfg.row_font_size))
 	arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -271,6 +275,7 @@ func _sync_rows(desired: Dictionary) -> void:
 			else:
 				var label := _label("", int(_cfg.detail_font_size))
 				label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				row = label
 			row.name = key
 			_detail_rows.add_child(row)
@@ -338,6 +343,7 @@ func _build_details() -> void:
 	rows.add_theme_constant_override("separation", int(_cfg.row_gap))
 	panel.add_child(rows)
 	_detail_heading = _label("", int(_cfg.detail_title_size))
+	_detail_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rows.add_child(_detail_heading)
 	var scroll := ScrollContainer.new()
 	scroll.name = "RiskScroll"

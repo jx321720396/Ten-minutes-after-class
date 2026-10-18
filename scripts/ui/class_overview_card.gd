@@ -22,6 +22,8 @@ func _ready() -> void:
 	content.add_theme_constant_override("separation", int(_cfg.row_gap))
 	add_child(content)
 	var heading := HBoxContainer.new()
+	# 文字居中：图标 + 标题整体居中（左对齐时右侧留白，看着不平衡）
+	heading.alignment = BoxContainer.ALIGNMENT_CENTER
 	heading.add_theme_constant_override("separation", int(_cfg.icon_gap))
 	content.add_child(heading)
 	heading.add_child(_icon("board", float(_cfg.heading_icon_size)))
@@ -96,11 +98,13 @@ func _cell(metric: Dictionary) -> PanelContainer:
 	rows.add_theme_constant_override("separation", int(_cfg.icon_gap))
 	cell.add_child(rows)
 	var heading := HBoxContainer.new()
+	heading.alignment = BoxContainer.ALIGNMENT_CENTER
 	heading.add_theme_constant_override("separation", int(_cfg.icon_gap))
 	rows.add_child(heading)
 	heading.add_child(_icon(str(metric.icon), float(_cfg.icon_size)))
 	heading.add_child(_label(str(metric.label), int(_cfg.label_size)))
 	var numbers := HBoxContainer.new()
+	numbers.alignment = BoxContainer.ALIGNMENT_CENTER
 	numbers.add_theme_constant_override("separation", int(_cfg.icon_gap))
 	rows.add_child(numbers)
 	var value := _label("", int(_cfg.value_size))
@@ -160,9 +164,12 @@ func _build_details() -> void:
 	var rows := VBoxContainer.new()
 	rows.add_theme_constant_override("separation", int(_cfg.row_gap))
 	panel.add_child(rows)
-	rows.add_child(_label("全班概况", int(_cfg.detail_title_size)))
+	var detail_title := _label("全班概况", int(_cfg.detail_title_size))
+	detail_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rows.add_child(detail_title)
 	_detail_text = _label("", int(_cfg.detail_font_size))
 	_detail_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_detail_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rows.add_child(_detail_text)
 	var close := Button.new()
 	close.name = "CloseOverview"

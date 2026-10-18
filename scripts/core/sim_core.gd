@@ -67,6 +67,7 @@ var _exam: RefCounted  # 周考 / 期末考（§19.1），脚本见 exam_settle.
 
 var _rng: MtRandom
 var _seed := 0
+var _config_fingerprint := ""  # 本局配置摘要（存档校验用，构造时算好）
 var _n := 0
 var _day := 1
 var _phase := "break"
@@ -192,6 +193,7 @@ func _init(seed: int, npc_count: int, tables: Dictionary = {}) -> void:
 	var n := _n
 
 	_load_config(tables)
+	_config_fingerprint = SimCoreSerializer.config_fingerprint(tables)
 
 	# 单步推进游标：非 settle 段（课间/上课）顺序（D11）
 	_active_phases = []

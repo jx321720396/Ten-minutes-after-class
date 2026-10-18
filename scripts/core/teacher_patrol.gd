@@ -93,3 +93,40 @@ func multiplier(kind: String) -> float:
 
 func snapshot() -> Dictionary:
 	return {"present": present, "visited": visited, "leave_tick": leave_tick}
+
+
+# ------------------------------------------------------------------ 存档
+## 导出巡逻运行时状态。没收账本与免罚卷跨课间 / 跨天持久，必须随档。
+func export_state() -> Dictionary:
+	return {
+		"present": present,
+		"visited": visited,
+		"leave_tick": leave_tick,
+		"confiscated": confiscated.duplicate(),
+		"exemption_tokens": exemption_tokens.duplicate(),
+		"exempt_this_visit": exempt_this_visit.duplicate(),
+	}
+
+
+## 回填巡逻状态（读档用）。JSON 往返把 int / bool 变 float，逐个还原。
+func restore_state(data: Dictionary) -> void:
+	present = bool(data.get("present", false))
+	visited = bool(data.get("visited", false))
+	leave_tick = int(data.get("leave_tick", -1))
+	confiscated = _int_array(data.get("confiscated", []))
+	exemption_tokens = _int_array(data.get("exemption_tokens", []))
+	exempt_this_visit = _bool_array(data.get("exempt_this_visit", []))
+
+
+func _int_array(raw: Array) -> Array:
+	var out: Array = []
+	for v in raw:
+		out.append(int(v))
+	return out
+
+
+func _bool_array(raw: Array) -> Array:
+	var out: Array = []
+	for v in raw:
+		out.append(bool(v))
+	return out

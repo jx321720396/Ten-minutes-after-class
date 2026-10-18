@@ -21,6 +21,12 @@ static var _scenes: Dictionary = {}
 static var _scene_requests: Dictionary = {}
 
 
+## 无头（GUT / CI）用 dummy 渲染器，后台线程建贴图会与它冲突（Parameter "t" is null），
+## 因此 headless 下退回原来的同步加载；真机与桌面窗口化才走线程预载。
+static func _threaded() -> bool:
+	return DisplayServer.get_name() != "headless"
+
+
 ## 全部人物坐姿贴图路径（去重）；读不到配置时返回空数组。
 static func pose_texture_paths() -> Array:
 	var paths := {}
@@ -38,6 +44,8 @@ static func pose_texture_paths() -> Array:
 
 ## 发起贴图线程加载（重复调用无副作用）。
 static func request_textures(paths: Array) -> void:
+	if not _threaded():
+		return
 	for raw in paths:
 		var path := str(raw)
 		if path.is_empty() or _textures.has(path) or _failed.has(path):
@@ -51,6 +59,8 @@ static func request_textures(paths: Array) -> void:
 ## 取贴图：已加载直接返回；仍在加载且 wait_for_load=false 返回 null（调用方下一帧再试）；
 ## wait_for_load=true（默认，单测 / 同步调用）则阻塞到加载完成，保持旧语义。
 static func texture(path: String, wait_for_load: bool = true) -> Texture2D:
+	if not _threaded():
+		return load(path) as Texture2D
 	if _textures.has(path):
 		return _textures[path]
 	if _failed.has(path):
@@ -85,6 +95,8 @@ static func texture(path: String, wait_for_load: bool = true) -> Texture2D:
 
 ## 贴图是否已可用（失败也返回 true —— 调用方按“没有贴图”继续，不无限等待）。
 static func is_ready(path: String) -> bool:
+	if not _threaded():
+		return true
 	if _textures.has(path) or _failed.has(path):
 		return true
 	if not _texture_requests.has(path):
@@ -92,8 +104,18 @@ static func is_ready(path: String) -> bool:
 	return ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_LOADED
 
 
+## 一批贴图是否全部就绪（失败视为就绪，避免开幕无限等待）。
+static func all_ready(paths: Array) -> bool:
+	for raw in paths:
+		if not is_ready(str(raw)):
+			return false
+	return true
+
+
 ## 发起场景线程加载（重复调用无副作用）。
 static func request_scene(path: String) -> void:
+	if not _threaded():
+		return
 	if path.is_empty() or _scenes.has(path) or _scene_requests.has(path):
 		return
 	_scene_requests[path] = true
@@ -102,6 +124,8 @@ static func request_scene(path: String) -> void:
 
 ## 取场景：已加载返回；仍在加载返回 null（调用方回退到 change_scene_to_file）。
 static func scene(path: String) -> PackedScene:
+	if not _threaded():
+		return load(path) as PackedScene
 	if _scenes.has(path):
 		return _scenes[path]
 	if not _scene_requests.has(path):
