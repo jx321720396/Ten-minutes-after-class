@@ -2,13 +2,13 @@
 
 ## 当前主要工作目录（2026-10-14，用户指定）
 
-当前主要目标是移动端，优先在 **D:/game/下课十分钟-mobile** 工作，并在每次操作前确认分支为 main-mobile。当前聊天即使仍挂在旧项目目录，也应显式将命令工作目录指向本目录。移动端已有布局、触摸输入、导出配置与未提交改动必须保留；跨侧同步仍按 main → main-mobile，不反向合并，不删除 main-mobile。
+当前主要目标是移动端，优先在 **D:/game/下课十分钟-mobile** 工作，并在每次操作前确认分支为 main-mobile。当前聊天即使仍挂在旧项目目录，也应显式将命令工作目录指向本目录。移动端已有布局、触摸输入、导出配置与未提交改动必须保留；**远端 2026-10-18 起只保留 `main-mobile` 一个分支（`main` 已删除）**，不删除 main-mobile。
 
 给 AI 编码助手（Reasonix / Claude / Copilot 等）的项目须知。人类协作者请看 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
 
 ## 移动端适配分支
 
-main-mobile 是移动端适配专用分支，禁止删除。所有移动端布局、触摸输入、屏幕方向和导出适配改动优先在此分支进行。
+main-mobile 是**唯一主线**（2026-10-18 删除 `main` 后），禁止删除。所有开发、移动端布局、触摸输入、屏幕方向和导出适配改动都在此分支进行。
 
 ## 项目一句话
 
@@ -66,22 +66,21 @@ GDScript 约定：矩阵访问一律走 `Affinity(i,j)` 等访问器；风格与
 ## 提交与 PR
 
 - 提交信息：`<类型>(<范围>): <描述>`，类型见 `CONTRIBUTING.md`。
-- **`main` 允许直接推送**（小团队主干开发，2026-10-08 起）：推送前跑**快门禁**（`check_config` / `test_core` / `verify_formula` / `check_docs`，秒级）+ `gdformat scripts/` + `gdlint scripts/`，**红灯不推** —— **仓库已移除 GitHub Actions（2026-10-09）**，没有 CI 兜底，全靠这一步。完整六道门（含多种子标定门，与 UI / 美术改动无关且有已知不达标项）需要时手动跑 `bash tools/run_tests.sh --no-godot`。跨模块大改或需要他人复看的改动仍推荐走 PR（`CONTRIBUTING.md` §8）。
+- **`main-mobile` 允许直接推送**（小团队主干开发，2026-10-08 起；2026-10-18 起远端 `main` 已删除，主干就是 `main-mobile`）：推送前跑**快门禁**（`check_config` / `test_core` / `verify_formula` / `check_docs`，秒级）+ `gdformat scripts/` + `gdlint scripts/`，**红灯不推** —— **仓库已移除 GitHub Actions（2026-10-09）**，没有 CI 兜底，全靠这一步。完整六道门（含多种子标定门，与 UI / 美术改动无关且有已知不达标项）需要时手动跑 `bash tools/run_tests.sh --no-godot`。跨模块大改或需要他人复看的改动仍推荐走 PR（`CONTRIBUTING.md` §8）。
 - **规格变更**必须同批更新受影响的 `docs/` 与 `CHANGELOG.md`；其余改动在同一批推送内补记即可，不要求每个提交都写条目。
 - 涉及玩法逻辑的改动，说明"检验一（换成脚本还成立吗）"如何通过。
 
 ## 当前状态
 
-M1 进行中，参赛目标仍为 **2026 聚光灯创作挑战（主题「涌现」），10/18 提交**。2026-10-14 已更新老师版策划，代码与配置仍为学生版，旧门与旧标定不证明老师版通过。新规格与优先级见主文档 §14–§15 和 `docs/production/路线图.md`；旧冲刺日历保留为历史执行参考，尚未据新范围承诺交付日期。教室 3D 与人物素材可作为迁移候选；移动端方向与下述同步约定继续有效。
+M1 进行中，参赛目标仍为 **2026 聚光灯创作挑战（主题「涌现」），10/18 提交**。2026-10-14 已更新老师版策划，代码与配置仍为学生版，旧门与旧标定不证明老师版通过。新规格与优先级见主文档 §14–§15 和 `docs/production/路线图.md`；旧冲刺日历保留为历史执行参考，尚未据新范围承诺交付日期。教室 3D 与人物素材可作为迁移候选；移动端方向继续有效（跨侧同步约定已于 2026-10-18 随 `main` 删除而作废，见下）。
 
 ## 平台方向：制作移动端（2026-10-13 定规）
 
 **当前阶段 = 制作移动端。** 执行约定：
 
-1. **移动端分支 = `main-mobile`**（队友维护、可含移动端专属实现如导出预设、响应式布局）；移动端开发与验收在该分支上进行，不以 `main` 代替。
-2. **同步方向固定为「`main` → `main-mobile`」**：`main` 上落定的通用更新（代码 / 数据 / 文档）按期并入 `main-mobile`；需要移动端与通用侧一起改的改动，先在 `main` 落定，再合并过去。
-3. **有差异以移动端仓库为准**：合并时若两侧改了同一处，保留 `origin/main-mobile` 的版本（`git merge main` 冲突时取 `--ours`）；`main` 侧改动不得覆盖移动端已有实现。
-4. 合并后在 `main-mobile` 上跑快门禁（`check_config` / `test_core` / `verify_formula` / `check_docs`）+ `gdformat` / `gdlint`，再推送；跨侧排查问题时先确认当前所在分支（`git status -sb`），避免"改在 main、测在 mobile"。
+1. **唯一主线 = `main-mobile`**（2026-10-18 删除 `main` 之后）：所有开发、验收、导出都在此分支进行，禁止删除。原「`main` → `main-mobile` 跨侧同步」约定随之作废。
+2. **克隆与迁移**：仓库只剩这一个分支，`git clone <url>` 即可，全历史约 180 MB（2026-10-18 重写了历史以剥离旧 PNG 与冗余 blend）。旧的本地 clone 需要按新历史对齐：`git fetch origin --prune` 后对 `main-mobile` 做 `git reset --mixed origin/main-mobile`（工作区文件不变），旧 `main` 分支的本地副本不要再推送。
+3. 推送前在 `main-mobile` 上跑快门禁（`check_config` / `test_core` / `verify_formula` / `check_docs`）+ `gdformat` / `gdlint`，再推送；排查问题时先确认当前分支（`git status -sb`）。
 
 ## 提交前的六道门（全部必须通过；用 `&&` 串起，勿用 `;`）
 
