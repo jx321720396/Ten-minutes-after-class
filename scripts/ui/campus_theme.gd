@@ -5,6 +5,8 @@ const SETTINGS := "res://data/ui/campus_theme.json"
 const PAPER_SHADER := preload("res://assets/shaders/ui_paper.gdshader")
 const GameFonts := preload("res://scripts/ui/game_fonts.gd")
 
+static var _caption_icons: Dictionary = {}
+
 
 static func settings() -> Dictionary:
 	return JSON.parse_string(FileAccess.get_file_as_string(SETTINGS))
@@ -250,10 +252,7 @@ static func _menu_caption(item: Button, cfg: Dictionary) -> void:
 	icon.custom_minimum_size = Vector2.ONE * float(cfg.menu_icon_size)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var svg := FileAccess.get_file_as_string(item.icon.resource_path)
-	var image := Image.new()
-	image.load_svg_from_string(svg.replace("#284536", "#ffffff"))
-	icon.texture = ImageTexture.create_from_image(image)
+	icon.texture = _white_icon(item.icon)
 	row.add_child(icon)
 	item.tooltip_text = item.text
 	item.text = ""
@@ -266,3 +265,27 @@ static func _menu_caption(item: Button, cfg: Dictionary) -> void:
 			text.add_theme_color_override("font_color", color)
 			icon.modulate = color
 	)
+
+
+## 图标在 SVG 里只有 #284536 一种颜色，这里把不透明像素统一涂白，
+## 由 TextureRect 的 modulate 上色。不读 .svg 源文件：导出包里只有导入后的纹理。
+static func _white_icon(source: Texture2D) -> Texture2D:
+	var key := source.resource_path
+	if _caption_icons.has(key):
+		return _caption_icons[key]
+	var image := source.get_image()
+	if image == null or image.is_empty():
+		return source
+	if image.is_compressed():
+		image.decompress()
+	var copy := image.duplicate() as Image
+	if copy == null:
+		return source
+	for y in copy.get_height():
+		for x in copy.get_width():
+			var pixel := copy.get_pixel(x, y)
+			if pixel.a > 0.0:
+				copy.set_pixel(x, y, Color(1.0, 1.0, 1.0, pixel.a))
+	var texture := ImageTexture.create_from_image(copy)
+	_caption_icons[key] = texture
+	return texture
