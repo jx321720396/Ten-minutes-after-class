@@ -27,11 +27,20 @@ var replay_tutorial := false
 var tutorial_pending := false
 ## 主菜单开幕是否已经显示过「第 N 天」黑幕（教室进场消费一次，避免重复盖卡片）。
 var opening_day_shown := false
+## 教室场景注入的时钟引用（存档 / 读档用；SimulationClock 是场景节点，不在 autoload 里）。
+var clock: Variant = null
+## 读档暂存的时钟状态：教室 bind_core 后应用（时钟须先绑内核才能 restore）。
+var pending_clock_state: Dictionary = {}
+## 读档落在课间时置位：教室绑定 Roam 后立即强制一批离座决策（跳过「第 N 天」归位停留）。
+## 否则读档被 Roam 当成一天之始（表现层 `_last_snapped_day` 不存档、恒为 -1），首批离座会被
+## 0.7 秒停留顺延。由 load_game 置位、教室消费后清零（与 pending_clock_state 同一套 pending 约定）。
+var force_roam_decide := false
 
 
 func start_game(new_seed: int, new_npc_count: int) -> void:
 	clue_board_journal = {"days": {}, "sealed": {}}
 	profile_notebook = {"current": {}, "history": [], "seen": {}}
+	force_roam_decide = false
 	seed = new_seed
 	npc_count = new_npc_count
 	day = 0
@@ -72,3 +81,74 @@ func is_running() -> bool:
 func sync_time(snapshot: Dictionary) -> void:
 	day = int(snapshot.get("day", day))
 	phase = str(snapshot.get("kind", phase))
+
+
+## 打包本局快照并写盘（单槽 user://savegame.dat）。日末自动存档与暂停菜单手动存档共用。
+## 返回是否写入成功（false = 无内核实例或磁盘写入失败）。
+func save_snapshot() -> bool:
+	if sim_core == null:
+		push_warning("GameState：没有本局内核，无法存档。")
+		return false
+	var core_state: Dictionary = SimCoreSerializer.export_state(sim_core)
+	var payload := {
+		"config_fingerprint": str(core_state.get("config_fingerprint", "")),
+		"seed": seed,
+		"n": npc_count,
+		"day": day,
+		"core": core_state,
+		"clock": clock.save_state() if clock != null else {},
+		"journal":
+		{
+			"profile_notebook": profile_notebook,
+			"clue_board_journal": clue_board_journal,
+		},
+	}
+	return Save.save(payload)
+
+
+## 日末简报边界自动存档（此时 mode=report，正是时钟可安全恢复的边界）。
+func auto_save() -> void:
+	save_snapshot()
+
+
+## 从存档 data 恢复本局：校验配置指纹 → 重建内核并覆盖运行时态 → 回填会话字段。
+## 返回 true 表示内核已就绪（可切教室）；false = 数据表已变 / 存档损坏 / seed 人数非法。
+func load_game(data: Dictionary) -> bool:
+	if data.is_empty():
+		push_warning("GameState：存档为空，无法恢复。")
+		return false
+	var tables := ConfigLoader.new().load_all()
+	var saved_fp := str(data.get("config_fingerprint", ""))
+	if saved_fp == "" or saved_fp != SimCoreSerializer.config_fingerprint(tables):
+		push_warning("GameState：存档配置指纹与当前数据表不一致，拒绝恢复。")
+		return false
+	var s := int(data.get("seed", 0))
+	var n := int(data.get("n", 0))
+	if n <= 0:
+		push_warning("GameState：存档人数非法，拒绝恢复。")
+		return false
+	var core: Variant = SimCore.new(s, n, tables)
+	if core == null or not SimCoreSerializer.restore_state(core, data.get("core", {})):
+		push_warning("GameState：内核恢复失败（版本 / 指纹 / seed 不符）。")
+		return false
+	seed = s
+	npc_count = n
+	day = int(data.get("day", 0))
+	sim_core = core
+	wire_events(core)
+	profile_notebook = data.get("journal", {}).get("profile_notebook", profile_notebook)
+	clue_board_journal = data.get("journal", {}).get("clue_board_journal", clue_board_journal)
+	pending_clock_state = data.get("clock", {})
+	force_roam_decide = false
+	# 读档落在「课间」（running 模式 + break）时：① 把课间拨回段首（tick 与时钟累计归零），
+	# 玩家重新得到一个完整课间；② 置位强制离座判定，让教室绑定 Roam 后立即跑一批走动决策，
+	# 而不是被当成一天之始、首批离座被 0.7 秒停留顺延。段首判定（睡眠 / 学习状态等）保留
+	# 存档值、不重跑 _begin_phase —— 读档只重置课间计时，不改变已保存的世界。
+	if str(pending_clock_state.get("mode", "")) == "running":
+		var snap: Dictionary = core.time_snapshot()
+		if str(snap.get("kind", "")) == "break":
+			force_roam_decide = true
+			if int(snap.get("tick_in_phase", 0)) > 0:
+				core._tick_in_phase = 0
+				pending_clock_state["accumulator"] = 0.0
+	return true

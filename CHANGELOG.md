@@ -43,6 +43,20 @@
 - 主策划新增 §5.1.1：学习加压／耗动力／加收益，普通娱乐减压／回动力／扣收益；学习、游戏整课间锁定，自由状态空闲选择点 50% 学习一个单位、50% 娱乐。取消旧游戏 ≥30 退出及默认压力动力联动，明确优先于旧实装说明。
 - 新增程序交接文档，列明未定数值、事件联动迁移、请教特例、去重及多策略验收；本次不改代码或配置，不宣称平衡通过。检验一要求关系与干预能改变局部选择和后果，不能由固定剧情替代。
 
+## 2026-10-18 存档机制最小可用闭环：内核完整序列化往返 + 单槽手动/自动存档 + 主菜单「继续」
+
+- 新增 `scripts/core/sim_core_serializer.gd`（`SimCoreSerializer`，RefCounted 静态方法）：`export_state(core)` / `restore_state(core, data)` / `config_fingerprint(tables)`。把内核序列化从 `sim_core.gd` 拆出，规避 gdlint 的 `max-file-lines` / `max-public-methods` 上限（`.gdlintrc` 明令「再涨必须优先拆类，不再抬」），`sim_core.gd` 回到 3200 行内、公法数不超。
+- 序列化范围：关系矩阵 A/H、压力/动力/学业收益/成绩/音量、相位与日游标、座位/活动/会话/零食分享/心结/学习等运行态数组、事件去重表 `_stats`/`_settled`（丢失会重复结算）、分享去重 `_share_units`（Vector2i 键转字符串）、组引用数组（按 `is_same` 身份存下标再重接）、双随机流（内核 `_rng` + 打听 `_ask_rng`）与全部子组件 `export_state`/`restore_state`（mt_random / teacher_patrol / teacher_commands / harm_events / risk_monitor / exam_settle / passives / term_record / activity_sessions）。
+- 恢复路径契约：先 `SimCore.new(seed, n, tables)` 确定性重建初始态，再 `restore_state` 覆盖可变运行时态；版本 / 配置指纹 / seed / 人数不一致即拒绝。JSON 往返把 int 变 float、Vector2i 变字符串，恢复时逐个 `int()`/`bool()` 还原；`_mti` clamp 到 `[0,624]`。
+- 配置指纹 `config_fingerprint`：对全部 `data/**/*.csv` 做「表名排序 + 行内字段排序」的 sha256，读档与旧档比对，数据表变更即拒绝（防旧档静默跑错数据）。
+- 存储层 `save.gd::atomic_save`：写 `.tmp` → 回读校验 → `DirAccess.rename_absolute` 原子替换，失败保留旧档；`save()` 仅成功后发 `saved` 并返回 bool。
+- 编排层 `game_state.gd`：`save_snapshot()`（打包 fingerprint/seed/n/core/clock/journal）→ `Save.save`；`auto_save()`（日末简报边界）；`load_game(data)`（校验指纹 → 重建内核 → 回填时钟/笔记）。
+- 时钟 `simulation_clock.gd`：`restore_state` 由「仅日末 report」扩展为 running（恢复 `_accumulator`）/report/finished 三态，未知 mode 拒绝。
+- UI：`main_menu.gd::_on_continue` 读档 → `GameState.load_game` → 进教室（读档不弹教程）；`pause_menu` 加「保存」按钮（轻提示「已保存」）；`classroom.gd` 接 `report_ready → GameState.auto_save()` 与读档时钟状态应用。
+- 第一版范围：**不恢复场景侧 NPC 移动位置**（读档后 NPC 回座位布局），不含多槽位 / 原位置续玩 / 备份迁移（见 [主文档第二十六章](docs/gdd/v4/26-完整存档机制.md)）。
+- 测试：新增 `tests/unit/test_save_roundtrip.gd`（7 例：随机流往返、课间中途往返、续推一致、跨天往返、seed/版本拒绝、配置指纹稳定）；`test_time_term.gd` 补「运行中时钟恢复保持相位内秒累计」+ 坏载荷拒绝改为「未知 mode」。
+- 验证：GUT `test_save_roundtrip` 7/7、`test_time_term` 6/6；全量 unit 387/391 通过，2 项失败仍是既有 `test_classroom_art` 3D 美术位存量红（书包位置 / 重建不叠加模型），与本次无关；`check_config` 180/0、`test_core` 132/0、`verify_formula` 9/0、`check_docs` 通过；本次改动均过 `gdformat`/`gdlint`。
+
 ## 2026-10-18 移除末号学生节点残留的「玩家」特判，对齐 Python
 
 - 老师版 16 名学生、无玩家节点，但 GDScript 找伴路径仍残留学生版「玩家 = 末号节点 `_n-1`」三处特判，与 Python 参考实现不一致（同种子对拍漂移）：

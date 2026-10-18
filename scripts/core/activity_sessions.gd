@@ -240,3 +240,39 @@ func _copy(session: Dictionary) -> Dictionary:
 		"links": links,
 		"end_tick": int(session["end_tick"]),
 	}
+
+
+# ------------------------------------------------------------------ 存档
+## 导出会话运行时状态：会话表 / 归属表 / 编号游标。JSON 后 int key 变字符串，导出时统一 str()。
+func export_state() -> Dictionary:
+	var sessions := {}
+	for sid in _sessions:
+		sessions[str(sid)] = _copy(_sessions[sid])
+	return {"sessions": sessions, "member_of": _member_of.duplicate(), "next_id": _next_id}
+
+
+## 回填会话状态（读档用）。JSON 往返把 key / value 的 int 变 str / float，逐个还原。
+func restore_state(data: Dictionary) -> void:
+	_sessions.clear()
+	_member_of.clear()
+	var sessions: Dictionary = data.get("sessions", {})
+	for key in sessions:
+		var sid := int(key)
+		var src: Dictionary = sessions[key]
+		var members: Array = []
+		for m in src.get("members", []):
+			members.append(int(m))
+		var links: Array = []
+		for pair in src.get("links", []):
+			links.append([int(pair[0]), int(pair[1])])
+		_sessions[sid] = {
+			"session_id": sid,
+			"kind": str(src.get("kind", "")),
+			"members": members,
+			"links": links,
+			"end_tick": int(src.get("end_tick", 0)),
+		}
+	var member_of: Dictionary = data.get("member_of", {})
+	for key in member_of:
+		_member_of[int(key)] = int(member_of[key])
+	_next_id = int(data.get("next_id", 1))

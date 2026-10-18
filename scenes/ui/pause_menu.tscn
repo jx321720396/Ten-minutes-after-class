@@ -197,6 +197,22 @@ theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 text = "继续游戏"
 
+[node name="SaveBtn" type="Button" parent="Panel/VBox/MenuVBox" unique_id=555000001]
+custom_minimum_size = Vector2(280, 52)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.28, 0.20, 0.12, 1)
+theme_override_colors/font_hover_color = Color(0.20, 0.14, 0.06, 1)
+theme_override_colors/font_pressed_color = Color(0.16, 0.10, 0.04, 1)
+theme_override_colors/font_disabled_color = Color(0.58, 0.55, 0.50, 1)
+theme_override_fonts/font = SubResource("FontVariation_btn")
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+text = "保存"
+
 [node name="Sep1" type="ColorRect" parent="Panel/VBox/MenuVBox" unique_id=1758835476]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2

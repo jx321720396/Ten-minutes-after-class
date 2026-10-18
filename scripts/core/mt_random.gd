@@ -205,3 +205,22 @@ func _bisect_right(cum: Array, x: float) -> int:
 		else:
 			hi = mid
 	return lo
+
+
+# ------------------------------------------------------------------ 存档
+## 导出 MT19937 完整内部状态：状态数组（624 个 32-bit 值）+ 游标。
+## 游标 ∈ [0, 624]，624 表示「下次取数前先 twist」，必须原样保存。
+## 诊断计数（random_calls / words_consumed）不参与恢复，仅供对拍断言。
+func export_state() -> Dictionary:
+	return {"mt": Array(_mt), "mti": _mti}
+
+
+## 回填 MT19937 状态（读档用）。JSON 往返把 int 变 float，必须 int() 还原并夹到 32 位。
+func restore_state(data: Dictionary) -> void:
+	var raw: Array = data.get("mt", [])
+	var restored := PackedInt64Array()
+	restored.resize(_N)
+	for i in range(mini(_N, raw.size())):
+		restored[i] = int(raw[i]) & _MASK32
+	_mt = restored
+	_mti = clampi(int(data.get("mti", _N)), 0, _N)

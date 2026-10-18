@@ -419,6 +419,23 @@ func _load_decide_interval() -> float:
 # ------------------------------------------------------------------ 决策
 
 
+## 读档后强制立即执行一批离座决策（跳过「第 N 天」归位停留）。
+## 读档时表现层 `_last_snapped_day` 不存档（恒为 -1），`_apply_phase` 会把课间当成一天之始、
+## 首批离座被 0.7 秒停留顺延；由 GameState.force_roam_decide 驱动本方法，在绑定时补跑一批。
+## 门槛与 `_process` 一致：仅课间 + running 生效，且重开决策计时（避免与顺延后的段中批次挤在一起）。
+func force_decide() -> void:
+	if not enabled or _core == null or _clock == null:
+		return
+	if str(_clock.snapshot().get("mode", "")) != SimulationClock.MODE_RUNNING:
+		return
+	if not is_break_phase():
+		return
+	if _decides_remaining <= 0:
+		_decides_remaining = _max_decides_per_break
+	_decide_timer = 0.0
+	_decide_batch()
+
+
 ## 课间一批离座决策：按角色索引升序（NPC移动决策 §9 可复现性）。
 ## 离座概率：p = base_p（老师版删除外向修正）
 func _decide_batch() -> void:

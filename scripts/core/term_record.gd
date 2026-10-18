@@ -234,3 +234,55 @@ func snapshot(core: Variant) -> Dictionary:
 		"seed": int(core.seed()),
 		"exam_report": str(core.exam_report(int(core.day()) - 1)),
 	}
+
+
+# ------------------------------------------------------------------ 存档
+## 导出历史运行时状态。_baseline / _names / _phase_names 等由 configure 从 seed + tables 重建，不存。
+func export_state() -> Dictionary:
+	return {
+		"current": _matrices_to_array(_current),
+		"frames": _frames.duplicate(true),
+		"checkpoints": _checkpoints.duplicate(true),
+		"actions": _actions.duplicate(true),
+		"pending": _pending.duplicate(true),
+		"state_pending": _state_pending.duplicate(true),
+		"study_seconds": _study_seconds,
+		"moving": _moving,
+		"finished": _finished,
+	}
+
+
+## 回填历史运行时状态（读档用）。JSON 往返把 int / 内嵌矩阵的 Packed 数组变 float，逐个还原。
+func restore_state(data: Dictionary) -> void:
+	_current = _array_to_matrices(data.get("current", []))
+	_frames = data.get("frames", []).duplicate(true)
+	_checkpoints = data.get("checkpoints", []).duplicate(true)
+	_actions = {}
+	for kind in data.get("actions", {}):
+		var row: Dictionary = data["actions"][kind]
+		var norm: Dictionary = {}
+		for field in row:
+			norm[field] = int(row[field])
+		_actions[str(kind)] = norm
+	var pending: Dictionary = data.get("pending", {})
+	_pending = {}
+	if not pending.is_empty():
+		_pending = {"kind": str(pending.get("kind", "")), "actor": int(pending.get("actor", -1))}
+	_state_pending = data.get("state_pending", {}).duplicate(true)
+	_study_seconds = float(data.get("study_seconds", 0.0))
+	_moving = bool(data.get("moving", false))
+	_finished = bool(data.get("finished", false))
+
+
+func _matrices_to_array(matrices: Array) -> Array:
+	var out: Array = []
+	for matrix in matrices:
+		out.append(Array(matrix))
+	return out
+
+
+func _array_to_matrices(raw: Array) -> Array:
+	var out: Array = []
+	for rows in raw:
+		out.append(PackedFloat64Array(rows))
+	return out

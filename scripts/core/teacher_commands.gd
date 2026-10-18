@@ -699,3 +699,75 @@ func remaining_seconds() -> int:
 
 func called_index() -> int:
 	return _called
+
+
+# ------------------------------------------------------------------ 存档
+## 导出老师命令运行时状态。_ask_rng 是第二条独立随机流（打听），必须随档，勿漏。
+## _timing / _acts 是配置，由 configure 重建。
+func export_state() -> Dictionary:
+	return {
+		"command": _command,
+		"mediate_pair": _mediate_pair.duplicate(true),
+		"remaining": _remaining,
+		"called": _called,
+		"chat_kind": _chat_kind,
+		"seat_change": _seat_change.duplicate(true),
+		"held": _held,
+		"asked_this_break": _asked_this_break,
+		"ask_rng": _ask_rng.export_state() if _ask_rng != null else {},
+		"told_messages": _told_messages.duplicate(true),
+		"asked_relations": _asked_relations.duplicate(true),
+		"ask_lines": _ask_lines.duplicate(),
+		"ask_records": _ask_records.duplicate(true),
+		"ask_id": _ask_id,
+		"entered_this_break": _entered_this_break,
+		"encourage_target": _encourage_target.duplicate(),
+		"encourage_mode": _encourage_mode.duplicate(),
+		"encourage_breaks": _encourage_breaks.duplicate(),
+		"encourage_status": _encourage_status.duplicate(),
+	}
+
+
+## 回填老师命令状态（读档用）。JSON 往返把 int / bool 变 float，逐个还原。
+func restore_state(data: Dictionary) -> void:
+	_command = str(data.get("command", ""))
+	_mediate_pair = _int_pair(data.get("mediate_pair", {}))
+	_remaining = int(data.get("remaining", 0))
+	_called = int(data.get("called", -1))
+	_chat_kind = str(data.get("chat_kind", ""))
+	_seat_change = _int_pair(data.get("seat_change", {}))
+	_held = bool(data.get("held", false))
+	_asked_this_break = bool(data.get("asked_this_break", false))
+	if _ask_rng == null:
+		_ask_rng = MtRandom.new(0)
+	_ask_rng.restore_state(data.get("ask_rng", {}))
+	_told_messages = data.get("told_messages", {}).duplicate(true)
+	_asked_relations = data.get("asked_relations", {}).duplicate(true)
+	_ask_lines = data.get("ask_lines", []).duplicate()
+	_ask_records = data.get("ask_records", []).duplicate(true)
+	_ask_id = int(data.get("ask_id", 0))
+	_entered_this_break = bool(data.get("entered_this_break", false))
+	_encourage_target = _ints(data.get("encourage_target", []))
+	_encourage_mode = _strs(data.get("encourage_mode", []))
+	_encourage_breaks = _ints(data.get("encourage_breaks", []))
+	_encourage_status = _strs(data.get("encourage_status", []))
+
+
+func _int_pair(raw: Dictionary) -> Dictionary:
+	if raw.is_empty():
+		return {}
+	return {"a": int(raw.get("a", -1)), "b": int(raw.get("b", -1))}
+
+
+func _ints(raw: Array) -> Array:
+	var out: Array = []
+	for v in raw:
+		out.append(int(v))
+	return out
+
+
+func _strs(raw: Array) -> Array:
+	var out: Array = []
+	for v in raw:
+		out.append(str(v))
+	return out

@@ -215,3 +215,61 @@ func _texts(count: int) -> Array:
 	for _i in range(count):
 		out.append("")
 	return out
+
+
+# ------------------------------------------------------------------ 存档
+## 导出风险判定运行时状态（连续计数 / 当日证据 / 触发 / 退学）。_events 是瞬态，不存。
+func export_state() -> Dictionary:
+	return {
+		"breakdowns": _breakdowns.duplicate(),
+		"rejects_today": _rejects_today.duplicate(),
+		"activity_today": _activity_today.duplicate(),
+		"harm_today": _harm_today.duplicate(true),
+		"streak": _streak.duplicate(),
+		"warned": _warned.duplicate(),
+		"triggered": _triggered.duplicate(),
+		"triggered_kind": _triggered_kind.duplicate(),
+		"breakdowns_at_trigger": _breakdowns_at_trigger.duplicate(),
+		"dropped": _dropped.duplicate(),
+	}
+
+
+## 回填风险判定状态（读档用）。JSON 往返把 int / bool 变 float，逐个还原。
+func restore_state(data: Dictionary) -> void:
+	_breakdowns = _ints(data.get("breakdowns", []))
+	_rejects_today = _ints(data.get("rejects_today", []))
+	_activity_today = _bools(data.get("activity_today", []))
+	_harm_today = []
+	for bucket in data.get("harm_today", []):
+		var items: Array = []
+		for hit in bucket:
+			items.append({"from": int(hit.get("from", -1)), "kind": str(hit.get("kind", ""))})
+		_harm_today.append(items)
+	_streak = _ints(data.get("streak", []))
+	_warned = _bools(data.get("warned", []))
+	_triggered = _bools(data.get("triggered", []))
+	_triggered_kind = _strs(data.get("triggered_kind", []))
+	_breakdowns_at_trigger = _ints(data.get("breakdowns_at_trigger", []))
+	_dropped = _bools(data.get("dropped", []))
+	_events = []
+
+
+func _ints(raw: Array) -> Array:
+	var out: Array = []
+	for v in raw:
+		out.append(int(v))
+	return out
+
+
+func _bools(raw: Array) -> Array:
+	var out: Array = []
+	for v in raw:
+		out.append(bool(v))
+	return out
+
+
+func _strs(raw: Array) -> Array:
+	var out: Array = []
+	for v in raw:
+		out.append(str(v))
+	return out

@@ -301,3 +301,33 @@ static func _rint(v: float) -> int:
 	if fmod(flr, 2.0) == 0.0:
 		return int(flr)
 	return int(flr + 1.0)
+
+
+# ------------------------------------------------------------------ 存档
+## 导出考试结算运行时状态（成绩基准 / 免罚卷 / 名次 / 报告 / 均值 / 通过）。
+## _days / _sigma / _penalty 等是配置，由 configure 重建。
+func export_state() -> Dictionary:
+	return {
+		"last_score": Array(_last_score),
+		"tokens": Array(_tokens),
+		"rank": Array(_rank),
+		"reports": _reports.duplicate(true),
+		"means": _means.duplicate(true),
+		"passed": _passed.duplicate(true),
+	}
+
+
+## 回填考试结算状态（读档用）。_reports / _means / _passed 的 day 键经 JSON 变字符串，还原为 int。
+func restore_state(data: Dictionary) -> void:
+	_last_score = PackedFloat64Array(data.get("last_score", []))
+	_tokens = PackedInt32Array(data.get("tokens", []))
+	_rank = PackedInt32Array(data.get("rank", []))
+	_reports = {}
+	for key in data.get("reports", {}):
+		_reports[int(key)] = str(data["reports"][key])
+	_means = {}
+	for key in data.get("means", {}):
+		_means[int(key)] = float(data["means"][key])
+	_passed = {}
+	for key in data.get("passed", {}):
+		_passed[int(key)] = bool(data["passed"][key])

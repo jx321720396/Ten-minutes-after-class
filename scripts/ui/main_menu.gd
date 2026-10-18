@@ -164,9 +164,23 @@ func _npc_count() -> int:
 
 
 func _on_continue():
-	if _has_save():
-		# TODO: 实现游戏场景加载
-		pass
+	if not _has_save():
+		return
+	var payload := Save.read()
+	var data: Dictionary = payload.get("data", {})
+	if not GameState.load_game(data):
+		push_warning("MainMenu：读档失败（数据表已变或存档损坏），请开新局。")
+		return
+	# 读档不弹教程：本局是恢复，不是新开局。
+	GameState.tutorial_pending = false
+	var packed := AssetPreloader.scene(SCENE_CLASSROOM)
+	var error := (
+		get_tree().change_scene_to_packed(packed)
+		if packed != null
+		else get_tree().change_scene_to_file(SCENE_CLASSROOM)
+	)
+	if error != OK:
+		push_error("无法进入教室：%s" % error_string(error))
 
 
 func _on_encyclopedia():

@@ -115,6 +115,24 @@ func test_save_state_round_trip_at_day_end() -> void:
 	assert_eq(snap["remaining_seconds"], 0.0, "恢复后不计时")
 
 
+func test_running_mode_restore_keeps_accumulator() -> void:
+	var stack := _make_stack()
+	var clock: SimulationClock = stack[1]
+	clock.pump(2.5)
+	var saved: Dictionary = clock.save_state()
+	assert_eq(str(saved["mode"]), SimulationClock.MODE_RUNNING)
+	assert_gt(float(saved["accumulator"]), 0.0, "运行中保存相位内秒累计")
+
+	var tables := ConfigLoader.new().load_all()
+	var restored: SimulationClock = SimulationClock.new()
+	add_child_autofree(restored)
+	restored.set_process(false)
+	assert_true(restored.bind_core(SimCore.new(SEED, NPC_COUNT, tables), tables))
+	assert_true(restored.restore_state(saved), "运行中快照可恢复")
+	assert_eq(str(restored.snapshot()["mode"]), SimulationClock.MODE_RUNNING, "恢复后仍在运行中")
+	assert_almost_eq(restored._accumulator, clock._accumulator, 1e-6, "恢复相位内秒累计")
+
+
 func test_restore_rejects_bad_payload() -> void:
 	var stack := _make_stack()
 	var clock: SimulationClock = stack[1]
@@ -124,8 +142,8 @@ func test_restore_rejects_bad_payload() -> void:
 	assert_false(clock.restore_state({"version": 999}), "版本不符拒绝")
 
 	var wrong_mode: Dictionary = payload.duplicate(true)
-	wrong_mode["mode"] = SimulationClock.MODE_RUNNING
-	assert_false(clock.restore_state(wrong_mode), "只有日末边界（report）可单独恢复")
+	wrong_mode["mode"] = "bogus"
+	assert_false(clock.restore_state(wrong_mode), "未知 mode 拒绝")
 
 	var wrong_config: Dictionary = payload.duplicate(true)
 	wrong_config["config_fingerprint"] = "deadbeef"
