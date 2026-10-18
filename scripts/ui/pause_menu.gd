@@ -79,3 +79,4 @@ func _on_setting():
 
 func _on_close_settings():
 	settings_panel.visible = false
+	_on_resume()
