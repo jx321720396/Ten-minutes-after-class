@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://4hocobmx6llv"
-path.s3tc="res://.godot/imported/walls_emissive.webp-8064b4253939b9ae6f701ecf4557f95c.s3tc.ctex"
-path.etc2="res://.godot/imported/walls_emissive.webp-8064b4253939b9ae6f701ecf4557f95c.etc2.ctex"
+path.s3tc="res://.godot/imported/walls_emissive.webp-4edca6d8d0cef7cf2ab52d0f6b7bfa5c.s3tc.ctex"
+path.etc2="res://.godot/imported/walls_emissive.webp-4edca6d8d0cef7cf2ab52d0f6b7bfa5c.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/classroom/textures/walls_emissive.webp"
-dest_files=["res://.godot/imported/walls_emissive.webp-8064b4253939b9ae6f701ecf4557f95c.s3tc.ctex", "res://.godot/imported/walls_emissive.webp-8064b4253939b9ae6f701ecf4557f95c.etc2.ctex"]
+dest_files=["res://.godot/imported/walls_emissive.webp-4edca6d8d0cef7cf2ab52d0f6b7bfa5c.s3tc.ctex", "res://.godot/imported/walls_emissive.webp-4edca6d8d0cef7cf2ab52d0f6b7bfa5c.etc2.ctex"]
 
 [params]
 

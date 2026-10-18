@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dfouhn50wm5lu"
-path="res://.godot/imported/char_15_idle_seated_v1.webp-62fcf1c6129414f7168ccd7f6dbf1446.ctex"
+path="res://.godot/imported/char_15_idle_seated_v1.webp-47eecc94f478b8b1c066f73d3edd362c.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/idle_seated_v1/char_15_idle_seated_v1.webp"
-dest_files=["res://.godot/imported/char_15_idle_seated_v1.webp-62fcf1c6129414f7168ccd7f6dbf1446.ctex"]
+dest_files=["res://.godot/imported/char_15_idle_seated_v1.webp-47eecc94f478b8b1c066f73d3edd362c.ctex"]
 
 [params]
 

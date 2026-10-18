@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://01t3uvigiosn"
-path="res://.godot/imported/irritable_male.webp-959acd78c6ed9dd8de8a57a1dc7e2064.ctex"
+path="res://.godot/imported/irritable_male.webp-d15401d3502606bcf4fe5173dcfade2d.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/meme/irritable_male.webp"
-dest_files=["res://.godot/imported/irritable_male.webp-959acd78c6ed9dd8de8a57a1dc7e2064.ctex"]
+dest_files=["res://.godot/imported/irritable_male.webp-d15401d3502606bcf4fe5173dcfade2d.ctex"]
 
 [params]
 

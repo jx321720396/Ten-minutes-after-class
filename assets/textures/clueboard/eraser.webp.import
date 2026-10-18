@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c4bm2qlqi7b0h"
-path="res://.godot/imported/eraser.webp-5aa25a5fe5772c22edba0c121d6cf34c.ctex"
+path="res://.godot/imported/eraser.webp-6e2e2e6dbb69beeca2c79fb65d47f4b9.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/clueboard/eraser.webp"
-dest_files=["res://.godot/imported/eraser.webp-5aa25a5fe5772c22edba0c121d6cf34c.ctex"]
+dest_files=["res://.godot/imported/eraser.webp-6e2e2e6dbb69beeca2c79fb65d47f4b9.ctex"]
 
 [params]
 

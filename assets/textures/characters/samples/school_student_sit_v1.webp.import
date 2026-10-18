@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://it6jn8e0e7x4"
-path="res://.godot/imported/school_student_sit_v1.webp-172ce75769d17e96f7ec34f605cbfca9.ctex"
+path="res://.godot/imported/school_student_sit_v1.webp-64a0897cc74c9cb35456da7553de8ec8.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/samples/school_student_sit_v1.webp"
-dest_files=["res://.godot/imported/school_student_sit_v1.webp-172ce75769d17e96f7ec34f605cbfca9.ctex"]
+dest_files=["res://.godot/imported/school_student_sit_v1.webp-64a0897cc74c9cb35456da7553de8ec8.ctex"]
 
 [params]
 

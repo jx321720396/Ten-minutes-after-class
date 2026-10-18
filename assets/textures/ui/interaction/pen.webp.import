@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0fcm25qvjtoq"
-path="res://.godot/imported/pen.webp-96fe874ed0cad68a76cf66ff315e72c9.ctex"
+path="res://.godot/imported/pen.webp-60a44108472b5317d73878ca53f4d988.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/interaction/pen.webp"
-dest_files=["res://.godot/imported/pen.webp-96fe874ed0cad68a76cf66ff315e72c9.ctex"]
+dest_files=["res://.godot/imported/pen.webp-60a44108472b5317d73878ca53f4d988.ctex"]
 
 [params]
 

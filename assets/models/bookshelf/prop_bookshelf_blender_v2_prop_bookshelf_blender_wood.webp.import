@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d4x8lc0ux763"
-path.s3tc="res://.godot/imported/prop_bookshelf_blender_v2_prop_bookshelf_blender_wood.webp-aca2a0c694a3a830920a1f5340fb65dd.s3tc.ctex"
-path.etc2="res://.godot/imported/prop_bookshelf_blender_v2_prop_bookshelf_blender_wood.webp-aca2a0c694a3a830920a1f5340fb65dd.etc2.ctex"
+path.s3tc="res://.godot/imported/prop_bookshelf_blender_v2_prop_bookshelf_blender_wood.webp-cf8596888eba79047c23e771c22c0f3c.s3tc.ctex"
+path.etc2="res://.godot/imported/prop_bookshelf_blender_v2_prop_bookshelf_blender_wood.webp-cf8596888eba79047c23e771c22c0f3c.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -16,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/bookshelf/prop_bookshelf_blender_v2_prop_bookshelf_blender_wood.webp"
-dest_files=["res://.godot/imported/prop_bookshelf_blender_v2_prop_bookshelf_blender_wood.webp-aca2a0c694a3a830920a1f5340fb65dd.s3tc.ctex", "res://.godot/imported/prop_bookshelf_blender_v2_prop_bookshelf_blender_wood.webp-aca2a0c694a3a830920a1f5340fb65dd.etc2.ctex"]
+dest_files=["res://.godot/imported/prop_bookshelf_blender_v2_prop_bookshelf_blender_wood.webp-cf8596888eba79047c23e771c22c0f3c.s3tc.ctex", "res://.godot/imported/prop_bookshelf_blender_v2_prop_bookshelf_blender_wood.webp-cf8596888eba79047c23e771c22c0f3c.etc2.ctex"]
 
 [params]
 

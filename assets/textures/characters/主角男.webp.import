@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c7rg3lqr1i7sd"
-path="res://.godot/imported/主角男.webp-860df0ed3dd4a510c7ebe1fc85f04e10.ctex"
+path="res://.godot/imported/主角男.webp-e21500cff1b158fd0e4ce874f685186e.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/主角男.webp"
-dest_files=["res://.godot/imported/主角男.webp-860df0ed3dd4a510c7ebe1fc85f04e10.ctex"]
+dest_files=["res://.godot/imported/主角男.webp-e21500cff1b158fd0e4ce874f685186e.ctex"]
 
 [params]
 

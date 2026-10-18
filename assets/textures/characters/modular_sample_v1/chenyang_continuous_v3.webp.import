@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cdquq3roxoieq"
-path="res://.godot/imported/chenyang_continuous_v3.webp-2bfe9973d7df6df12f9dde5ed9935621.ctex"
+path="res://.godot/imported/chenyang_continuous_v3.webp-3be4ac84063eed3a1c961ce50e0cd1cf.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/modular_sample_v1/chenyang_continuous_v3.webp"
-dest_files=["res://.godot/imported/chenyang_continuous_v3.webp-2bfe9973d7df6df12f9dde5ed9935621.ctex"]
+dest_files=["res://.godot/imported/chenyang_continuous_v3.webp-3be4ac84063eed3a1c961ce50e0cd1cf.ctex"]
 
 [params]
 

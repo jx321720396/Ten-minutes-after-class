@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://1vcfoxnh7q8u"
-path="res://.godot/imported/char_01_study.webp-ee0f89f2e4f77463dd29ca740e92b252.ctex"
+path="res://.godot/imported/char_01_study.webp-b1e425bb137878968fdc643c2954bf73.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/seated_v1/char_01_study.webp"
-dest_files=["res://.godot/imported/char_01_study.webp-ee0f89f2e4f77463dd29ca740e92b252.ctex"]
+dest_files=["res://.godot/imported/char_01_study.webp-b1e425bb137878968fdc643c2954bf73.ctex"]
 
 [params]
 

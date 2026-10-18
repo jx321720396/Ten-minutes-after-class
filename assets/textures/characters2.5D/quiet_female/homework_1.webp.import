@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://2aj3r6ewtvel"
-path="res://.godot/imported/homework_1.webp-bc3a01844bd754a769f87634b625b01c.ctex"
+path="res://.godot/imported/homework_1.webp-036e6abb7efdc306b6a1ab83434d04b0.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters2.5D/quiet_female/homework_1.webp"
-dest_files=["res://.godot/imported/homework_1.webp-bc3a01844bd754a769f87634b625b01c.ctex"]
+dest_files=["res://.godot/imported/homework_1.webp-036e6abb7efdc306b6a1ab83434d04b0.ctex"]
 
 [params]
 

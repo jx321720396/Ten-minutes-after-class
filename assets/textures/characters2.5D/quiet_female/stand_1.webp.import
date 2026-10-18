@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b26nmppq7en4o"
-path="res://.godot/imported/stand_1.webp-901ff2a54359be16d40239b3bef053a6.ctex"
+path="res://.godot/imported/stand_1.webp-94c0d2e19c1da3234650928fa6361f40.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters2.5D/quiet_female/stand_1.webp"
-dest_files=["res://.godot/imported/stand_1.webp-901ff2a54359be16d40239b3bef053a6.ctex"]
+dest_files=["res://.godot/imported/stand_1.webp-94c0d2e19c1da3234650928fa6361f40.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b22xx67236f8w"
-path="res://.godot/imported/reject_female.webp-fc6af69cf2b76e14ff3aa3ea1e86e220.ctex"
+path="res://.godot/imported/reject_female.webp-1a9ba2a813395b361ca9f84ac74f3ca7.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/meme/reject_female.webp"
-dest_files=["res://.godot/imported/reject_female.webp-fc6af69cf2b76e14ff3aa3ea1e86e220.ctex"]
+dest_files=["res://.godot/imported/reject_female.webp-1a9ba2a813395b361ca9f84ac74f3ca7.ctex"]
 
 [params]
 

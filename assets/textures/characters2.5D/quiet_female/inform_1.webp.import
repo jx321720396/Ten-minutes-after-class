@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c3l74m81x4pe5"
-path.s3tc="res://.godot/imported/inform_1.webp-c2b78400ae11ca5e7b3cb8292af9b045.s3tc.ctex"
-path.etc2="res://.godot/imported/inform_1.webp-c2b78400ae11ca5e7b3cb8292af9b045.etc2.ctex"
+path.s3tc="res://.godot/imported/inform_1.webp-ee81ec474ae159d32629a3498d20a910.s3tc.ctex"
+path.etc2="res://.godot/imported/inform_1.webp-ee81ec474ae159d32629a3498d20a910.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters2.5D/quiet_female/inform_1.webp"
-dest_files=["res://.godot/imported/inform_1.webp-c2b78400ae11ca5e7b3cb8292af9b045.s3tc.ctex", "res://.godot/imported/inform_1.webp-c2b78400ae11ca5e7b3cb8292af9b045.etc2.ctex"]
+dest_files=["res://.godot/imported/inform_1.webp-ee81ec474ae159d32629a3498d20a910.s3tc.ctex", "res://.godot/imported/inform_1.webp-ee81ec474ae159d32629a3498d20a910.etc2.ctex"]
 
 [params]
 

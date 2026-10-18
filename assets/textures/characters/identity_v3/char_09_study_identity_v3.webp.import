@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cgix8aofkiecg"
-path="res://.godot/imported/char_09_study_identity_v3.webp-df7a8debff93601321e22cfa2bc2b56a.ctex"
+path="res://.godot/imported/char_09_study_identity_v3.webp-2efc17187cbcd7a79565ea50927ed0cb.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/identity_v3/char_09_study_identity_v3.webp"
-dest_files=["res://.godot/imported/char_09_study_identity_v3.webp-df7a8debff93601321e22cfa2bc2b56a.ctex"]
+dest_files=["res://.godot/imported/char_09_study_identity_v3.webp-2efc17187cbcd7a79565ea50927ed0cb.ctex"]
 
 [params]
 

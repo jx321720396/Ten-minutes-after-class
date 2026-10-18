@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://2dlcdnab7g1"
-path="res://.godot/imported/atlas-v1.webp-da4b4f0d651f979d9b10634eccd2844d.ctex"
+path="res://.godot/imported/atlas-v1.webp-7c79e7bc7eec2a0c9b4ac7138dd91bbc.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/ui/backpack/atlas-v1.webp"
-dest_files=["res://.godot/imported/atlas-v1.webp-da4b4f0d651f979d9b10634eccd2844d.ctex"]
+dest_files=["res://.godot/imported/atlas-v1.webp-7c79e7bc7eec2a0c9b4ac7138dd91bbc.ctex"]
 
 [params]
 

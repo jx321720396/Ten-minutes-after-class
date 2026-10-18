@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0nt1ck10pr0r"
-path.s3tc="res://.godot/imported/tables_emissive.webp-2e481d30f54e81cd920f56c323c01f3b.s3tc.ctex"
-path.etc2="res://.godot/imported/tables_emissive.webp-2e481d30f54e81cd920f56c323c01f3b.etc2.ctex"
+path.s3tc="res://.godot/imported/tables_emissive.webp-cd20f2f312892ea7f43c2ead82b94f67.s3tc.ctex"
+path.etc2="res://.godot/imported/tables_emissive.webp-cd20f2f312892ea7f43c2ead82b94f67.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/classroom/textures/tables_emissive.webp"
-dest_files=["res://.godot/imported/tables_emissive.webp-2e481d30f54e81cd920f56c323c01f3b.s3tc.ctex", "res://.godot/imported/tables_emissive.webp-2e481d30f54e81cd920f56c323c01f3b.etc2.ctex"]
+dest_files=["res://.godot/imported/tables_emissive.webp-cd20f2f312892ea7f43c2ead82b94f67.s3tc.ctex", "res://.godot/imported/tables_emissive.webp-cd20f2f312892ea7f43c2ead82b94f67.etc2.ctex"]
 
 [params]
 

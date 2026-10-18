@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dg04um3vtobs7"
-path="res://.godot/imported/char_13_seated_back_v1.webp-59bba12d8cf0c3f53e6934e0f024fc2e.ctex"
+path="res://.godot/imported/char_13_seated_back_v1.webp-0c14c63e47fd43656b35b106bc9ec1f9.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/seated_back_v1/char_13_seated_back_v1.webp"
-dest_files=["res://.godot/imported/char_13_seated_back_v1.webp-59bba12d8cf0c3f53e6934e0f024fc2e.ctex"]
+dest_files=["res://.godot/imported/char_13_seated_back_v1.webp-0c14c63e47fd43656b35b106bc9ec1f9.ctex"]
 
 [params]
 

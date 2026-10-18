@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ksrohrn1fvg8"
-path.s3tc="res://.godot/imported/posters_baseColor.webp-046e07764713f849a62830090545669d.s3tc.ctex"
-path.etc2="res://.godot/imported/posters_baseColor.webp-046e07764713f849a62830090545669d.etc2.ctex"
+path.s3tc="res://.godot/imported/posters_baseColor.webp-4c3c603b5368ce4f41f00c1b6de9f3df.s3tc.ctex"
+path.etc2="res://.godot/imported/posters_baseColor.webp-4c3c603b5368ce4f41f00c1b6de9f3df.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/classroom/textures/posters_baseColor.webp"
-dest_files=["res://.godot/imported/posters_baseColor.webp-046e07764713f849a62830090545669d.s3tc.ctex", "res://.godot/imported/posters_baseColor.webp-046e07764713f849a62830090545669d.etc2.ctex"]
+dest_files=["res://.godot/imported/posters_baseColor.webp-4c3c603b5368ce4f41f00c1b6de9f3df.s3tc.ctex", "res://.godot/imported/posters_baseColor.webp-4c3c603b5368ce4f41f00c1b6de9f3df.etc2.ctex"]
 
 [params]
 

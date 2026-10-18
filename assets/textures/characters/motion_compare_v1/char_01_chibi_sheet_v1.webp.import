@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://tkc57d0onwox"
-path="res://.godot/imported/char_01_chibi_sheet_v1.webp-fd1a2c4a7eec05307b80ce3ff074251d.ctex"
+path="res://.godot/imported/char_01_chibi_sheet_v1.webp-8dc5a5aa16fa57e8247c3c761e440e23.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/motion_compare_v1/char_01_chibi_sheet_v1.webp"
-dest_files=["res://.godot/imported/char_01_chibi_sheet_v1.webp-fd1a2c4a7eec05307b80ce3ff074251d.ctex"]
+dest_files=["res://.godot/imported/char_01_chibi_sheet_v1.webp-8dc5a5aa16fa57e8247c3c761e440e23.ctex"]
 
 [params]
 

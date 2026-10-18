@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ddo2fi02m44k3"
-path="res://.godot/imported/char_15_study_down_v1.webp-22bef42419aa9559141144b2335592d0.ctex"
+path="res://.godot/imported/char_15_study_down_v1.webp-29f4459b3d1e57b37a6b6130a2cac539.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/study_front_v1/char_15_study_down_v1.webp"
-dest_files=["res://.godot/imported/char_15_study_down_v1.webp-22bef42419aa9559141144b2335592d0.ctex"]
+dest_files=["res://.godot/imported/char_15_study_down_v1.webp-29f4459b3d1e57b37a6b6130a2cac539.ctex"]
 
 [params]
 

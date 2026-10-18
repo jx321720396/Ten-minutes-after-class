@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://2umg2fesl1e3"
-path="res://.godot/imported/主角女.webp-bdda29b55f0daa8f1edcc3a602940106.ctex"
+path="res://.godot/imported/主角女.webp-e1a2bce60093c5f84095513bf7e6281b.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/主角女.webp"
-dest_files=["res://.godot/imported/主角女.webp-bdda29b55f0daa8f1edcc3a602940106.ctex"]
+dest_files=["res://.godot/imported/主角女.webp-e1a2bce60093c5f84095513bf7e6281b.ctex"]
 
 [params]
 

@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dgdwykvk1wg8"
-path.s3tc="res://.godot/imported/tables_baseColor.webp-fec4c2edcd4683a8c6c3e2acb7aa2362.s3tc.ctex"
-path.etc2="res://.godot/imported/tables_baseColor.webp-fec4c2edcd4683a8c6c3e2acb7aa2362.etc2.ctex"
+path.s3tc="res://.godot/imported/tables_baseColor.webp-06076dfb9504dc30adc795018bfafc07.s3tc.ctex"
+path.etc2="res://.godot/imported/tables_baseColor.webp-06076dfb9504dc30adc795018bfafc07.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/classroom/textures/tables_baseColor.webp"
-dest_files=["res://.godot/imported/tables_baseColor.webp-fec4c2edcd4683a8c6c3e2acb7aa2362.s3tc.ctex", "res://.godot/imported/tables_baseColor.webp-fec4c2edcd4683a8c6c3e2acb7aa2362.etc2.ctex"]
+dest_files=["res://.godot/imported/tables_baseColor.webp-06076dfb9504dc30adc795018bfafc07.s3tc.ctex", "res://.godot/imported/tables_baseColor.webp-06076dfb9504dc30adc795018bfafc07.etc2.ctex"]
 
 [params]
 

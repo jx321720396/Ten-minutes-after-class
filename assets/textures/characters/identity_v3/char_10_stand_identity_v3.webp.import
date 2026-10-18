@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://h2abti4y4nu2"
-path="res://.godot/imported/char_10_stand_identity_v3.webp-43794d7a06688c01f31e62e64fc05a22.ctex"
+path="res://.godot/imported/char_10_stand_identity_v3.webp-0da17fac896bdeb0e90e18728752c2a5.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/identity_v3/char_10_stand_identity_v3.webp"
-dest_files=["res://.godot/imported/char_10_stand_identity_v3.webp-43794d7a06688c01f31e62e64fc05a22.ctex"]
+dest_files=["res://.godot/imported/char_10_stand_identity_v3.webp-0da17fac896bdeb0e90e18728752c2a5.ctex"]
 
 [params]
 

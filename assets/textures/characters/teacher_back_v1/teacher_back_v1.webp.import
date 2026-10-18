@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bxknwqub34doo"
-path="res://.godot/imported/teacher_back_v1.webp-cc5e933efce5b070362193262fd3f169.ctex"
+path="res://.godot/imported/teacher_back_v1.webp-2bddb1b3d57671c0c756aeb2e7cce270.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/teacher_back_v1/teacher_back_v1.webp"
-dest_files=["res://.godot/imported/teacher_back_v1.webp-cc5e933efce5b070362193262fd3f169.ctex"]
+dest_files=["res://.godot/imported/teacher_back_v1.webp-2bddb1b3d57671c0c756aeb2e7cce270.ctex"]
 
 [params]
 

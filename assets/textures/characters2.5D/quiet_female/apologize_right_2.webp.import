@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://co6hol8gvm1n1"
-path.s3tc="res://.godot/imported/apologize_right_2.webp-35ff66d893bbcdd8ba0c367c6aab7a18.s3tc.ctex"
-path.etc2="res://.godot/imported/apologize_right_2.webp-35ff66d893bbcdd8ba0c367c6aab7a18.etc2.ctex"
+path.s3tc="res://.godot/imported/apologize_right_2.webp-feb846b73096feb576ea002b37d8adfd.s3tc.ctex"
+path.etc2="res://.godot/imported/apologize_right_2.webp-feb846b73096feb576ea002b37d8adfd.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters2.5D/quiet_female/apologize_right_2.webp"
-dest_files=["res://.godot/imported/apologize_right_2.webp-35ff66d893bbcdd8ba0c367c6aab7a18.s3tc.ctex", "res://.godot/imported/apologize_right_2.webp-35ff66d893bbcdd8ba0c367c6aab7a18.etc2.ctex"]
+dest_files=["res://.godot/imported/apologize_right_2.webp-feb846b73096feb576ea002b37d8adfd.s3tc.ctex", "res://.godot/imported/apologize_right_2.webp-feb846b73096feb576ea002b37d8adfd.etc2.ctex"]
 
 [params]
 

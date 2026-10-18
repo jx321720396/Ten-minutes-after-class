@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c67ixj00t0dgk"
-path="res://.godot/imported/char_10_body_base_v1.webp-8dd9e8bbab6e6b8a0eaa56916a007644.ctex"
+path="res://.godot/imported/char_10_body_base_v1.webp-50197962dbc34706394080949ddddda1.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/fullbody_v1/char_10_body_base_v1.webp"
-dest_files=["res://.godot/imported/char_10_body_base_v1.webp-8dd9e8bbab6e6b8a0eaa56916a007644.ctex"]
+dest_files=["res://.godot/imported/char_10_body_base_v1.webp-50197962dbc34706394080949ddddda1.ctex"]
 
 [params]
 

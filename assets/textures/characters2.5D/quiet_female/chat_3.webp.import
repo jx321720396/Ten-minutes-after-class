@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cb5frtbpykhhi"
-path="res://.godot/imported/chat_3.webp-7394b7aac2db384d28067f2110f436fb.ctex"
+path="res://.godot/imported/chat_3.webp-aca5db09b0d6873156cb8d22b29ca4ef.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters2.5D/quiet_female/chat_3.webp"
-dest_files=["res://.godot/imported/chat_3.webp-7394b7aac2db384d28067f2110f436fb.ctex"]
+dest_files=["res://.godot/imported/chat_3.webp-aca5db09b0d6873156cb8d22b29ca4ef.ctex"]
 
 [params]
 

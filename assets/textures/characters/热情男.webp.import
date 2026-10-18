@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bse2t0n68wdn8"
-path="res://.godot/imported/热情男.webp-2727ff311861ff2496e614cafd91a94e.ctex"
+path="res://.godot/imported/热情男.webp-33f65c45c4c174e27d79c5fea0830dde.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/热情男.webp"
-dest_files=["res://.godot/imported/热情男.webp-2727ff311861ff2496e614cafd91a94e.ctex"]
+dest_files=["res://.godot/imported/热情男.webp-33f65c45c4c174e27d79c5fea0830dde.ctex"]
 
 [params]
 

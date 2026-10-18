@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://xu7l6h6lqdt4"
-path.s3tc="res://.godot/imported/details_baseColor.webp-078f19f0ed71404da83966f79650c09e.s3tc.ctex"
-path.etc2="res://.godot/imported/details_baseColor.webp-078f19f0ed71404da83966f79650c09e.etc2.ctex"
+path.s3tc="res://.godot/imported/details_baseColor.webp-0aa3a3eb0e3186ae906295998336cc8c.s3tc.ctex"
+path.etc2="res://.godot/imported/details_baseColor.webp-0aa3a3eb0e3186ae906295998336cc8c.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/classroom/textures/details_baseColor.webp"
-dest_files=["res://.godot/imported/details_baseColor.webp-078f19f0ed71404da83966f79650c09e.s3tc.ctex", "res://.godot/imported/details_baseColor.webp-078f19f0ed71404da83966f79650c09e.etc2.ctex"]
+dest_files=["res://.godot/imported/details_baseColor.webp-0aa3a3eb0e3186ae906295998336cc8c.s3tc.ctex", "res://.godot/imported/details_baseColor.webp-0aa3a3eb0e3186ae906295998336cc8c.etc2.ctex"]
 
 [params]
 

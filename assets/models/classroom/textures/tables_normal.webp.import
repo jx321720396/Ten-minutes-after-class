@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ciwfbf2crfb81"
-path.s3tc="res://.godot/imported/tables_normal.webp-60fd509509b6534616bd38a6661ca09a.s3tc.ctex"
-path.etc2="res://.godot/imported/tables_normal.webp-60fd509509b6534616bd38a6661ca09a.etc2.ctex"
+path.s3tc="res://.godot/imported/tables_normal.webp-08ef3a2246e3db7ebc46b3d5419ebe31.s3tc.ctex"
+path.etc2="res://.godot/imported/tables_normal.webp-08ef3a2246e3db7ebc46b3d5419ebe31.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/classroom/textures/tables_normal.webp"
-dest_files=["res://.godot/imported/tables_normal.webp-60fd509509b6534616bd38a6661ca09a.s3tc.ctex", "res://.godot/imported/tables_normal.webp-60fd509509b6534616bd38a6661ca09a.etc2.ctex"]
+dest_files=["res://.godot/imported/tables_normal.webp-08ef3a2246e3db7ebc46b3d5419ebe31.s3tc.ctex", "res://.godot/imported/tables_normal.webp-08ef3a2246e3db7ebc46b3d5419ebe31.etc2.ctex"]
 
 [params]
 

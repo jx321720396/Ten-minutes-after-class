@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://w67uctm36tvl"
-path.s3tc="res://.godot/imported/tables_metallicRoughness.webp-45f11f4876feb025850f7dbdbb5a1be5.s3tc.ctex"
-path.etc2="res://.godot/imported/tables_metallicRoughness.webp-45f11f4876feb025850f7dbdbb5a1be5.etc2.ctex"
+path.s3tc="res://.godot/imported/tables_metallicRoughness.webp-bca0adf85990a05cc0654dcbd2713daa.s3tc.ctex"
+path.etc2="res://.godot/imported/tables_metallicRoughness.webp-bca0adf85990a05cc0654dcbd2713daa.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://assets/models/classroom/textures/tables_metallicRoughness.webp"
-dest_files=["res://.godot/imported/tables_metallicRoughness.webp-45f11f4876feb025850f7dbdbb5a1be5.s3tc.ctex", "res://.godot/imported/tables_metallicRoughness.webp-45f11f4876feb025850f7dbdbb5a1be5.etc2.ctex"]
+dest_files=["res://.godot/imported/tables_metallicRoughness.webp-bca0adf85990a05cc0654dcbd2713daa.s3tc.ctex", "res://.godot/imported/tables_metallicRoughness.webp-bca0adf85990a05cc0654dcbd2713daa.etc2.ctex"]
 
 [params]
 

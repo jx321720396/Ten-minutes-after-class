@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cenvo02hphykh"
-path="res://.godot/imported/chen_yang_v01.webp-ce03ef75f4365eed004e7b50095a3e46.ctex"
+path="res://.godot/imported/chen_yang_v01.webp-43a89c207b1101094b8d9ae9b73d916d.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/portraits/chen_yang_v01.webp"
-dest_files=["res://.godot/imported/chen_yang_v01.webp-ce03ef75f4365eed004e7b50095a3e46.ctex"]
+dest_files=["res://.godot/imported/chen_yang_v01.webp-43a89c207b1101094b8d9ae9b73d916d.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://kmbyw3po5y4n"
-path="res://.godot/imported/sleep_0.webp-0a2972257b7677d72519ea406dac8b65.ctex"
+path="res://.godot/imported/sleep_0.webp-31309ab47d047b17eab7023db5c65f73.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters2.5D/quiet_female/sleep_0.webp"
-dest_files=["res://.godot/imported/sleep_0.webp-0a2972257b7677d72519ea406dac8b65.ctex"]
+dest_files=["res://.godot/imported/sleep_0.webp-31309ab47d047b17eab7023db5c65f73.ctex"]
 
 [params]
 

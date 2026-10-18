@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dj20180g467vs"
-path="res://.godot/imported/page_02.webp-c86089f11123cd29ff2ce1c0d407bcd4.ctex"
+path="res://.godot/imported/page_02.webp-ce1df26f94d224f7dbc0bceecc85bc43.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/illustrations/opening_comic/page_02.webp"
-dest_files=["res://.godot/imported/page_02.webp-c86089f11123cd29ff2ce1c0d407bcd4.ctex"]
+dest_files=["res://.godot/imported/page_02.webp-ce1df26f94d224f7dbc0bceecc85bc43.ctex"]
 
 [params]
 

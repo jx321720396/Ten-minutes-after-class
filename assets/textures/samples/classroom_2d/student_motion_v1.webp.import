@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://qpcihslvyu2x"
-path="res://.godot/imported/student_motion_v1.webp-d6ae8daf27b4f500699f371c18f35d53.ctex"
+path="res://.godot/imported/student_motion_v1.webp-03e596a42daf9ad11f145c77416e9f0f.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/samples/classroom_2d/student_motion_v1.webp"
-dest_files=["res://.godot/imported/student_motion_v1.webp-d6ae8daf27b4f500699f371c18f35d53.ctex"]
+dest_files=["res://.godot/imported/student_motion_v1.webp-03e596a42daf9ad11f145c77416e9f0f.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c5wn0c0tmt5yh"
-path="res://.godot/imported/game-icon-social-note-v1-window.webp-101831658fc9ec5327ad94889d94a04a.ctex"
+path="res://.godot/imported/game-icon-social-note-v1-window.webp-bbc4e0506020325bccc1ce9eb354dcd0.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/icons/game-icon-social-note-v1-window.webp"
-dest_files=["res://.godot/imported/game-icon-social-note-v1-window.webp-101831658fc9ec5327ad94889d94a04a.ctex"]
+dest_files=["res://.godot/imported/game-icon-social-note-v1-window.webp-bbc4e0506020325bccc1ce9eb354dcd0.ctex"]
 
 [params]
 

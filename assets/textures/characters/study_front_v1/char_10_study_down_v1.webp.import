@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://crimr1mol2jdy"
-path="res://.godot/imported/char_10_study_down_v1.webp-72a855def65cb4669e0fd57bda8f9598.ctex"
+path="res://.godot/imported/char_10_study_down_v1.webp-40da1ddb32588d2b233139a5f6b14c69.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/study_front_v1/char_10_study_down_v1.webp"
-dest_files=["res://.godot/imported/char_10_study_down_v1.webp-72a855def65cb4669e0fd57bda8f9598.ctex"]
+dest_files=["res://.godot/imported/char_10_study_down_v1.webp-40da1ddb32588d2b233139a5f6b14c69.ctex"]
 
 [params]
 

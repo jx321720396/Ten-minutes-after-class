@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cgxk4bc6qovij"
-path="res://.godot/imported/chenyang_parts_atlas_v1.webp-b76042cb81a8e15676cea665cc13d8e1.ctex"
+path="res://.godot/imported/chenyang_parts_atlas_v1.webp-f8ba7d3025367babe9b71e1af29dc4ab.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/textures/characters/modular_sample_v1/chenyang_parts_atlas_v1.webp"
-dest_files=["res://.godot/imported/chenyang_parts_atlas_v1.webp-b76042cb81a8e15676cea665cc13d8e1.ctex"]
+dest_files=["res://.godot/imported/chenyang_parts_atlas_v1.webp-f8ba7d3025367babe9b71e1af29dc4ab.ctex"]
 
 [params]
 
