@@ -20,10 +20,18 @@ const COLOR_INK := Color(0.15, 0.16, 0.22, 1)
 
 
 func _ready():
+	get_viewport().size_changed.connect(_fit_fullscreen)
+	_fit_fullscreen()
 	clear_btn.pressed.connect(_on_clear)
 	keep_btn.pressed.connect(_on_keep)
 	cancel_btn.pressed.connect(_on_cancel)
 	TouchBind.bind_tree(self)
+
+
+func _fit_fullscreen() -> void:
+	preload("res://scripts/ui/fullscreen_panel.gd").fit(
+		$CenterContainer, $CenterContainer/Panel, Vector2(1280, 720)
+	)
 
 
 ## 打开确认面板并按「有无存档」切口径：

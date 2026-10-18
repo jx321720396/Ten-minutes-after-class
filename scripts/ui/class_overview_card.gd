@@ -12,6 +12,7 @@ var _maximum: Label
 var _footer: Label
 var _details: CanvasLayer
 var _detail_text: Label
+var _detail_panel: PanelContainer
 var _snapshot: Dictionary = {}
 
 
@@ -144,9 +145,13 @@ func _build_details() -> void:
 	_details.add_child(center)
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size.x = float(_cfg.detail_width)
+	_detail_panel = panel
 	center.add_child(panel)
-	var paper := CampusTheme.paper_card()
+	get_viewport().size_changed.connect(_fit_details)
+	_fit_details.call_deferred()
+	var paper := preload("res://scripts/ui/npc_profile_theme.gd").box(
+		Color(CampusTheme.settings().paper), Color(CampusTheme.settings().paper), 0, 0
+	)
 	paper.content_margin_left = float(_cfg.detail_margins[0])
 	paper.content_margin_top = float(_cfg.detail_margins[1])
 	paper.content_margin_right = float(_cfg.detail_margins[2])
@@ -157,6 +162,7 @@ func _build_details() -> void:
 	panel.add_child(rows)
 	rows.add_child(_label("全班概况", int(_cfg.detail_title_size)))
 	_detail_text = _label("", int(_cfg.detail_font_size))
+	_detail_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rows.add_child(_detail_text)
 	var close := Button.new()
 	close.name = "CloseOverview"
@@ -171,7 +177,14 @@ func _build_details() -> void:
 
 
 func _open_details() -> void:
+	_fit_details()
 	_details.show()
+
+
+func _fit_details() -> void:
+	preload("res://scripts/ui/fullscreen_panel.gd").fit(
+		_detail_panel.get_parent(), _detail_panel, Vector2(1280, 720)
+	)
 
 
 func _unhandled_input(event: InputEvent) -> void:

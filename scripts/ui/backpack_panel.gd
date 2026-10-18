@@ -9,6 +9,7 @@ const GameFonts := preload("res://scripts/ui/game_fonts.gd")
 var take_button: Button
 var reason_label: Label
 var _root: Control
+var _canvas: Control
 var _card_title: Label
 var _description: Label
 var _quantity: Label
@@ -25,6 +26,8 @@ func _ready() -> void:
 	add_to_group("backpack_panels")
 	_cfg = JSON.parse_string(FileAccess.get_file_as_string("res://data/ui/backpack.json"))
 	_build()
+	get_viewport().size_changed.connect(_fit_fullscreen)
+	_fit_fullscreen()
 	_root.hide()
 	refresh({})
 
@@ -186,11 +189,7 @@ func _build() -> void:
 	_root = Control.new()
 	_root.name = "Inventory"
 	add_child(_root)
-	_root.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
-	_root.offset_left = -float(_cfg.width) - float(_cfg.margin)
-	_root.offset_right = -float(_cfg.margin)
-	_root.offset_top = -float(_cfg.height) - float(_cfg.bottom)
-	_root.offset_bottom = -float(_cfg.bottom)
+	_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var paper := Panel.new()
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(_cfg.paper)
@@ -207,18 +206,20 @@ func _build() -> void:
 	grain.material = material
 	paper.add_child(grain)
 	grain.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_canvas = Control.new()
+	_root.add_child(_canvas)
 	var heading := _label(_cfg.title, int(_cfg.heading_size))
-	_root.add_child(heading)
+	_canvas.add_child(heading)
 	_place(heading, _rect(_cfg.title_rect))
 	var exit_button := _button("×")
-	_root.add_child(exit_button)
+	_canvas.add_child(exit_button)
 	_place(exit_button, _rect(_cfg.close_rect))
 	exit_button.pressed.connect(close)
 	var hint := _label(_cfg.hint, int(_cfg.small_size))
-	_root.add_child(hint)
+	_canvas.add_child(hint)
 	_place(hint, _rect(_cfg.hint_rect))
 	var bag := Control.new()
-	_root.add_child(bag)
+	_canvas.add_child(bag)
 	_place(bag, _rect(_cfg.bag_rect))
 	var empty := TextureRect.new()
 	empty.texture = load(_cfg.empty_texture)
@@ -259,9 +260,19 @@ func _build() -> void:
 	_build_card()
 
 
+func _fit_fullscreen() -> void:
+	var viewport := get_viewport().get_visible_rect().size
+	var base := Vector2(float(_cfg.width), float(_cfg.height))
+	var padding := Vector2.ONE * float(_cfg.margin) * 2.0
+	var factor := minf(viewport.x / (base.x + padding.x), viewport.y / (base.y + padding.y))
+	_canvas.size = base
+	_canvas.scale = Vector2.ONE * factor
+	_canvas.position = (viewport - base * factor) * 0.5
+
+
 func _build_card() -> void:
 	var card := VBoxContainer.new()
-	_root.add_child(card)
+	_canvas.add_child(card)
 	_place(card, _rect(_cfg.card_rect))
 	card.add_theme_constant_override("separation", int(_cfg.gap))
 	_card_title = _label("", int(_cfg.heading_size))

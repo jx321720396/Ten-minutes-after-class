@@ -454,7 +454,10 @@ func _fit() -> void:
 	var viewport := get_viewport().get_visible_rect().size
 	var factor := minf(viewport.x / DESIGN_SIZE.x, viewport.y / DESIGN_SIZE.y)
 	%Design.scale = Vector2.ONE * factor
-	%Design.position = (viewport - DESIGN_SIZE * factor) * 0.5
+	%Design.position = Vector2.ZERO
+	%Design.size = viewport / factor
+	%Frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	%TargetPickerCard.custom_minimum_size = %Design.size
 
 
 func _label(text: String, font_size: int) -> Label:

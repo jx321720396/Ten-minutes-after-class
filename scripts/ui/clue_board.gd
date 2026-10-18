@@ -25,6 +25,10 @@ var _profile_config: Dictionary = {}
 
 
 func _ready() -> void:
+	var paper: Control = $Design/Paper
+	paper.reparent(self)
+	move_child(paper, $Design.get_index())
+	paper.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_profile_config = JSON.parse_string(
 		FileAccess.get_file_as_string("res://data/ui/npc_profile.json")
 	)

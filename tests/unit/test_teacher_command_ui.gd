@@ -106,6 +106,8 @@ func test_real_ui_summons_displays_all_students_and_returns_them() -> void:
 	hub._on_teacher_action("seats")
 	hub.select_student(0)
 	hub.select_student(1)
+	assert_eq(commands.current_command(), "")
+	hub._picker.confirm.pressed.emit()
 	assert_eq(commands.current_command(), "seat_change")
 	for tick in range(10):
 		commands.tick(core)
@@ -144,11 +146,16 @@ func test_real_ui_summons_displays_all_students_and_returns_them() -> void:
 func test_ask_dialog_shows_the_reported_lines() -> void:
 	var view = load("res://scenes/game/office.tscn").instantiate()
 	add_child_autofree(view)
-	view.present_ask([
-		"听说小明最近一直被同学欺负",
-		"我（小华）对小刚的好感：很高",
-		"我（小华）对小刚的敌对：较低",
-	])
+	(
+		view
+		. present_ask(
+			[
+				"听说小明最近一直被同学欺负",
+				"我（小华）对小刚的好感：很高",
+				"我（小华）对小刚的敌对：较低",
+			]
+		)
+	)
 	assert_true(view.ask_open(), "打听结束后弹出对话框")
 	assert_true(view.ask_text().contains("听说小明最近一直被同学欺负"))
 	assert_true(view.ask_text().contains("我（小华）对小刚的好感：很高"))

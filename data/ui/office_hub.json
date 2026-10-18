@@ -1,4 +1,37 @@
 {
+  "roster": {
+    "design_size": [1920, 1080],
+    "columns": 4,
+    "rows": 4,
+    "margin": 28,
+    "gap": 18,
+    "radius": 12,
+    "border": 2,
+    "selected_border": 5,
+    "card_padding": 10,
+    "portrait_fraction": 0.43,
+    "title_size": 52,
+    "name_size": 38,
+    "small_size": 26,
+    "button_size": 32,
+    "button_height": 80,
+    "copy": {
+      "back": "‹ 返回",
+      "title": "同学档案",
+      "profile": "查看档案",
+      "seats": "调整座位",
+      "summon": "选择召唤的同学",
+      "mediate": "选择调解的同学",
+      "seat_hint": "依次点击两位同学，交换座位　｜　讲台方向 ↑",
+      "profile_hint": "点击同学查看档案　｜　讲台方向 ↑",
+      "cancel": "取消选择",
+      "confirm": "确认换座",
+      "idle": "全班 16 人 · 按当前座位排列",
+      "seat": "%d排%d座",
+      "selected": "已选",
+      "target": "换座对象"
+    }
+  },
   "design_size": [
     1920,
     1080

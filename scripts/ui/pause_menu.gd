@@ -29,13 +29,9 @@ func _center_panel():
 	if panel == null:
 		return
 	var viewport := get_viewport().get_visible_rect().size
-	var max_width := maxf(320.0, viewport.x - 48.0)
-	panel.custom_minimum_size.x = minf(410.0, max_width)
-	var ps := panel.size
-	panel.offset_left = -ps.x / 2.0
-	panel.offset_top = -ps.y / 2.0
-	panel.offset_right = ps.x / 2.0
-	panel.offset_bottom = ps.y / 2.0
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.custom_minimum_size = Vector2.ZERO
+	panel.size = viewport
 
 
 func _unhandled_input(event):

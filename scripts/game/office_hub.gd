@@ -16,9 +16,6 @@ var _touch_pick := -1
 var _touch_start := Vector2.ZERO
 var _picker_layer: CanvasLayer
 var _picker: Control
-var _students: VBoxContainer
-var _message: Label
-var _picker_title: Label
 var _picker_kind := ""
 var _pair_first := -1
 var _saved_visible: Dictionary = {}
@@ -224,81 +221,27 @@ func _build_picker() -> void:
 	_picker_layer.name = "StudentPicker"
 	_picker_layer.layer = 6
 	add_child(_picker_layer)
-	_picker = Control.new()
+	_picker = preload("res://scripts/ui/student_roster.gd").new()
 	_picker_layer.add_child(_picker)
-	_picker.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var shade := ColorRect.new()
-	shade.color = Color(0, 0, 0, 0.55)
-	_picker.add_child(shade)
-	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var center := CenterContainer.new()
-	center.name = "CenterContainer"
-	_picker.add_child(center)
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var panel := PanelContainer.new()
-	panel.name = "PickerPanel"
-	center.add_child(panel)
-	panel.add_theme_stylebox_override("panel", _view.paper_style())
-	var rows := VBoxContainer.new()
-	panel.add_child(rows)
-	rows.add_theme_constant_override("separation", int(_view.config.gap))
-	_picker_title = Label.new()
-	rows.add_child(_picker_title)
-	_picker_title.add_theme_font_size_override("font_size", int(_view.config.font_size))
-	_picker_title.add_theme_color_override("font_color", Color(_view.config.ink))
-	var scroll := ScrollContainer.new()
-	scroll.set_script(preload("res://scripts/game/office_student_scroll.gd"))
-	scroll.custom_minimum_size.y = float(_view.config.picker_height) / 2.0
-	rows.add_child(scroll)
-	scroll.set_process_input(false)
-	_students = VBoxContainer.new()
-	scroll.add_child(_students)
-	_students.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_message = Label.new()
-	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_message.add_theme_font_size_override("font_size", int(_view.config.small_font_size))
-	_message.add_theme_color_override("font_color", Color(_view.config.ink))
-	rows.add_child(_message)
-	var close := Button.new()
-	close.text = _view.config.copy.close
-	rows.add_child(close)
-	_view.style_button(close)
-	close.pressed.connect(close_picker)
-	_picker.hide()
-	get_viewport().size_changed.connect(_fit_picker)
-	_fit_picker()
-
-
-func _fit_picker() -> void:
-	if _picker == null:
-		return
-	var panel: Control = _picker.get_node("CenterContainer/PickerPanel")
-	panel.custom_minimum_size.x = minf(
-		float(_view.config.picker_width), get_viewport().get_visible_rect().size.x * 0.85
-	)
+	_picker.student_selected.connect(select_student)
+	_picker.seat_requested.connect(_confirm_seats)
+	_picker.closed.connect(close_picker)
 
 
 func _show_picker(kind: String) -> void:
 	_picker_kind = kind
 	_pair_first = -1
-	_picker_title.text = (
-		_view.config.copy.profile_picker if kind == "profile" else _view.config.copy.summon_picker
-	)
-	if kind in ["seats", "mediate"]:
-		_picker_title.text = _view.config.meeting["pair_" + kind]
-	_message.text = ""
-	for child in _students.get_children():
-		_students.remove_child(child)
-		child.queue_free()
 	var core: Variant = _room.get_node("Actors").current_core()
-	for index in range(core.node_count()):
-		var button := Button.new()
-		button.text = str(core.alias(index))
-		_view.style_button(button)
-		button.pressed.connect(select_student.bind(index))
-		_students.add_child(button)
-	_picker.show()
-	_students.get_parent().set_process_input(true)
+	_picker.open(core, kind)
+
+
+func _confirm_seats(first: int, second: int) -> void:
+	var core: Variant = _room.get_node("Actors").current_core()
+	if core.teacher_commands().start_seat_change(core, first, second):
+		close_picker()
+	else:
+		_picker.show_message(str(_view.config.meeting.rejected))
+	_process(0.0)
 
 
 func picker_visible() -> bool:
@@ -309,45 +252,44 @@ func select_student(index: int) -> void:
 	var core: Variant = _room.get_node("Actors").current_core()
 	if index < 0 or index >= core.node_count():
 		return
-	if _picker_kind == "profile":
+	if _picker.get("_mode") == "profile":
 		close_picker()
 		_room.get_node("UI/NpcProfile").open_profile(index)
-	elif _picker_kind in ["seats", "mediate"]:
+	elif _picker.get("_mode") == "seats":
+		_picker.select_student(index)
+	elif _picker_kind == "mediate":
 		if _pair_first < 0:
 			_pair_first = index
-			_picker_title.text = _view.config.meeting.pair_second % str(core.alias(index))
+			_picker.show_message(_view.config.meeting.pair_second % str(core.alias(index)))
 			return
 		var commands = core.teacher_commands()
-		var accepted: bool = (
-			commands.start_seat_change(core, _pair_first, index)
-			if _picker_kind == "seats"
-			else commands.mediate(core, _pair_first, index)
-		)
+		var accepted: bool = commands.mediate(core, _pair_first, index)
 		if accepted:
 			close_picker()
 		else:
-			_message.text = (
-				_view.config.meeting.no_conflict
-				if (
-					_picker_kind == "mediate"
-					and _pair_first != index
-					and commands.current_command().is_empty()
-					and not commands.is_held()
-					and commands.called_index() < 0
+			_picker.show_message(
+				(
+					_view.config.meeting.no_conflict
+					if (
+						_picker_kind == "mediate"
+						and _pair_first != index
+						and commands.current_command().is_empty()
+						and not commands.is_held()
+						and commands.called_index() < 0
+					)
+					else _view.config.meeting.rejected
 				)
-				else _view.config.meeting.rejected
 			)
 	else:
 		if core.teacher_commands().summon(core, index):
 			close_picker()
 		else:
-			_message.text = _view.config.meeting.rejected
+			_picker.show_message(str(_view.config.meeting.rejected))
 	_process(0.0)
 
 
 func close_picker() -> void:
 	_picker.hide()
-	_students.get_parent().set_process_input(false)
 
 
 func _unhandled_input(event: InputEvent) -> void:

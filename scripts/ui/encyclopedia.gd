@@ -48,6 +48,8 @@ var _entry_buttons: Array = []
 
 
 func _ready() -> void:
+	get_viewport().size_changed.connect(_fit_fullscreen)
+	_fit_fullscreen()
 	_prev.pressed.connect(_on_prev)
 	_next.pressed.connect(_on_next)
 	_back.pressed.connect(_on_back)
@@ -55,6 +57,12 @@ func _ready() -> void:
 	if not _entries.is_empty():
 		_show_entry(0)
 	TouchBind.bind_tree(self)
+
+
+func _fit_fullscreen() -> void:
+	preload("res://scripts/ui/fullscreen_panel.gd").fit(
+		$CenterContainer, $CenterContainer/Panel, Vector2(1280, 720)
+	)
 
 
 func _unhandled_input(event: InputEvent) -> void:

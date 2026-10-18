@@ -326,7 +326,9 @@ func _build_details() -> void:
 	_detail_panel = panel
 	panel.custom_minimum_size.x = float(_cfg.detail_width)
 	center.add_child(panel)
-	var paper := CampusTheme.paper_card()
+	var paper := preload("res://scripts/ui/npc_profile_theme.gd").box(
+		Color(CampusTheme.settings().paper), Color(CampusTheme.settings().paper), 0, 0
+	)
 	paper.content_margin_left = float(_cfg.detail_margins[0])
 	paper.content_margin_top = float(_cfg.detail_margins[1])
 	paper.content_margin_right = float(_cfg.detail_margins[2])
@@ -339,7 +341,7 @@ func _build_details() -> void:
 	rows.add_child(_detail_heading)
 	var scroll := ScrollContainer.new()
 	scroll.name = "RiskScroll"
-	scroll.custom_minimum_size.y = float(_cfg.detail_scroll_height)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	rows.add_child(scroll)
 	_detail_rows = VBoxContainer.new()
@@ -354,16 +356,9 @@ func _build_details() -> void:
 
 func _process(_delta: float) -> void:
 	if is_instance_valid(_details):
-		_detail_panel.custom_minimum_size.x = minf(
-			float(_cfg.detail_width),
-			get_viewport_rect().size.x * float(_cfg.detail_viewport_width_ratio)
+		preload("res://scripts/ui/fullscreen_panel.gd").fit(
+			_detail_panel.get_parent(), _detail_panel, Vector2(1280, 720)
 		)
-		var scroll := _details.find_child("RiskScroll", true, false) as ScrollContainer
-		if scroll != null:
-			scroll.custom_minimum_size.y = minf(
-				float(_cfg.detail_scroll_height),
-				get_viewport_rect().size.y * float(_cfg.detail_viewport_height_ratio)
-			)
 
 
 func _unhandled_input(event: InputEvent) -> void:

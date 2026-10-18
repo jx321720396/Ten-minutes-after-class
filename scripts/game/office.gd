@@ -244,13 +244,9 @@ func _build_ask_dialog() -> void:
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(dim)
 	var panel := PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.offset_left = -460
-	panel.offset_top = -300
-	panel.offset_right = 460
-	panel.offset_bottom = 300
 	panel.add_theme_stylebox_override("panel", paper_style())
 	layer.add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", int(config.gap))
 	panel.add_child(box)
