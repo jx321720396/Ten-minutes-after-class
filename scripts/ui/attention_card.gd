@@ -43,7 +43,7 @@ func _ready() -> void:
 	warning.custom_minimum_size = Vector2.ONE * float(_cfg.icon_size)
 	heading.add_child(warning)
 	heading.add_child(_label(str(_cfg.title), int(_cfg.title_size)))
-	for kind in ["bully", "isolate", "broken"]:
+	for kind in ["bully", "isolate", "broken", "crash"]:
 		rows.add_child(_risk_button(kind))
 	var details := _row_button("RiskDetailsButton", "", _open_details.bind("all"))
 	details.text = str(_cfg.details_label)
@@ -66,6 +66,16 @@ func refresh(snapshot_data: Dictionary) -> void:
 		var subtitle := str(_cfg.empty_subtitle if known else _cfg.unknown_subtitle)
 		if kind == "broken":
 			subtitle = str(_cfg.broken_subtitle if active else _cfg.empty_broken_subtitle)
+			if not known:
+				subtitle = str(_cfg.unknown_subtitle)
+		elif kind == "crash":
+			if active:
+				subtitle = (
+					str(_cfg.crash_subtitle)
+					% [int(_cfg.crash_pressure_min), int(_cfg.crash_pressure_max)]
+				)
+			else:
+				subtitle = str(_cfg.empty_crash_subtitle)
 			if not known:
 				subtitle = str(_cfg.unknown_subtitle)
 		elif active:
@@ -183,7 +193,9 @@ func close_details() -> void:
 func _refresh_details() -> void:
 	_detail_heading.text = str(_cfg.risk_heading)
 	var desired := {}
-	var kinds: Array = ["broken", "bully", "isolate"] if _detail_kind == "all" else [_detail_kind]
+	var kinds: Array = (
+		["broken", "bully", "isolate", "crash"] if _detail_kind == "all" else [_detail_kind]
+	)
 	for kind in kinds:
 		var entries = _risk_data.get(kind)
 		if not entries is Array or entries.is_empty():
@@ -199,16 +211,7 @@ func _refresh_details() -> void:
 				"text": str(_cfg.detail_student) % [entry.name, status], "index": index
 			}
 			desired[key + "_Evidence"] = {"text": _evidence(kind, entry)}
-			desired[key + "_Next"] = {
-				"text":
-				str(
-					(
-						_cfg.broken_next
-						if kind == "broken"
-						else (_cfg.formal_next if bool(entry.formal) else _cfg.warning_next)
-					)
-				)
-			}
+			desired[key + "_Next"] = {"text": _next_text(kind, entry)}
 			desired[key + "_Actions"] = {"text": str(_cfg["actions_" + kind])}
 	if desired.is_empty():
 		desired["Empty"] = {
@@ -218,8 +221,16 @@ func _refresh_details() -> void:
 	_sync_rows(desired)
 
 
-func _evidence(kind: String, entry: Dictionary) -> String:
+func _next_text(kind: String, entry: Dictionary) -> String:
 	if kind == "broken":
+		return str(_cfg.broken_next)
+	if kind == "crash":
+		return str(_cfg.crash_next) % int(_cfg.crash_pressure_min)
+	return str(_cfg.formal_next if bool(entry.formal) else _cfg.warning_next)
+
+
+func _evidence(kind: String, entry: Dictionary) -> String:
+	if kind == "broken" or kind == "crash":
 		return (
 			str(_cfg.detail_breakdowns) % [snappedf(float(entry.pressure), 0.1), entry.breakdowns]
 		)
