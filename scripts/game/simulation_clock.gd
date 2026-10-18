@@ -219,12 +219,14 @@ func pump(delta_seconds: float) -> void:
 		time_updated.emit(snapshot())
 
 
-## 暂停：按拥有者集合管理，可重入；同名重复添加不累计，最后一个释放才恢复。
-func skip_absent_break() -> bool:
-	if _core == null or _mode != MODE_RUNNING or is_paused() or not _core._player_absent:
+## 跳过当前课间剩余时间（快进）：把本段剩余 tick 一次性跑完，再走一次段末结算。
+## 事件一个不少，同种子与实时跑完完全一致（复用 advance_tick，不另写结算）。
+## 仅 running + 课间 + 玩家有控制权（player_control=1）时生效；上课／日末／暂停返回 false。
+func skip_break_remaining() -> bool:
+	if _core == null or _mode != MODE_RUNNING or is_paused():
 		return false
 	var before := _core.time_snapshot()
-	if str(before["kind"]) != "break":
+	if str(before["kind"]) != "break" or not bool(before["player_control"]):
 		return false
 	var remaining := int(before["tick_count"]) - int(before["tick_in_phase"])
 	for _i in range(remaining):
@@ -254,6 +256,7 @@ func skip_class() -> bool:
 	return true
 
 
+## 暂停：按拥有者集合管理，可重入；同名重复添加不累计，最后一个释放才恢复。
 func hold(who: StringName) -> void:
 	_paused_by[who] = true
 

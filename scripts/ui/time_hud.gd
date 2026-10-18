@@ -55,6 +55,7 @@ var _exam: Label = null
 var _bar: ProgressBar = null
 var _toast: Label = null
 var _action: Button = null
+var _skip_break_btn: Button = null
 var _toast_left := 0.0
 var _toast_count := 0
 var _last: Dictionary = {}
@@ -110,6 +111,14 @@ func _on_time_card_input(event: InputEvent) -> void:
 		return
 	_clock.cycle_time_scale()
 	_refresh(_clock.snapshot())
+
+
+## 跳过当前课间剩余时间：直接调时钟快进（事件不省略），再刷新。
+func _on_skip_break_pressed() -> void:
+	if not is_instance_valid(_clock):
+		return
+	if _clock.skip_break_remaining():
+		_refresh(_clock.snapshot())
 
 
 ## 三张卡片按可用屏高统一缩放，详情弹层仍使用完整视口。
@@ -274,6 +283,13 @@ func _refresh(snapshot_data: Dictionary) -> void:
 	var term_days := int(snapshot_data.get("term_days", 0))
 	_refresh_weekly_goal(snapshot_data)
 	var mode := str(snapshot_data.get("mode", SimulationClock.MODE_RUNNING))
+	if _skip_break_btn != null:
+		_skip_break_btn.visible = (
+			mode == SimulationClock.MODE_RUNNING
+			and str(snapshot_data.get("kind", "")) == "break"
+			and bool(snapshot_data.get("player_control", true))
+			and not bool(snapshot_data.get("paused", false))
+		)
 	var display_name := str(snapshot_data.get("display_name", ""))
 	display_name = str(
 		_card_cfg.phase_names.get(str(snapshot_data.get("phase_id", "")), display_name)
@@ -472,6 +488,15 @@ func _build_ui() -> void:
 	_bar.max_value = 100.0
 	_bar.value = 0.0
 	box.add_child(_bar)
+	_skip_break_btn = Button.new()
+	_skip_break_btn.name = "SkipBreakButton"
+	_skip_break_btn.text = str(_card_cfg.messages.get("skip_break", "跳过课间"))
+	_skip_break_btn.focus_mode = Control.FOCUS_NONE
+	_skip_break_btn.add_theme_font_override("font", _ui_font())
+	_skip_break_btn.add_theme_font_size_override("font_size", int(_card_cfg.detail_font_size))
+	_skip_break_btn.visible = false
+	_skip_break_btn.pressed.connect(_on_skip_break_pressed)
+	box.add_child(_skip_break_btn)
 	var separator := HSeparator.new()
 	separator.name = "GradeSeparator"
 	box.add_child(separator)
