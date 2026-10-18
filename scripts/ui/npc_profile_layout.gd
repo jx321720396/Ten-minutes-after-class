@@ -139,7 +139,6 @@ static func build(view: Node, config: Dictionary) -> void:
 	label(view, footer, "Footer", "未判断不等于中立 · Esc 返回", 22).size_flags_horizontal = (
 		Control.SIZE_EXPAND_FILL
 	)
-	button(view, footer, "OpenBoard", "推理板", 56)
 	button(view, footer, "OpenEncyclopedia", "百科全书", 56)
 	var picker := Control.new()
 	add(view, view.get_node("%Design"), picker, "TargetPicker")

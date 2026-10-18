@@ -225,12 +225,6 @@ func action_line() -> String:
 	return _action.text
 
 
-## 日末由 ClueBoardEntry 转调：收起风险关注卡片的详情弹层，避免压住推理板。
-func close_attention_details() -> void:
-	if _attention_card != null and _attention_card.has_method("close_details"):
-		_attention_card.close_details()
-
-
 # ------------------------------------------------------------------ 日末自动进入
 ## 日末停留倒计时（`_process` 只是转调它，测试可直接驱动）：
 ## 到时自动发出 `continue_requested`，且**只发一次**；未到停留时长返回 false。

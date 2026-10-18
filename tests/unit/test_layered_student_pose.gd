@@ -84,7 +84,7 @@ func test_all_students_have_idle_seated_pose_and_safe_transitions() -> void:
 		assert_eq(pose.pose_for("", "break", true, false, true), "idle")
 		assert_eq(pose.pose_for("", "class", true, false, true), "idle")
 		assert_eq(pose.pose_for("study", "break", true, false, true), "study")
-		for activity in ["chat", "game", "sleep", "read"]:
+		for activity in ["game", "read"]:
 			assert_eq(pose.pose_for(activity, "break", true, false, true), "idle")
 			assert_eq(pose.pose_for(activity, "break", false, false, true), "stand")
 		assert_eq(pose.pose_for("", "break", true, true, true), "idle")
@@ -157,7 +157,7 @@ func test_export_presets_include_pose_config() -> void:
 				str(presets.get_value(section, "include_filter", "")).contains(
 					"data/ui/npc_profile.json"
 				),
-				"移动端导出必须包含档案与推理板画像映射"
+				"移动端导出必须包含档案画像映射"
 			)
 
 
@@ -174,7 +174,7 @@ func test_pose_respects_activity_presence_and_movement() -> void:
 	assert_eq(pose.pose_for("", "class", true, false, true), "idle")
 	assert_eq(pose.pose_for("study", "break", true, false, true), "study")
 	assert_eq(pose.pose_for("", "break", true, false, true), "idle")
-	assert_eq(pose.pose_for("chat", "class", true, false, true), "idle")
+	assert_eq(pose.pose_for("chat", "class", true, false, true), "chat")
 	assert_eq(pose.pose_for("study", "break", false, false, true), "stand")
 	assert_eq(pose.pose_for("study", "class", true, true, true), "study")
 	assert_eq(pose.pose_for("study", "class", true, false, false), "stand")
@@ -295,7 +295,7 @@ func test_real_classroom_switches_without_moving_actor_or_writing_core() -> void
 	core._current_act[index] = "chat"
 	actors._process(0.0)
 	assert_true(pose.visible, "在座聊天保持坐姿")
-	assert_eq(pose._pose, "idle")
+	assert_eq(pose._pose, "chat")
 	assert_false(actor.get_node("Sprite").visible)
 	core._current_act[index] = "study"
 	actor.global_position += Vector3.RIGHT

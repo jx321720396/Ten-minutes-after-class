@@ -1,5 +1,72 @@
 # 变更记录
 
+## 2026-10-18 贴图压缩
+
+- 压缩 303 张彩色 WebP（quality 80，较原图至少节省 5% 才替换），源文件 47,170,936 → 34,900,708 字节，约减少 26%。逐张验证尺寸、模式及完整透明通道一致；不改变文件路径、分辨率或人物标定。
+- 265 张二维贴图由无损导入改为有损质量 0.8，经 Godot 正常重新导入；同一组有效 assets 导入贴图 178.32 → 75.12 MiB，约减少 58%。法线／材质、像素原型、图标及标志保持原设置，不手动操作 .godot 缓存。此为文件／包内资源压缩，不代表显存下降。
+- 新增 tools/compress_textures.py（默认预览，应用须指定项目外备份目录），逐文件清单及汇总见 docs/production/texture-compression-20261018*.json。原文件保存在 D:/game/texture-backups/mobile-20261018-compress-v1/；各素材生成文档中的 q90 与初始体积是压缩前记录，当前值以本次清单为准。
+- 11/11 活动姿态回归、1336 项断言及真实教室 36 项检查通过，人工核对截图；CSV 导入检查通过。Godot 实景退出仍有既有资源释放警告。未重新导出 APK。
+
+## 2026-10-18 全班趴桌睡觉贴图
+
+- 内置 imagegen 逐人补齐 16 张闭眼枕臂的透明睡姿，保留人物外观与坐姿下半身；WebP q90 约 1.87 MiB，来源及桌面接触标定见 sleep_seated_v1/manifest.json。
+- sleep 活动绑定独立姿态，配置各人桌面前景与身体深度；复用学习姿态的相机射线投影、桌面遮挡与人物点击处理，醒来及离座恢复对应表现。不改变内核睡眠规则或收益。
+- 睡姿及既有活动回归 16/16 测试、1348 项断言通过，真实教室 36 项检查通过，两种分辨率截图人工核对。配置 190 项、字体覆盖、格式与静态检查通过；Godot 退出仍有既有资源释放警告，未导出 APK。
+
+## 2026-10-18 全班坐姿聊天贴图
+
+- 检查已有素材后，仅补齐当前画风缺少的 16 张正面坐姿聊天动作；16 人背面直接复用 seated_back_v1。透明 WebP q90 共约 2.17 MiB，来源与绑定登记在 chat_seated_v1/manifest.json。
+- 配置 chat 活动贴图与背面变体映射，接入既有朝向判定、预加载及姿态恢复；不改内核行为、收益或随机序列。
+- 聊天、朝向与三种既有活动回归共 14/14 测试、781 项断言通过；真实教室 36 项检查通过，并人工核对 1280×720、960×540 截图。配置 190 项、字体覆盖、格式及静态检查通过。验收进程退出仍有既有资源释放警告，未影响检查及截图。
+
+## 2026-10-19 自由状态定向走动、中途跨线锁定与共享娱乐加入
+
+- **状态中途跨线即进入并锁定**（用户裁定）：段首判定之后，自由状态的学生动力跨过阈值就进入学习／游戏状态；进入后即使动力回到 30–60 也不退出，下个课间重判。取代旧「加压到 ≥30 就退出游戏状态」。GDScript 为 `FreeRoam.refresh_states`（`_tick` 内、决策前调用），Python 为 `Sim.refresh_free_states`。
+- **走动改为定向**：只有自由状态（动力 30–60）的学生走动，每课间一次，走向「自己好感最高的人」；好感最高者就在前后左右（正交邻座）则不动。不再按 `behavior_probs.csv` 的 `move=0.20` 逐人掷概率，也不再随机挑 13 个固定站立点（`_pick_point` 保留给离线 / 测试与后续回退）；走动 RNG 改为固定种子。学习／游戏锁定、崩溃、睡觉、办公室、忙碌、走动中都不参与。
+- **自由状态先加入好感最高者**：自主决策前先按其当前活动加入（学习→请教、娱乐→同款娱乐），仍走 §9.1.2 全体投票；每课间只尝试一次，对方空闲或游戏锁定时不消耗这次机会（`FreeRoam.try_join_best`）。
+- **共享娱乐**：听歌、看课外书从「不开放加入」改为可加入，加入者做同款娱乐并与发起者同步结束、仍走投票；**加入者免物品**（一起看同一本，`start_leisure(ignore_book)`）。睡觉与崩溃休息仍不开放。探针（seed 12345，4 天）复跑：加入日志出现 `listen_music` 5 次、`study` 12 次。
+- **无人可找时的回退**：好感最高者全在睡觉／崩溃／办公室时，内核先退到「加入前后左右正在做的事」（`FreeRoam._neighbor_doing`），都不成立才做自己的娱乐／学习；表现层此时把人**走回自己的座位**（`_return_to_seat`）。
+- **开局数值上调**：压力与动力 0–45（`psyche.csv`，原 0–20）；初好感改为 10–30、初敌对 0–20（`kernel_params.csv`：`init_affinity_base=10`／`spread=20`／`init_hostility_spread=20`，原 20+rand*20 与 rand*40）。Python 参考实现此前把初值硬编码在 `core_sim.py`，现已改为读同一张表，两侧重新同源。
+- **删除旧角色设定**（用户裁定）：`characters/bindings.csv` 的数据行清空（陈阳↔林晚 双向 85、佳豪对全班 50），`seeds.csv` 对应 note 文本同步移除；Python 参考实现里硬编码的同两条覆盖一并删除。初始关系现在**只**由 `rules/kernel_params.csv` 随机生成（好感 10–30、敌对 0–20）。绑定表与 `_apply_bindings`／`RosterSelector` 的读取路径保留，后续要加设定关系直接补行。
+- 同步：主文档 §4／§5.1／§5.1.1／§9.1.4（找伴段与共享表）／§9.1.5／§15.1／§15.3，`docs/design/数据模型.md`，`docs/gdd/teacher-mobile/*` 分册（`tools/split_teacher_gdd.py` 重新生成）。
+- 验证：`check_config` 190 项、`test_core` 133 项（`test_core.py` 的 D07 伤害用例补了「敌对清零」，因为开局敌对现在可能自己就 >40）、`verify_formula` 9 项、`check_docs` 全通过；`gdformat --check scripts/`（98 文件）与 `gdlint scripts/` 无问题。**Godot 侧未实跑**（本机没有可执行的 Godot 4.7.2），走动改动只过了静态检查。
+
+## 2026-10-18 全班竖持书本阅读贴图
+
+- 内置 imagegen 逐人制作 16 张透明坐姿阅读贴图，双手竖持打开的书本；植物、星月、山峰、帆船、小猫五款封面在全班复用，后续角色使用首批五款图作为书本参考。
+- `data/ui/student_poses.json` 为 `read_book` 绑定各人贴图，复用姿态切换与预加载，不改行为或阅读收益。WebP q90 素材约 2.25 MiB；书款清单与来源见 `assets/textures/characters/reading_seated_v1/`。
+- 阅读专项 3/3、238 项断言通过，包含五款书覆盖与吃零食／听音乐／普通坐姿切换；真实教室 36 项检查通过，人工检查两种分辨率截图。配置 190 项、字体覆盖、格式和静态检查通过。修复一张新素材的无效导入记录后重跑专项与实景验证。
+
+## 2026-10-18 全班坐姿听音乐贴图（有线耳塞）
+
+- 按用户修正采用小型白色有线耳塞，逐人生成 16 张透明坐姿听音乐贴图；头戴式早期版本未导入。保留各自外观与坐姿画布，WebP q90 合计约 2.15 MiB。
+- 在 `data/ui/student_poses.json` 配置 `listen_music` 活动映射和独立素材，复用坐姿切换与后台预加载，无内核改动；离座、停止听音乐及切换吃零食／学习时恢复对应姿态。
+- 听音乐专项 2/2、187 项断言通过，吃零食回归 2/2、123 项断言通过；真实教室 36 项检查通过并保存 1280×720、960×540 截图。配置 187 项、字体覆盖、格式与静态检查通过。提示词及素材记录见 `docs/art/concepts/music_seated_20261018/README.md`。
+
+## 2026-10-19 考试日与崩溃休息者的学业收益收口、自由学习改为按单位重选
+
+- **考试日不再产生任何学业收益与活动**（按用户 2026-10-19 裁定）：`SimCore._roll_sleep` 与 `core_sim.Sim.roll_sleep` 在 `_is_exam_only_day()` 时直接返回（课间不再掷睡觉）；`_settle_units`／`settle_units` 在考试日不累计也不结算学习／娱乐／游戏收益；`skip_class` 在考试日不发放上课固定收益。此前考试日的学习收益会经跨天结算并入成绩后再算考分（seed 12345 实测当天 +111 分收益、均分 453.69 → 460.62），现当天收益为 0、成绩只用前七天已计入的。
+- **崩溃休息者不发上课固定收益**：`skip_class` 跳过 `_broken`／`Broken` 的学生，与 §5.3「崩溃当天不产生学业收益」对齐；§3.1／§4 的「全员 +3」措辞改为「除当天崩溃休息者外全员 +3」。
+- **自由状态的学习改为「一个 20 秒单位后重选」**（§5.1.1 落地）：自己投入学习的自由学生结算满一个单位即结束本次学习、下个 tick 重新决策，不再锁整段；段首 >60 的学习状态与加入他人学习组的请教跟随者仍按整段／整组结算。同一探针下「动力 <30 仍在学习」的学生·tick 由 2145 降到 727（seed 12345），剩余部分是「30–34 分开始学、单位内跌破 30」的合法情形。
+- 同步：`data/rules/activities.csv` 的 `class_gain` 说明、主文档 §3.1／§5.1.1／§5.2／§5.3／§11／§13.3／§15.1、`docs/gdd/teacher-mobile/*` 分册（`tools/split_teacher_gdd.py` 重新生成）、`SimulationClock.complete_exam_day` 注释。
+- 验证：`check_config` 187 项、`test_core` 133 项、`verify_formula` 9 项、`check_docs` 全通过；`gdformat --check`／`gdlint` 对 `sim_core.gd`（3200 行上限内）与 `simulation_clock.gd` 无问题。Python 参考实现与 GDScript 两侧改动逐处镜像，考试日不再有「`skip_class` 发 +3、真机逐 tick 不发」的口径差。
+
+## 2026-10-18 全班坐姿吃零食贴图
+
+- 内置 imagegen 依据原有坐姿逐人生成 16 张独立吃零食贴图，保留人物外观、蓝白校服、坐姿画布与透明通道；以 WebP q90 入库，合计约 2.16 MiB。
+- 在座且在场时按公开活动 `eat_snack` 切换对应贴图，结束后按原活动恢复；离座保持站姿。绑定与活动映射集中在 `data/ui/student_poses.json`，预加载覆盖新姿态，不修改内核与行为判定。
+- 新增专项 2/2、123 项断言通过；真实教室全班 36 项检查通过，截图覆盖 1280×720 和 960×540；格式、静态及字体覆盖检查通过。素材清单、提示词和验收入口见 `docs/art/concepts/snack_seated_20261018/README.md`。
+
+## 2026-10-19 删除推理板界面
+
+- 删除推理板本体：`scenes/ui/clue_board.tscn`、`clue_board_entry.tscn`、`scripts/ui/clue_board*.gd`、`data/ui/clue_board.json`，以及只服务它的素材 `assets/textures/ui/clue_board/`（纸张与粉笔虚线）。
+- 删除全部入口：教室场景 `ClueBoardEntry` 节点与 `Classroom._bind_clue_board()`、办公室页脚「推理板」按钮（`office.tscn`／`office.gd`／`data/ui/office_hub.json`）、教室老师工具 `BoardTool`（`teacher_classroom.tscn`／`.gd`／`data/ui/teacher_classroom.json`）、档案页「推理板」按钮（`npc_profile.gd`／`npc_profile_layout.gd`）、`study_navigation.gd` 与 `data/localization/study_navigation.json` 的 board 目的地、`campus_theme.json` 的 board 图标槽位（encyclopedia／backpack 的 slot 各前移一位）。
+- 删除数据与状态：`GameState.clue_board_journal`（含存档读写字段）；日末不再自动弹板并暂停世界，仍由时间卡 `report_hold_seconds` 停留后自动进入次日。
+- 删除验收与工具引用：`tests/integration/verify_clue_board.gd`、`verify_clue_board_flow.gd`、`capture_clue_board.gd`；`test_study_navigation.gd` 改为只测档案↔百科互通；`test_student_portraits.gd`、`test_office_hub.gd`、`capture_office_hub.gd`、`capture_identity_roster.gd`、`capture_roster_art_integration.gd`、`capture_standing_roster.gd`、`capture_student_roster.gd`、`smoke_outcome_flow.gd` 去掉推理板分支。
+- 原因：推理板的公开事件白名单（chat／comfort／tease／apologize／roughhouse）与内核事件流对不上——内核 `event_happened` 只发 `roughhouse` 且 payload 不含对方索引（`clue_board_data.record_event` 要求 i≠j 都在场），实测 5 天 0 条可录入事件，板上只剩玩家自己在档案里打的关系标注；同时它每天放学强制弹出并暂停世界，收益接近零。判定：整体删除，不保留。
+- 保留：档案内的关系标注（`GameState.profile_notebook`）与档案↔百科互通、教室黑板涂鸦 `clue_board_1.tscn`（与推理板无关）均原样保留。
+- 文档：主文档 §12.6 与 `teacher-mobile/12` 改为「已移除」说明，`03`／`13`／`15` 里提到推理板的位置同步清理；百科词条 `ui.board` 与其交叉引用移除。
+
 ## 2026-10-19 回退课间行动额度机制
 
 - 删除每课间行动额度：`data/rules/activities.csv` 的 `break_action_quota`、`SimCore._break_action_quota`／`_actions_used`、`LeisureActions.actions_left`／`use_action`／`start_rest`（额度用完趴桌）、以及 `TeacherCommands.summon()` 里「叫去办公室也占一件」的调用。

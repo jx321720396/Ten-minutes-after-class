@@ -32,11 +32,18 @@ static func pose_texture_paths() -> Array:
 	var paths := {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(POSE_TABLE))
 	if parsed is Dictionary:
+		var pose_keys: Array = POSE_KEYS.duplicate()
+		for key in parsed.get("activity_poses", {}).values():
+			if not pose_keys.has(key):
+				pose_keys.append(key)
+		for key in parsed.get("back_pose_variants", {}).values():
+			if not pose_keys.has(key):
+				pose_keys.append(key)
 		var bindings: Dictionary = parsed.get("bindings", {})
 		for binding in bindings.values():
 			if binding is not Dictionary:
 				continue
-			for key in POSE_KEYS:
+			for key in pose_keys:
 				if binding.has(key):
 					paths[str(binding[key])] = true
 	return paths.keys()

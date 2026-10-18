@@ -74,7 +74,7 @@ func _build_button() -> void:
 	btn.add_theme_stylebox_override("pressed", _button_style())
 	btn.pressed.connect(_open)
 	add_child(btn)
-	preload("res://scripts/ui/campus_theme.gd").utility_button(btn, 1)
+	preload("res://scripts/ui/campus_theme.gd").utility_button(btn, 0)
 
 
 func _button_style() -> StyleBoxFlat:

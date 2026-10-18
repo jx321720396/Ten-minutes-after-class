@@ -3,9 +3,9 @@
 # 说明：这些不是「规则阈值」，而是初始化/归一化的结构系数；规则阈值仍在各自 CSV。
 # 老师版（2026-10-14）：删除信任 / 四维 / 透明度 / 学习圈 / 提问讲题相关结构系数。
 param,value,note
-init_affinity_base,20,初始好感基线：A = 20 + random*20
+init_affinity_base,10,初始好感基线：A = 10 + random*20（即 10–30；2026-10-19 用户裁定）
 init_affinity_spread,20,初始好感随机幅度
-init_hostility_spread,40,初始敌对：H = random*40
+init_hostility_spread,20,初始敌对：H = random*20（即 0–20；2026-10-19 用户裁定）
 saturated_threshold,95,报告统计「接近饱和」判定阈值
 grade_max,750,成绩上限（grade ∈ [0,750]，主文档 §17.1.1）
 # 开局成绩分布自 2026-10-16 起由 rules/psyche.csv 的 grade_init_min / grade_init_max 统一给出（D01：330–530，中值 430）。

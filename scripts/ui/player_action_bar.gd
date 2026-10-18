@@ -346,7 +346,7 @@ func _build_backpack() -> void:
 	backpack.bind_touch(launch)
 	launch.text = "书包"
 	entry.add_child(launch)
-	CampusTheme.utility_button(launch, 2)
+	CampusTheme.utility_button(launch, 1)
 	launch.pressed.connect(_toggle_backpack)
 
 

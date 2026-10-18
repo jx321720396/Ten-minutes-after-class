@@ -54,7 +54,7 @@ func _ready() -> void:
 	%Monitor.custom_minimum_size.y = float(config.monitor_height)
 	%Profile.icon = preload("res://assets/icons/ui/office_profile.svg")
 	_build_preview()
-	for key in ["profile", "board", "encyclopedia"]:
+	for key in ["profile", "encyclopedia"]:
 		action_button(key).custom_minimum_size.y = float(config.footer_height)
 	for button in [%Pause, %Settings]:
 		style_button(button)

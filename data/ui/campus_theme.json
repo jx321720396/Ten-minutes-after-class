@@ -176,12 +176,10 @@
     "hover_underline": 4,
     "icon_gap": 10,
     "icons": [
-      "board",
       "encyclopedia",
       "backpack"
     ],
     "tooltips": [
-      "打开推理板",
       "打开百科全书",
       "打开书包"
     ],

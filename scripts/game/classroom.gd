@@ -79,7 +79,6 @@ func _ready() -> void:
 	add_child(exam_comic)
 	exam_comic.bind_sources(core, clock)
 	transition.bind_clock(clock)
-	_bind_clue_board()
 	# 黑幕开始退场的瞬间就应用挂起的相位（含上课 / 每日归位），不等淡出结束
 	transition.dismiss_started.connect(_on_transition_dismiss_started)
 	# ⚠️ 绑定 Roam 之前先等导航就绪：bind_clock 会立刻触发一次相位回调（上课归位），
@@ -159,11 +158,6 @@ func _on_tutorial_replay() -> void:
 func _on_tutorial_armed(kind: StringName) -> void:
 	_tutorial_armed = kind
 	tutorial.notify_armed(kind)
-
-
-## 老师版手记按日归档；本局历史保留，新局由 GameState 重置。
-func _bind_clue_board() -> void:
-	$UI/ClueBoardEntry.bind_sources(_core_from_state(), clock, actors)
 
 
 func _bind_time_flow(core: SimCore) -> bool:

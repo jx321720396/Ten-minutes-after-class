@@ -1,0 +1,3605 @@
+{
+  "quality": 80,
+  "sources": [
+    {
+      "path": "assets/backgrounds/office/office_idle_v01.webp",
+      "before": 170220,
+      "after": 118620,
+      "original_sha256": "d088d1d5ea35df572421d385e4e4b035c0c7fefe97d463e46cc7e76724e4463a",
+      "size": [
+        1672,
+        941
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/backgrounds/outcomes/academic_office_sunset_v01.webp",
+      "before": 216326,
+      "after": 150852,
+      "original_sha256": "639e02a97d3f61e89adca5f265c2ee37a00fc010371d6a8c6e51f6ab0a9feea5",
+      "size": [
+        1672,
+        941
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/backgrounds/outcomes/dropout_empty_desk_v01.webp",
+      "before": 148538,
+      "after": 103128,
+      "original_sha256": "bbb45f0bd1d7f0d744b3e708d8d9c519420d28a02e03b52a6d09ea6ef9bff36b",
+      "size": [
+        1672,
+        941
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/backgrounds/outcomes/term_sunset_v01.webp",
+      "before": 177228,
+      "after": 121696,
+      "original_sha256": "d6c58f5e3c63cdaff8752896eed25aee88dd0d5003e80b0a50549d531c90bacd",
+      "size": [
+        1672,
+        941
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/illustrations/exam_comic/exam_day_v01.webp",
+      "before": 223948,
+      "after": 134160,
+      "original_sha256": "3f017864111a9a07367c74c334eaa04ea159ac360c0853400ab0dd51f207c78d",
+      "size": [
+        1672,
+        941
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/illustrations/opening_comic/page_01.webp",
+      "before": 1007738,
+      "after": 157092,
+      "original_sha256": "0b1c8023ea66095b4f82a98a5e09dd62807587df48c2c9b0b9edbddfc4700487",
+      "size": [
+        1920,
+        1080
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/illustrations/opening_comic/page_02.webp",
+      "before": 1259486,
+      "after": 228314,
+      "original_sha256": "b2039b98537f91e90c7373704641cdeb7ca84850ad0d43c98f565e2d19b98f42",
+      "size": [
+        1920,
+        1080
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/illustrations/opening_comic/page_03.webp",
+      "before": 1108012,
+      "after": 185566,
+      "original_sha256": "9f7a3631b066ea15feb14ca4b9bd351395e7fb98c2c356e70b6158e86c20a9b8",
+      "size": [
+        1920,
+        1080
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/illustrations/opening_comic/page_04.webp",
+      "before": 1113600,
+      "after": 183912,
+      "original_sha256": "aded1ee978db665b3340ac2e5ad3fd4d04de8f6a9368144fc421d7ce882c1ae4",
+      "size": [
+        1920,
+        1080
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/promotional/classroom-social-1920x1080-v1.webp",
+      "before": 284162,
+      "after": 197414,
+      "original_sha256": "2a0f2836ae4fdc5c3d16a59eb76138442e026709b136891c964d6d39fd222f52",
+      "size": [
+        1920,
+        1080
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/promotional/classroom-social-title-1920x1080-v1.webp",
+      "before": 322290,
+      "after": 224656,
+      "original_sha256": "734ab2f2b3a3095dfb4ae012605519a305597b4be2bf860641a2a48be7dc19ef",
+      "size": [
+        1920,
+        1080
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/promotional/classroom-social-title-2560x1440-v1.webp",
+      "before": 424756,
+      "after": 301026,
+      "original_sha256": "73bd5b96f727e04561d97dd9cfd3ecbf93a9767ceaf784d270193b55170e78a0",
+      "size": [
+        2560,
+        1440
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/promotional/classroom-social-title-portrait-1440x2560-v1.webp",
+      "before": 517208,
+      "after": 376536,
+      "original_sha256": "1a31711b0ede0d40c17297969e3b5033f99956607ff211bc0a1fd75fcbdbf0ba",
+      "size": [
+        1440,
+        2560
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/promotional/xiake-title-landscape-1920x1080-v1.webp",
+      "before": 317892,
+      "after": 220858,
+      "original_sha256": "e98b48dfdcb03bf41ee318324fc1a2ac08d7231ebfcfe095ca33809e5a0198f0",
+      "size": [
+        1920,
+        1080
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/promotional/xiake-title-landscape-2560x1440-v1.webp",
+      "before": 420952,
+      "after": 297388,
+      "original_sha256": "f0e119e562acc65ac2ddd6a954188939fb4dca922b142fa62b1cebe8082c7389",
+      "size": [
+        2560,
+        1440
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/promotional/xiake-title-portrait-1440x2560-v1.webp",
+      "before": 502908,
+      "after": 350468,
+      "original_sha256": "54b67fef5254b258710c510f17949415c201bd3f46307263ef3688bf64d4a652",
+      "size": [
+        1440,
+        2560
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_01_chat_seated_v1.webp",
+      "before": 133306,
+      "after": 105694,
+      "original_sha256": "e2a532b0c06f4cbd396b7f54a7cdb473b3b6a8a075f09eb30492ccb326b3b740",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_02_chat_seated_v1.webp",
+      "before": 153018,
+      "after": 123190,
+      "original_sha256": "7be78c75f3e96ca53f7e1e836c8144956ccedc1257ce8d414926f2ab5caf6549",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_03_chat_seated_v1.webp",
+      "before": 138624,
+      "after": 110620,
+      "original_sha256": "7ccc90f53049563d7f7466b718608eabc37adcd8d75722fea6066e4401edd16c",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_04_chat_seated_v1.webp",
+      "before": 135592,
+      "after": 109594,
+      "original_sha256": "f15af1b7fd39feb0a083277a6839f83dfa9fb0baf223874b882e26dfd6ef823c",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_05_chat_seated_v1.webp",
+      "before": 148224,
+      "after": 117402,
+      "original_sha256": "48bf3f50e38fbe3f1e304b84b9f36b72c2f045d73e675ef6320ca534927fb164",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_06_chat_seated_v1.webp",
+      "before": 146098,
+      "after": 120238,
+      "original_sha256": "8ae47c6058a628500851a36fb9042ef37558023d7333b2e7cf1c2161f322b0e3",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_07_chat_seated_v1.webp",
+      "before": 152004,
+      "after": 120850,
+      "original_sha256": "8fa775a84daf02d1f563eb73dd855e1d710a125d33352dfd71c932f8f21a4a57",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_08_chat_seated_v1.webp",
+      "before": 143480,
+      "after": 115810,
+      "original_sha256": "0c637c55b1c5fff5b56fd9957d4d5949f08a6da36c8b583e15af396157696d57",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_09_chat_seated_v1.webp",
+      "before": 141596,
+      "after": 113522,
+      "original_sha256": "2f1ab01fb230c456d3801a813cdaafd7bdb83dcdf903ebf5b1782fc4c9a43f8a",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_10_chat_seated_v1.webp",
+      "before": 139128,
+      "after": 114744,
+      "original_sha256": "9e75920c90ef689f1978b2dc9a8a08b757816f449454c851579083ff32a2c3a2",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_11_chat_seated_v1.webp",
+      "before": 140464,
+      "after": 113792,
+      "original_sha256": "d10b99375abf3a654498136800f022e13ab4b0a33005062fcaaaa67ad1dd8fbe",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_12_chat_seated_v1.webp",
+      "before": 142424,
+      "after": 113758,
+      "original_sha256": "d634dadb3dc11d9b0b4e4ca6f970e49511a4ddd544c087d3cd403b6d4b875377",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_13_chat_seated_v1.webp",
+      "before": 137334,
+      "after": 111256,
+      "original_sha256": "d247ad5823f9b16dceff404d51635c3bd6f4c33cffd4ceddf38188aa6d4e93c2",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_14_chat_seated_v1.webp",
+      "before": 141558,
+      "after": 113568,
+      "original_sha256": "bfe8ee8e702cb37be1f6d57f03acd6fa389b377f64ef95312761788f11623a8c",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_15_chat_seated_v1.webp",
+      "before": 142230,
+      "after": 114896,
+      "original_sha256": "a276d799fa2bf883601df4ad4314ce340b53cf4b22e28a6056c7613b67eaf7e5",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/chat_seated_v1/char_16_chat_seated_v1.webp",
+      "before": 135730,
+      "after": 109284,
+      "original_sha256": "f4f93cbc68e53823ec546552eebf19c6ded11a0e07a4caf39bd14881168ec9e9",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_01_body_base_v1.webp",
+      "before": 116940,
+      "after": 101268,
+      "original_sha256": "90e738f2d48ac48828f26123cc8a61cf5a992a1c2389aa957b949c1e8074ef40",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_02_body_base_v1.webp",
+      "before": 122194,
+      "after": 106972,
+      "original_sha256": "d38bc8318cb1a1b6844281213445105a8aaf95e16510868a6663df156f7e9bd7",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_03_body_base_v1.webp",
+      "before": 111406,
+      "after": 97124,
+      "original_sha256": "faa38082cf1f38e438cad722ca8ea15e1d864ec48d6bb4101da5342b44a860de",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_04_body_base_v1.webp",
+      "before": 122270,
+      "after": 107558,
+      "original_sha256": "2bd97969328c916c7d4a78ec77ac60dc4d003761f0cbe80800dbf2f6baa3f5b7",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_05_body_base_v1.webp",
+      "before": 111520,
+      "after": 97264,
+      "original_sha256": "bb522f3366cc42684ed0751b76aaaeaf937649f94c5a05cdd3e6cc71fe4af2b2",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_06_body_base_v1.webp",
+      "before": 129400,
+      "after": 114428,
+      "original_sha256": "189a1e964a5cce39ca57cc9f88b7c054a75f60718749379fe0b5ed54b27c5c30",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_07_body_base_v1.webp",
+      "before": 113212,
+      "after": 98242,
+      "original_sha256": "c8650a1f0de49dd6b74fb5c7d0cb99580bb7f31a88d9b7d43c0c1b1aa0bd94c4",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_08_body_base_v1.webp",
+      "before": 112664,
+      "after": 98378,
+      "original_sha256": "c92fd8192518d2ebf7ded473c085d1507c9f54b484bdff2f76ead17e7bde59c2",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_09_body_base_v1.webp",
+      "before": 128540,
+      "after": 112100,
+      "original_sha256": "b706735ca0056f3170dac1f3f5dfbfaeb9196b0b5b9d389cd96e58e9a757af8e",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_10_body_base_v1.webp",
+      "before": 112456,
+      "after": 98114,
+      "original_sha256": "f41327a891aeecdc1415875a0a4826fb191e9b9fec63cf354acdb6e27a1196f7",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_11_body_base_v1.webp",
+      "before": 122098,
+      "after": 106794,
+      "original_sha256": "f0b5999117a7126d03f0748b001378a3a2a8f7ef98d6d0b44d2a9cbf9154186f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_12_body_base_v1.webp",
+      "before": 113856,
+      "after": 99842,
+      "original_sha256": "620c647ae55ad48b1938bed8511cbcdb36868d386839a2e1ef1bdc6144587b0c",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_13_body_base_v1.webp",
+      "before": 120832,
+      "after": 105052,
+      "original_sha256": "0bd2c0f942e3196bf2f2bb3e018b6d1c9fd79ec852d8a5a1ee296f09577ad8c9",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_14_body_base_v1.webp",
+      "before": 118544,
+      "after": 102674,
+      "original_sha256": "c75fe5dccf827889f108c831c17856af6cfebc5368ba40e6c276e7c70e06174f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_15_body_base_v1.webp",
+      "before": 125572,
+      "after": 110332,
+      "original_sha256": "462d6053921ee2fb684a5b00b9379b5b2f7eafeac4165e158c27114d6f5732fc",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_16_body_base_v1.webp",
+      "before": 114380,
+      "after": 97898,
+      "original_sha256": "542ecd6873d955d506c0f667e47988ea8160db688c09d28b2bf56b4d3188cb0b",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_17_body_base_v1.webp",
+      "before": 111240,
+      "after": 97408,
+      "original_sha256": "3536d2ecff1b5ee4a5d4395fc49a1dc339bb7d551094fc16b4b57087ad1d0154",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_18_body_base_v1.webp",
+      "before": 105920,
+      "after": 91168,
+      "original_sha256": "456dc34c7cafa244353b67229100e2bc51c98445104a2ab6c1d55c060e2dafc1",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_19_body_base_v1.webp",
+      "before": 116694,
+      "after": 100990,
+      "original_sha256": "66ed046c173c9544036d2bfc7fe86dc8ddc3e7a541240e33829f2b97312ce769",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_20_body_base_v1.webp",
+      "before": 110342,
+      "after": 96502,
+      "original_sha256": "dde4e48c8ac465f393fbc262717e5910ac4094c53236eda02c13c512b0768833",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_21_body_base_v1.webp",
+      "before": 116372,
+      "after": 100300,
+      "original_sha256": "f4e9d480e7d15643aa0dfc24e6ecf92b676d41e4e22b625437036b7483f21c7e",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_22_body_base_v1.webp",
+      "before": 111704,
+      "after": 97564,
+      "original_sha256": "6971647d0b46d729167b3dbfa4eb50567b15b3d834acb808d203dfe1616e2efd",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_23_body_base_v1.webp",
+      "before": 118782,
+      "after": 101996,
+      "original_sha256": "9e408799c6a242dd7d29971814e0137082593e8ad4bb3c8aa51cb98806863e68",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_24_body_base_v1.webp",
+      "before": 109852,
+      "after": 96250,
+      "original_sha256": "57864aeeb1307e4e01beb6562c766bdb07e29b8bfb5b0c758cb1b34acbd60c44",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_player_female_body_base_v1.webp",
+      "before": 116436,
+      "after": 101328,
+      "original_sha256": "8fe54c02dd8888532cd04b13a815fd4f9fdb0817a77292509746e73e7fab887f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/fullbody_v1/char_player_male_body_base_v1.webp",
+      "before": 115896,
+      "after": 100676,
+      "original_sha256": "cda78c1ab790b895430437b2977e868bd734b7a81ac43da782466a2e3ca09833",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_03_stand_identity_v3.webp",
+      "before": 108976,
+      "after": 95788,
+      "original_sha256": "5109f9026425beefa7a7a61b44ad5ceda0e0a925337bcc924de296b785a61416",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_03_study_identity_v3.webp",
+      "before": 140910,
+      "after": 120402,
+      "original_sha256": "6ef88940cbb384c8e73b699aaeb2413e7553dc42e7c8fdc6aa39b7c76f8428bd",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_07_stand_identity_v3.webp",
+      "before": 115370,
+      "after": 100232,
+      "original_sha256": "46993884a426abb3dd99e608b4d3018e2d75056a507a8f9ab0af56893036976f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_07_study_identity_v3.webp",
+      "before": 144692,
+      "after": 122122,
+      "original_sha256": "7420dbe3097f1bdc399d3090f116916764d13f8965f74999adc8694839406e91",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_08_stand_identity_v3.webp",
+      "before": 111328,
+      "after": 97746,
+      "original_sha256": "106c2e9b0451a8b2fcc2aa5bc734589a119162b206bf6a2c3e6e4598e683ff8d",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_08_study_identity_v3.webp",
+      "before": 150032,
+      "after": 126826,
+      "original_sha256": "477a40e3eb86d9307d09001b93e2927c6158475bf476d3c3c360d1513e78b2b1",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_09_stand_identity_v3.webp",
+      "before": 117162,
+      "after": 102548,
+      "original_sha256": "3e99ee69ce81bf164513d9ff8e6514cfcf427b46701368fbfba17355843fc621",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_09_study_identity_v3.webp",
+      "before": 139808,
+      "after": 119354,
+      "original_sha256": "777e9c5f10f0450c3205943e676ad4d78e87e396f658b683ffaae2358036726f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_10_stand_identity_v3.webp",
+      "before": 120056,
+      "after": 105858,
+      "original_sha256": "dcb16e5579c55934ffbf5397752da856fcd941c7adb17e601a32b6eb3aa41c12",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_10_study_identity_v3.webp",
+      "before": 139216,
+      "after": 118834,
+      "original_sha256": "ba8c10acbca1f595d85ac12ddf02eac22ac93bb4b74547e8dd0e5da014c39b21",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_11_stand_identity_v3.webp",
+      "before": 119790,
+      "after": 103574,
+      "original_sha256": "825f39e6b893fe595ae609f945d992bd01273625d1d00c4c51bc18d17059e5e0",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_11_study_identity_v3.webp",
+      "before": 141614,
+      "after": 120942,
+      "original_sha256": "ddaa8449b8f12f94c346948494e3ddbbebbc1bba7e65dee9aa8495e826b10d57",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_12_stand_identity_v3.webp",
+      "before": 117296,
+      "after": 101700,
+      "original_sha256": "ffd6cf1401c137ff65010e190629f8281972f5967c32c23932be24aeea334e48",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_12_study_identity_v3.webp",
+      "before": 140320,
+      "after": 119598,
+      "original_sha256": "1b6f7d44dca3f031b31c9ab1107691e0ef96f712510ec1a70d4962dbe5ad2bb0",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_14_stand_identity_v3.webp",
+      "before": 119030,
+      "after": 103340,
+      "original_sha256": "71cc2bca8444b8e5abd62a4a8bb17cc9773c3e3a89733191f39354a0659531f9",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_14_study_identity_v3.webp",
+      "before": 142236,
+      "after": 120540,
+      "original_sha256": "9f454ec91949b2ccf82485a61178ef294c72b0520a87f7d2b8e847c1078d1930",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_15_stand_identity_v3.webp",
+      "before": 121592,
+      "after": 106144,
+      "original_sha256": "1d88c6d2f71d02913b5f8f9f366e8d62673d09a1a4c6f503118ed5650aa13343",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_15_study_identity_v3.webp",
+      "before": 148584,
+      "after": 123988,
+      "original_sha256": "20d1a46cdaa196959895f7386c467a0b0dd8ccab59768f74e67becc7c052e284",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_16_stand_identity_v3.webp",
+      "before": 109166,
+      "after": 95206,
+      "original_sha256": "9add93b931d69c33b82f5349baeced1ca659bcfd957dcafa7ec00ea2e6798b4d",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/identity_v3/char_16_study_identity_v3.webp",
+      "before": 134350,
+      "after": 114630,
+      "original_sha256": "dbcedc81a1c677d4992a9e60f2ef18c3007920adb9472ac19c4952315fa86182",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_01_idle_seated_v1.webp",
+      "before": 128480,
+      "after": 107630,
+      "original_sha256": "fd2b8fbbf33afb4d7a3aa86204cfa89b9b3557f71ea2ddef16e09b51908acf18",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_02_idle_seated_v1.webp",
+      "before": 150434,
+      "after": 126672,
+      "original_sha256": "11ac400b257ca4833b62f2462d034f4b16852a4c03fe8a875ad28629fc9aa3ef",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_03_idle_seated_v1.webp",
+      "before": 134440,
+      "after": 114172,
+      "original_sha256": "867687863c52f539187d3d5250095e07a72b16ca6a97f2d090f2eb42331122e8",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_04_idle_seated_v1.webp",
+      "before": 134890,
+      "after": 114532,
+      "original_sha256": "88537c8849beec4fdd3e273c6ed066fee45d07735fea037cc2514fe874698dae",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_05_idle_seated_v1.webp",
+      "before": 149128,
+      "after": 127668,
+      "original_sha256": "e6ce7f8292e2eee6fb684ed2f881bbf67c0a9c5b63310ddb112020a7d630c91f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_06_idle_seated_v1.webp",
+      "before": 140750,
+      "after": 118522,
+      "original_sha256": "9d4150f3cf108d55cf4df2c1730ce8082c101afe80cf644ab21ac64e2ef72182",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_07_idle_seated_v1.webp",
+      "before": 148274,
+      "after": 125174,
+      "original_sha256": "a838038a8129f5075faaf98fbe8c9f3613a8eb731274e5bf9c396c18cedc727f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_08_idle_seated_v1.webp",
+      "before": 140094,
+      "after": 117242,
+      "original_sha256": "fc23309e6a7119a142328d128cd131ae8bf04ace9229edecb2d50b997940a18d",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_09_idle_seated_v1.webp",
+      "before": 136676,
+      "after": 114658,
+      "original_sha256": "d1af2990f21e024b3a4e5b92878b2340505e5d9cab5960d5770090c54b61b556",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_10_idle_seated_v1.webp",
+      "before": 137946,
+      "after": 116702,
+      "original_sha256": "e5304a9da25eaff6f97acf2f16a79000ac8194426e076267de1adcc0db81eaaa",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_11_idle_seated_v1.webp",
+      "before": 135876,
+      "after": 113898,
+      "original_sha256": "32ca34c97b04cfbd5af71ff5ff920da439a18c66d7c77dcaaa435b3c6ca48024",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_12_idle_seated_v1.webp",
+      "before": 136354,
+      "after": 116038,
+      "original_sha256": "42261aee0068ac542a28a8f9e2382a07f75d7a1d6a42743996d38bc9b909dedc",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_13_idle_seated_v1.webp",
+      "before": 137764,
+      "after": 115942,
+      "original_sha256": "d789b2cf3bf2932e17ea9e209b0af1d1ab97176a581706c537c288ca8ce4d31c",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_14_idle_seated_v1.webp",
+      "before": 140280,
+      "after": 118410,
+      "original_sha256": "beb7c25bc3c9b3d0705be9261eb15997dbfca268b0f3d516898f5f16a0ab6c7d",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_15_idle_seated_v1.webp",
+      "before": 141132,
+      "after": 117664,
+      "original_sha256": "fc8edd71c3d6d36f45dbbdf22ce1333ad4632d751ac689803f3e47bc2873db07",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/idle_seated_v1/char_16_idle_seated_v1.webp",
+      "before": 134052,
+      "after": 112644,
+      "original_sha256": "2a619fa51abb571e68b22dfb877a3a7f766f66892dbcb2911fc50b489aea69ef",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/modular_sample_v1/chenyang_continuous_v3.webp",
+      "before": 122234,
+      "after": 106746,
+      "original_sha256": "df531fdf846e2c94b58034abd3444ae623739254d7adaff4674f6825bb0826ca",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/modular_sample_v1/chenyang_parts_atlas_v1.webp",
+      "before": 255614,
+      "after": 218506,
+      "original_sha256": "46556e5f50ff35ab547620748acb80cba81b22d8aa95af18b348b777844dd458",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/modular_sample_v1/chenyang_parts_atlas_v2.webp",
+      "before": 233884,
+      "after": 200080,
+      "original_sha256": "7f4d11f051cf1b17cb7bd8130b0b6685f08a8514d3576e588f716517a8332f6a",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/motion_compare_v1/char_01_chibi_sheet_v1.webp",
+      "before": 552552,
+      "after": 478902,
+      "original_sha256": "e19af667b97a0addd828dc96fe4f73f51dcef8bc782572bf49f75f693c0d8417",
+      "size": [
+        1448,
+        1086
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/motion_compare_v1/char_01_normal_sheet_v1.webp",
+      "before": 487932,
+      "after": 426784,
+      "original_sha256": "01c2f553f55ecf618b10dae38ddee70578724d1f7bcd195b7817241d07671694",
+      "size": [
+        1448,
+        1086
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_01_music_seated_v1.webp",
+      "before": 134896,
+      "after": 107978,
+      "original_sha256": "226f33c145dceeb544503627540fada14f3d0fd359403773af4d90517f7a5c95",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_02_music_seated_v1.webp",
+      "before": 149464,
+      "after": 126624,
+      "original_sha256": "20fdacf672d1c9256030efdd98ea780f674fcb62aab3f3f483bbd4cab2e7ea8d",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_03_music_seated_v1.webp",
+      "before": 137500,
+      "after": 112102,
+      "original_sha256": "fb962f3148d2e73062da9aa5ac0638e79e73dfd7bc85eecc0d5e0f1a7b8fe462",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_04_music_seated_v1.webp",
+      "before": 134526,
+      "after": 108480,
+      "original_sha256": "df3c7905d510eea43204d3e95d634ce878c079e46f8c799bb3fdfab425e88134",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_05_music_seated_v1.webp",
+      "before": 149986,
+      "after": 121798,
+      "original_sha256": "300cd6edd503259f04838302c5c79c99d819473d21ce62abe0550856197c7072",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_06_music_seated_v1.webp",
+      "before": 141880,
+      "after": 114814,
+      "original_sha256": "32b77d1d3025d4fe5154bc172cf6050392974806927eba8970c3b4913ece4e9f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_07_music_seated_v1.webp",
+      "before": 150110,
+      "after": 121310,
+      "original_sha256": "d9ec0090d04e119fee5f1dd0740e7b8a75264336a2515b863e91e31a48ea0de7",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_08_music_seated_v1.webp",
+      "before": 139850,
+      "after": 112920,
+      "original_sha256": "40b731bae63db0c8d63bfe8ba547ca0a3377501f137ba8321c2768c2932b7ed4",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_09_music_seated_v1.webp",
+      "before": 137944,
+      "after": 113464,
+      "original_sha256": "e39196d0279ad7c2700b89fe0a5f3f0c3d96531869fe6fad9ae423dd1039484d",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_10_music_seated_v1.webp",
+      "before": 139354,
+      "after": 115374,
+      "original_sha256": "399d7e3fb48e270fb978e3145d38017927be88650e494aabccc04eeb4befd273",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_11_music_seated_v1.webp",
+      "before": 143678,
+      "after": 115888,
+      "original_sha256": "b07b22e721fb5f5e6d601e4c42ceff004cb612f8a7b20483b9b840eb2f5e9700",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_12_music_seated_v1.webp",
+      "before": 140800,
+      "after": 115100,
+      "original_sha256": "1960ec03e993a36a9a6ce9bd6f625f563290cae1f44bb20054a719b83c1d9a54",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_13_music_seated_v1.webp",
+      "before": 139562,
+      "after": 113894,
+      "original_sha256": "8fb51a824ee27ce5b1c4fc6a008ad2a5e29bff5a02a5feb2146d2071f2827591",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_14_music_seated_v1.webp",
+      "before": 143200,
+      "after": 114374,
+      "original_sha256": "627c1fb48930837577b2843fec5565602b9985fcce2298af4246b06219f5ff01",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_15_music_seated_v1.webp",
+      "before": 141200,
+      "after": 112916,
+      "original_sha256": "7e965d97e85585f226088a684230004eccc8a675cd1255d4582e73719b50ef1e",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/music_seated_v1/char_16_music_seated_v1.webp",
+      "before": 135320,
+      "after": 109206,
+      "original_sha256": "0def49e0a725c5c32d2aa039f4118036f3b741e9efaba994452659cf801fbeef",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_01_phone_seated_v1.webp",
+      "before": 131464,
+      "after": 106052,
+      "original_sha256": "612f85c96085bbf099c8abd2c40d8828d3d936642df19c3fbd30c3eb0929bcb7",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_02_phone_seated_v1.webp",
+      "before": 148242,
+      "after": 124542,
+      "original_sha256": "a870fced58292e67079f38a7e719e97c095071cd33241d474a8610469d9df3f4",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_03_phone_seated_v1.webp",
+      "before": 136404,
+      "after": 109882,
+      "original_sha256": "0545f76cd5e479293f78bff361553b9d0d04fc87a43bb2c4dbafa223f2dba45c",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_04_phone_seated_v1.webp",
+      "before": 139160,
+      "after": 115130,
+      "original_sha256": "5f95284830e76f05acafd5d2883ccd67466c8d397637fc0f1fe71980953e617f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_05_phone_seated_v1.webp",
+      "before": 152620,
+      "after": 123482,
+      "original_sha256": "0c71db4e285e72e37a256a21ca60f466e7c89f3aa4be881397b0ea8d2099c3a7",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_06_phone_seated_v1.webp",
+      "before": 144766,
+      "after": 116178,
+      "original_sha256": "b859faef557b192fdfbd9fccb6a85a8663e88ca2620e13960091038473b7e6a8",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_07_phone_seated_v1.webp",
+      "before": 149576,
+      "after": 119604,
+      "original_sha256": "adfa916eaeb107e5c1980770f9ab37540a09c53a501ffe72109b5315c6f79cea",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_08_phone_seated_v1.webp",
+      "before": 138940,
+      "after": 111364,
+      "original_sha256": "8b0a12b067e7905f59745e18bd8796d0416a785749ee2ea53d7e515bc5b343df",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_09_phone_seated_v1.webp",
+      "before": 138732,
+      "after": 112012,
+      "original_sha256": "7168a92c87456b9634ebae9f4a34b30dfba94dc34dd2a8feffed67287e64a8b8",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_10_phone_seated_v1.webp",
+      "before": 140346,
+      "after": 115162,
+      "original_sha256": "aeb02c5914f184bf76e66354d291dc47bb74ac486dd9fdcaefb17e7cdf5c089d",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_11_phone_seated_v1.webp",
+      "before": 138424,
+      "after": 110274,
+      "original_sha256": "1f9a56d72095b2b6c410bafb8c7fb3f7359b862e51eb35502f220fca4d54e07f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_12_phone_seated_v1.webp",
+      "before": 138290,
+      "after": 113324,
+      "original_sha256": "89bc0fbc6e9ee9f2b0e50a7d3e639b96203aedac4792df6cd1bae975c3d36556",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_13_phone_seated_v1.webp",
+      "before": 140516,
+      "after": 113706,
+      "original_sha256": "f55849be906f6037d4a101029ff1c19268395dd7d51fa3a65b9756eeb6d2ebe1",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_14_phone_seated_v1.webp",
+      "before": 141856,
+      "after": 113864,
+      "original_sha256": "c477aba5220a3c11c8483adedcfe6c657a0c43a86e5e5d2ae79d8eaee4658a9b",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_15_phone_seated_v1.webp",
+      "before": 142046,
+      "after": 113922,
+      "original_sha256": "0c9afa4251dfe8f1cd6a0a377711ea3ae7f692580e12a70ad7590fb1758cce46",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/phone_seated_v1/char_16_phone_seated_v1.webp",
+      "before": 136666,
+      "after": 110752,
+      "original_sha256": "a2f6e1963f28726d71fa26d8703352184abf524152be7284aa75f3d378e6fe37",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/portraits/chen_yang_v01.webp",
+      "before": 177362,
+      "after": 118628,
+      "original_sha256": "1ebb94d8f7b5fa3760a785297dbe66636c98abf06df950414596b866ac9b5f5f",
+      "size": [
+        1122,
+        1402
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_01_reading_seated_v1.webp",
+      "before": 138408,
+      "after": 110800,
+      "original_sha256": "d6ee84b4611c2a2d33f5f4366237624014e2a2e7e13b213e8ba5038429b10d82",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_02_reading_seated_v1.webp",
+      "before": 156364,
+      "after": 125442,
+      "original_sha256": "446004aac1d537d49a227db0cd177c81dfd7293d40fd6c328273e62764d39b86",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_03_reading_seated_v1.webp",
+      "before": 144436,
+      "after": 115520,
+      "original_sha256": "cb05104a1565e6c976d7523e75673740d296130b3f26595054b85af47edc5a92",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_04_reading_seated_v1.webp",
+      "before": 142474,
+      "after": 116930,
+      "original_sha256": "4f540cc1aebc8a5b16b298dcd7673f573a44a4b948f5bb744f0e535354013c07",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_05_reading_seated_v1.webp",
+      "before": 155650,
+      "after": 125810,
+      "original_sha256": "4186820d9afc07dc040f655c0861f2f5b9d1031a0767ac1a45b779bb6fa4585c",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_06_reading_seated_v1.webp",
+      "before": 153214,
+      "after": 122612,
+      "original_sha256": "f08706bba3c89f92dd9db1a8aa1933ea9a2d91605669a89b58406b607fda4abe",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_07_reading_seated_v1.webp",
+      "before": 157502,
+      "after": 123932,
+      "original_sha256": "9342841b7912a0643bf7a15749536e7b0c9b2751e594f29074525c4ab269e454",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_08_reading_seated_v1.webp",
+      "before": 145396,
+      "after": 116116,
+      "original_sha256": "b090070852b3f6f47bce3a36b25cf1daefef8a41e4f0632a8b3a167295679cae",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_09_reading_seated_v1.webp",
+      "before": 143060,
+      "after": 115012,
+      "original_sha256": "aa37e9b4bada19c26524269198d49c194b172aff0c434beb2bc46ac96097582a",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_10_reading_seated_v1.webp",
+      "before": 144676,
+      "after": 117680,
+      "original_sha256": "c0305191611f8fc44f9cb6f1eecb4ecfde5c51f4f1bd66698b3c9f42c497d2e3",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_11_reading_seated_v1.webp",
+      "before": 150096,
+      "after": 119788,
+      "original_sha256": "9b84d645c7d9ffd6bfcde6ad6c4eecd5dd35f566e5119f677850af45073a39a1",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_12_reading_seated_v1.webp",
+      "before": 149650,
+      "after": 118884,
+      "original_sha256": "e1038385eb7a904487db9645913858998d0ad4f181283f9abcdef453fd339aeb",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_13_reading_seated_v1.webp",
+      "before": 143872,
+      "after": 116282,
+      "original_sha256": "3b59f1df4743e8c713d7ad1f6a2698fc6f2c34cc18b41d816d825e9a08cac23b",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_14_reading_seated_v1.webp",
+      "before": 146530,
+      "after": 117742,
+      "original_sha256": "330e7fb1ccb6d10ce1753a6ede4f44f3d5077ccb6ca934a02a6d1dc948a9321c",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_15_reading_seated_v1.webp",
+      "before": 142668,
+      "after": 112546,
+      "original_sha256": "b0530fd862a3599d9d7bf27961d1b9cc08e7de682218c5f5993128a1f612ec01",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/reading_seated_v1/char_16_reading_seated_v1.webp",
+      "before": 146718,
+      "after": 117330,
+      "original_sha256": "95a2b041206436227405730cb8c14757ec0346958349324708be5e13146bfd52",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/samples/school_student_male_standing_v1.webp",
+      "before": 1011926,
+      "after": 103434,
+      "original_sha256": "1c452fa1f8439d8be2aba28855de46189761ec6152561aac795506e0579e05af",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/samples/school_student_sit_v1.webp",
+      "before": 271352,
+      "after": 233860,
+      "original_sha256": "1ae2cf157c171efadfb3207cc9eb5b32eadc4f33f971ee33b17f87481e023bd1",
+      "size": [
+        1536,
+        1024
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/samples/school_student_walk_v1.webp",
+      "before": 287452,
+      "after": 242412,
+      "original_sha256": "664f151cfe2e62a463f9fa5599a67883c90fd7ee53cb120a6d3a3516a9de1686",
+      "size": [
+        1893,
+        831
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_01_seated_back_v1.webp",
+      "before": 112474,
+      "after": 97120,
+      "original_sha256": "a3c5b93a4c07acd845f2a83d019c060bfbe4df36e8d32bb380fa126a803c4d89",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_02_seated_back_v1.webp",
+      "before": 145170,
+      "after": 125682,
+      "original_sha256": "2b3ee4b6095db5480d1a8f7975031d2f9b8d8fab930054a316e73f91e0dee51a",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_03_seated_back_v1.webp",
+      "before": 114208,
+      "after": 98606,
+      "original_sha256": "662b094fa285ddaa4d1fc5bf31c98f41c30ef2cbbbdecbc5121000300abddc45",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_04_seated_back_v1.webp",
+      "before": 116130,
+      "after": 100110,
+      "original_sha256": "934fe55bee427b988ffa85eddfecb478b00a9f46217443819dc2c2fac9ca2ba6",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_05_seated_back_v1.webp",
+      "before": 139736,
+      "after": 121206,
+      "original_sha256": "da3ab28967de31b54d977048e0f22804e0fdc47c77b1df2a1c742604c28cce88",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_06_seated_back_v1.webp",
+      "before": 119952,
+      "after": 104298,
+      "original_sha256": "ae5fb5680d89ffac8a37ae8f004c1624aeba2468cb748b2331f4d563932dea2f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_07_seated_back_v1.webp",
+      "before": 131764,
+      "after": 112800,
+      "original_sha256": "d02ff14523052ba46a866374094bdf13c58c7709fcb2dfd43c59514558513955",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_08_seated_back_v1.webp",
+      "before": 122514,
+      "after": 106090,
+      "original_sha256": "9984aed11c8e0ebc10e06f0833e281b28e05e86bcb5b2c30f35c93d1540f8ac6",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_09_seated_back_v1.webp",
+      "before": 121056,
+      "after": 104664,
+      "original_sha256": "99ac6975237480301053a5af7a268c1cf63adc6264089cce2c40ba7ce656ef76",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_10_seated_back_v1.webp",
+      "before": 119902,
+      "after": 103570,
+      "original_sha256": "c784cfefd14e6812f84fbf0a551024d70d4453ae852da2fd380d77c552115ccd",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_11_seated_back_v1.webp",
+      "before": 122114,
+      "after": 105724,
+      "original_sha256": "cef74e167229d1981b8102b890ed6c064569ff664d9e404534a12c326e4c3299",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_12_seated_back_v1.webp",
+      "before": 119848,
+      "after": 103300,
+      "original_sha256": "b72eda4414bd7ebce0ed26b018ab4887265ed9d1d343ac27f17c20ff37b80e6f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_13_seated_back_v1.webp",
+      "before": 135558,
+      "after": 120172,
+      "original_sha256": "d7c8d57385e4c2351f49f3b603797d6f39c9fc2bce43f863a06c2680e1376daa",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_14_seated_back_v1.webp",
+      "before": 121398,
+      "after": 105340,
+      "original_sha256": "81009da3eef19dfa630e6227648f26647d5f89db9bc512b8657cf71c9ff07128",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_15_seated_back_v1.webp",
+      "before": 127996,
+      "after": 110356,
+      "original_sha256": "b3b66867766858116b04d378004c7fbe41c400ac56156c4b8177ee2fa004277c",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_back_v1/char_16_seated_back_v1.webp",
+      "before": 115814,
+      "after": 99204,
+      "original_sha256": "1fd0108ceae5c68d822de8bee057ea624d9131b47408ab93153f91b70abc3b37",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_v1/char_01_idle.webp",
+      "before": 131628,
+      "after": 112766,
+      "original_sha256": "93be2f1a168442efae8994c41b7df292e7907690d3a928f6f60ed4d67a6534a9",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/seated_v1/char_01_study.webp",
+      "before": 133762,
+      "after": 113782,
+      "original_sha256": "9c38dff68ece6dcb80a05bd2d48ad1a732e1115b81e00b2507b2c865d3e1ae34",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/simple_samples/char_01_body_simple_v1.webp",
+      "before": 131674,
+      "after": 113946,
+      "original_sha256": "a5c26e5b865edb46a42d34869fb83a61dcb8f7dda3599584594c76a21248ef6b",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_01_sleep_seated_v1.webp",
+      "before": 116554,
+      "after": 91842,
+      "original_sha256": "32a4b813eabc79f44493c3c45640d4652117cca02e3bd73a62b5486b946eb9a6",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_02_sleep_seated_v1.webp",
+      "before": 131332,
+      "after": 103726,
+      "original_sha256": "484069213f5163e9ecd4fdfbeb644ef722572947ba69a96055c03addc4ef1903",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_03_sleep_seated_v1.webp",
+      "before": 119396,
+      "after": 94432,
+      "original_sha256": "26bdaa3a20867e88ff9d0e7eb56d3cec7b8b2e601ca46a8349ede6001a4ca7ef",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_04_sleep_seated_v1.webp",
+      "before": 120120,
+      "after": 95172,
+      "original_sha256": "910a50ef127922ed97d5964ca578848a7b81b704c470503b7498d3d6e593dae0",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_05_sleep_seated_v1.webp",
+      "before": 145598,
+      "after": 118056,
+      "original_sha256": "9e22026d98c9dd9c6ea1735de51c016e2958c976d82e645864d5489a633bfc7f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_06_sleep_seated_v1.webp",
+      "before": 118862,
+      "after": 93000,
+      "original_sha256": "80d7edb24a3d718ba7b0e1d8cc68354c667ac59ff7cf22fc4ea0c7d6fc917155",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_07_sleep_seated_v1.webp",
+      "before": 125052,
+      "after": 98002,
+      "original_sha256": "0d1c4222684257023099c2b4ee0503c3bbe913396571a016f972c38f6534f987",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_08_sleep_seated_v1.webp",
+      "before": 122758,
+      "after": 96044,
+      "original_sha256": "2ce3973e765d87db15f156ba73ea5a968ad1a50e2c36e068e7a487ba1e60629f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_09_sleep_seated_v1.webp",
+      "before": 120800,
+      "after": 94566,
+      "original_sha256": "87f510f4fcab44be9e8fd1cac90c7bb74df801591c05e6a8a13463306cac364d",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_10_sleep_seated_v1.webp",
+      "before": 119808,
+      "after": 95484,
+      "original_sha256": "d7631288c5dc66137f4b51fdb88fc9df0bdb8586cbab8ce02fe6826bf71b243a",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_11_sleep_seated_v1.webp",
+      "before": 119322,
+      "after": 95006,
+      "original_sha256": "f8a6e736d58b4b607b91c97d15d29d4c38005acbd4331b74989477637b756f3a",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_12_sleep_seated_v1.webp",
+      "before": 120188,
+      "after": 94558,
+      "original_sha256": "d13f303caf61030c726b1fd21b8b573a50e8a280a19fceab44e5c4e7b2976b6a",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_13_sleep_seated_v1.webp",
+      "before": 117998,
+      "after": 93076,
+      "original_sha256": "b306502f118ebc5769c4cf7e679de645fefb6bb29c72b18e938cf6867505d803",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_14_sleep_seated_v1.webp",
+      "before": 120422,
+      "after": 93854,
+      "original_sha256": "f4846175ce2f1d9ac050c05c88eb49ede62efecee71392bc01a82ad21fb2db98",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_15_sleep_seated_v1.webp",
+      "before": 126994,
+      "after": 99988,
+      "original_sha256": "61fccc12cfe4ad50bc1f7393d4bdbb4234ed0db21ceecdc50aa4cb5ebf75f9c3",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/sleep_seated_v1/char_16_sleep_seated_v1.webp",
+      "before": 118164,
+      "after": 92934,
+      "original_sha256": "4bf57ef506770841a2461a14b8e2ccbab88b407957e826562363b62cac8429a9",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_01_snack_seated_v1.webp",
+      "before": 132118,
+      "after": 106608,
+      "original_sha256": "299d27c9f89817aa499fc99507ae0775bc316bc24e11e6e22b4a4376187cba89",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_02_snack_seated_v1.webp",
+      "before": 153470,
+      "after": 124758,
+      "original_sha256": "b638d7afbb5f91694aa6c4c6bb1c48d32132330624ddfbb710f4f2a23f89c022",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_03_snack_seated_v1.webp",
+      "before": 138114,
+      "after": 108646,
+      "original_sha256": "093dbd0b2f990a5f903294e69648592f1305db04a17e92ead14143383d34c9e3",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_04_snack_seated_v1.webp",
+      "before": 137026,
+      "after": 112822,
+      "original_sha256": "36d34cae36b364894eca999e0d537c62323bd41119a65f156227d5dfff66026a",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_05_snack_seated_v1.webp",
+      "before": 151454,
+      "after": 120718,
+      "original_sha256": "296b79e28583e96addd6b6d7373d0acc90af983f21e369a8af0bfd1b5c9e3c5c",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_06_snack_seated_v1.webp",
+      "before": 138996,
+      "after": 113574,
+      "original_sha256": "86ec21ee7c8a1f772857bf4c05aac952ffb7fb042dacd03421b128b5be30d460",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_07_snack_seated_v1.webp",
+      "before": 149994,
+      "after": 119148,
+      "original_sha256": "8a0315dce86fef36697f9c3df2e73cbec4f03e5f4b3b756c7cbe8618aff3a9c4",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_08_snack_seated_v1.webp",
+      "before": 142648,
+      "after": 115834,
+      "original_sha256": "b7021f95c6c9fae0d60e27d535d1d418a47c71f1223d1a9537109e42bc6d39c1",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_09_snack_seated_v1.webp",
+      "before": 141830,
+      "after": 113868,
+      "original_sha256": "874d27896164fddf10a01b68f1361ee647b168b32eb87c5bc2c0d4693e61e1ab",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_10_snack_seated_v1.webp",
+      "before": 139154,
+      "after": 115280,
+      "original_sha256": "9738b2570058f3083e8146558f74135cce9b636f1e3d5ba26bae6c917e895092",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_11_snack_seated_v1.webp",
+      "before": 143802,
+      "after": 115062,
+      "original_sha256": "1e1a77e2a13e4d32d431bd2d1428189da79d89725362126d27aaf42345962957",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_12_snack_seated_v1.webp",
+      "before": 141268,
+      "after": 114992,
+      "original_sha256": "713a74b0b5a0a83741bd136ec62e70bcebd43e251af9e29898d6acefe8dd4b25",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_13_snack_seated_v1.webp",
+      "before": 137078,
+      "after": 111420,
+      "original_sha256": "d83cf6ac968a0aaa374a88849e3aa35d43a27853f2d4679d5598f312c00f54e8",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_14_snack_seated_v1.webp",
+      "before": 143420,
+      "after": 112970,
+      "original_sha256": "a924f3ad7ba47e2b07728a216027986a8c94ee6ef5f1d8816b1bd256d507fa82",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_15_snack_seated_v1.webp",
+      "before": 141504,
+      "after": 113416,
+      "original_sha256": "5cd6f94d51ed00aa30c3b985c74815c6a180c333d0c1b8a42e2078426c8d97d3",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/snack_seated_v1/char_16_snack_seated_v1.webp",
+      "before": 135558,
+      "after": 109490,
+      "original_sha256": "5aa801af3e662f1a8ab672e7090e386711c42b7771c821a738e6d975cddc71ad",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_01_stand_back_v1.webp",
+      "before": 111330,
+      "after": 97924,
+      "original_sha256": "90b45bd010c05ee65e496af986333bbce3b493daeaf3b21655e6448ed08208a6",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_02_stand_back_v1.webp",
+      "before": 127642,
+      "after": 112320,
+      "original_sha256": "b8e7d924d9be485bdc2e9f1972fad897d69092280d942d357ef1c1a7e263d5d3",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_03_stand_back_v1.webp",
+      "before": 103026,
+      "after": 91894,
+      "original_sha256": "fcfbb6303daf983c81d6d32b3c9c5fa51660b6b9505d44f7254cdb9035573ff8",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_04_stand_back_v1.webp",
+      "before": 112836,
+      "after": 100414,
+      "original_sha256": "6a64ace6d2687f59b39ac7afae190e646839c2d1de9e39eee7b4efabf4aa5f58",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_05_stand_back_v1.webp",
+      "before": 112788,
+      "after": 99758,
+      "original_sha256": "603c1bce06d98474e8d35ff2bca738a6c2d945f0e309f848bbe590468366b868",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_06_stand_back_v1.webp",
+      "before": 115918,
+      "after": 102642,
+      "original_sha256": "317b2b4c6a98d3e06aff5b46fb38b2797a02b9ffde733128ba771b2146b38319",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_07_stand_back_v1.webp",
+      "before": 118230,
+      "after": 104394,
+      "original_sha256": "4403d615f7674a422e30d7b0fa8c6bab9ae4ab9c34fcd5d0d6ce123c01e28f38",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_08_stand_back_v1.webp",
+      "before": 108232,
+      "after": 96392,
+      "original_sha256": "4da7967929421e14cc342655e7a6711d8724ddb240e04aa376a9f076b823f8c7",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_09_stand_back_v1.webp",
+      "before": 110670,
+      "after": 98776,
+      "original_sha256": "6f4faed0a675b97991ebeb99e5aa425f35d751fd09006f28824a387b0431e63b",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_10_stand_back_v1.webp",
+      "before": 111080,
+      "after": 98470,
+      "original_sha256": "09bd6b803b5f535cfad42b0184054e919bf4f6f2e2b60289d0c1a844d9901658",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_11_stand_back_v1.webp",
+      "before": 106302,
+      "after": 94382,
+      "original_sha256": "f4b825910a8014787ebbff2ceed55ac42f19a1733a2d325542e4da5e6fefd465",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_12_stand_back_v1.webp",
+      "before": 109966,
+      "after": 97106,
+      "original_sha256": "a4032cfc9c565e5cf3b02e56c818726034b10cdb4298918c68c9b8f71fde8cdb",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_13_stand_back_v1.webp",
+      "before": 102412,
+      "after": 91320,
+      "original_sha256": "b908864267b84351a63fe052790145d86bc3874a43a3ff6353c72ef36e9f43a0",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_14_stand_back_v1.webp",
+      "before": 110060,
+      "after": 96114,
+      "original_sha256": "ece57d1e4df501f9432d0314ff501e4ac831986fef80e8a76c647c360cb2018f",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_15_stand_back_v1.webp",
+      "before": 116780,
+      "after": 102800,
+      "original_sha256": "29615bb80c931a618ecdadf940b50af3368ab9302cfb10eb9cfbc7d22e014302",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_back_v1/char_16_stand_back_v1.webp",
+      "before": 102514,
+      "after": 90794,
+      "original_sha256": "dee3eb649bdf263621968f4eb3f6fb1b2648e1a08b90a2f8fcd221ff4199f4e8",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_01_stand_natural_v2.webp",
+      "before": 122234,
+      "after": 106746,
+      "original_sha256": "df531fdf846e2c94b58034abd3444ae623739254d7adaff4674f6825bb0826ca",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_02_stand_natural_v2.webp",
+      "before": 128004,
+      "after": 112248,
+      "original_sha256": "3eb845136681064f9e62aed49a1d03988ffa44441af9ff3589484737a299d011",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_03_stand_natural_v2.webp",
+      "before": 111496,
+      "after": 97326,
+      "original_sha256": "9eb7375f96107e0127cc54d6f697680d62fb6ed46f20caf92d5515e4c7f4e8da",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_04_stand_natural_v2.webp",
+      "before": 117588,
+      "after": 103328,
+      "original_sha256": "d22e8acec2e6f9ce2b182823d9f67f7269ef652f9ff97ec146a93858d442c62a",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_05_stand_natural_v2.webp",
+      "before": 122914,
+      "after": 109358,
+      "original_sha256": "86dc474ca9037c7e553f9aaea5b29d2e972c80f2c42bd4011a3a0aa2266d0a24",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_06_stand_natural_v2.webp",
+      "before": 128556,
+      "after": 111548,
+      "original_sha256": "94b4fa634dd0350dd34551b50fea3fc5ce9a2f896d9f380914a464746ca10647",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_07_stand_natural_v2.webp",
+      "before": 114164,
+      "after": 100254,
+      "original_sha256": "33dd9aaf5e2ed5d064157fcd93bf6c1caa772051323f2fec577bc77addea8607",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_08_stand_natural_v2.webp",
+      "before": 123738,
+      "after": 108968,
+      "original_sha256": "2c805488f682b8f9f5d0931f174792d2a6d9dc547206555af284470f83aab1a0",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_09_stand_natural_v2.webp",
+      "before": 119178,
+      "after": 105140,
+      "original_sha256": "b715a8926329230f80108a90b57a2c5e4f79d15c5366b29505ce97af5c1845fd",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_10_stand_natural_v2.webp",
+      "before": 119670,
+      "after": 104416,
+      "original_sha256": "e661196cc1471e3e1d78a17b6bc4f7d3984f575f425cf49eba8b99f5116cc644",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_11_stand_natural_v2.webp",
+      "before": 121974,
+      "after": 107430,
+      "original_sha256": "86402d170ba3328145363a31fe422e5b6091fbb5a03f8e0f32ada627e0daf0bc",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_12_stand_natural_v2.webp",
+      "before": 118740,
+      "after": 103426,
+      "original_sha256": "2ac4cd5d1b87b07db45afa504f896d256783a35e6867b10438232f3402ec05da",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_13_stand_natural_v2.webp",
+      "before": 116406,
+      "after": 103378,
+      "original_sha256": "b6315eee6b0c4baa624cd50e0ba01ea799bada1f196f816092b3fd5d66d67b19",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_14_stand_natural_v2.webp",
+      "before": 119460,
+      "after": 104910,
+      "original_sha256": "35db59c7f5cdf1166131f945f638aa7e607979b0a63617002c9a3513748a147a",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_15_stand_natural_v2.webp",
+      "before": 132890,
+      "after": 114924,
+      "original_sha256": "1cfd05501fabd7ce897478aa1488fdbe11f54149a1cdef2c18850f6e1f4d695a",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/standing_front_v2/char_16_stand_natural_v2.webp",
+      "before": 111548,
+      "after": 98004,
+      "original_sha256": "01e0afba2d1310cf52bcbe055381f61779542088ce97373e135454e5c9faa006",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_01_study_down_v1.webp",
+      "before": 136998,
+      "after": 116312,
+      "original_sha256": "39c020941b50461977b0ce69e072ff638c58332ca127a2d7408a8a9973a1de92",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_02_study_down_v1.webp",
+      "before": 155260,
+      "after": 133004,
+      "original_sha256": "264453551cd2834dcdcd72e6e86526c827dbd10aefb573cae647854d5b2a8c90",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_03_study_down_v1.webp",
+      "before": 144970,
+      "after": 124506,
+      "original_sha256": "f8f6b44324cef17677368c560d1f57d648535fb2d78f4e97494df06aaf82451b",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_04_study_down_v1.webp",
+      "before": 140576,
+      "after": 120120,
+      "original_sha256": "5f5e6b9306b49f5bcbdcc2f0d0dd1a5065f10769b80e29220fc0d78d6bf03ff8",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_05_study_down_v1.webp",
+      "before": 151326,
+      "after": 130300,
+      "original_sha256": "c6f8c7255b7b927dfd41efd03187b7fa905a49518ff8542495dd974726388235",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_06_study_down_v1.webp",
+      "before": 144840,
+      "after": 123538,
+      "original_sha256": "a53cacbbcdefcc502335bc1db7b72b47ad31b0519edb62b4c296868889c0e4c1",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_07_study_down_v1.webp",
+      "before": 152478,
+      "after": 130614,
+      "original_sha256": "cb39436dbcade4ed31b8bb4a825fe123a9202793045bb844e8675ef0f1ce9f5d",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_08_study_down_v1.webp",
+      "before": 159364,
+      "after": 137160,
+      "original_sha256": "f6384ec13fb780cea2529677fa343b1db2049814e1102ff748147990a5136b86",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_09_study_down_v1.webp",
+      "before": 142064,
+      "after": 122032,
+      "original_sha256": "c20ab5436dc0f4a9fb5e3bf3e6f92e5f14dabfb576b50c1f1ed5f95e8f9f47ae",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_10_study_down_v1.webp",
+      "before": 141306,
+      "after": 120406,
+      "original_sha256": "3bb0d56b96c996e49eac97fe7ab6505a3eb0fbc94fd07cc6bc0e12677fddee9b",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_11_study_down_v1.webp",
+      "before": 142972,
+      "after": 123098,
+      "original_sha256": "d1c655ee8eb3327bd6e88a9768b8150b3344cf2aeb397edf05362410383de55d",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_12_study_down_v1.webp",
+      "before": 143384,
+      "after": 123124,
+      "original_sha256": "698d38f14476b7c47175dd49cdb07a5b0572562d87b87ca2015734caa364ef28",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_13_study_down_v1.webp",
+      "before": 142452,
+      "after": 122048,
+      "original_sha256": "ddd28504b01c93c2aa208d467aece119b4bf147608edd108589ab47e4b07b7ae",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_14_study_down_v1.webp",
+      "before": 147968,
+      "after": 126264,
+      "original_sha256": "4d2c74a1cf9b490dd02d347d233d648eee7beea813e424d2bd04b34bc0e8f0e2",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_15_study_down_v1.webp",
+      "before": 155528,
+      "after": 132698,
+      "original_sha256": "d364a64f1de19b0d0b6cc63ad26141ec5287c79d68b77d24e2290a2a326a8a15",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/study_front_v1/char_16_study_down_v1.webp",
+      "before": 136748,
+      "after": 116820,
+      "original_sha256": "e21244860ef14e9888e314acddd12ea9cf58c55631f160b334f75e268cba0378",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/teacher_back_v1/teacher_back_v1.webp",
+      "before": 82138,
+      "after": 73006,
+      "original_sha256": "f31c605af3b338d039430592c72bdf0ac81151ae466748d81455d1f61c5d7ca4",
+      "size": [
+        1024,
+        1536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/主角女.webp",
+      "before": 23642,
+      "after": 19426,
+      "original_sha256": "1808c0d289dae1c3feafbeb7e615d6b4b39b7377ac3190694cacb64ba2138c5c",
+      "size": [
+        160,
+        440
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/主角男.webp",
+      "before": 26024,
+      "after": 21438,
+      "original_sha256": "0a36a38707ddac3c315e4f1193a06ce380b3b792f7766bdb7d890d69603ed704",
+      "size": [
+        160,
+        440
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/傲娇女.webp",
+      "before": 29202,
+      "after": 23872,
+      "original_sha256": "8b59707823501758be16572476df8ddf78f26b28aeafbe902d48234ab9539795",
+      "size": [
+        160,
+        438
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/傲娇男.webp",
+      "before": 28900,
+      "after": 23598,
+      "original_sha256": "74c851137fc87cb05aff8b17660fb7c6903e59244bb9f2238bd300ee67e4e20f",
+      "size": [
+        160,
+        438
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/安静女.webp",
+      "before": 24152,
+      "after": 19900,
+      "original_sha256": "87f87145b46ee3f5a9d79bc9055c7b6f377aab678786982b15b86a8b44759ced",
+      "size": [
+        160,
+        438
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/安静男.webp",
+      "before": 22022,
+      "after": 18142,
+      "original_sha256": "9344a2d19c578b91c72c23f86870b3ca379336d5b99b7a9faa2923b9f3024f81",
+      "size": [
+        160,
+        438
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/活泼女.webp",
+      "before": 27004,
+      "after": 22430,
+      "original_sha256": "c36d25d8e4ce116cd773d2853db980ce088a8a7b2ad9885c8011ba3b6a31c3aa",
+      "size": [
+        254,
+        428
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/热情女.webp",
+      "before": 24612,
+      "after": 19808,
+      "original_sha256": "b5487f9842bf18e8b86a1eb5c15b6cdee7bec6cb9ff3b296700c2112c955b881",
+      "size": [
+        160,
+        438
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/热情男.webp",
+      "before": 27908,
+      "after": 22878,
+      "original_sha256": "beaad485d5ffd8674014a3b37585f8232547660eb9f7b3a8205ba1c695202659",
+      "size": [
+        160,
+        438
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/直接女.webp",
+      "before": 23734,
+      "after": 19718,
+      "original_sha256": "04a94624fcb3389abc9fd741f8529fb1ce79beba354c17c77befa25f310dc3c2",
+      "size": [
+        160,
+        438
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/直接男.webp",
+      "before": 26252,
+      "after": 21730,
+      "original_sha256": "8e6082f7a86f01133dc87b51160f0a796c645fed5b44e3ade2827d677eadf153",
+      "size": [
+        160,
+        438
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/社恐女.webp",
+      "before": 20728,
+      "after": 16830,
+      "original_sha256": "406084557226b8b0bd9d9f4b1d874ded0ce3f442a622a8e6977e12e1a8d3420f",
+      "size": [
+        160,
+        438
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/characters/社恐男.webp",
+      "before": 23234,
+      "after": 19474,
+      "original_sha256": "98dc76c6abea67871032ec157fd8532d265cb34fed08ea3bb2e5bad8d8bb99df",
+      "size": [
+        160,
+        438
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/clueboard/01.webp",
+      "before": 10044,
+      "after": 7756,
+      "original_sha256": "ca8e0c1d0dc23a9efbcac972f540dfe7587c90ef93020bc05059ff938adb9c1f",
+      "size": [
+        802,
+        509
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/clueboard/chalk_white.webp",
+      "before": 105140,
+      "after": 76400,
+      "original_sha256": "e34e1f7e34ffb979703b536848f1c4db88c16582ad1792cc51f9116cca6e1e98",
+      "size": [
+        1024,
+        1024
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/textures/clueboard/eraser.webp",
+      "before": 82492,
+      "after": 56382,
+      "original_sha256": "bb436ff26a8514c0d1c5a18de57115041dd450db9ed3397e580f7747dec87724",
+      "size": [
+        1024,
+        1024
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/textures/clueboard/eraser_cursor.webp",
+      "before": 84598,
+      "after": 61634,
+      "original_sha256": "018e6f5d04f37a575474dbbf8946b23ca656c39ea5f8f8f26f3b66c417e7b9b3",
+      "size": [
+        539,
+        869
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/agitated_female.webp",
+      "before": 20514,
+      "after": 16124,
+      "original_sha256": "2230f3ee5ed0732f5853e24b841cecfa5e23d75385ca6565dad96c035830fd5e",
+      "size": [
+        517,
+        546
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/agitated_male.webp",
+      "before": 19222,
+      "after": 15248,
+      "original_sha256": "bce8cc15058e6f2db7ee9fe1751c4b0d6445594a633b12ef6bcf119716f315a6",
+      "size": [
+        517,
+        551
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/agree_female.webp",
+      "before": 18222,
+      "after": 14722,
+      "original_sha256": "2d481e287c96e3d9fd1cabad5e4ee280ad94595b86944e2ece1423cbe6280689",
+      "size": [
+        561,
+        535
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/agree_male.webp",
+      "before": 15506,
+      "after": 11800,
+      "original_sha256": "0fe03124a6582121a94b622dcf8c22e03cbc78927df5fb0960c22132349435dc",
+      "size": [
+        562,
+        539
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/bored_female.webp",
+      "before": 15446,
+      "after": 12018,
+      "original_sha256": "a496854292c36988975068be7f63b41991db91a07b61316498085876070096d6",
+      "size": [
+        514,
+        545
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/bored_male.webp",
+      "before": 13746,
+      "after": 11090,
+      "original_sha256": "506dcd7a19967a5ca2c84a556cef95f5fc812e7471cb664d06eae5f2abc545db",
+      "size": [
+        516,
+        546
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/breakdown_female.webp",
+      "before": 17600,
+      "after": 13370,
+      "original_sha256": "a4262170d68c14c3207ab45d26be780f55b04b679d8dad333bcf2946614a8dad",
+      "size": [
+        513,
+        537
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/breakdown_male.webp",
+      "before": 15728,
+      "after": 12596,
+      "original_sha256": "fcf43952ecce1e50fa67600b0b9e388c9565a0c4cd6c33b273c5926633f64c4d",
+      "size": [
+        514,
+        542
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/excited_female.webp",
+      "before": 17396,
+      "after": 13516,
+      "original_sha256": "0d156d51eceed208694f56ec1059fad4d2d83dfc181568713266bcdb4e63310a",
+      "size": [
+        541,
+        535
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/excited_male.webp",
+      "before": 15550,
+      "after": 12214,
+      "original_sha256": "8f490390444f085c3b463612c4f60aa5012b24c1da655af23a55b8b64dd5b57e",
+      "size": [
+        542,
+        535
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/irritable_female.webp",
+      "before": 16234,
+      "after": 12612,
+      "original_sha256": "889f531d1f25ae012619834b0e3e8b85f9eaf52576163a97756ebfa6f95f7b8c",
+      "size": [
+        512,
+        534
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/irritable_male.webp",
+      "before": 15098,
+      "after": 11788,
+      "original_sha256": "578879565e3dca42022167edbf5208a28bf8b53e6e32c97be669758cae0e45fd",
+      "size": [
+        513,
+        536
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/reject_female.webp",
+      "before": 16732,
+      "after": 13350,
+      "original_sha256": "ac23ca72eb22ae8f40a26554920eca160f7d6930426761c2fc8d73ee0f60eb08",
+      "size": [
+        546,
+        546
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/reject_male.webp",
+      "before": 15098,
+      "after": 12320,
+      "original_sha256": "6903063055fa0ca32e2070d078aa3f52240dc6af7421557b3c711788008fe52e",
+      "size": [
+        546,
+        550
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/relax_female.webp",
+      "before": 15908,
+      "after": 12446,
+      "original_sha256": "4540cf4fdc77d000b8ba44bb81669dca86dbf2f6d3208484df2a8dafae866109",
+      "size": [
+        539,
+        531
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/meme/relax_male.webp",
+      "before": 14738,
+      "after": 11664,
+      "original_sha256": "7cdc84df0ce6e24dcd31d57b4b2b645e43cd7284d08a519a3e52b787ed3e9226",
+      "size": [
+        540,
+        534
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/samples/classroom_2d/background_low_angle_v3.webp",
+      "before": 274320,
+      "after": 181182,
+      "original_sha256": "42e18d7d7e423130e1ccc4a8a6dbad79627060299b770579e360ddb33a8e782f",
+      "size": [
+        1536,
+        1024
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/textures/samples/classroom_2d/background_v1.webp",
+      "before": 297266,
+      "after": 208658,
+      "original_sha256": "aeb60164760069aeaace39d3d112bfbd4de097e5a0f44e9aa1a474dc0738b84c",
+      "size": [
+        1536,
+        1024
+      ],
+      "alpha_preserved": false
+    },
+    {
+      "path": "assets/textures/samples/classroom_2d/student_low_angle_v3.webp",
+      "before": 223898,
+      "after": 196416,
+      "original_sha256": "a2aa94039466f9a1647989eba64f94766015b2f9a9b47408497e0b1501360cf4",
+      "size": [
+        1536,
+        1024
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/samples/classroom_2d/student_motion_v1.webp",
+      "before": 251792,
+      "after": 217174,
+      "original_sha256": "ca5ccec1f64e2cf3c9684958603569118ec22598df8980ea95e131a4275091d5",
+      "size": [
+        1536,
+        1024
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/backpack/atlas-v1.webp",
+      "before": 200476,
+      "after": 154574,
+      "original_sha256": "c1b8d31f892fe7965735c4e1497d572c90ec7cb37f2c66ab18c6275d3d60e526",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/backpack/empty-v1.webp",
+      "before": 283654,
+      "after": 219972,
+      "original_sha256": "bac0cef2dcb026e32bfa72741aa9d8fab3c77595bd2740f5a28d60e71e876cf0",
+      "size": [
+        1215,
+        1295
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/backpack/items-v1.webp",
+      "before": 362552,
+      "after": 282512,
+      "original_sha256": "11a7f22014fd8a6833a1a65990385e5a5ee19622e0cc50293027512706fe7696",
+      "size": [
+        1214,
+        1295
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/backpack/objects-v1.webp",
+      "before": 233344,
+      "after": 184862,
+      "original_sha256": "bc62824a4ee826aed400f16c6d57c722322c06b243083f0c28709c300febb829",
+      "size": [
+        1215,
+        1295
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/interaction/pen.webp",
+      "before": 61884,
+      "after": 54636,
+      "original_sha256": "f409900b087e7b92cd19b5e5ad7dd48b49ba255ab7e4fecabf7a87bce9e4e4b6",
+      "size": [
+        2172,
+        724
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/movement/click_destination_v01.webp",
+      "before": 63508,
+      "after": 53672,
+      "original_sha256": "dbd3692e20ddcdfdbffeb8bb337abb630f53e8309f54be5a0b98d37e7476b4af",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/paper/campus-action-paper-v1.webp",
+      "before": 328408,
+      "after": 278026,
+      "original_sha256": "903cc53ffcbd8febe55b179f33bd2190bf7f38b18ae38d976af7949e1a910471",
+      "size": [
+        930,
+        1691
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/paper/campus-menu-brush-disabled-v1.webp",
+      "before": 280834,
+      "after": 238680,
+      "original_sha256": "4044de39d50942fb2bd5531fd334c3a9de4743f13be1222f3ffaab9afd9609c1",
+      "size": [
+        2172,
+        724
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/paper/campus-menu-brush-v1.webp",
+      "before": 291910,
+      "after": 218724,
+      "original_sha256": "9d77e762702323c618a2af574e45b497a784e839efd9dc3939222b17c3860b58",
+      "size": [
+        2172,
+        724
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/paper/campus-menu-paper-v1.webp",
+      "before": 290034,
+      "after": 236018,
+      "original_sha256": "360bbeff593b9f858ebb9a7698e9897ebfce1cbbc285d89de88c1fe091e38633",
+      "size": [
+        1122,
+        1402
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/paper/campus-paper-card-v1.webp",
+      "before": 374670,
+      "after": 309088,
+      "original_sha256": "fc73a9a343105331e395f98c3bb2c566799e9861ba6f904fce6e24cafbea760b",
+      "size": [
+        1613,
+        975
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/paper/outcome-paper-v01.webp",
+      "before": 155486,
+      "after": 118800,
+      "original_sha256": "cb6764efd8c12db75e8c8c8491f2c6f53d5d9c600aa364efef22d6b6c18f3422",
+      "size": [
+        1586,
+        992
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/textures/ui/speech_bubble/static.webp",
+      "before": 8218,
+      "after": 7478,
+      "original_sha256": "5ddb2e2556c304c1734888e18803137adfb32352dce0d77187d04e6d78e9a869",
+      "size": [
+        512,
+        512
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/wallpapers/classroom-afternoon-2560x1440-v1.webp",
+      "before": 490492,
+      "after": 339386,
+      "original_sha256": "88da2b84938a0fdea89e522401dcd0507332a387add60013747c40e331c244c0",
+      "size": [
+        2560,
+        1440
+      ],
+      "alpha_preserved": true
+    },
+    {
+      "path": "assets/wallpapers/classroom-afternoon-3840x1240-v1.webp",
+      "before": 481912,
+      "after": 341184,
+      "original_sha256": "052f1281911ffeded94dd1d5273eaf93efd094d783665ad09c01dd1f3bc0a74e",
+      "size": [
+        3840,
+        1240
+      ],
+      "alpha_preserved": true
+    }
+  ],
+  "imports": [
+    "assets/art/concepts/app_icon/teacher_classroom_icon_20261018_v1.png.import",
+    "assets/art/concepts/app_icon/teacher_classroom_icon_20261018_v2_male.png.import",
+    "assets/backgrounds/outcomes/academic_office_sunset_v01.webp.import",
+    "assets/backgrounds/outcomes/dropout_empty_desk_v01.webp.import",
+    "assets/backgrounds/outcomes/term_sunset_v01.webp.import",
+    "assets/illustrations/exam_comic/exam_day_v01.webp.import",
+    "assets/illustrations/opening_comic/page_01.webp.import",
+    "assets/illustrations/opening_comic/page_02.webp.import",
+    "assets/illustrations/opening_comic/page_03.webp.import",
+    "assets/illustrations/opening_comic/page_04.webp.import",
+    "assets/promotional/classroom-social-1920x1080-v1.webp.import",
+    "assets/promotional/classroom-social-title-1920x1080-v1.webp.import",
+    "assets/promotional/classroom-social-title-2560x1440-v1.webp.import",
+    "assets/promotional/classroom-social-title-portrait-1440x2560-v1.webp.import",
+    "assets/promotional/teacher-classroom-1920x1080-20261018-v1.png.import",
+    "assets/promotional/teacher-classroom-1920x1080-20261018-v2-no-tagline.png.import",
+    "assets/promotional/teacher-cover-920x430-20261018-v1.png.import",
+    "assets/promotional/teacher-cover-portrait-20261018-v1.png.import",
+    "assets/promotional/xiake-title-landscape-1920x1080-v1.webp.import",
+    "assets/promotional/xiake-title-landscape-2560x1440-v1.webp.import",
+    "assets/promotional/xiake-title-portrait-1440x2560-v1.webp.import",
+    "assets/textures/character_head/blunt_female.png.import",
+    "assets/textures/character_head/blunt_male.png.import",
+    "assets/textures/character_head/lively_female.png.import",
+    "assets/textures/character_head/lively_male.png.import",
+    "assets/textures/character_head/quiet_female.png.import",
+    "assets/textures/character_head/quiet_male.png.import",
+    "assets/textures/character_head/sensitive_female.png.import",
+    "assets/textures/character_head/sensitive_male.png.import",
+    "assets/textures/character_head/shy_female.png.import",
+    "assets/textures/character_head/shy_male.png.import",
+    "assets/textures/character_head/stern_female.png.import",
+    "assets/textures/character_head/stern_male.png.import",
+    "assets/textures/character_head/tsundere_female.png.import",
+    "assets/textures/character_head/tsundere_male.png.import",
+    "assets/textures/character_head/warm_female.png.import",
+    "assets/textures/character_head/warm_male.png.import",
+    "assets/textures/characters/chat_seated_v1/char_01_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_02_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_03_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_04_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_05_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_06_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_07_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_08_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_09_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_10_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_11_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_12_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_13_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_14_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_15_chat_seated_v1.webp.import",
+    "assets/textures/characters/chat_seated_v1/char_16_chat_seated_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_01_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_02_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_03_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_04_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_05_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_06_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_07_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_08_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_09_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_10_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_11_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_12_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_13_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_14_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_15_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_16_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_17_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_18_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_19_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_20_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_21_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_22_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_23_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_24_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_player_female_body_base_v1.webp.import",
+    "assets/textures/characters/fullbody_v1/char_player_male_body_base_v1.webp.import",
+    "assets/textures/characters/motion_compare_v1/char_01_chibi_sheet_v1.webp.import",
+    "assets/textures/characters/motion_compare_v1/char_01_normal_sheet_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_01_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_02_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_03_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_04_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_05_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_06_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_07_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_08_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_09_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_10_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_11_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_12_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_13_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_14_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_15_music_seated_v1.webp.import",
+    "assets/textures/characters/music_seated_v1/char_16_music_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_01_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_02_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_03_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_04_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_05_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_06_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_07_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_08_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_09_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_10_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_11_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_12_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_13_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_14_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_15_reading_seated_v1.webp.import",
+    "assets/textures/characters/reading_seated_v1/char_16_reading_seated_v1.webp.import",
+    "assets/textures/characters/samples/school_student_sit_v1.webp.import",
+    "assets/textures/characters/samples/school_student_walk_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_01_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_02_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_03_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_04_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_05_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_06_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_07_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_08_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_09_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_10_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_11_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_12_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_13_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_14_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_15_seated_back_v1.webp.import",
+    "assets/textures/characters/seated_back_v1/char_16_seated_back_v1.webp.import",
+    "assets/textures/characters/simple_samples/char_01_body_simple_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_01_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_02_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_03_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_04_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_05_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_06_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_07_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_08_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_09_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_10_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_11_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_12_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_13_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_14_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_15_sleep_seated_v1.webp.import",
+    "assets/textures/characters/sleep_seated_v1/char_16_sleep_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_01_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_02_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_03_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_04_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_05_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_06_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_07_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_08_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_09_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_10_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_11_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_12_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_13_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_14_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_15_snack_seated_v1.webp.import",
+    "assets/textures/characters/snack_seated_v1/char_16_snack_seated_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_01_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_02_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_03_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_04_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_05_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_06_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_07_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_08_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_09_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_10_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_11_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_12_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_13_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_14_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_15_stand_back_v1.webp.import",
+    "assets/textures/characters/standing_back_v1/char_16_stand_back_v1.webp.import",
+    "assets/textures/characters/严肃女.png.import",
+    "assets/textures/characters/严肃男.png.import",
+    "assets/textures/characters/敏感女.png.import",
+    "assets/textures/characters/敏感男.png.import",
+    "assets/textures/characters/活泼男.png.import",
+    "assets/textures/classroom/scene_classroom_blackboard_news.png.import",
+    "assets/textures/classroom/scene_classroom_board_cork.png.import",
+    "assets/textures/classroom/scene_classroom_curtain.png.import",
+    "assets/textures/classroom/scene_classroom_floor_soft.svg.import",
+    "assets/textures/classroom/scene_classroom_floor_tile.png.import",
+    "assets/textures/classroom/scene_classroom_paper.png.import",
+    "assets/textures/classroom/scene_classroom_wall_lower.png.import",
+    "assets/textures/classroom/scene_classroom_wall_upper.png.import",
+    "assets/textures/classroom/scene_classroom_wood.png.import",
+    "assets/textures/classroom/scene_classroom_wood_plank.png.import",
+    "assets/textures/classroom/scene_classroom_wood_soft.svg.import",
+    "assets/textures/clueboard/chalk_cursor.png.import",
+    "assets/textures/clueboard/chalk_stick.png.import",
+    "assets/textures/clueboard/chalk_stick_up.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/big_plant.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/bin.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/book_cupboard.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/classroom_book_unit.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_Desk_1.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_Desk_2.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_Desk_3.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_Desk_4.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_Desk_5.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/classroom_door.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_floor.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/classroom_map.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/classroom_plant.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Classroom_wall.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/main_desk.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/pin_bored.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/school_books.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/school_bored.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/school_window.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Trim/spr_wood_trim_bottom.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Trim/spr_wood_trim_c_down_left.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Trim/spr_wood_trim_c_down_right.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Trim/spr_wood_trim_c_up_left.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Trim/spr_wood_trim_c_up_right.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Trim/spr_wood_trim_down_left.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Trim/spr_wood_trim_down_right.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/Trim/spr_wood_trim_top.png.import",
+    "assets/textures/Cozy Classroom — FREE Pixel Art Pack/wall_clock.png.import",
+    "assets/textures/samples/classroom_2d/background_low_angle_v3.webp.import",
+    "assets/textures/samples/classroom_2d/background_v1.webp.import",
+    "assets/textures/samples/classroom_2d/student_low_angle_v3.webp.import",
+    "assets/textures/samples/classroom_2d/student_motion_v1.webp.import",
+    "assets/textures/ui/behavior_particles/exclaim.png.import",
+    "assets/textures/ui/behavior_particles/question.png.import",
+    "assets/textures/ui/behavior_particles/star.png.import",
+    "assets/textures/ui/behavior_particles/wave.png.import",
+    "assets/textures/ui/interaction/campus_spinning_pen.svg.import",
+    "assets/textures/ui/paper/outcome-paper-v01.webp.import",
+    "assets/textures/ui/speech_bubble/fade_00.png.import",
+    "assets/textures/ui/speech_bubble/fade_01.png.import",
+    "assets/textures/ui/speech_bubble/fade_02.png.import",
+    "assets/textures/ui/speech_bubble/fade_03.png.import",
+    "assets/textures/ui/speech_bubble/fade_04.png.import",
+    "assets/textures/ui/speech_bubble/idle_00.png.import",
+    "assets/textures/ui/speech_bubble/idle_01.png.import",
+    "assets/textures/ui/speech_bubble/idle_02.png.import",
+    "assets/textures/ui/speech_bubble/idle_03.png.import",
+    "assets/textures/ui/speech_bubble/idle_04.png.import",
+    "assets/textures/ui/speech_bubble/idle_05.png.import",
+    "assets/textures/ui/speech_bubble/idle_06.png.import",
+    "assets/textures/ui/speech_bubble/idle_07.png.import",
+    "assets/textures/ui/speech_bubble/idle_08.png.import",
+    "assets/textures/ui/speech_bubble/pop_00.png.import",
+    "assets/textures/ui/speech_bubble/pop_01.png.import",
+    "assets/textures/ui/speech_bubble/pop_02.png.import",
+    "assets/textures/ui/speech_bubble/pop_03.png.import",
+    "assets/textures/ui/speech_bubble/pop_04.png.import",
+    "assets/textures/ui/speech_bubble/pop_05.png.import",
+    "assets/textures/ui/speech_bubble/pop_06.png.import",
+    "assets/textures/ui/speech_bubble/pop_07.png.import",
+    "assets/textures/ui/speech_bubble/pop_08.png.import",
+    "assets/textures/ui/speech_bubble/pop_09.png.import",
+    "assets/wallpapers/classroom-afternoon-2560x1440-v1.webp.import",
+    "assets/wallpapers/classroom-afternoon-3840x1240-v1.webp.import",
+    "assets/wallpapers/teacher-classroom-afternoon-3840x1240-v2.png.import",
+    "assets/wallpapers/teacher-classroom-afternoon-3840x1280-v1.png.import"
+  ]
+}

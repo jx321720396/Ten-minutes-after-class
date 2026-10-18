@@ -123,21 +123,6 @@ func _run() -> void:
 	check(not paused, "关闭办公室选择器后释放导航暂停")
 	check(state.sim_core == core, "往返不重建内核")
 	hub.set_mode("office")
-	hub.open_tool("board")
-	var board_entry: Node = scene.get_node("UI/ClueBoardEntry")
-	check(board_entry.is_open(), "办公室可打开已有推理板")
-	var board: Node = board_entry.get_node("Board")
-	board_entry.record_observed_event(
-		{"kind": "chat", "i": 0, "j": 1}, {"day": int(core.time_snapshot().day), "global_tick": 42}
-	)
-	board_entry.open()
-	var board_count: int = board.displayed_page().events.size()
-	board_entry.close()
-	hub.set_mode("classroom")
-	hub.set_mode("office")
-	hub.open_tool("board")
-	check(board.displayed_page().events.size() == board_count, "切场景保留当天推理板")
-	board_entry.close()
 	hub.open_tool("encyclopedia")
 	var book: Node = scene.get_node("UI/EncyclopediaEntry")
 	check(book.is_open(), "办公室可打开百科")
@@ -212,7 +197,7 @@ func _run() -> void:
 		await process_frame
 		await process_frame
 		var office: Control = hub.office_view()
-		for key in ["monitor", "classroom", "summon", "profile", "board", "encyclopedia"]:
+		for key in ["monitor", "classroom", "summon", "profile", "encyclopedia"]:
 			var rect: Rect2 = office.action_button(key).get_global_rect()
 			check(
 				Rect2(Vector2.ZERO, office.get_viewport_rect().size).encloses(rect), "按钮在画面内：" + key

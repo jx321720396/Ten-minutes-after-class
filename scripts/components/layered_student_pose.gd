@@ -37,7 +37,11 @@ func configure(settings: Dictionary, binding: Dictionary) -> void:
 	_hit_image = null
 	_textures.clear()
 	_texture_paths.clear()
-	for key in ["study", "idle", "idle_back"]:
+	var pose_keys: Array = ["study", "idle", "idle_back"]
+	for key in settings.get("activity_poses", {}).values():
+		if not pose_keys.has(key):
+			pose_keys.append(key)
+	for key in pose_keys:
 		if binding.has(key):
 			_texture_paths[key] = str(binding[key])
 	AssetPreloader.request_textures(_texture_paths.values())
@@ -52,6 +56,9 @@ func pose_for(
 		return "stand"
 	if activity == "study":
 		return "study"
+	var activity_pose := str(_settings.get("activity_poses", {}).get(activity, ""))
+	if not activity_pose.is_empty() and _binding.has(activity_pose):
+		return activity_pose
 	return "idle" if _binding.has("idle") else "stand"
 
 
@@ -59,8 +66,11 @@ func pose_for(
 ## non_blocking=true（游戏内）不等待线程加载；默认阻塞，保持单测与旧的同步语义。
 func show_pose(value: String, non_blocking: bool = false) -> bool:
 	_requested_pose = value
-	if value == "idle" and _group_back and _binding.has("idle_back"):
-		value = "idle_back"
+	var back_pose := str(
+		_base_settings.get("back_pose_variants", {"idle": "idle_back"}).get(value, "")
+	)
+	if _group_back and not back_pose.is_empty() and _binding.has(back_pose):
+		value = back_pose
 	visible = value != "stand"
 	if not visible or value == _pose:
 		return true
@@ -69,14 +79,13 @@ func show_pose(value: String, non_blocking: bool = false) -> bool:
 		null if path.is_empty() else AssetPreloader.texture(path, not non_blocking)
 	)
 	if texture == null:
-		if value == "idle_back" and _pose == "idle":
+		if value == back_pose and _pose == _requested_pose:
 			return true
 		return false
 	_pose = value
 	_settings = _base_settings.duplicate(true)
-	if value == "idle_back":
-		_settings.merge(_binding.get("idle_back_layout", {}), true)
-	if value in ["idle", "idle_back"] and is_instance_valid(_seat):
+	_settings.merge(_binding.get(value + "_layout", {}), true)
+	if bool(_settings.get("use_seat_depth", value != "study")) and is_instance_valid(_seat):
 		var anchor := _seat.get_node_or_null("SitPoint") as Node3D
 		if anchor != null:
 			_settings["body_depth"] = _seat.to_local(anchor.global_position).z
@@ -92,8 +101,12 @@ func show_pose(value: String, non_blocking: bool = false) -> bool:
 	_build_body(texture)
 	_build_foreground(texture)
 	_update_foreground()
-	get_node("Foreground").visible = value == "study"
+	get_node("Foreground").visible = _has_foreground()
 	return true
+
+
+func _has_foreground() -> bool:
+	return bool(_settings.get("desktop_foreground", _pose == "study"))
 
 
 func set_group_back(value: bool, non_blocking: bool = true) -> bool:
@@ -163,7 +176,7 @@ func _build_foreground(texture: Texture2D) -> void:
 
 
 func _process(_delta: float) -> void:
-	if not is_visible_in_tree() or _pose != "study":
+	if not is_visible_in_tree() or not _has_foreground():
 		return
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
@@ -179,7 +192,7 @@ func _process(_delta: float) -> void:
 
 func _update_foreground() -> void:
 	var camera := get_viewport().get_camera_3d()
-	if camera == null or _pose != "study":
+	if camera == null or not _has_foreground():
 		return
 	_camera_transform = camera.global_transform
 	_seat_transform = global_transform
@@ -244,7 +257,7 @@ func ray_hit(origin: Vector3, direction: Vector3) -> float:
 		if Rect2(Vector2.ZERO, atlas.region.size).has_point(pixel):
 			if _opaque(pixel + atlas.region.position):
 				nearest = minf(nearest, (to_global(point) - origin).length())
-	if _pose == "study":
+	if _has_foreground():
 		_process(0.0)
 		for part in get_node("Foreground").get_children():
 			var arrays: Array = part.mesh.surface_get_arrays(0)

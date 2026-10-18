@@ -33,14 +33,7 @@ func _ready() -> void:
 	%Mode.add_theme_font_size_override("font_size", int(config.small_size))
 	%Hint.add_theme_font_size_override("font_size", int(config.small_size))
 	for key in [
-		"patrol",
-		"private_chat",
-		"seats",
-		"conflict",
-		"profile",
-		"profile_tool",
-		"book_tool",
-		"board_tool"
+		"patrol", "private_chat", "seats", "conflict", "profile", "profile_tool", "book_tool"
 	]:
 		var button := get_node("%" + str(key).to_pascal_case()) as Button
 		button.text = str(config.copy[key])
@@ -53,7 +46,6 @@ func _ready() -> void:
 	%Conflict.icon = preload("res://assets/icons/ui/teacher_conflict.svg")
 	%ProfileTool.icon = preload("res://assets/icons/ui/office_profile.svg")
 	%BookTool.icon = preload("res://assets/icons/actions/encyclopedia.svg")
-	%BoardTool.icon = preload("res://assets/icons/actions/board.svg")
 	%Seats.disabled = true
 	%Conflict.disabled = true
 	%Profile.disabled = true
@@ -64,7 +56,6 @@ func _ready() -> void:
 	%Conflict.pressed.connect(func() -> void: action_requested.emit("mediate"))
 	%ProfileTool.pressed.connect(func() -> void: action_requested.emit("profile"))
 	%BookTool.pressed.connect(func() -> void: action_requested.emit("encyclopedia"))
-	%BoardTool.pressed.connect(func() -> void: action_requested.emit("board"))
 	_style_button(%ReturnOffice)
 	%ReturnOffice.add_theme_font_size_override("font_size", int(config.return_size))
 	%ReturnOffice.pressed.connect(func() -> void: action_requested.emit("office"))

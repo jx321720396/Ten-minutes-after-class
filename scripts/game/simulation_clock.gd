@@ -258,7 +258,8 @@ func skip_class() -> bool:
 
 
 ## 考试演出结束后跑完当天原有 tick／边界，只发布最终成绩边界。
-## 不调用 skip_class，避免给考试日额外发放普通上课收益。
+## 考试日不发上课收益、不掷睡觉、不结算学习／娱乐（内核已按 `_is_exam_only_day` 挡住），
+## 故这里逐 tick 与空跑相位等价；保留逐 tick 只为不改驱动口径（转场、音量采样照常推进）。
 func complete_exam_day() -> bool:
 	if _core == null or _mode != MODE_RUNNING:
 		return false

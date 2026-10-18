@@ -2,8 +2,8 @@
 # 依据：D01「开局与跨天继承」、D06「崩溃入口 / 恢复」。
 # 只放合并稿已明确的规则阈值；未确认参数在 docs/production/老师版待确认参数.md 列出，不在此表填占位值。
 param,value,unit,note
-stress_init_min,0,点,开局压力下界（0–20 随机）
-stress_init_max,20,点,开局压力上界
+stress_init_min,0,点,开局压力下界（0–45 随机；2026-10-19 由 0–20 上调，让开局就存在自由状态）
+stress_init_max,45,点,开局压力上界
 vitality_equals_stress,1,标志,开局动力 = 该生开局压力（1 = 是）
 grade_init_min,330,分,开局成绩下界（镜像配对：半数随机取此区间、半数取关于中值的镜像）
 grade_init_max,530,分,开局成绩上界（与下界合计中值 430；镜像配对后开局班级均分恒等于该中值，非期望值）

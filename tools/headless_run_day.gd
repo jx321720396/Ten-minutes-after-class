@@ -13,7 +13,7 @@ func _init() -> void:
 	var kp := _params(tables, "rules/kernel_params")
 	var neutral := float(kp["mbti_neutral"])
 
-	# 一局 = 全池 16 人：RosterSelector 当前退化为「顺序 + 绑定组优先」，仍保留以便将来扩池
+	# 一局 = 全池 16 人：RosterSelector 当前退化为「顺序 + 绑定组优先」（绑定表 2026-10-19 已清空），仍保留以便将来扩池
 	var roster: Array = RosterSelector.new().select(seeds, bindings, 16, neutral)
 
 	print("=== 阵容（16 人，绑定组 + MBTI 四维极性覆盖）===")

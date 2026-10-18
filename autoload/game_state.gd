@@ -16,8 +16,6 @@ var player_gender: String = "male"
 var sim_core: Variant = null
 ## 本局观察笔记；与真实关系矩阵隔离，供存档层独立打包。
 var profile_notebook: Dictionary = {"current": {}, "history": [], "seen": {}}
-## 本局按日观察归档，不属于学生关系矩阵；新局重置。
-var clue_board_journal: Dictionary = {"days": {}, "sealed": {}}
 ## 期末「再玩一局」交回主菜单直接开新局（不弹选角色）。
 var new_game_requested := false
 ## 设置菜单「重看教程」请求（2026-10-13）：主菜单开新局时并入 tutorial_pending，消费后清零。
@@ -38,7 +36,6 @@ var force_roam_decide := false
 
 
 func start_game(new_seed: int, new_npc_count: int) -> void:
-	clue_board_journal = {"days": {}, "sealed": {}}
 	profile_notebook = {"current": {}, "history": [], "seen": {}}
 	force_roam_decide = false
 	seed = new_seed
@@ -100,7 +97,6 @@ func save_snapshot() -> bool:
 		"journal":
 		{
 			"profile_notebook": profile_notebook,
-			"clue_board_journal": clue_board_journal,
 		},
 	}
 	return Save.save(payload)
@@ -137,7 +133,6 @@ func load_game(data: Dictionary) -> bool:
 	sim_core = core
 	wire_events(core)
 	profile_notebook = data.get("journal", {}).get("profile_notebook", profile_notebook)
-	clue_board_journal = data.get("journal", {}).get("clue_board_journal", clue_board_journal)
 	pending_clock_state = data.get("clock", {})
 	force_roam_decide = false
 	# 读档落在「课间」（running 模式 + break）时：① 把课间拨回段首（tick 与时钟累计归零），

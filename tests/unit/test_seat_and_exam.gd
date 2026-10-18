@@ -172,3 +172,61 @@ func test_exam_day_skips_student_decisions() -> void:
 	core._decide_and_act()
 	for i in range(core.node_count()):
 		assert_eq(core._current_act[i], null, "考试当天学生不做普通行为决策（D05）")
+
+
+func test_exam_day_pays_no_class_gain() -> void:
+	var core := _core()
+	core._day = 8
+	assert_true(core._is_exam_only_day(), "第八天属于「只有考试」的一天")
+	core.skip_class()
+	for i in range(core.node_count()):
+		assert_almost_eq(core.gain_today(i), 0.0, 0.0001, "考试日不计入上课：不发上课固定收益（D05）")
+
+
+func test_exam_day_settles_no_study_unit() -> void:
+	var core := _core()
+	core._day = 8
+	core._begin_phase_state()
+	core._phase_state[0] = "study"
+	core._current_act[0] = "study"
+	for _tick in range(40):
+		core._settle_units()
+	assert_almost_eq(core.gain_today(0), 0.0, 0.0001, "考试日不结算学习收益（D05）")
+
+
+func test_exam_day_rolls_no_sleep() -> void:
+	var core := _core()
+	core._day = 8
+	core._phase = "break"
+	core._roll_sleep()
+	for i in range(core.node_count()):
+		assert_false(core._sleeping[i], "考试日不掷睡觉，学生当天不产生任何活动（D05）")
+
+
+func test_broken_student_receives_no_class_gain() -> void:
+	var core := _core()
+	core._day = 2
+	assert_false(core._is_exam_only_day(), "第二天是普通上学日")
+	core._broken[0] = true
+	core._resting[0] = true
+	core.skip_class()
+	assert_almost_eq(core.gain_today(0), 0.0, 0.0001, "崩溃休息者上课吃不到收益（§5.3）")
+	assert_true(core.gain_today(1) > 0.0, "未崩溃的学生照发上课固定收益")
+
+
+func test_solo_free_study_ends_after_one_unit() -> void:
+	var core := _core()
+	core._day = 2
+	core._phase = "break"
+	core._begin_phase_state()
+	core._phase_state[0] = "free"
+	core._current_act[0] = "study"
+	core._busy_until[0] = 0
+	var settled_at := -1
+	for tick in range(60):
+		core._settle_units()
+		if core._current_act[0] == null:
+			settled_at = tick
+			break
+	assert_true(settled_at >= 0, "自由状态的学习做一个单位后结束，不锁整段（§5.1.1）")
+	assert_true(core.gain_today(0) > 0.0, "结束前已结算一个完整学习单位")

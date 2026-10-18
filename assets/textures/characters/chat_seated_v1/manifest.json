@@ -1,0 +1,162 @@
+[
+  {
+    "id": "01",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-6cadd985-4345-48c1-8499-2565c53891d6.png",
+    "name": "陈阳",
+    "sprite": "warm_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_01_idle_seated_v1.webp",
+    "file": "char_01_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_01_seated_back_v1.webp"
+  },
+  {
+    "id": "02",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-a8e993bd-da4c-4c33-b9d2-38a22f33cffb.png",
+    "name": "林晚",
+    "sprite": "sensitive_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_02_idle_seated_v1.webp",
+    "file": "char_02_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_02_seated_back_v1.webp"
+  },
+  {
+    "id": "03",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-8ce51ef8-faf7-4618-b2cf-26aa53db02f8.png",
+    "name": "张渊",
+    "sprite": "quiet_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_03_idle_seated_v1.webp",
+    "file": "char_03_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_03_seated_back_v1.webp"
+  },
+  {
+    "id": "04",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-2c43f4cd-0476-439c-9f85-14cca216de96.png",
+    "name": "周敏",
+    "sprite": "stern_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_04_idle_seated_v1.webp",
+    "file": "char_04_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_04_seated_back_v1.webp"
+  },
+  {
+    "id": "05",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-795aa110-9833-4810-91a2-9a48c693b3e5.png",
+    "name": "赵蕊",
+    "sprite": "lively_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_05_idle_seated_v1.webp",
+    "file": "char_05_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_05_seated_back_v1.webp"
+  },
+  {
+    "id": "06",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-7e76a00f-ff49-449c-b369-59f282937f6e.png",
+    "name": "孙悦",
+    "sprite": "warm_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_06_idle_seated_v1.webp",
+    "file": "char_06_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_06_seated_back_v1.webp"
+  },
+  {
+    "id": "07",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-a3d3d334-f48c-455f-895c-5381251180aa.png",
+    "name": "郑浩",
+    "sprite": "blunt_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_07_idle_seated_v1.webp",
+    "file": "char_07_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_07_seated_back_v1.webp"
+  },
+  {
+    "id": "08",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-49692551-fed3-4ecb-9d1f-86e759de7a45.png",
+    "name": "许静",
+    "sprite": "shy_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_08_idle_seated_v1.webp",
+    "file": "char_08_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_08_seated_back_v1.webp"
+  },
+  {
+    "id": "09",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-cc08fca6-9144-4274-8be6-2acfd2218697.png",
+    "name": "何川",
+    "sprite": "sensitive_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_09_idle_seated_v1.webp",
+    "file": "char_09_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_09_seated_back_v1.webp"
+  },
+  {
+    "id": "10",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-21321862-3958-4027-8ce4-fdc85da7ddb0.png",
+    "name": "韩雪",
+    "sprite": "blunt_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_10_idle_seated_v1.webp",
+    "file": "char_10_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_10_seated_back_v1.webp"
+  },
+  {
+    "id": "11",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-8cffafcf-a818-46ea-82b5-cf1f65eac7ae.png",
+    "name": "沈浪",
+    "sprite": "shy_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_11_idle_seated_v1.webp",
+    "file": "char_11_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_11_seated_back_v1.webp"
+  },
+  {
+    "id": "12",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-2e70c963-045c-424a-91fd-c9ccddef276c.png",
+    "name": "顾言",
+    "sprite": "tsundere_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_12_idle_seated_v1.webp",
+    "file": "char_12_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_12_seated_back_v1.webp"
+  },
+  {
+    "id": "13",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-70ee249a-ba93-4f91-87c3-74ad6297073a.png",
+    "name": "叶梓",
+    "sprite": "quiet_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_13_idle_seated_v1.webp",
+    "file": "char_13_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_13_seated_back_v1.webp"
+  },
+  {
+    "id": "14",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-774edd0d-86f3-45e0-9510-570c8ad4739c.png",
+    "name": "佳豪",
+    "sprite": "lively_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_14_idle_seated_v1.webp",
+    "file": "char_14_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_14_seated_back_v1.webp"
+  },
+  {
+    "id": "15",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-977d3af9-8c42-4291-be82-d7435f7179d1.png",
+    "name": "温雅",
+    "sprite": "tsundere_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_15_idle_seated_v1.webp",
+    "file": "char_15_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_15_seated_back_v1.webp"
+  },
+  {
+    "id": "16",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-82c9dc64-0fcc-44cc-b165-49cd0709f4f1.png",
+    "name": "李峥",
+    "sprite": "stern_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_16_idle_seated_v1.webp",
+    "file": "char_16_chat_seated_v1.webp",
+    "pose": "chat",
+    "reused_back": "res://assets/textures/characters/seated_back_v1/char_16_seated_back_v1.webp"
+  }
+]

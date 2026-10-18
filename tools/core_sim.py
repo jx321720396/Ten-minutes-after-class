@@ -322,6 +322,7 @@ class Sim:
         self.snack_provider = [None] * n  # 加入者 -> 分享者（自然完成单位后结算分享好感）
         self.share_units = {}           # (provider, receiver) -> 已结算分享单位数（去重，只读观察）
         self.joined_tick = [-1] * n     # 最近一次加入活动的 tick（本决策点新加入者不带朋友，§9.1.4）
+        self.best_join_phase = [-1] * n  # 本段是否已尝试「加入好感最高者」（段序号冷却，不存档）
         self.knot_days = [0] * n        # 「心结」剩余天数（参数来自 status_tags.csv）
         self.resting = [False] * n      # 崩溃休息锁（§5.3）：当天只睡觉，次日跨天时特殊恢复
         self.status_tags = {r["tag_id"]: r for r in load_table("rules/status_tags.csv")}
@@ -361,22 +362,18 @@ class Sim:
     # ------------------------------------------------ 初始化关系
     def _init_relations(self):
         n = self.N
+        # 初值与 GDScript 同源：rules/kernel_params.csv 的 init_affinity_base / spread（2026-10-19 改为 0–45）。
+        base_a = self.kp["init_affinity_base"]
+        spread_a = self.kp["init_affinity_spread"]
+        spread_h = self.kp["init_hostility_spread"]
         for i in range(n):
             for j in range(n):
                 if i == j:
                     continue
-                self.A[i][j] = clamp100(20 + self.rng.random() * 20)
-                self.H[i][j] = clamp100(self.rng.random() * 40)
-        # 环境事实（§11.3）：小情侣绑定、佳豪对外好感 50
-        idx = {c["alias"]: k for k, c in enumerate(self.chars)}
-        if "陈阳" in idx and "林晚" in idx:
-            a, b = idx["陈阳"], idx["林晚"]
-            self.A[a][b] = self.A[b][a] = 85.0
-        if "佳豪" in idx:
-            g = idx["佳豪"]
-            for j in range(n):
-                if j != g:
-                    self.A[g][j] = 50.0
+                self.A[i][j] = clamp100(base_a + self.rng.random() * spread_a)
+                self.H[i][j] = clamp100(self.rng.random() * spread_h)
+        # 2026-10-19（用户裁定）：旧角色设定（陈阳↔林晚 85、佳豪对全班 50）已删除，
+        # 初始关系只由 kernel_params 随机生成；设定的读取路径随 bindings.csv 保留。
 
     def _init_grade(self):
         """成绩初始化（§17.1.1）：镜像配对，开局均分恒为 (min+max)/2。
@@ -605,6 +602,9 @@ class Sim:
         """
         if self.phase != "break":
             return
+        # D05：考试当天只有考试 —— 不掷睡觉，当天 NPC 不产生任何活动。
+        if self.exam_only_today():
+            return
         if not self.allowed("sleep"):
             return
         p = self.probs.get("sleep", 0.0)
@@ -650,6 +650,10 @@ class Sim:
             # 鼓励目标（D09）：自由学生有未结束目标时优先尝试一次聊天（不打断锁定；
             # 忙碌 / 条件不满足算等待、不算关系拒绝，学生可落回正常决策）。
             if self.encourage_status[i] == "active" and self.try_encourage(i):
+                busy.add(i)
+                continue
+            # 自由状态先去找「自己好感最高的人」，按对方正在做的事加入（每课间一次）。
+            if state == "free" and self.try_join_best(i):
                 busy.add(i)
                 continue
             leisure_started = False
@@ -800,10 +804,11 @@ class Sim:
                     return True
         return False
 
-    def start_leisure(self, i, kind):
+    def start_leisure(self, i, kind, ignore_book=False):
         if kind not in LEISURE_KINDS or not self.allowed(kind) or not self.can_interact_with(i):
             return False
-        if kind == "read_book" and self.book[i] <= 0:
+        # 共享娱乐（2026-10-19）：加入者无需自带书 —— 一起看同一本。
+        if kind == "read_book" and not ignore_book and self.book[i] <= 0:
             return False
         self.occupy(i, i, kind)
         self.stats[kind] = self.stats.get(kind, 0) + 1
@@ -1067,9 +1072,8 @@ class Sim:
     def _join_activity_of(self, j):
         """j 的当前活动（只读，通用加入视角）。返回 (kind, group)；group 为 None 表示独自活动。
 
-        ("idle", None) = 空闲；("solo", None) = 独自的不可共享活动（听歌 / 读课外书，
-        §9.1.4：共享方式未裁定，不自动开放加入；本人仍可在决策边界切换）；
-        ("play", None) = 游戏锁定（不可被拉出，2026-10-17 交接）。
+        ("idle", None) = 空闲；("play", None) = 游戏锁定（不可被拉出）；
+        听歌 / 看课外书返回具体 kind（可共享加入，2026-10-19）。
         """
         # 状态锁定（D01）：学习锁定视同学习（可被请教、不被拉去别的活动）；
         # 游戏锁定不可被拉出。崩溃 / 睡觉由 _join_blocked 排除，这里防御性再挡一次。
@@ -1087,7 +1091,8 @@ class Sim:
         if self.current_act[j] == "study" and self.global_tick < self.busy_until[j]:
             return ("study", self.study_of[j])
         if self.busy_act[j] in ("listen_music", "read_book") and self.global_tick < self.busy_until[j]:
-            return ("solo", None)
+            # 个人娱乐（2026-10-19）：听歌／看书可被加入，跟随者与发起者同步结束。
+            return (self.busy_act[j], None)
         return ("idle", None)
 
     def _vote_accept(self, members, joiner):
@@ -1170,7 +1175,7 @@ class Sim:
             self.stats["join_accepts"] = self.stats.get("join_accepts", 0) + 1
             self._log_join_event(i, [j], "follow", kind, yes, no, {"follower": j})
             return True
-        # i 更在意 j：i 加入 j 的原活动（原活动须可加入；听歌/读书未开放共享）
+        # i 更在意 j：i 加入 j 的原活动（跟随分支只认这四种组；共享娱乐由 try_join_best 走同活动加入）
         if akind not in ("chat", "roughhouse", "study", "snack"):
             self._log_join_event(i, [j], "condition_fail", kind, yes, no, {"reason": "unshared"})
             return False
@@ -1182,6 +1187,8 @@ class Sim:
         加入后与原成员做同一活动：按实际参与时间获得效果；不重置老成员计时、
         不补发新人加入前的收益、不重复结算旧成员互动（交接 2）。
         """
+        if self.is_shared_leisure(akind):
+            return self.join_shared_leisure(i, anchor, akind)
         if group is None:
             group = self._ensure_group(akind, anchor)
             if group is None:
@@ -1374,6 +1381,85 @@ class Sim:
               lambda m: self.current_act[m] == "study" and self.busy_until[m] > self.global_tick)
         prune(self.snack_groups, self.snack_of,
               lambda m: self.busy_act[m] == "eat_snack" and self.busy_until[m] > self.global_tick)
+
+    # ---------------------------------------------------------- 自由状态：走动与先加入好感最高者
+    def refresh_free_states(self):
+        """段首判定之后的中途切换：自由状态一旦动力跨线，就进入学习／游戏并**锁定**。
+
+        锁定后即使动力回到 30–60 也不退出（下个课间重新判定），对齐用户 2026-10-19 裁定。
+        """
+        if self.phase != "break" or self.exam_only_today():
+            return
+        hi = self.psyche["vitality_study_threshold"]
+        lo = self.psyche["vitality_play_threshold"]
+        for i in range(self.N):
+            if self.Broken[i] or self.sleeping[i]:
+                continue
+            if self.phase_state[i] != "free":
+                continue
+            if self.Vitality[i] > hi:
+                self.phase_state[i] = "study"
+            elif self.Vitality[i] < lo:
+                self.phase_state[i] = "play"
+
+    @staticmethod
+    def is_shared_leisure(kind):
+        """共享的个人娱乐（2026-10-19 用户裁定）：听歌、看课外书可以加入。"""
+        return kind in ("listen_music", "read_book")
+
+    def join_shared_leisure(self, i, anchor, akind):
+        """加入共享娱乐：加入者执行同款娱乐并与发起者同步结束；看书要求本人有书。"""
+        ok, yes, no = self._vote_accept([anchor], i)
+        if not ok:
+            self._reject_join(i, anchor, [anchor], akind, yes, no)
+            return False
+        self._leave_solo_activity(i)
+        if not self.start_leisure(i, akind, True):
+            return False
+        self.busy_until[i] = self.busy_until[anchor]
+        self.busy_phase[i] = self.busy_phase[anchor]
+        self.joined_tick[i] = self.global_tick
+        self.stats["join_accepts"] = self.stats.get("join_accepts", 0) + 1
+        self._log_join_event(i, [anchor], "joined", akind, yes, no, {"anchor": anchor})
+        return True
+
+    def try_join_best(self, i):
+        """自由状态优先加入「自己好感最高的人」正在做的事；每课间只尝试一次。
+
+        好感最高者不可用（睡觉／崩溃／办公室）或没在做什么时，改为加入「身边（前后左右）
+        正在做的事」；都不成立就交回自主决策（回座位做自己的事）。两种情况都不消耗本段机会。
+        """
+        phase_key = self.day * 10 + self.phase_index
+        if self.best_join_phase[i] == phase_key:
+            return False
+        j = self._find_partner(i, "join")
+        if j is not None:
+            akind, _group = self._join_activity_of(j)
+            if akind not in ("idle", "play"):
+                self.best_join_phase[i] = phase_key
+                return self._propose_activity(i, j, akind)
+        near = self._neighbor_doing(i)
+        if near is None:
+            return False
+        self.best_join_phase[i] = phase_key
+        return self._propose_activity(i, near, self._join_activity_of(near)[0])
+
+    def _neighbor_doing(self, i):
+        """前后左右（正交邻座）里正在做可加入活动、且好感最高的人；没有返回 None。"""
+        best = None
+        best_a = 0.0
+        for j in self.neighbor_idx[i]:
+            if j == i or self.Broken[j] or self.sleeping[j]:
+                continue
+            if self.seat_relation_between(i, j) != "orthogonal":
+                continue
+            akind, _group = self._join_activity_of(j)
+            if akind in ("idle", "play"):
+                continue
+            if best is None or self.A[i][j] > best_a:
+                best = j
+                best_a = self.A[i][j]
+        return best
 
     def _clear_join_groups(self):
         """相位边界：清空全部活动组与未完成的分享关联（未完成单位不结算，§9.1.4）。"""
@@ -1629,6 +1715,8 @@ class Sim:
         self.settle_conversations()      # 多人聊天：逐人离场 / 解散（2026-10-14）
         self._settle_groups()            # 通用加入：活动组成员到期离组 / 解散（§9.1.4，2026-10-15）
         self.teacher.step(self)
+        # 自由状态中途跨线即进入学习／游戏并锁定（2026-10-19 用户裁定），再进决策。
+        self.refresh_free_states()
         self.decide_and_act()
         self.settle_units()
         self.check_breakdown()
@@ -1656,8 +1744,24 @@ class Sim:
             return "leisure"
         return ""
 
+    def is_solo_free_study(self, i):
+        """自由状态里**自己**投入的学习（不含加入他人学习组的请教跟随者）。
+
+        §5.1.1：这种学习只执行一个学习单位，完成后重选，不锁整段。
+        """
+        if self.phase_state[i] != "free":
+            return False
+        if self.current_act[i] != "study":
+            return False
+        return self.study_of[i] is None
+
     def settle_units(self):
-        """单位结算（D02）：按秒累计，每满一个单位结算一次；只对课间生效。"""
+        """单位结算（D02）：按秒累计，每满一个单位结算一次。
+
+        D05：考试当天只有考试 —— 不结算任何学习／娱乐／游戏收益，成绩只按前七天已计入的。
+        """
+        if self.exam_only_today():
+            return
         # D02 + 2026-10-16 裁定：学习单位在任何段都结算（上课也积累学业收益）；
         # 娱乐 / 游戏状态只在课间结算（规格：上课不执行课间事件）。
         in_break = self.phase == "break"
@@ -1674,6 +1778,7 @@ class Sim:
                 continue
             self.settle_acc[i] += 1.0
             if kind == "study":
+                settled = False
                 while self.settle_acc[i] >= study_seconds:
                     self.settle_acc[i] -= study_seconds
                     self.GainToday[i] += self.acts["study_gain"]
@@ -1682,6 +1787,14 @@ class Sim:
                                     and self.study_of[i].get("originator", i) != i)
                             else self.acts["study_vitality_cost"])
                     self.add_vitality(i, -cost)
+                    settled = True
+                # §5.1.1（2026-10-18 裁定）：自由状态的自主学习只执行**一个**学习单位，
+                # 完成即结束本次学习、下个 tick 重新决策，不锁整段；段首 >60 的学习状态与
+                # 请教跟随者（有学习组）仍按整段／整组结算。
+                if settled and self.is_solo_free_study(i):
+                    self.settle_acc[i] = 0.0
+                    self.current_act[i] = None
+                    self.busy_until[i] = 0
             elif kind == "play":
                 while self.settle_acc[i] >= play_seconds:
                     self.settle_acc[i] -= play_seconds
@@ -2196,7 +2309,7 @@ class Sim:
             self.exam_rank[i] = place + 1
         self.exam_score = scores
         self.exam_last = list(scores)
-        # D05：全班均分与目标均分（380）考核 —— 不达标老师被辞退（只读，不改成绩）。
+        # D05：全班均分与目标均分（`exam_target_mean_<次序>`，2026-10-18 起 450/480/500/520）考核 —— 不达标老师被辞退（只读，不改成绩）。
         total = sum(scores)
         mean = (total / float(self.N)) if self.N > 0 else 0.0
         self.exam_means[day] = mean
@@ -2280,15 +2393,20 @@ class Sim:
         self.begin_phase_state()          # D01 段首状态：学习 / 游戏 / 自由
 
     def skip_class(self):
-        """上课段硬跳过（2026-10-17 裁定）：不逐 tick 模拟，只做「全员固定学业收益 + 崩溃判定」。
+        """上课段硬跳过（2026-10-17 裁定）：不逐 tick 模拟，只做「固定学业收益 + 崩溃判定」。
 
         与 GDScript 内核 `skip_class()` 镜像：不调 begin_phase / 不逐 tick / 不调 end_phase，
         只推进游标到下一段；class 从不是末相位，故不会触发 settle_day。零 RNG 消费。
         2026-10-19：本段是「课间睡下 → 跨过上课段」的结算点，先 `settle_sleep()` 再判崩溃，
         否则本段新崩溃者会被同一次结算立刻唤醒，丢掉「当天只睡觉」的休息状态。
+        D05：考试日不计入上课 —— 不发放上课固定收益。
+        §5.3：当天崩溃休息者不产生学业收益，也不发这一节的收益。
         """
         gain = self.acts["class_gain"]
+        paying = not self.exam_only_today()
         for i in range(self.N):
+            if not paying or self.Broken[i]:
+                continue
             self.GainToday[i] += gain
         self.settle_sleep()
         self.check_breakdown()

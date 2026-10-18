@@ -6,8 +6,8 @@ extends Node3D
 ## 「课间走动 → 段末 / 上课归位」表现出来。
 ##
 ## 做什么：
-##   · **课间段**：段首与配置的间隔之后各判定一次离座，目标按 §10.4 的权重式挑
-##     （`1 + Σ_j A[i][j]/100 − Σ_j H[i][j]/200`，目标点附近有活动圈则 ×1.5，下限 0.1）；
+##   · **课间段**：每课间一次定向走动 —— 只有自由状态（动力 30–60）的学生离开座位，
+##     走向「自己好感最高的人」；对方若就在前后左右（正交邻座）则不动（2026-10-19 用户裁定）；
 ##   · **上课段**：进入上课时在黑幕遮挡期间**瞬间贴回自己的座位**（2026-10-12 裁定），
 ##     整段不动（§10.4 第 6 条归位）；
 ##   · **占用**：每个站立点同时只容纳一个人（含玩家），先到者锁定（NPC移动决策 §2.2）；
@@ -21,8 +21,9 @@ extends Node3D
 ##     `move.duration`（该值目前没有表现层消费者）；
 ##   · 路线一律来自**导航网格**（`scenes/game/classroom3D.tscn` 的 NavigationRegion3D）：
 ##     取不到路线就留在原地并计数，**不用直线兜底**（直线会穿桌椅）；
-##   · **离座概率**：`p = base_p`（老师版删除外向修正），
-##     `base_p` 来自 `data/rules/behavior_probs.csv` 的 `move`（当前 0.20）；
+##   · **离座门槛**：状态为自由（动力 30–60）、在教室、不忙碌、不在会话、不在睡觉、不在走；
+##     不再按 `behavior_probs.csv` 的 `move` 概率逐人掷骰（2026-10-19 起改为定向走动，
+##     随机站立点加权仍在 `_pick_point`，只留给离线 / 测试与后续「无人可找」回退）。
 
 const MOVEMENT_TABLE := "rules/movement"
 const SPEED_PARAM := "meters_per_tick"
@@ -95,8 +96,8 @@ var _pending_phase: Dictionary = {}
 ## 上一次瞬间归位的天数（每天首个课间归位一次）
 var _last_snapped_day := -1
 var _decide_timer := 0.0
-## 每个课间最多触发几批离座决策（段首与课间中段）
-var _max_decides_per_break: int = 2
+## 每个课间最多触发几批离座决策（2026-10-19：定向走动，每课间一次）
+var _max_decides_per_break: int = 1
 ## 本课间还剩几批决策额度
 var _decides_remaining: int = 0
 
@@ -106,6 +107,9 @@ func bind_time_flow(flow: TimeFlow) -> void:
 
 
 func _ready() -> void:
+	# 固定种子：定向走动本身不掷骰，随机站立点（`_pick_point`）只在离线 / 测试与回退时用，
+	# 但仍要可复现（铁律：不用隐式随机）。
+	_rng.seed = 20261019
 	# 等一帧：人物由 Actors 节点（classroom_actors.gd）在自己的 _ready 里生成，
 	# 这里不依赖同级节点的 _ready 顺序（确定性 > 巧合）。
 	await get_tree().process_frame
@@ -442,40 +446,114 @@ func force_decide() -> void:
 	_decide_batch()
 
 
-## 课间一批离座决策：按角色索引升序（NPC移动决策 §9 可复现性）。
-## 离座概率：p = base_p（老师版删除外向修正）
+## 课间一批离座决策（2026-10-19 用户裁定）：只有自由状态（动力 30–60）的学生走动，
+## 目标 = 「自己好感最高的人」所在位置；对方就在前后左右（正交邻座）则不走。
+## 按角色索引升序处理，保证画面可复现。
 func _decide_batch() -> void:
 	if _decides_remaining > 0:
 		_decides_remaining -= 1
 	_batch_count += 1
 	var moved := 0
-	var base_p: float = _core.behavior_base_p("move")
 	for i in range(_actor_count):
-		if i == _player_index:
+		if i == _player_index or not _can_roam(i):
 			continue
-		if (
-			not _core.is_present(i)
-			or _core.is_busy(i)
-			or _core.session_of(i) >= 0
-			or _core._sleeping[i]
-		):
+		var friend := _best_friend(i)
+		if friend < 0:
+			# 好感最高的人不可用（全在睡觉／崩溃／办公室）：回自己的座位做自己的事。
+			if _return_to_seat(i):
+				moved += 1
 			continue
-		var walker: ActorWalker = _walkers[i]
-		if walker == null or walker.is_moving():
+		if str(_core._seat_relation_between(i, friend)) == "orthogonal":
 			continue
-		var p_move: float = base_p
-		if _rng.randf() > p_move:
-			continue
-		var point_id := _pick_point(i)
-		if point_id.is_empty():
-			continue
-		_go_to_point(i, point_id)
-		moved += 1
+		if _go_to_friend(i, friend):
+			moved += 1
 	if log_roam and moved > 0:
-		print("[roam] 课间第 %d 批：%d 人离座" % [_batch_count, moved])
+		print("[roam] 课间第 %d 批：%d 人走向好感最高者" % [_batch_count, moved])
 
 
-## 按 §10.4 权重抽一个站立点；没有候选返回空串。
+## 能否走动：自由状态 + 在教室 + 不忙碌 + 不在会话 / 睡觉 / 走动中。
+func _can_roam(i: int) -> bool:
+	if i < 0 or i >= _actor_count or i >= _actors.size():
+		return false
+	if not _core.is_present(i) or _core._sleeping[i]:
+		return false
+	if _core.is_busy(i) or _core.session_of(i) >= 0:
+		return false
+	if str(_core.phase_state_of(i)) != "free":
+		return false
+	var walker: ActorWalker = _walkers[i]
+	return walker != null and not walker.is_moving()
+
+
+## 「我」对其好感最高、且此刻在场可交流的人（睡觉 / 崩溃 / 不在场跳过）。
+func _best_friend(i: int) -> int:
+	var best := -1
+	var best_a := 0.0
+	var has_best := false
+	for j in range(_actor_count):
+		if j == i or not _core.is_present(j) or _core._sleeping[j] or _core.is_broken(j):
+			continue
+		var a := float(_core.affinity(i, j))
+		if not has_best or a > best_a:
+			best = j
+			best_a = a
+			has_best = true
+	return best
+
+
+## 没有可接近的人时回自己的座位（2026-10-19 用户裁定：回座位做自己的事情）。
+func _return_to_seat(i: int) -> bool:
+	var seat_id := str(_core.seat_of(i))
+	if not _point_positions.has(seat_id) or str(_point_of_actor.get(i, "")) == seat_id:
+		return false
+	if not _send_to_point(i, _point_positions[seat_id]):
+		return false
+	_release_point(i)
+	_occupy(seat_id, i)
+	return true
+
+
+## 走到 friend 身边（保留 `group_standing_distance` 间距与最小人体间距），
+## 不占用站立点（目标是人物位置，而不是固定点）。
+func _go_to_friend(i: int, friend: int) -> bool:
+	var self_actor: Node3D = _actors[i]
+	var target_actor: Node3D = _actors[friend]
+	if self_actor == null or target_actor == null:
+		return false
+	var anchor := Vector2(target_actor.global_position.x, target_actor.global_position.z)
+	var start := Vector2(self_actor.global_position.x, self_actor.global_position.z)
+	var goal := GroupActivitySpacing.closer_target(
+		start, anchor, maxf(_group_distance, _minimum_gap)
+	)
+	if goal.is_equal_approx(start):
+		return false
+	if not _core._space.position_valid(goal):
+		return false
+	if _core._space.segment_blocked(start, goal, _core.range_step()):
+		return false
+	var occupied: Array[Vector2] = []
+	var reserved: Array[Vector2] = []
+	for other in range(_actor_count):
+		if other == i:
+			continue
+		var other_actor: Node3D = _actors[other]
+		if other_actor == null:
+			continue
+		var point := other_actor.global_position
+		occupied.append(Vector2(point.x, point.z))
+		if _walkers[other] != null and _walkers[other].is_moving():
+			var to: Vector3 = _walkers[other]._to
+			reserved.append(Vector2(to.x, to.z))
+	if not GroupActivitySpacing.has_clearance(goal, occupied, reserved, _minimum_gap):
+		return false
+	if not _send_to_point(i, Vector3(goal.x, self_actor.global_position.y, goal.y)):
+		return false
+	_release_point(i)
+	return true
+
+
+## 按权重抽一个站立点；没有候选返回空串。
+## 2026-10-19 起课间走动改为「走向好感最高者」，本函数只留给离线 / 测试与后续「无人可找」回退。
 func _pick_point(i: int) -> String:
 	var ids: Array = []
 	var weights: PackedFloat32Array = PackedFloat32Array()

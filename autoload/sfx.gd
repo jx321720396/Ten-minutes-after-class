@@ -110,7 +110,7 @@ func play_one_shot(player_name: String) -> void:
 		player.play()
 
 
-## 循环播放（推理板滑动摩擦声）：已在播则不重起来避免爆音。
+## 循环播放（滑动摩擦声）：已在播则不重起来避免爆音。
 func start_loop(player_name: String) -> void:
 	var player := get_node_or_null(NodePath(player_name)) as AudioStreamPlayer
 	if player == null or player.playing:
@@ -121,7 +121,7 @@ func start_loop(player_name: String) -> void:
 	player.play()
 
 
-## 松手时停掉推理板的滑动循环（画过哪个工具就停哪个）。
+## 松手时停掉滑动循环（画过哪个工具就停哪个）。
 func stop_board_loops() -> void:
 	for player_name in ["ChalkWrite", "EraserWipe"]:
 		_stop_player(player_name)

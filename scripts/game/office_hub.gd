@@ -33,7 +33,7 @@ func bind_classroom(room: Node) -> void:
 	_view.hide()
 	_view.bind_sources(room.get_node("Clock"))
 	_view.action_requested.connect(_on_action)
-	for path in ["UI/EncyclopediaEntry", "UI/ClueBoardEntry", "UI/NpcProfile", "UI/PauseMenu"]:
+	for path in ["UI/EncyclopediaEntry", "UI/NpcProfile", "UI/PauseMenu"]:
 		_bind_tool_touch(room.get_node(path))
 	var replay: Button = room.get_node("UI/PauseMenu").settings_panel.replay_btn
 	replay.disabled = true
@@ -137,8 +137,7 @@ func _capture_classroom_state() -> void:
 		"ActionBar",
 		"ActionBar/BackpackEntry/BackpackButton",
 		"ChatHUD",
-		"UI/EncyclopediaEntry/EncyclopediaButton",
-		"UI/ClueBoardEntry/BoardButton"
+		"UI/EncyclopediaEntry/EncyclopediaButton"
 	]:
 		var node: Node = _room.get_node_or_null(path)
 		if node != null:
@@ -216,9 +215,7 @@ func select_observed_student(index: int) -> void:
 
 
 func open_tool(action: String) -> void:
-	if action == "board":
-		_room.get_node("UI/ClueBoardEntry").open()
-	elif action == "encyclopedia":
+	if action == "encyclopedia":
 		_room.get_node("UI/EncyclopediaEntry").open()
 	elif action in ["profile", "summon"]:
 		_show_picker(action)

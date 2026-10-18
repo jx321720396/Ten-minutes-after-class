@@ -37,10 +37,8 @@ func _run() -> void:
 	core._exam._penalty = 0.0
 	core._grade.fill(target + 6.5)
 	core._exam.settle(exam_day, core._grade, core._stress, core._alias_list())
-	var board: CanvasLayer = scene.get_node("UI/ClueBoardEntry")
-	board.open()
 	_boundary(clock, exam_day)
-	_check(not board.is_open() and not paused, "考试结算收起旧手记并释放全树暂停")
+	_check(not paused, "考试结算释放全树暂停")
 	_check(screen.visible and str(screen.get("_data").kind) == "exam", "考试信号打开达标页")
 	_check(not clock.continue_after_report(), "考试未确认时阻止其他继续入口")
 	_press(screen, "继续带班")
@@ -50,7 +48,7 @@ func _run() -> void:
 	core._exam.settle(exam_day, core._grade, core._stress, core._alias_list())
 	_boundary(clock, exam_day)
 	_check(screen.visible and str(screen.get("_data").kind) == "academic", "成绩不达标打开专用辞退页")
-	_check(not board.is_open() and not paused, "失败时推理板不能遮盖辞退界面")
+	_check(not paused, "失败时不保留暂停")
 	_check(not clock.continue_after_report(), "辞退后不能继续")
 	_press(screen, "查看本局回顾")
 	_check(

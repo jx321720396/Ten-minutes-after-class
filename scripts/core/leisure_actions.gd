@@ -3,10 +3,11 @@ extends RefCounted
 ## P0-3 无持久引用的状态动作：所有状态与 RNG 仍归 SimCore 所有。
 
 
-static func start_leisure(c: SimCore, i: int, kind: String) -> bool:
+static func start_leisure(c: SimCore, i: int, kind: String, ignore_book: bool = false) -> bool:
 	if not SimCore.LEISURE_KINDS.has(kind) or not c._allowed(kind) or not c._can_interact_with(i):
 		return false
-	if kind == "read_book" and c._book[i] <= 0:
+	# 共享娱乐（2026-10-19）：加入者无需自带书 —— 一起看同一本。
+	if kind == "read_book" and not ignore_book and c._book[i] <= 0:
 		return false
 	c._occupy(i, i, kind)
 	c._stats[kind] = int(c._stats.get(kind, 0)) + 1

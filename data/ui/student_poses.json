@@ -1,4 +1,11 @@
 {
+  "activity_poses": {
+    "eat_snack": "eat_snack",
+    "listen_music": "listen_music",
+    "read_book": "read_book",
+    "chat": "chat",
+    "sleep": "sleep"
+  },
   "bindings": {
     "warm_male": {
       "study": "res://assets/textures/characters/study_front_v1/char_01_study_down_v1.webp",
@@ -102,6 +109,37 @@
         "lower_height_gain": -0.121833965138605,
         "floor_y": 0.0005952151386049986,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_01_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_01_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_01_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_01_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_01_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 695,
+        "lower_height_gain": -0.14220240582191787,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              695
+            ],
+            [
+              0,
+              695
+            ]
+          ]
+        ]
       }
     },
     "sensitive_female": {
@@ -206,6 +244,37 @@
         "lower_height_gain": -0.11437381418525416,
         "floor_y": -0.006864935814745843,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_02_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_02_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_02_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_02_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_02_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 665,
+        "lower_height_gain": -0.17195865582191794,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              665
+            ],
+            [
+              0,
+              665
+            ]
+          ]
+        ]
       }
     },
     "quiet_male": {
@@ -310,6 +379,37 @@
         "lower_height_gain": -0.09633518630606569,
         "floor_y": -0.024903563693934316,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_03_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_03_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_03_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_03_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_03_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 685,
+        "lower_height_gain": -0.15212115582191793,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              685
+            ],
+            [
+              0,
+              685
+            ]
+          ]
+        ]
       }
     },
     "stern_female": {
@@ -414,6 +514,37 @@
         "lower_height_gain": -0.08525363822180593,
         "floor_y": -0.03598511177819408,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_04_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_04_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_04_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_04_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_04_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 700,
+        "lower_height_gain": -0.1372430308219179,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              700
+            ],
+            [
+              0,
+              700
+            ]
+          ]
+        ]
       }
     },
     "lively_female": {
@@ -518,6 +649,37 @@
         "lower_height_gain": -0.08578913165681629,
         "floor_y": -0.03544961834318372,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_05_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_05_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_05_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_05_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_05_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 675,
+        "lower_height_gain": -0.16203990582191793,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              675
+            ],
+            [
+              0,
+              675
+            ]
+          ]
+        ]
       }
     },
     "warm_female": {
@@ -622,6 +784,37 @@
         "lower_height_gain": -0.09342137977206644,
         "floor_y": -0.02781737022793357,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_06_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_06_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_06_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_06_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_06_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 710,
+        "lower_height_gain": -0.12732428082191796,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              710
+            ],
+            [
+              0,
+              710
+            ]
+          ]
+        ]
       }
     },
     "blunt_male": {
@@ -726,6 +919,37 @@
         "lower_height_gain": -0.10018674732723987,
         "floor_y": -0.02105200267276014,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_07_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_07_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_07_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_07_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_07_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 710,
+        "lower_height_gain": -0.12732428082191793,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              710
+            ],
+            [
+              0,
+              710
+            ]
+          ]
+        ]
       }
     },
     "shy_female": {
@@ -830,6 +1054,37 @@
         "lower_height_gain": -0.09850227343687679,
         "floor_y": -0.02273647656312322,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_08_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_08_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_08_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_08_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_08_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 695,
+        "lower_height_gain": -0.14220240582191795,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              695
+            ],
+            [
+              0,
+              695
+            ]
+          ]
+        ]
       }
     },
     "sensitive_male": {
@@ -934,6 +1189,37 @@
         "lower_height_gain": -0.08758833624080503,
         "floor_y": -0.033650413759194975,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_09_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_09_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_09_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_09_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_09_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 695,
+        "lower_height_gain": -0.14220240582191787,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              695
+            ],
+            [
+              0,
+              695
+            ]
+          ]
+        ]
       }
     },
     "blunt_female": {
@@ -1038,6 +1324,37 @@
         "lower_height_gain": -0.08563513746958878,
         "floor_y": -0.03560361253041122,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_10_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_10_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_10_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_10_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_10_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 710,
+        "lower_height_gain": -0.12732428082191788,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              710
+            ],
+            [
+              0,
+              710
+            ]
+          ]
+        ]
       }
     },
     "shy_male": {
@@ -1142,6 +1459,37 @@
         "lower_height_gain": -0.09547738760947089,
         "floor_y": -0.02576136239052912,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_11_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_11_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_11_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_11_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_11_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 675,
+        "lower_height_gain": -0.16203990582191788,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              675
+            ],
+            [
+              0,
+              675
+            ]
+          ]
+        ]
       }
     },
     "tsundere_male": {
@@ -1246,6 +1594,37 @@
         "lower_height_gain": -0.11550002566480233,
         "floor_y": -0.005738724335197676,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_12_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_12_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_12_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_12_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_12_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 695,
+        "lower_height_gain": -0.1422024058219179,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              695
+            ],
+            [
+              0,
+              695
+            ]
+          ]
+        ]
       }
     },
     "quiet_female": {
@@ -1350,6 +1729,37 @@
         "lower_height_gain": -0.08064376367985981,
         "floor_y": -0.04059498632014019,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_13_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_13_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_13_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_13_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_13_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 665,
+        "lower_height_gain": -0.171958655821918,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              665
+            ],
+            [
+              0,
+              665
+            ]
+          ]
+        ]
       }
     },
     "lively_male": {
@@ -1454,6 +1864,37 @@
         "lower_height_gain": -0.083823063580314,
         "floor_y": -0.03741568641968601,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_14_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_14_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_14_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_14_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_14_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 700,
+        "lower_height_gain": -0.13724303082191797,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              700
+            ],
+            [
+              0,
+              700
+            ]
+          ]
+        ]
       }
     },
     "tsundere_female": {
@@ -1558,6 +1999,37 @@
         "lower_height_gain": -0.09882591211574038,
         "floor_y": -0.02241283788425963,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_15_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_15_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_15_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_15_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_15_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 685,
+        "lower_height_gain": -0.15212115582191796,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              685
+            ],
+            [
+              0,
+              685
+            ]
+          ]
+        ]
       }
     },
     "stern_male": {
@@ -1662,6 +2134,37 @@
         "lower_height_gain": -0.07948607421227194,
         "floor_y": -0.041752675787728066,
         "body_depth": -0.1
+      },
+      "eat_snack": "res://assets/textures/characters/snack_seated_v1/char_16_snack_seated_v1.webp",
+      "listen_music": "res://assets/textures/characters/music_seated_v1/char_16_music_seated_v1.webp",
+      "read_book": "res://assets/textures/characters/reading_seated_v1/char_16_reading_seated_v1.webp",
+      "chat": "res://assets/textures/characters/chat_seated_v1/char_16_chat_seated_v1.webp",
+      "sleep": "res://assets/textures/characters/sleep_seated_v1/char_16_sleep_seated_v1.webp",
+      "sleep_layout": {
+        "split_y": 675,
+        "lower_height_gain": -0.16203990582191788,
+        "desktop_foreground": true,
+        "use_seat_depth": false,
+        "foreground_polygons": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              0
+            ],
+            [
+              1024,
+              675
+            ],
+            [
+              0,
+              675
+            ]
+          ]
+        ]
       }
     }
   },
@@ -1761,5 +2264,9 @@
     "min_depth_m": 0.25,
     "hysteresis_m": 0.08,
     "depth_to_side_ratio": 0.65
+  },
+  "back_pose_variants": {
+    "idle": "idle_back",
+    "chat": "idle_back"
   }
 }

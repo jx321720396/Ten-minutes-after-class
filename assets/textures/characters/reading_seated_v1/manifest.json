@@ -1,0 +1,162 @@
+[
+  {
+    "id": "01",
+    "name": "陈阳",
+    "sprite": "warm_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_01_idle_seated_v1.webp",
+    "file": "char_01_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-b87437d9-4afb-492c-a2f8-71de3ea4cfbe.png",
+    "pose": "read_book",
+    "book": "botany"
+  },
+  {
+    "id": "02",
+    "name": "林晚",
+    "sprite": "sensitive_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_02_idle_seated_v1.webp",
+    "file": "char_02_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-1c8311a3-8d71-457c-ad62-02c1f11926a6.png",
+    "pose": "read_book",
+    "book": "stars"
+  },
+  {
+    "id": "03",
+    "name": "张渊",
+    "sprite": "quiet_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_03_idle_seated_v1.webp",
+    "file": "char_03_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-9173b03a-ab91-4cb4-bc4c-0de9a1d48896.png",
+    "pose": "read_book",
+    "book": "mountains"
+  },
+  {
+    "id": "04",
+    "name": "周敏",
+    "sprite": "stern_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_04_idle_seated_v1.webp",
+    "file": "char_04_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-1d5f810e-2185-4372-80be-43ce3a12012c.png",
+    "pose": "read_book",
+    "book": "adventure"
+  },
+  {
+    "id": "05",
+    "name": "赵蕊",
+    "sprite": "lively_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_05_idle_seated_v1.webp",
+    "file": "char_05_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-a5017874-5dae-4852-8c15-ee9b57c369c7.png",
+    "pose": "read_book",
+    "book": "cat"
+  },
+  {
+    "id": "06",
+    "name": "孙悦",
+    "sprite": "warm_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_06_idle_seated_v1.webp",
+    "file": "char_06_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-7219e043-2ee7-4cab-ab9e-b487554eee24.png",
+    "pose": "read_book",
+    "book": "botany"
+  },
+  {
+    "id": "07",
+    "name": "郑浩",
+    "sprite": "blunt_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_07_idle_seated_v1.webp",
+    "file": "char_07_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-34cb72a6-8885-41ad-b16e-6c5070d6456d.png",
+    "pose": "read_book",
+    "book": "stars"
+  },
+  {
+    "id": "08",
+    "name": "许静",
+    "sprite": "shy_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_08_idle_seated_v1.webp",
+    "file": "char_08_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-37f4e305-0469-43e4-862d-3a00057e18ac.png",
+    "pose": "read_book",
+    "book": "mountains"
+  },
+  {
+    "id": "09",
+    "name": "何川",
+    "sprite": "sensitive_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_09_idle_seated_v1.webp",
+    "file": "char_09_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-6c82f1e2-1d1f-48e0-af23-d060e9de6f41.png",
+    "pose": "read_book",
+    "book": "adventure"
+  },
+  {
+    "id": "10",
+    "name": "韩雪",
+    "sprite": "blunt_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_10_idle_seated_v1.webp",
+    "file": "char_10_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-f007c72b-462f-4779-b973-9b58f74dbb0d.png",
+    "pose": "read_book",
+    "book": "cat"
+  },
+  {
+    "id": "11",
+    "name": "沈浪",
+    "sprite": "shy_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_11_idle_seated_v1.webp",
+    "file": "char_11_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-36ce1bc6-6fa2-47ec-92ad-fef1cce5fd6b.png",
+    "pose": "read_book",
+    "book": "botany"
+  },
+  {
+    "id": "12",
+    "name": "顾言",
+    "sprite": "tsundere_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_12_idle_seated_v1.webp",
+    "file": "char_12_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-560791e4-87b0-4cb7-a4bc-740d53552bdc.png",
+    "pose": "read_book",
+    "book": "stars"
+  },
+  {
+    "id": "13",
+    "name": "叶梓",
+    "sprite": "quiet_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_13_idle_seated_v1.webp",
+    "file": "char_13_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-ba19b4d3-23fb-4e22-a9d9-ec3dc9928e63.png",
+    "pose": "read_book",
+    "book": "mountains"
+  },
+  {
+    "id": "14",
+    "name": "佳豪",
+    "sprite": "lively_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_14_idle_seated_v1.webp",
+    "file": "char_14_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-3d99fdcf-5212-4b04-add0-fa4653220344.png",
+    "pose": "read_book",
+    "book": "adventure"
+  },
+  {
+    "id": "15",
+    "name": "温雅",
+    "sprite": "tsundere_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_15_idle_seated_v1.webp",
+    "file": "char_15_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-797a4066-2335-4dec-9d98-2f2ec3ae0767.png",
+    "pose": "read_book",
+    "book": "cat"
+  },
+  {
+    "id": "16",
+    "name": "李峥",
+    "sprite": "stern_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_16_idle_seated_v1.webp",
+    "file": "char_16_reading_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-d98c0ad7-8f53-4d26-8ed7-0a88ceae4eaa.png",
+    "pose": "read_book",
+    "book": "botany"
+  }
+]

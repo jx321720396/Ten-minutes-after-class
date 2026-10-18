@@ -81,16 +81,6 @@ func _classroom_capture() -> void:
 	profile.open_profile(actors._seated_poses.keys()[0])
 	await _save("profile_natural_standing.png")
 	profile.close()
-	var entry = room.get_node("UI/ClueBoardEntry")
-	var students: Array = actors._seated_poses.keys()
-	for index in range(students.size() - 1):
-		entry.record_observed_event(
-			{"kind": "chat", "i": students[index], "j": students[index + 1]},
-			{"day": 1, "global_tick": index + 1}
-		)
-	entry.open()
-	await _save("board_natural_standing.png")
-	entry.close()
 
 
 func _save(filename: String) -> void:

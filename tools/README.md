@@ -1,5 +1,7 @@
 # tools/ —— 离线脚本
 
+贴图压缩：`py -X utf8 tools/compress_textures.py` 默认只预览；应用时使用 `--apply --backup <项目外的新目录>`，默认质量 80，保留尺寸与透明通道，跳过法线／材质、像素原型、图标及标志。应用后通过 Godot 正常 `--headless --path . --import` 更新导入资源。逐文件原图与 compression-report.json 保存在备份目录。降低的是磁盘／包内资源大小，不降低分辨率或保证显存下降。
+
 考试漫画验收：`godot --headless --path . --script res://tools/smoke_exam_comic.gd` 检查自动播放、冻结、成绩接线、未达标与防重复结算；加 `-- --live` 验证真实教室入口。使用图形渲染并加 `-- --capture` 可生成分镜与成绩截图至 `tools/out/exam_comic/`。
 
 压力灯光验证：`godot --headless --path . --script tools/verify_pressure_lighting.gd` 检查真实教室平滑过渡、固定镜头更新、旧玩家排除及压力只读；去掉 `--headless` 可生成三档截图至 `tools/out/pressure_lighting/`。
@@ -26,7 +28,7 @@
 | [`calib_experiment.py`](calib_experiment.py) | **标定对照实验**：跑不同 `β` / 保留率 / 负反馈组合，输出均值、饱和率、SD（分化度） | `python tools/calib_experiment.py 25` |
 | [`check_config.py`](check_config.py) | **配置表启动校验**：档位一致性 / 取值域 / 门槛与先验关系 / 趋势性等，含导航烘焙口径（`nav_max_climb < nav_blocker_height`），可接 CI | `python tools/check_config.py` |
 | [`check_export_imports.py`](check_export_imports.py) | **导出前检查**：`data/**/*.csv` 的 `.import` 必须全部是 `importer="keep"`、`type=""`；否则 `csv_translation` 导入器会接管 CSV，安卓包丢表（桌面端不受影响） | `python tools/check_export_imports.py` |
-| [`day_budget.py`](day_budget.py) | **一天收支预算（只算账）**：从 `data/rules/*.csv` 读速率与耗时，算一整天各状态的动力／压力／收益、老师一日动力上限、阈值维持成本、邻座涓流扩散上限与第八天 380 的算术可达性；不改任何数值 | `python tools/day_budget.py` |
+| [`day_budget.py`](day_budget.py) | **一天收支预算（只算账）**：从 `data/rules/*.csv` 读速率与耗时，算一整天各状态的动力／压力／收益、老师一日动力上限、阈值维持成本、邻座涓流扩散上限与第八天目标均分（现 450）的算术可达性；不改任何数值 | `python tools/day_budget.py` |
 | [`bake_classroom_nav.gd`](bake_classroom_nav.gd) | **教室导航网格烘焙**（GDScript，需 Godot）：参数取自 `data/rules/movement.csv`，产物 `resources/navigation/classroom_nav.tres`；改了教室占位几何后必须重跑 | `godot --headless --path . --script tools/bake_classroom_nav.gd` |
 | [`md2docx.py`](md2docx.py) | **md → docx 导出**：标题 / 表格 / 代码块 / 行内格式，输出到 `docs/export/` | `python tools/md2docx.py --all` |
 | [`export_ticks.py`](export_ticks.py) | **逐 tick 状态导出（对拍基建）**：hook 内核 `tick`，导出同种子逐 tick 的关系三轴 / 透明度 / 压力统计与矩阵哈希，供 GDScript 移植后逐 tick 对拍（冲刺计划 D6–D9） | `python tools/export_ticks.py --days 3 --seed 12345 --npc 8` |

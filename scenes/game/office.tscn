@@ -136,11 +136,6 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Board" type="Button" parent="Design/Footer"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-
 [node name="Encyclopedia" type="Button" parent="Design/Footer"]
 unique_name_in_owner = true
 layout_mode = 2

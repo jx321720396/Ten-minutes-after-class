@@ -1,0 +1,146 @@
+[
+  {
+    "id": "01",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-faf9eca9-3381-44b3-ab6b-7012d1a99347.png",
+    "name": "陈阳",
+    "sprite": "warm_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_01_idle_seated_v1.webp",
+    "file": "char_01_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "02",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-2863f919-3e42-42bc-a6c0-5b66253ba685.png",
+    "name": "林晚",
+    "sprite": "sensitive_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_02_idle_seated_v1.webp",
+    "file": "char_02_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "03",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-d811be50-8d99-46a6-8c27-a8d31b521219.png",
+    "name": "张渊",
+    "sprite": "quiet_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_03_idle_seated_v1.webp",
+    "file": "char_03_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "04",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-cf6dfc6f-3838-4e93-917a-627d914ffd82.png",
+    "name": "周敏",
+    "sprite": "stern_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_04_idle_seated_v1.webp",
+    "file": "char_04_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "05",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-fefbe0eb-01da-4ac7-b0ed-8b8222f9a534.png",
+    "name": "赵蕊",
+    "sprite": "lively_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_05_idle_seated_v1.webp",
+    "file": "char_05_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "06",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-4a058364-ebd5-4c5b-b16c-293e2d33c86d.png",
+    "name": "孙悦",
+    "sprite": "warm_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_06_idle_seated_v1.webp",
+    "file": "char_06_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "07",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-b047041e-38b5-4327-ac7e-88a4ebf071db.png",
+    "name": "郑浩",
+    "sprite": "blunt_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_07_idle_seated_v1.webp",
+    "file": "char_07_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "08",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-aefb9fea-8ff0-4d87-9986-a41f8488ab7b.png",
+    "name": "许静",
+    "sprite": "shy_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_08_idle_seated_v1.webp",
+    "file": "char_08_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "09",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-2c67c137-b908-4a32-b6e4-eedf6b75fd82.png",
+    "name": "何川",
+    "sprite": "sensitive_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_09_idle_seated_v1.webp",
+    "file": "char_09_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "10",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-dbd8e3be-6679-42bd-b13b-2c34a5b21c27.png",
+    "name": "韩雪",
+    "sprite": "blunt_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_10_idle_seated_v1.webp",
+    "file": "char_10_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "11",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-cde741ca-eda0-436c-ad9b-00aaf16f3353.png",
+    "name": "沈浪",
+    "sprite": "shy_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_11_idle_seated_v1.webp",
+    "file": "char_11_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "12",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-6d59d060-251e-4ead-8356-5646c059903f.png",
+    "name": "顾言",
+    "sprite": "tsundere_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_12_idle_seated_v1.webp",
+    "file": "char_12_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "13",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-fe08ea63-5533-489b-9efc-0b76b2ed1595.png",
+    "name": "叶梓",
+    "sprite": "quiet_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_13_idle_seated_v1.webp",
+    "file": "char_13_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "14",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-bd5bc6e7-005d-412e-a57b-f3b458f64ac7.png",
+    "name": "佳豪",
+    "sprite": "lively_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_14_idle_seated_v1.webp",
+    "file": "char_14_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "15",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-d0a46804-cdfb-4aa5-888f-dc22768fb670.png",
+    "name": "温雅",
+    "sprite": "tsundere_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_15_idle_seated_v1.webp",
+    "file": "char_15_phone_seated_v1.webp",
+    "pose": "phone"
+  },
+  {
+    "id": "16",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-d358335a-3c36-4397-b853-7032ba33815a.png",
+    "name": "李峥",
+    "sprite": "stern_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_16_idle_seated_v1.webp",
+    "file": "char_16_phone_seated_v1.webp",
+    "pose": "phone"
+  }
+]

@@ -1,7 +1,6 @@
 extends GutTest
 
 const PROFILE = preload("res://scenes/ui/npc_profile.tscn")
-const BOARD = preload("res://scenes/ui/clue_board.tscn")
 
 
 func test_all_students_share_manifest_portraits_without_classroom_actors() -> void:
@@ -14,11 +13,8 @@ func test_all_students_share_manifest_portraits_without_classroom_actors() -> vo
 	assert_eq(config.portraits.size(), 16, "全班16人均须配置画像")
 	var core := SimCore.new(12345, 16)
 	var profile = PROFILE.instantiate()
-	var board = BOARD.instantiate()
 	add_child_autofree(profile)
-	add_child_autofree(board)
 	profile.bind_sources(core, null, null)
-	board._core = core
 	for entry in manifest:
 		var index := -1
 		for candidate in range(core.node_count()):
@@ -29,14 +25,10 @@ func test_all_students_share_manifest_portraits_without_classroom_actors() -> vo
 			continue
 		assert_eq(core.alias(index), str(entry.name), "按当前16人ID与姓名映射")
 		var portrait: Texture2D = profile._texture_for(index)
-		var board_portrait: Texture2D = board._portrait(index)
 		assert_true(portrait is AtlasTexture, "%s 须使用上半身裁切" % entry.name)
-		assert_true(board_portrait is AtlasTexture, "%s 推理板须独立取图" % entry.name)
-		if not portrait is AtlasTexture or not board_portrait is AtlasTexture:
+		if not portrait is AtlasTexture:
 			continue
 		assert_eq(portrait.atlas.resource_path, str(entry.reference))
-		assert_eq(board_portrait.atlas.resource_path, portrait.atlas.resource_path)
-		assert_eq(board_portrait.region, portrait.region)
 		var bounds := Rect2(Vector2.ZERO, portrait.atlas.get_size())
 		assert_true(bounds.encloses(portrait.region), "裁切不出源图边界")
 		assert_gt(portrait.region.size.x, 0.0)

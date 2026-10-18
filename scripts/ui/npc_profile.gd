@@ -60,7 +60,6 @@ func _ready() -> void:
 	%RelationsTab.pressed.connect(_show_page.bind(false))
 	%StatusTab.pressed.connect(_show_page.bind(true))
 	%Chat.pressed.connect(_on_summon)
-	%OpenBoard.pressed.connect(_on_tool.bind("board"))
 	%OpenEncyclopedia.pressed.connect(_on_tool.bind("encyclopedia"))
 	for axis in AXIS_NODES:
 		for band in _config.judgment_bands:
@@ -68,7 +67,6 @@ func _ready() -> void:
 				_on_mark.bind(axis, str(band))
 			)
 	%Chat.disabled = true
-	%OpenBoard.disabled = true
 	%OpenEncyclopedia.disabled = true
 	get_viewport().size_changed.connect(_fit)
 	_fit()
@@ -99,7 +97,6 @@ func update_student_snapshot(index: int, snapshot: Dictionary) -> void:
 
 func enable_teacher_navigation() -> void:
 	%Chat.disabled = false
-	%OpenBoard.disabled = false
 	%OpenEncyclopedia.disabled = false
 
 

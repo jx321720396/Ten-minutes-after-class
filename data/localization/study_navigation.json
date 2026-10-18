@@ -5,11 +5,6 @@
     "text": "人物资料",
     "icon": "res://assets/icons/actions/observe.svg"
   },
-  "board": {
-    "node_name": "OpenBoard",
-    "text": "推理板",
-    "icon": "res://assets/icons/actions/board.svg"
-  },
   "encyclopedia": {
     "node_name": "OpenEncyclopedia",
     "text": "百科全书",

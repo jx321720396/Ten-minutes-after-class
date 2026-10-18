@@ -1,0 +1,162 @@
+[
+  {
+    "id": "01",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-c960e23f-15f0-4f73-b6d9-a2c12abf21c3.png",
+    "name": "陈阳",
+    "sprite": "warm_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_01_idle_seated_v1.webp",
+    "file": "char_01_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 695
+  },
+  {
+    "id": "02",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-73405cb3-7e05-4788-bd74-3e7aa97631d7.png",
+    "name": "林晚",
+    "sprite": "sensitive_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_02_idle_seated_v1.webp",
+    "file": "char_02_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 665
+  },
+  {
+    "id": "03",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-cf135b21-91df-4f07-8d03-6b533e62aa24.png",
+    "name": "张渊",
+    "sprite": "quiet_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_03_idle_seated_v1.webp",
+    "file": "char_03_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 685
+  },
+  {
+    "id": "04",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-0137eb1e-d04d-40f7-bdbd-d3f7b9af6e9b.png",
+    "name": "周敏",
+    "sprite": "stern_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_04_idle_seated_v1.webp",
+    "file": "char_04_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 700
+  },
+  {
+    "id": "05",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-42013ed2-e7e7-4b29-bdaa-2769484a781a.png",
+    "name": "赵蕊",
+    "sprite": "lively_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_05_idle_seated_v1.webp",
+    "file": "char_05_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 675
+  },
+  {
+    "id": "06",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-724643e5-3dc6-416d-96a3-760bef400701.png",
+    "name": "孙悦",
+    "sprite": "warm_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_06_idle_seated_v1.webp",
+    "file": "char_06_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 710
+  },
+  {
+    "id": "07",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-75e88be5-744b-466d-9bcf-8e10a0c28238.png",
+    "name": "郑浩",
+    "sprite": "blunt_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_07_idle_seated_v1.webp",
+    "file": "char_07_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 710
+  },
+  {
+    "id": "08",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-902e6d86-b614-4c89-b444-d2a741cb65da.png",
+    "name": "许静",
+    "sprite": "shy_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_08_idle_seated_v1.webp",
+    "file": "char_08_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 695
+  },
+  {
+    "id": "09",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-6197e415-a385-460e-8f58-6194e8cded3e.png",
+    "name": "何川",
+    "sprite": "sensitive_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_09_idle_seated_v1.webp",
+    "file": "char_09_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 695
+  },
+  {
+    "id": "10",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-b88c0922-b6f5-46ca-9030-eb7f03669830.png",
+    "name": "韩雪",
+    "sprite": "blunt_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_10_idle_seated_v1.webp",
+    "file": "char_10_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 710
+  },
+  {
+    "id": "11",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-de1b1b24-d0ff-4de4-8565-0db47248ba42.png",
+    "name": "沈浪",
+    "sprite": "shy_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_11_idle_seated_v1.webp",
+    "file": "char_11_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 675
+  },
+  {
+    "id": "12",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-c25225f1-d37f-4256-84e0-c1c35e2a064a.png",
+    "name": "顾言",
+    "sprite": "tsundere_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_12_idle_seated_v1.webp",
+    "file": "char_12_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 695
+  },
+  {
+    "id": "13",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-9e095a2d-2ce3-4d81-b0a2-da32b1ab0502.png",
+    "name": "叶梓",
+    "sprite": "quiet_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_13_idle_seated_v1.webp",
+    "file": "char_13_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 665
+  },
+  {
+    "id": "14",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-cdda2092-7cc0-4a8b-8f58-ca7c094b48bb.png",
+    "name": "佳豪",
+    "sprite": "lively_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_14_idle_seated_v1.webp",
+    "file": "char_14_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 700
+  },
+  {
+    "id": "15",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-5125b88d-daba-4ad0-a82c-31f819540ab1.png",
+    "name": "温雅",
+    "sprite": "tsundere_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_15_idle_seated_v1.webp",
+    "file": "char_15_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 685
+  },
+  {
+    "id": "16",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-54cb8ffc-57a1-458b-8b9d-34281a90ec94.png",
+    "name": "李峥",
+    "sprite": "stern_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_16_idle_seated_v1.webp",
+    "file": "char_16_sleep_seated_v1.webp",
+    "pose": "sleep",
+    "desktop_contact_y": 675
+  }
+]

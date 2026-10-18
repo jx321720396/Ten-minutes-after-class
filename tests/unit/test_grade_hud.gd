@@ -15,7 +15,15 @@ func _stack() -> Array:
 	add_child_autofree(hud)
 	hud.bind_clock(clock)
 	hud.set_process(false)
-	return [core, clock, hud]
+	return [core, clock, hud, tables]
+
+
+## 目标均分从 `data/rules/exam.csv` 的 `exam_target_mean_1` 读，不在测试里写死数字。
+func _exam_target_mean(tables: Dictionary) -> float:
+	for row in tables.get("rules/exam", {}).get("rows", []):
+		if str(row.get("param", "")) == "exam_target_mean_1":
+			return float(row.get("value", "0"))
+	return 0.0
 
 
 func _goal_text(hud: TimeHUD) -> String:
@@ -37,15 +45,16 @@ func test_goal_gap_tracks_student_grades() -> void:
 	var core: SimCore = parts[0]
 	var clock: SimulationClock = parts[1]
 	var hud: TimeHUD = parts[2]
-	# D05：首次考试第八天，目标均分 380。
+	# D05：目标均分取自配置（2026-10-18 起 exam_target_mean_1 = 450）。
+	var target := _exam_target_mean(parts[3])
 	for index in range(core.node_count()):
 		core._grade[index] = 300.0
 	clock.time_updated.emit(clock.snapshot())
-	assert_true(_goal_text(hud).contains("还差 80 分"), _goal_text(hud))
+	assert_true(_goal_text(hud).contains("还差 %d 分" % int(target - 300.0)), _goal_text(hud))
 	for index in range(core.node_count()):
 		core._grade[index] = 355.0
 	clock.time_updated.emit(clock.snapshot())
-	assert_true(_goal_text(hud).contains("还差 25 分"), _goal_text(hud))
+	assert_true(_goal_text(hud).contains("还差 %d 分" % int(target - 355.0)), _goal_text(hud))
 
 
 func test_reached_goal_does_not_show_negative_gap() -> void:

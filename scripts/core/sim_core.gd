@@ -27,6 +27,7 @@ const PASSIVES = preload("res://scripts/core/passives.gd")
 const BEHAVIOR_CONTEXT = preload("res://scripts/systems/behaviors/behavior_context.gd")
 const BEHAVIOR_REGISTRY = preload("res://scripts/systems/behaviors/behavior_registry.gd")
 const ACTIVITY_SESSIONS = preload("res://scripts/core/activity_sessions.gd")
+const FREE_ROAM = preload("res://scripts/core/free_roam.gd")
 const INTERACTION_SPACE = preload("res://scripts/core/interaction_space.gd")
 ## 闲聊空间几何（2026-10-16 从已删的 rules/player_interaction.csv 迁出，见 rules/chat_space.csv）
 const CHAT_SPACE_TABLE := "rules/chat_space"
@@ -161,8 +162,10 @@ var _vitality := PackedFloat64Array()
 var _gain_today := PackedFloat64Array()
 ## 崩溃标记：压力 >90 进入，<70 恢复；一次连续崩溃只计一次（D01 / D06）
 var _broken: Array = []
-## 本课间状态："study" / "play" / "free"（段首按动力决定，持续一个课间；D01）
+## 本课间状态："study" / "play" / "free"（段首按动力决定；中途跨线也进入并锁定，见 FreeRoam）
 var _phase_state: Array = []
+## 本段「已尝试加入好感最高者」的标记（段序号 = day*10+phase_index）；只作冷却，不存档。
+var _best_join_phase := PackedInt32Array()
 ## 学习／娱乐／游戏的结算游标（按秒累计，每满一个单位结算一次；D02）
 var _settle_acc: Array = []
 ## 配置：rules/psyche.csv（心理状态与跨天）、rules/activities.csv（单位与结算）
@@ -349,6 +352,7 @@ func _reset_runtime(n: int) -> void:
 	_snack_of = []
 	_snack_provider = []
 	_joined_tick = []
+	_best_join_phase = PackedInt32Array()
 	_share_units = {}
 	_knot_days = []
 	for _i in range(n):
@@ -372,6 +376,7 @@ func _reset_runtime(n: int) -> void:
 		_snack_of.append(null)
 		_snack_provider.append(null)
 		_joined_tick.append(-1)
+		_best_join_phase.append(-1)
 		_study_start_tick.append(-1)
 		_knot_days.append(0)
 		_resting.append(false)
@@ -393,7 +398,7 @@ func _init_relations() -> void:
 	_apply_bindings()
 
 
-## 绑定组覆盖（按 bindings.csv 行序，后行覆盖前行）。
+## 绑定组覆盖（bindings.csv 行序，后行覆盖前行）；2026-10-19 起表为空，机制保留。
 func _apply_bindings() -> void:
 	var by_alias := {}
 	for i in range(_chars.size()):
@@ -689,7 +694,11 @@ func run_day() -> int:
 ## 误调会把课间结算重复一遍）。只推进游标到下一段；class 从不是末相位，故不会触发 _settle_day。
 func skip_class() -> void:
 	var gain := float(_acts["class_gain"])
+	# D05 考试日不计入上课；§5.3 崩溃休息者当天不产生学业收益 —— 两类都不发这一节的收益。
+	var paying := not _is_exam_only_day()
 	for i in range(_n):
+		if not paying or _broken[i]:
+			continue
 		_gain_today[i] += gain
 	# 崩溃判定保留：跳过期间压力冻结，跳过时判一次 = class 结束时判一次（兜底边界的邻居涓流抬压）。
 	# 睡觉跨段（2026-10-19）：先结算睡下的人再判崩溃，否则新崩溃者会被同一次结算唤醒。
@@ -701,14 +710,9 @@ func skip_class() -> void:
 
 
 ## 行为完成结算：把**已到期**的占用收尾（§10.4 / §12.2 行为耗时契约）。
-## 占用到期即「这件事做完了」：清 _current_act、清 _busy_phase，并把行为名写进
-## _last_finished（仅本 tick 有效）。**「行为完成才发信息」的规则必须挂在这里**
-## （例如玩家的闲聊线索），不能挂在「发起」上 —— 发起不等于做完。
-## ⚠️ 与「被铃声打断」严格互斥：到期的不算被打断；未到期的才可能被 _check_interrupt()
-## 在相位切换时处理。两边都不重复记。
-##
-## 顺序（计划 §5.3）：① 认定到期 → ② 读取这一刻情报并写入本局日志 → ③ 清理活动／占用
-## → ④ 发布线索与完成通知（下一步才继续本 tick 的 NPC 决策）。
+## 到期即「做完了」：写 _last_finished（仅本 tick 有效）、清占用；「行为完成才发信息」必须挂这里，
+## 不能挂「发起」。与「被铃声打断」严格互斥：到期的不算打断，未到期的由 _check_interrupt 处理。
+## 顺序：① 认定到期 → ② 清理活动／占用 → ③ 发布完成通知（再继续本 tick 的 NPC 决策）。
 func _settle_finished_actions() -> void:
 	_last_finished = []
 	for i in range(_n):
@@ -792,6 +796,8 @@ func _tick() -> void:
 	# D03：老师命令按秒推进（上课期间由 TeacherCommands 自行挂起，不产生效果）。
 	if _phase == "break":
 		_teacher_commands.tick(self)
+	# 自由状态中途跨线即进入学习／游戏并锁定（2026-10-19 用户裁定），再进决策。
+	FREE_ROAM.refresh_states(self)
 	_decide_and_act()
 	_term_record.tick_state(self)
 	_settle_units()
@@ -812,7 +818,9 @@ func _tick() -> void:
 ## 未完成的余额不在这里结算：自然完成 / 被打断时由 _fold_pending_unit 按 D02 第 4 条折算。
 func _settle_units() -> void:
 	# D02 + 2026-10-16 裁定：学习单位在**任何段**都结算（上课也积累学业收益）；
-	# 娱乐／游戏状态只在课间结算 —— 规格写明上课不执行课间事件。
+	# 娱乐／游戏状态只在课间结算 —— 规格写明上课不执行课间事件。D05：考试日一律不结算。
+	if _is_exam_only_day():
+		return
 	var in_break := _phase == "break"
 	var study_seconds := float(_acts["study_settle_seconds"])
 	var play_seconds := float(_acts["play_settle_seconds"])
@@ -828,6 +836,7 @@ func _settle_units() -> void:
 			continue
 		_settle_acc[i] += 1.0
 		if kind == "study":
+			var settled := false
 			while _settle_acc[i] >= study_seconds:
 				_settle_acc[i] -= study_seconds
 				# 请教者免动力（2026-10-17 交接「多人请教」）：加入他人学习的跟随者
@@ -839,6 +848,12 @@ func _settle_units() -> void:
 				var unit: Dictionary = _passives.study_unit(i, float(_acts["study_gain"]), cost)
 				_gain_today[i] += float(unit["gain"])
 				add_vitality(i, -float(unit["cost"]))
+				settled = true
+			# §5.1.1：自由状态的自主学习只做一个单位，完成后重选，不锁整段（请教跟随者仍按组结算）。
+			if settled and _is_solo_free_study(i):
+				_settle_acc[i] = 0.0
+				_current_act[i] = null
+				_busy_until[i] = 0
 		elif kind == "play":
 			while _settle_acc[i] >= play_seconds:
 				_settle_acc[i] -= play_seconds
@@ -855,8 +870,7 @@ func _settle_units() -> void:
 					add_stress(i, per_unit)
 
 
-## 该生此刻按哪一类结算："" = 不结算｜"study"｜"play"｜"leisure"。
-## 学习状态与游戏状态来自段首判定（D01），自由状态则看当前动作（D02）。
+## 该生此刻按哪一类结算："" = 不结算｜"study"｜"play"｜"leisure"（状态来自段首判定或中途跨线锁定）。
 func _unit_kind(i: int) -> String:
 	if _broken[i] or _sleeping[i] or not is_present(i):
 		return ""
@@ -870,6 +884,13 @@ func _unit_kind(i: int) -> String:
 	if act != null and LEISURE_KINDS.has(act):
 		return "leisure"
 	return ""
+
+
+## §5.1.1：自由状态里自己投入的学习只做一个单位，完成后重选（请教跟随者不算）。
+func _is_solo_free_study(i: int) -> bool:
+	if i >= _phase_state.size() or str(_phase_state[i]) != "free":
+		return false
+	return _current_act[i] == "study" and _study_of[i] == null
 
 
 ## 未完成单位的折算（D02 第 4 条）：压力按每 2 秒 1 点折算，学业收益只按整数单位计（不足不计）。
@@ -888,9 +909,8 @@ func _fold_pending_unit(i: int) -> void:
 		add_stress(i, -relief)
 
 
-## 崩溃判定（D01 / D06）：压力 >90 → 崩溃（立即中断活动、保留已得收益）；
-## 压力 <70 → 恢复，下一个正常决策点按动力选择活动。一次连续崩溃只计一次。
-## 待确认（合并稿未定）：自然恢复方式、安抚幅度与耗时 —— 本实现不额外减压。
+## 崩溃判定（D01 / D06）：压力 >90 进入崩溃（中断活动、保留已得收益），当天只睡觉；
+## 次日跨天特殊恢复（§5.3）。一次连续崩溃只计一次。
 func _check_breakdown() -> void:
 ## 崩溃与恢复（§5.3，2026-10-16）：压力 > 阈值进入崩溃休息 —— 当天只睡觉、不学习不社交、
 ## 不参加座位结算；**次日跨天时**特殊恢复（压力／动力各减固定值）并解除。旧「压力 <70 即时恢复」出口已废止。
@@ -989,9 +1009,8 @@ func _seat_relation_between(i: int, j: int) -> String:
 	return "far"
 
 
-## 座位基础关系结算（D04 / §8.2、§8.4）：每个课间末读一次状态，结算一次。
-## 正交邻座双方好感 +2、对角不加、一圈以外双方 −1；学习者的正交娱乐邻座敌对 +5（不反向）。
-## 只在不同学生之间写入，不对自身关系增减。
+## 座位基础关系结算（D04 / §8.2、§8.4）：每个课间末读一次状态，结算一次。正交邻座双方好感 +2、
+## 对角不加、一圈以外双方 −1；学习者的正交娱乐邻座敌对 +5（不反向）。只在不同学生之间写入。
 func _settle_seat_relations() -> void:
 	var orth := float(_seat_rel.get("orthogonal_h", 0.0))
 	var diag := float(_seat_rel.get("diagonal_h", 0.0))
@@ -1027,10 +1046,8 @@ func _settle_seat_relations() -> void:
 	_term_record.capture(self, "seat_relations")
 
 
-## 游戏状态（D01 / D02）：动力 <30 的学生整课间处于游戏状态，结算走 play 口径（见 _settle_units）。
-## 做哪一类自指娱乐由 `data/rules/behavior_probs.csv` 的 `*_p` 概率决定（2026-10-17：不再写死
-## 「玩手机」，游戏状态范围与自由状态娱乐共用同一张概率表；概率为 0 即移出该状态范围）。
-## 一次决策只掷一次随机数；没有可选娱乐时返回 false 且不消耗随机数。
+## 游戏状态（D01 / D02）：动力 <30 整课间走 play 口径（见 _settle_units）；做哪类自指娱乐由
+## `behavior_probs.csv` 的 `*_p` 概率决定（2026-10-17，与自由状态共用），一次决策只掷一次。
 func _start_play_activity(i: int) -> bool:
 	var kinds: Array[String] = []
 	var weights: Array[float] = []
@@ -1836,6 +1853,9 @@ func _verdict(i: int, j: int, kind: String = "join") -> Dictionary:
 func _roll_sleep() -> void:
 	if _phase != "break":
 		return
+	# D05：考试当天只有考试 —— 不掷睡觉，当天 NPC 不产生任何活动。
+	if _is_exam_only_day():
+		return
 	if not _allowed("sleep"):
 		return
 	var p := float(_probs["sleep"])
@@ -1850,8 +1870,8 @@ func _roll_sleep() -> void:
 			_stats["sleeps"] = int(_stats["sleeps"]) + 1
 
 
-## 一 tick 内的行为决策：休闲 → 学习 → 闲聊 / 打闹（通用加入 §9.1.4）→ 带朋友 pass。
-## 铁律：决策顺序按索引升序（可复现，取代 Python 的 shuffle）；决策读「我对他」的 A/H（§18.7 不变式 3）。
+## 一 tick 内的行为决策：加入好感最高者 → 休闲 → 学习 → 闲聊 / 打闹 → 带朋友 pass。
+## 决策顺序按洗牌（可复现）；决策读「我对他」的 A/H（§18.7 不变式 3）。
 func _decide_and_act() -> void:
 	var n := _n
 	# D05：考试当天只有考试 —— 学生不做普通行为决策（不产生事件与相关结算）。
@@ -1896,6 +1916,10 @@ func _decide_and_act() -> void:
 			if _teacher_commands.try_encourage(self, i):
 				busy[i] = true
 				continue
+		# 自由状态先去找「自己好感最高的人」，按对方正在做的事加入（每课间一次）。
+		if state == "free" and FREE_ROAM.try_join_best(self, i):
+			busy[i] = true
+			continue
 		var leisure_started := false
 		for kind in LEISURE_KINDS:
 			var prefix: String = LEISURE_KINDS[kind]
@@ -1977,8 +2001,8 @@ func inventory_of(i: int) -> Dictionary:
 	}
 
 
-func _start_leisure(i: int, kind: String) -> bool:
-	return LeisureActions.start_leisure(self, i, kind)
+func _start_leisure(i: int, kind: String, ignore_book: bool = false) -> bool:
+	return LeisureActions.start_leisure(self, i, kind, ignore_book)
 
 
 func is_busy(i: int) -> bool:
@@ -2307,9 +2331,8 @@ func _join_margin() -> float:
 
 
 func _activity_past_half(akind: String, grp: Dictionary) -> bool:
-	## 发起者活动进度超过一半则拒绝新人（2026-10-17 交接「人数与时限」）：恰好一半允许。
-	## 目前只对学习（多人请教）生效，进度 = 原学习者已学时长 / 其整段学习时长（到课间末）。
-	## 聊天 / 打闹 / 零食的「发起者进度基准」待后续接入（聊天逐人结束替换为进度基准）。
+	## 发起者活动进度超过一半则拒绝新人（2026-10-17 交接）：恰好一半允许。目前只对学习生效，
+	## 进度 = 原学习者已学时长 / 其整段学习时长；聊天 / 打闹 / 零食的进度基准待接入。
 	if akind != "study":
 		return false
 	var orig := int(grp.get("originator", -1))
@@ -2362,8 +2385,7 @@ func _find_partner(i: int, kind: String) -> int:
 
 func _join_activity_of(j: int) -> Array:
 	## j 的当前活动（只读，通用加入视角）。返回 [kind, group]；group 为 null 表示独自活动。
-	## "idle" = 空闲；"solo" = 独自的不可共享活动（听歌/读课外书，§9.1.4 未开放加入）；
-	## "play" = 游戏锁定（不可被拉出，2026-10-17 交接）。
+	## "idle" = 空闲；"play" = 游戏锁定（不可被拉出）；听歌／看书返回具体 kind（可共享加入）。
 	# 状态锁定（D01，2026-10-17）：学习锁定视同学习（可被请教、不被拉去别的活动）；
 	# 游戏锁定不可被拉出。崩溃／睡觉由 _join_blocked 排除，这里防御性再挡一次。
 	if not _broken[j] and not _sleeping[j] and _phase_state.size() > j:
@@ -2383,7 +2405,8 @@ func _join_activity_of(j: int) -> Array:
 		(_busy_act[j] == "listen_music" or _busy_act[j] == "read_book")
 		and _global_tick < _busy_until[j]
 	):
-		return ["solo", null]
+		# 个人娱乐（2026-10-19）：听歌／看书可被加入，跟随者与发起者同步结束。
+		return [str(_busy_act[j]), null]
 	return ["idle", null]
 
 
@@ -2499,7 +2522,7 @@ func _propose_activity(i: int, j: int, kind: String) -> bool:
 		_stats["join_accepts"] = int(_stats.get("join_accepts", 0)) + 1
 		_log_join_event(i, [j], "follow", kind, vote["yes"], vote["no"], {"follower": j})
 		return true
-	# i 更在意 j：i 加入 j 的原活动（原活动须可加入；听歌/读书未开放共享）
+	# i 更在意 j：i 加入 j 的原活动（跟随分支只认这四种组；共享娱乐由 try_join_best 走同活动加入）
 	if not ("chat" == akind or "roughhouse" == akind or "study" == akind or "snack" == akind):
 		_log_join_event(
 			i, [j], "condition_fail", kind, vote["yes"], vote["no"], {"reason": "unshared"}
@@ -2512,6 +2535,8 @@ func _apply_join_group(i: int, anchor: int, akind: String, group: Variant) -> bo
 	## i 加入 anchor 所在的活动组（§9.1.4 加入）：全体成员确定投票；满员属条件不满足。
 	## 加入后与原成员做同一活动：按实际参与时间获得效果；不重置老成员计时、
 	## 不补发新人加入前的收益、不重复结算旧成员互动（交接 2）。
+	if FREE_ROAM.is_shared(akind):
+		return FREE_ROAM.join_shared_leisure(self, i, anchor, akind)
 	var grp: Dictionary = group if group is Dictionary else _ensure_group(akind, anchor)
 	if grp.is_empty():
 		return false
@@ -2670,10 +2695,8 @@ func _dissolve_from_group(groups: Array, of: Array, f: int) -> void:
 
 
 func _invite_friends_pass() -> void:
-	## 带朋友（§9.1.3/§9.1.4）：活动组成员按找伴规则邀请朋友加入当前活动。
-	## 每人每个决策点最多发起一次邀请；本决策点新加入者从下一决策点起才能带朋友；
-	## 朋友仍须满足活动参与条件，并由全部现有成员按同一套规则投票（邀请者不能替
-	## 其他成员保证接纳）。随机数顺序固定（组按创建序、成员按节点号升序）。
+	## 带朋友（§9.1.3/§9.1.4）：组成员按找伴规则邀请朋友；每人每决策点最多一次，
+	## 本决策点新加入者下个决策点起才能带朋友；朋友仍须全体成员投票。随机数顺序固定。
 	var p := _invite_friend_p()
 	if p <= 0.0:
 		return

@@ -156,6 +156,8 @@ harm = Sim(seed=12345, npc_count=8)
 harm.phase = "break"
 harm.harm["trigger_p"] = 1.0
 harm.harm["shove_choice_p"] = 1.0
+# 2026-10-19：开局敌对改为 0–45 随机，可能自己就 >40；本用例只测门槛，先把敌对清零。
+harm.H = [[0.0] * harm.N for _ in range(harm.N)]
 harm.neighbor_idx[0] = [1]
 harm.neighbor_idx[1] = [0]
 harm.H[0][1] = 40.0

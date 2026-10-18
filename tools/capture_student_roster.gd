@@ -41,10 +41,6 @@ func _capture() -> void:
 	_viewport.add_child(settings)
 	await _save("settings_wide")
 	settings.hide()
-	var board = load("res://scenes/ui/clue_board.tscn").instantiate()
-	_viewport.add_child(board)
-	await _save("board_wide")
-	board.hide()
 	var overview = load("res://scripts/ui/class_overview_card.gd").new()
 	_viewport.add_child(overview)
 	await process_frame

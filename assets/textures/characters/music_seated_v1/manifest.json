@@ -1,0 +1,162 @@
+[
+  {
+    "id": "01",
+    "name": "陈阳",
+    "sprite": "warm_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_01_idle_seated_v1.webp",
+    "file": "char_01_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-42463c6b-68e9-44fd-b232-6bdde2440289.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "02",
+    "name": "林晚",
+    "sprite": "sensitive_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_02_idle_seated_v1.webp",
+    "file": "char_02_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-dbb4a4f7-042f-4083-b0ad-b2755faeae5c.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "03",
+    "name": "张渊",
+    "sprite": "quiet_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_03_idle_seated_v1.webp",
+    "file": "char_03_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-2299f880-9abb-42cf-b40f-ffd62cf392d0.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "04",
+    "name": "周敏",
+    "sprite": "stern_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_04_idle_seated_v1.webp",
+    "file": "char_04_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-13f3b100-8d80-4a6d-a147-e38ecf4106d6.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "05",
+    "name": "赵蕊",
+    "sprite": "lively_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_05_idle_seated_v1.webp",
+    "file": "char_05_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-8b033efa-e7cc-421e-8dd7-45f382805a8c.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "06",
+    "name": "孙悦",
+    "sprite": "warm_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_06_idle_seated_v1.webp",
+    "file": "char_06_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-ac642609-2dee-4a61-b16a-521d53e8c9f1.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "07",
+    "name": "郑浩",
+    "sprite": "blunt_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_07_idle_seated_v1.webp",
+    "file": "char_07_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-52bfb451-22e1-4b74-9b11-b95f876fbfc5.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "08",
+    "name": "许静",
+    "sprite": "shy_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_08_idle_seated_v1.webp",
+    "file": "char_08_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-f9eea0b2-3b0f-4ec3-a61b-afb212b5fd2c.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "09",
+    "name": "何川",
+    "sprite": "sensitive_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_09_idle_seated_v1.webp",
+    "file": "char_09_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-811f230c-9f27-429b-8ea2-a91e0eb1cc11.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "10",
+    "name": "韩雪",
+    "sprite": "blunt_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_10_idle_seated_v1.webp",
+    "file": "char_10_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-78f1c077-a29b-46ef-a5ad-088e11e474cd.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "11",
+    "name": "沈浪",
+    "sprite": "shy_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_11_idle_seated_v1.webp",
+    "file": "char_11_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-2254a51a-2608-4c38-96fb-925887388113.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "12",
+    "name": "顾言",
+    "sprite": "tsundere_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_12_idle_seated_v1.webp",
+    "file": "char_12_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-37c625b3-b0d4-4011-a1fe-d64eb20a3f65.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "13",
+    "name": "叶梓",
+    "sprite": "quiet_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_13_idle_seated_v1.webp",
+    "file": "char_13_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-63f57ff1-dd32-4fcb-b268-335b1fd9672c.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "14",
+    "name": "佳豪",
+    "sprite": "lively_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_14_idle_seated_v1.webp",
+    "file": "char_14_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-5076c02b-4501-4b6b-a1ca-454cb30af890.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "15",
+    "name": "温雅",
+    "sprite": "tsundere_female",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_15_idle_seated_v1.webp",
+    "file": "char_15_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-1ffa83c7-7c50-411b-bd52-d745b22bfe01.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  },
+  {
+    "id": "16",
+    "name": "李峥",
+    "sprite": "stern_male",
+    "reference": "res://assets/textures/characters/idle_seated_v1/char_16_idle_seated_v1.webp",
+    "file": "char_16_music_seated_v1.webp",
+    "source": "C:\\Users\\极星\\.codex\\generated_images\\01a14cb4-e5ca-7480-9854-e31cdd0cad4f\\exec-262a325c-9ac7-445a-b6f1-248937c1fa1d.png",
+    "pose": "listen_music",
+    "earphones": "small_wired_earbuds"
+  }
+]

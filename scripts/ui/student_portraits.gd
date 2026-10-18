@@ -1,5 +1,5 @@
 extends RefCounted
-## 档案与推理板共享同一份数据映射及上半身裁切，不依赖教室演员。
+## 档案使用同一份画像映射及上半身裁切，不依赖教室演员。
 
 static var _cache: Dictionary = {}
 
