@@ -12,9 +12,9 @@ config_version=5
 
 config/name="下课十分钟"
 run/main_scene="res://scenes/ui/main_menu.tscn"
+config/quit_on_go_back=false
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://assets/icons/game-icon-social-note-v1-window.png"
-config/quit_on_go_back=false
 
 [autoload]
 
