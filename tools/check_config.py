@@ -344,6 +344,10 @@ check("时间流速：可选档位数为不小于 1 的整数",
       float(_time_flow.get("speed_options", 0)).is_integer()
       and _time_flow.get("speed_options", 0) >= 1,
       _time_flow.get("speed_options"))
+check("时间流速：快进倍率为不小于 1 的有限数",
+      math.isfinite(_time_flow.get("fast_forward_scale", 0.0))
+      and _time_flow.get("fast_forward_scale", 0.0) >= 1.0,
+      _time_flow.get("fast_forward_scale"))
 
 # 14. 学业系统（§17.1）：成绩轴初始化常量 + 涓流分段表（2026-10-16：分布改由 rules/psyche.csv 给出）
 _kp = params("rules/kernel_params.csv")

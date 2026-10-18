@@ -6,6 +6,12 @@
 - 教室 `_bind_opening_comic()` 提前到 `transition.bind_clock` 与 `_wait_navigation` 之前，避免教室先露脸数秒后才出现开幕漫画。
 - 验收：真实 `classroom3D` 1536×850 截图确认目录完整、HUD 不再遮挡；快门禁 check_config 187/0、test_core 133/0、verify_formula 9/0、check_docs 0 失败。本机未安装 gdtoolkit，`gdformat`／`gdlint` 未执行。
 
+## 2026-10-18 老师谈话自动快进（不是跳过）
+
+- 办公室谈话（安慰／表扬／训斥／打听／鼓励，`office_chat`）进行期间**自动**把整个世界按 `fast_forward_scale`（默认 4×）逐 tick 加速，谈话结束自动还原到玩家自选档；无 UI 按钮，时间照常流逝、事件照常结算，不是「跳过课间」式跳变。
+- 倍速集中到 `data/rules/time_flow.csv` 的 `fast_forward_scale`；叠加优先级为「暂停 > 事件正常速度锁 > 快进 > 玩家自选档」。`TimeFlow` 新增 `request_fast_forward`／`release_fast_forward`，`SimulationClock` 透传，`office_hub._process` 按当前命令自动持有/释放。
+- 新增 GUT 单测 `test_time_flow_fast_forward.gd`；`check_config` 增加快进倍率校验。
+
 ## 2026-10-19 回退课间行动额度机制
 
 - 删除每课间行动额度：`data/rules/activities.csv` 的 `break_action_quota`、`SimCore._break_action_quota`／`_actions_used`、`LeisureActions.actions_left`／`use_action`／`start_rest`（额度用完趴桌）、以及 `TeacherCommands.summon()` 里「叫去办公室也占一件」的调用。
