@@ -1,5 +1,5 @@
 {
-  "atlas": "res://assets/textures/characters/modular_sample_v1/chenyang_parts_atlas_v2.png",
+  "atlas": "res://assets/textures/characters/modular_sample_v1/chenyang_parts_atlas_v2.webp",
   "parts": [
     {
       "name": "pelvis",

@@ -49,8 +49,8 @@
   "slide_seconds": 0.22,
   "title": "我的书包",
   "hint": "点击物品，拿出书包 · Esc 收起",
-  "empty_texture": "res://assets/textures/ui/backpack/empty-v1.png",
-  "items_texture": "res://assets/textures/ui/backpack/atlas-v1.png",
+  "empty_texture": "res://assets/textures/ui/backpack/empty-v1.webp",
+  "items_texture": "res://assets/textures/ui/backpack/atlas-v1.webp",
   "items": [
     {
       "kind": "read_book",

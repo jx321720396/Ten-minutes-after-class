@@ -4,7 +4,7 @@
 
 ## 素材
 
-- `assets/textures/ui/clue_board/notebook-paper-v1.png`：内置 imagegen 生成，已复制进仓库；无文字奶油色方格纸，左侧打孔、和纸胶带。原图未覆盖。
+- `assets/textures/ui/clue_board/notebook-paper-v1.webp`：内置 imagegen 生成，已复制进仓库；无文字奶油色方格纸，左侧打孔、和纸胶带。原图未覆盖。
 - `assets/textures/ui/clue_board/pencil-dash.svg`：原生矢量虚线纹理，供预置 Line2D 表示推测。
 - 学生卡片复用档案头像映射及场景现有立绘；没有把演示概念图中的人物当作正式角色素材。
 - 标题、按钮、人物、事件、关系线均为 `scenes/ui/clue_board.tscn` 的独立原生节点，不烘焙进底图、不在运行时创建。

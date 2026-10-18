@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://d2q0afi0fqi0y"]
 
-[ext_resource type="Texture2D" uid="uid://bse2t0n68wdn8" path="res://assets/textures/characters/热情男.png" id="1_h4pgp"]
+[ext_resource type="Texture2D" uid="uid://bse2t0n68wdn8" path="res://assets/textures/characters/热情男.webp" id="1_h4pgp"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_hviou"]
 atlas = ExtResource("1_h4pgp")

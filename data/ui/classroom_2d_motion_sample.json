@@ -1,6 +1,6 @@
 {
-  "background": "res://assets/textures/samples/classroom_2d/background_low_angle_v3.png",
-  "character": "res://assets/textures/samples/classroom_2d/student_low_angle_v3.png",
+  "background": "res://assets/textures/samples/classroom_2d/background_low_angle_v3.webp",
+  "character": "res://assets/textures/samples/classroom_2d/student_low_angle_v3.webp",
   "canvas": [1536,1024],
   "display": [960,640],
   "cell": [384,512],

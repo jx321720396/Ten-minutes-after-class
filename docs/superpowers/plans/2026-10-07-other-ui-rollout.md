@@ -88,7 +88,7 @@ UI 内鼠标事件先消费，避免点击按钮同时给玩家设置目的地�
 
 **文件：**按点击位置专项计划执行；接入当前 `PlayerController` 与 `classroom3D.tscn`。
 
-- [ ] 接入已有 `assets/textures/ui/movement/click_destination_v01.png`，不要重新生成一套素材。
+- [ ] 接入已有 `assets/textures/ui/movement/click_destination_v01.webp`，不要重新生成一套素材。
 - [ ] 标记落在寻路确认后的可达终点，而不是家具内部或原始鼠标射线点。
 - [ ] 新点击替换旧标记；WASD 接管、抵达、路径失败、相位禁操作时清除。
 - [ ] 验收：点桌子附近、连续改终点、走动中按 WASD、点击 UI 四种情况均没有残留或错误目的地。

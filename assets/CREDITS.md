@@ -41,9 +41,9 @@
 3. CI 与人工评审都会检查本表与资源的对应关系（提交清单第 3 节）；
 4. 若某资源许可变更或被移除，在本表留一行"已移除"记录（含日期与原因），不要直接删除历史痕迹。
 
-人物动作试片：assets/textures/characters/samples/school_student_walk_v1.png 与 school_student_sit_v1.png，2026-10-12 使用内置 imagegen 基于同一男生站姿生成。提示词、选用记录与局限见 docs/art/concepts/school_student_motion_sample/README.md。
+人物动作试片：assets/textures/characters/samples/school_student_walk_v1.webp 与 school_student_sit_v1.png，2026-10-12 使用内置 imagegen 基于同一男生站姿生成。提示词、选用记录与局限见 docs/art/concepts/school_student_motion_sample/README.md。
 
-纯2D俯视小样：assets/textures/samples/classroom_2d/background_v1.png 与 student_motion_v1.png，2026-10-12 内置 imagegen 生成。提示词与修正记录见 docs/art/concepts/classroom_2d_motion/README.md。
+纯2D俯视小样：assets/textures/samples/classroom_2d/background_v1.webp 与 student_motion_v1.png，2026-10-12 内置 imagegen 生成。提示词与修正记录见 docs/art/concepts/classroom_2d_motion/README.md。
 
 ## 2026-10-12 原创暖色窗户与复用盆栽
 
@@ -63,7 +63,7 @@ assets/models/classroom_window/ 与 scenes/components/school_window_warm.tscn �
 
 assets/textures/characters/fullbody_v1/ 共 26 张，由内置 imagegen 根据本聊天原创纸张推理板概念图的校园插画方向生成，包含 24 名 NPC 和男女主角。来源、角色映射及使用边界见同目录 README.md、manifest.json。尚未接入游戏。
 
-人物简化小样：assets/textures/characters/simple_samples/char_01_body_simple_v1.png，2026-10-12 内置 imagegen 根据本项目陈阳全身稿进行风格转换生成。说明见同目录 README.md，尚未接入游戏。
+人物简化小样：assets/textures/characters/simple_samples/char_01_body_simple_v1.webp，2026-10-12 内置 imagegen 根据本项目陈阳全身稿进行风格转换生成。说明见同目录 README.md，尚未接入游戏。
 
 人物方向动作对比：assets/textures/characters/motion_compare_v1/ 的 Q 版与正常比例陈阳图集，2026-10-12 内置 imagegen 以本项目原创人物稿生成。每套 32 帧，方向索引、动作预览及生成局限见同目录 README.md、frames.json、index.html。尚未接入游戏。
 
@@ -84,5 +84,5 @@ assets/textures/characters/idle_seated_v1/ 的 16 张图片使用内置 imagegen
 
 ## 2026-10-16 老师固定背影
 
-assets/textures/characters/teacher_back_v1/teacher_back_v1.png 使用内置 imagegen，参考用户提供的教室概念图生成。提示词、来源及接入说明见同目录 README.md。
+assets/textures/characters/teacher_back_v1/teacher_back_v1.webp 使用内置 imagegen，参考用户提供的教室概念图生成。提示词、来源及接入说明见同目录 README.md。
 

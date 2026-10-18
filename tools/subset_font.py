@@ -23,7 +23,12 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-FONT = ROOT / "assets/fonts/harmonyos-sans/HarmonyOS_Sans_SC.ttf"
+# 每个字体都用同一份「运行期字符集」子集化；LXGW 只用于教室 3D 板书（Label3D），
+# 但同样走这份集合，避免以后黑板文案换字时缺字形。
+FONTS = {
+    "harmonyos": ROOT / "assets/fonts/harmonyos-sans/HarmonyOS_Sans_SC.ttf",
+    "lxgw": ROOT / "assets/fonts/lxgw-wenkai/LXGWWenKai-Regular.ttf",
+}
 EXCEPTIONS_FILE = Path(__file__).with_name("font_subset_exceptions.txt")
 
 SCAN_EXTS = (
@@ -32,7 +37,7 @@ SCAN_EXTS = (
 )
 SKIP_DIRS = {
     ".git", ".godot", "build", "docs", "addons", "tests", "tools",
-    ".claude", ".venv", "node_modules",
+    ".claude", ".venv", "node_modules", "tmp",
 }
 
 # 不作为运行期文本处理的字符：控制符、变体选择符、零宽字符、BOM。
@@ -163,33 +168,44 @@ def font_codepoints(path: Path) -> set[int]:
 
 
 def check() -> int:
-    if not FONT.exists():
-        print(f"错误：找不到字体 {FONT.relative_to(ROOT)}", file=sys.stderr)
-        return 1
     sources = collect_char_sources()
-    covered = font_codepoints(FONT)
     allowed = load_exceptions()
-    missing = [ch for ch in sorted(sources) if ord(ch) not in covered and ch not in allowed]
     total = len(sources)
-    ignored = sum(1 for ch in missing if ch in allowed)
-    if not missing:
-        print(f"字体子集检查通过：{total} 个字符全部覆盖（另有 {len(allowed)} 个已知字体缺字）。")
-        return 0
-    print(f"字体子集检查失败：{len(missing)} 个字符不在当前字体里。", file=sys.stderr)
-    for ch in missing[:40]:
-        where = "、".join(sorted(sources.get(ch, []))) or "（安全字符集）"
-        print(f"  缺失 {ch!r} U+{ord(ch):04X} <- {where}", file=sys.stderr)
-    if len(missing) > 40:
-        print(f"  ……另有 {len(missing) - 40} 个", file=sys.stderr)
-    print(
-        "\n修复：安装 fontTools 后运行 `python tools/subset_font.py --write` 重建子集，再重新导出。\n"
-        "若该字符上游字体本来就没有，请登进 tools/font_subset_exceptions.txt。",
-        file=sys.stderr,
-    )
-    return 1
+    failed = False
+    for name, font in FONTS.items():
+        if not font.exists():
+            print(f"错误：找不到字体 {font.relative_to(ROOT)}", file=sys.stderr)
+            failed = True
+            continue
+        covered = font_codepoints(font)
+        missing = [ch for ch in sorted(sources) if ord(ch) not in covered and ch not in allowed]
+        if not missing:
+            print(
+                f"字体子集检查通过（{name}）：{total} 个字符全部覆盖"
+                f"（另有 {len(allowed)} 个已知字体缺字）。"
+            )
+            continue
+        failed = True
+        print(
+            f"字体子集检查失败（{name}）：{len(missing)} 个字符不在当前字体里。",
+            file=sys.stderr,
+        )
+        for ch in missing[:40]:
+            where = "、".join(sorted(sources.get(ch, []))) or "（安全字符集）"
+            print(f"  缺失 {ch!r} U+{ord(ch):04X} <- {where}", file=sys.stderr)
+        if len(missing) > 40:
+            print(f"  ……另有 {len(missing) - 40} 个", file=sys.stderr)
+    if failed:
+        print(
+            "\n修复：安装 fontTools 后运行 `python tools/subset_font.py --write` 重建子集，再重新导出。\n"
+            "若该字符上游字体本来就没有，请登进 tools/font_subset_exceptions.txt。",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
 
 
-def write() -> int:
+def write(targets: list[str]) -> int:
     try:
         from fontTools.subset import main as subset_main
     except ImportError:
@@ -202,33 +218,40 @@ def write() -> int:
         return 1
     sources = collect_char_sources()
     text = "".join(sorted(sources))
-    tmp_text = FONT.with_suffix(".chars.txt")
-    tmp_font = FONT.with_suffix(".subset.ttf")
-    tmp_text.write_text(text, encoding="utf-8")
-    try:
-        subset_main([
-            str(FONT),
-            f"--output-file={tmp_font}",
-            f"--text-file={tmp_text}",
-            "--layout-features=*",
-            "--glyph-names",
-            "--symbol-cmap",
-            "--legacy-cmap",
-            "--notdef-glyph",
-            "--notdef-outline",
-            "--recommended-glyphs",
-            "--name-IDs=*",
-            "--name-legacy",
-            "--name-languages=*",
-        ])
-        tmp_font.replace(FONT)
-    finally:
-        tmp_text.unlink(missing_ok=True)
-        tmp_font.unlink(missing_ok=True)
-    print(
-        f"已重建字体子集：{len(sources)} 个字符，"
-        f"{FONT.stat().st_size / 1048576:.2f} MiB -> {FONT.relative_to(ROOT)}"
-    )
+    for name in targets:
+        font = FONTS[name]
+        if not font.exists():
+            print(f"错误：找不到字体 {font.relative_to(ROOT)}", file=sys.stderr)
+            return 1
+        before = font.stat().st_size
+        tmp_text = font.with_suffix(".chars.txt")
+        tmp_font = font.with_suffix(".subset.ttf")
+        tmp_text.write_text(text, encoding="utf-8")
+        try:
+            subset_main([
+                str(font),
+                f"--output-file={tmp_font}",
+                f"--text-file={tmp_text}",
+                "--layout-features=*",
+                "--glyph-names",
+                "--symbol-cmap",
+                "--legacy-cmap",
+                "--notdef-glyph",
+                "--notdef-outline",
+                "--recommended-glyphs",
+                "--name-IDs=*",
+                "--name-legacy",
+                "--name-languages=*",
+            ])
+            tmp_font.replace(font)
+        finally:
+            tmp_text.unlink(missing_ok=True)
+            tmp_font.unlink(missing_ok=True)
+        print(
+            f"已重建字体子集（{name}）：{len(sources)} 个字符，"
+            f"{before / 1048576:.2f} -> {font.stat().st_size / 1048576:.2f} MiB -> "
+            f"{font.relative_to(ROOT)}"
+        )
     print("请重新导入（godot --headless --import）并重新导出包体。")
     return 0
 
@@ -236,8 +259,20 @@ def write() -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="字体子集生成与覆盖检查")
     parser.add_argument("--write", action="store_true", help="重建子集（需要 fontTools）")
+    parser.add_argument(
+        "--fonts",
+        default=",".join(FONTS),
+        help=f"逗号分隔的字体名，可选：{', '.join(FONTS)}（默认全部）",
+    )
     args = parser.parse_args()
-    return write() if args.write else check()
+    if not args.write:
+        return check()
+    targets = [t.strip() for t in args.fonts.split(",") if t.strip()]
+    unknown = [t for t in targets if t not in FONTS]
+    if unknown:
+        print(f"错误：未知字体 {', '.join(unknown)}", file=sys.stderr)
+        return 1
+    return write(targets)
 
 
 if __name__ == "__main__":

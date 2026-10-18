@@ -19,7 +19,7 @@
 
 ## Task 1：背景和办公室节点
 
-Files: assets/backgrounds/office/office_idle_v01.png、data/ui/office_hub.json、scenes/game/office.tscn、scripts/game/office.gd。
+Files: assets/backgrounds/office/office_idle_v01.webp、data/ui/office_hub.json、scenes/game/office.tscn、scripts/game/office.gd。
 - [x] 生成不含 UI 的办公室背景并检查。
 - [x] 建立原生容器、按钮、标题、真实时间、暂停与设置节点；运行资源导入。
 

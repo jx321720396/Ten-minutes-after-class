@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/game/office.gd" id="1"]
-[ext_resource type="Texture2D" path="res://assets/backgrounds/office/office_idle_v01.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/office/office_idle_v01.webp" id="2"]
 
 [node name="Office" type="Control"]
 layout_mode = 3

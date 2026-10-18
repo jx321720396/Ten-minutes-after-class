@@ -8,7 +8,7 @@
 - validation.json：尺寸、透明边界、透明像素比例和 SHA-256。16 张图均通过 RGBA、尺寸、四角透明及唯一性检查。
 - generation_sources.json：原始生成文件位置。
 - index.html：可点击查看独立原图的全班图册。
-- 总览图：docs/art/concepts/study_roster_20261015/study_roster_overview.png。
+- 总览图：docs/art/concepts/study_roster_20261015/study_roster_overview.webp。
 
 映射按姓名核对，不能用旧 24 人素材文件编号直接当当前 16 人编号。例如当前赵蕊 05 对应旧素材 06，叶梓 13 对应旧素材 20。
 

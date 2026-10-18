@@ -4,7 +4,7 @@
 玩法依据：[老师版主策划案](../../../gdd/core-gameplay-v3.1.md)，第 1、4、5、6、11、12 章；新增全班汇总排布属于本次概念建议。
 工具：内置 imagegen。完整提示词见 [prompt.txt](prompt.txt)。
 
-![全班概况概念图](class_overview_concept_v01.png)
+![全班概况概念图](class_overview_concept_v01.webp)
 
 ## 可以分模块逐步制作
 

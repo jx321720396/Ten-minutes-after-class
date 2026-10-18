@@ -3,7 +3,7 @@
 日期：2026-10-14。依据：[当前老师版策划案](../../../gdd/core-gameplay-v3.1.md)，重点参考第 1、4、6、7、11、12 章。
 状态：美术与界面探索，使用内置 imagegen 生成，未接入 Godot，非运行截图。
 
-![老师版移动端主界面概念图](teacher_mobile_gameplay_concept_v01.png)
+![老师版移动端主界面概念图](teacher_mobile_gameplay_concept_v01.webp)
 
 ## 画面内容
 

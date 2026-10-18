@@ -4107,46 +4107,46 @@
   ],
   "images": [
     {
-      "uri": "textures/details_baseColor.png"
+      "uri": "textures/details_baseColor.webp"
     },
     {
-      "uri": "textures/details_metallicRoughness.png"
+      "uri": "textures/details_metallicRoughness.webp"
     },
     {
       "uri": "textures/details_emissive.png"
     },
     {
-      "uri": "textures/details_normal.png"
+      "uri": "textures/details_normal.webp"
     },
     {
-      "uri": "textures/tables_baseColor.png"
+      "uri": "textures/tables_baseColor.webp"
     },
     {
-      "uri": "textures/tables_metallicRoughness.png"
+      "uri": "textures/tables_metallicRoughness.webp"
     },
     {
-      "uri": "textures/tables_emissive.png"
+      "uri": "textures/tables_emissive.webp"
     },
     {
-      "uri": "textures/tables_normal.png"
+      "uri": "textures/tables_normal.webp"
     },
     {
-      "uri": "textures/walls_baseColor.png"
+      "uri": "textures/walls_baseColor.webp"
     },
     {
-      "uri": "textures/walls_metallicRoughness.png"
+      "uri": "textures/walls_metallicRoughness.webp"
     },
     {
-      "uri": "textures/walls_emissive.png"
+      "uri": "textures/walls_emissive.webp"
     },
     {
-      "uri": "textures/walls_normal.png"
+      "uri": "textures/walls_normal.webp"
     },
     {
       "uri": "textures/effects_baseColor.png"
     },
     {
-      "uri": "textures/posters_baseColor.png"
+      "uri": "textures/posters_baseColor.webp"
     }
   ],
   "materials": [

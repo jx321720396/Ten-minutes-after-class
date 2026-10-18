@@ -4,7 +4,7 @@
 
 - 场景：`scenes/game/school_student_motion_sample_showroom.tscn`，在编辑器 F6 运行。
 - 参数与帧裁切：`data/ui/school_student_motion_sample.json`。
-- 动作贴图：`assets/textures/characters/samples/school_student_walk_v1.png`、`school_student_sit_v1.png`。保留生成器原始 RGBA，没有重新绘制或修改像素；AtlasTexture 按实际布局裁切。
+- 动作贴图：`assets/textures/characters/samples/school_student_walk_v1.webp`、`school_student_sit_v1.png`。保留生成器原始 RGBA，没有重新绘制或修改像素；AtlasTexture 按实际布局裁切。
 - 演示：`motion-20261012.gif`；坐姿截图：`seated-20261012.png`。
 - 录制：`godot --path . --script tools/capture_school_student_motion_sample.gd`。
 - 检查：`godot --headless --path . --script tools/verify_school_student_motion_sample.gd`。

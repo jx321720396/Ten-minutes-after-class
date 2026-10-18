@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "walk_texture": "res://assets/textures/characters/samples/school_student_walk_v1.png",
-  "sit_texture": "res://assets/textures/characters/samples/school_student_sit_v1.png",
+  "walk_texture": "res://assets/textures/characters/samples/school_student_walk_v1.webp",
+  "sit_texture": "res://assets/textures/characters/samples/school_student_sit_v1.webp",
   "walk_regions": [[0,0,555,810],[555,0,355,810],[910,0,580,810],[1490,0,403,810]],
   "walk_pivots": [270,145,280,200],
   "walk_pixel_size": 0.002115,

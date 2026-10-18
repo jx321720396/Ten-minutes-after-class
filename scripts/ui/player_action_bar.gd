@@ -511,7 +511,7 @@ func _load_style() -> void:
 func _apply_paper_style() -> void:
 	var cfg := CampusTheme.settings()
 	var paper := StyleBoxTexture.new()
-	paper.texture = load("res://assets/textures/ui/paper/campus-action-paper-v1.png")
+	paper.texture = load("res://assets/textures/ui/paper/campus-action-paper-v1.webp")
 	paper.content_margin_top = 0
 	paper.content_margin_bottom = 0
 	paper.content_margin_left = 0

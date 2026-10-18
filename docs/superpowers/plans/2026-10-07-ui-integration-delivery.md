@@ -80,7 +80,7 @@ UI 点击必须消费事件，不能同时设置移动目的地。鼠标在情�
 
 **文件：**按[点击反馈专项计划](2026-10-07-player-click-emotion-feedback.md)中的移动部分接入；不重复其中情绪实现。已有目的地组件时只补下面的验收。
 
-- [ ] 使用已有 `assets/textures/ui/movement/click_destination_v01.png`。
+- [ ] 使用已有 `assets/textures/ui/movement/click_destination_v01.webp`。
 - [ ] 标记显示寻路确认后的可达终点，而非原始点击位置。
 - [ ] 新目标覆盖旧目标；到达、WASD 接管、不可达或相位禁操作时清除。
 - [ ] 人工验收桌边吸附、连续改终点、移动中按 WASD、点击 UI，没有错误目的地或残留。

@@ -211,7 +211,7 @@ Completed 不阻挡玩家继续行动，旧线索提示可以淡出；新请求�
 
 在同一帧：复查控制权限 → 对齐场景位置 → `clock.hold(&"player_pen_check")` 并冻结世界移动 → commit 锁定结果 → 播放起势、旋转、收尾、揭晓。提交失败立即释放自己的 hold，不播放转笔。
 
-一张透明笔 PNG 加程序旋转／缩放／淡残影即可。现有 `docs/art/ui_mockups/ui_pen_green_v01.png` 已确认是 2172×724 RGBA、具有透明区域；收录到 `assets/textures/ui/interaction/pen.png`，保持原图，用居中的 Control 作为旋转轴。
+一张透明笔 PNG 加程序旋转／缩放／淡残影即可。现有 `docs/art/ui_mockups/ui_pen_green_v01.webp` 已确认是 2172×724 RGBA、具有透明区域；收录到 `assets/textures/ui/interaction/pen.webp`，保持原图，用居中的 Control 作为旋转轴。
 
 建议新增 `data/ui/chat_feedback_style.csv`：`pen_windup_seconds=0.15`、`pen_spin_seconds=0.65`、`pen_settle_seconds=0.20`、`pen_result_seconds=0.40`，合计约 1.4 秒。它们是可调整的呈现初值，不写回行为耗时。
 
@@ -301,7 +301,7 @@ ConfigLoader 已递归加载 data 下的 CSV，无需增加虚构“表注册列
 | 玩家立绘 | 当前玩家仍是占位 Marker | 收录明确选择的外观映射，禁止按名字猜；功能联调可用 Marker，展示版必须换立绘 |
 | 转笔 | 已有透明笔 PNG，路径见 §7 | 不需重新生成，程序动画 |
 | 无字聊天气泡 | 统一底板、三个程序点 | 纯程序可完成 |
-| 点击落点 | `assets/textures/ui/movement/click_destination_v01.png` | 已有，可复用；不能和融合圈混用 |
+| 点击落点 | `assets/textures/ui/movement/click_destination_v01.webp` | 已有，可复用；不能和融合圈混用 |
 | 单人／融合圈 | 平面与 shader | 纯程序完成 |
 | 男女四情绪 | 用户已有八图，实际路径未收录 | 不重画；收录实际文件并校验映射 |
 | 菜单／进度／线索卡 | 与 TimeHUD 同一浅纸色、深绿边框和字体系统 | Control/样式完成；不增加写实大头像素材 |

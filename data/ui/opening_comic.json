@@ -148,7 +148,7 @@
   "pages": [
     {
       "title": "临时接班",
-      "image": "res://assets/illustrations/opening_comic/page_01.png",
+      "image": "res://assets/illustrations/opening_comic/page_01.webp",
       "dialogue": [
         "校长，您找我？",
         "来了？坐吧。",
@@ -232,7 +232,7 @@
     },
     {
       "title": "考试安排",
-      "image": "res://assets/illustrations/opening_comic/page_02.png",
+      "image": "res://assets/illustrations/opening_comic/page_02.webp",
       "dialogue": [
         "先跟你说说学校的考试安排。",
         "每个月有一次大考，\n每周还会安排一次小考。",
@@ -316,7 +316,7 @@
     },
     {
       "title": "成绩考验",
-      "image": "res://assets/illustrations/opening_comic/page_03.png",
+      "image": "res://assets/illustrations/opening_comic/page_03.webp",
       "assessment": "首次考核 · 七天后\n班级均分 ≥ 450",
       "dialogue": [
         "七天后。",
@@ -401,7 +401,7 @@
     },
     {
       "title": "另一项责任",
-      "image": "res://assets/illustrations/opening_comic/page_04.png",
+      "image": "res://assets/illustrations/opening_comic/page_04.webp",
       "dialogue": [
         "但成绩，\n不是你唯一要管的事。",
         "留意霸凌、孤立，\n还有学生的心理状态。",

@@ -1,8 +1,8 @@
 {
   "bindings": {
     "warm_male": {
-      "study": "res://assets/textures/characters/study_front_v1/char_01_study_down_v1.png",
-      "standing": "res://assets/textures/characters/standing_front_v2/char_01_stand_natural_v2.png",
+      "study": "res://assets/textures/characters/study_front_v1/char_01_study_down_v1.webp",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_01_stand_natural_v2.webp",
       "layout": {
         "split_y": 730,
         "upper_height_gain": 0.026449999999999863,
@@ -91,11 +91,11 @@
         ]
       },
       "standing_floor_pixel": 1503,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_01_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_01_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_01_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_01_stand_back_v1.webp",
       "back_floor_pixel": 1488,
       "back_pixel_scale": 1.0054421768707482,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_01_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_01_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.022952597459739876,
@@ -105,8 +105,8 @@
       }
     },
     "sensitive_female": {
-      "study": "res://assets/textures/characters/study_front_v1/char_02_study_down_v1.png",
-      "standing": "res://assets/textures/characters/standing_front_v2/char_02_stand_natural_v2.png",
+      "study": "res://assets/textures/characters/study_front_v1/char_02_study_down_v1.webp",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_02_stand_natural_v2.webp",
       "layout": {
         "split_y": 732,
         "upper_height_gain": 0.02652246575342452,
@@ -195,11 +195,11 @@
         ]
       },
       "standing_floor_pixel": 1500,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_02_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_02_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_02_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_02_stand_back_v1.webp",
       "back_floor_pixel": 1493,
       "back_pixel_scale": 1.005420054200542,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_02_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_02_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.02717427276175477,
@@ -209,8 +209,8 @@
       }
     },
     "quiet_male": {
-      "study": "res://assets/textures/characters/identity_v3/char_03_study_identity_v3.png",
-      "standing": "res://assets/textures/characters/identity_v3/char_03_stand_identity_v3.png",
+      "study": "res://assets/textures/characters/identity_v3/char_03_study_identity_v3.webp",
+      "standing": "res://assets/textures/characters/identity_v3/char_03_stand_identity_v3.webp",
       "layout": {
         "split_y": 742,
         "upper_height_gain": 0.026884794520547803,
@@ -299,11 +299,11 @@
         ]
       },
       "standing_floor_pixel": 1516,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_03_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_03_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_03_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_03_stand_back_v1.webp",
       "back_floor_pixel": 1500,
       "back_pixel_scale": 1.010752688172043,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_03_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_03_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.034455298655639455,
@@ -313,8 +313,8 @@
       }
     },
     "stern_female": {
-      "study": "res://assets/textures/characters/study_front_v1/char_04_study_down_v1.png",
-      "standing": "res://assets/textures/characters/standing_front_v2/char_04_stand_natural_v2.png",
+      "study": "res://assets/textures/characters/study_front_v1/char_04_study_down_v1.webp",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_04_stand_natural_v2.webp",
       "layout": {
         "split_y": 736,
         "upper_height_gain": 0.026667397260273833,
@@ -403,11 +403,11 @@
         ]
       },
       "standing_floor_pixel": 1522,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_04_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_04_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_04_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_04_stand_back_v1.webp",
       "back_floor_pixel": 1518,
       "back_pixel_scale": 1.0019986675549633,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_04_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_04_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.0396954112528658,
@@ -417,8 +417,8 @@
       }
     },
     "lively_female": {
-      "study": "res://assets/textures/characters/study_front_v1/char_05_study_down_v1.png",
-      "standing": "res://assets/textures/characters/standing_front_v2/char_05_stand_natural_v2.png",
+      "study": "res://assets/textures/characters/study_front_v1/char_05_study_down_v1.webp",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_05_stand_natural_v2.webp",
       "layout": {
         "split_y": 759,
         "upper_height_gain": 0.02750075342465739,
@@ -507,11 +507,11 @@
         ]
       },
       "standing_floor_pixel": 1524,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_05_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_05_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_05_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_05_stand_back_v1.webp",
       "back_floor_pixel": 1515,
       "back_pixel_scale": 1.00531208499336,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_05_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_05_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.058481317302761626,
@@ -521,8 +521,8 @@
       }
     },
     "warm_female": {
-      "study": "res://assets/textures/characters/study_front_v1/char_06_study_down_v1.png",
-      "standing": "res://assets/textures/characters/standing_front_v2/char_06_stand_natural_v2.png",
+      "study": "res://assets/textures/characters/study_front_v1/char_06_study_down_v1.webp",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_06_stand_natural_v2.webp",
       "layout": {
         "split_y": 716,
         "upper_height_gain": 0.025942739726027262,
@@ -611,11 +611,11 @@
         ]
       },
       "standing_floor_pixel": 1506,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_06_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_06_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_06_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_06_stand_back_v1.webp",
       "back_floor_pixel": 1498,
       "back_pixel_scale": 1.0060810810810812,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_06_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_06_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.012635349570095822,
@@ -625,8 +625,8 @@
       }
     },
     "blunt_male": {
-      "study": "res://assets/textures/characters/identity_v3/char_07_study_identity_v3.png",
-      "standing": "res://assets/textures/characters/identity_v3/char_07_stand_identity_v3.png",
+      "study": "res://assets/textures/characters/identity_v3/char_07_study_identity_v3.webp",
+      "standing": "res://assets/textures/characters/identity_v3/char_07_stand_identity_v3.webp",
       "layout": {
         "split_y": 741,
         "upper_height_gain": 0.026848561643835474,
@@ -715,11 +715,11 @@
         ]
       },
       "standing_floor_pixel": 1517,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_07_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_07_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_07_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_07_stand_back_v1.webp",
       "back_floor_pixel": 1500,
       "back_pixel_scale": 1.0134228187919463,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_07_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_07_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.04171310040572351,
@@ -729,8 +729,8 @@
       }
     },
     "shy_female": {
-      "study": "res://assets/textures/characters/identity_v3/char_08_study_identity_v3.png",
-      "standing": "res://assets/textures/characters/identity_v3/char_08_stand_identity_v3.png",
+      "study": "res://assets/textures/characters/identity_v3/char_08_study_identity_v3.webp",
+      "standing": "res://assets/textures/characters/identity_v3/char_08_stand_identity_v3.webp",
       "layout": {
         "split_y": 727,
         "upper_height_gain": 0.026341301369862874,
@@ -819,11 +819,11 @@
         ]
       },
       "standing_floor_pixel": 1516,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_08_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_08_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_08_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_08_stand_back_v1.webp",
       "back_floor_pixel": 1508,
       "back_pixel_scale": 1.0053583389149363,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_08_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_08_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.02406484671014253,
@@ -833,8 +833,8 @@
       }
     },
     "sensitive_male": {
-      "study": "res://assets/textures/characters/identity_v3/char_09_study_identity_v3.png",
-      "standing": "res://assets/textures/characters/identity_v3/char_09_stand_identity_v3.png",
+      "study": "res://assets/textures/characters/identity_v3/char_09_study_identity_v3.webp",
+      "standing": "res://assets/textures/characters/identity_v3/char_09_stand_identity_v3.webp",
       "layout": {
         "split_y": 730,
         "upper_height_gain": 0.026449999999999863,
@@ -923,11 +923,11 @@
         ]
       },
       "standing_floor_pixel": 1521,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_09_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_09_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_09_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_09_stand_back_v1.webp",
       "back_floor_pixel": 1512,
       "back_pixel_scale": 1.0046449900464498,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_09_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_09_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.025143372163048294,
@@ -937,8 +937,8 @@
       }
     },
     "blunt_female": {
-      "study": "res://assets/textures/characters/identity_v3/char_10_study_identity_v3.png",
-      "standing": "res://assets/textures/characters/identity_v3/char_10_stand_identity_v3.png",
+      "study": "res://assets/textures/characters/identity_v3/char_10_study_identity_v3.webp",
+      "standing": "res://assets/textures/characters/identity_v3/char_10_stand_identity_v3.webp",
       "layout": {
         "split_y": 731,
         "upper_height_gain": 0.02648623287671219,
@@ -1027,11 +1027,11 @@
         ]
       },
       "standing_floor_pixel": 1514,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_10_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_10_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_10_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_10_stand_back_v1.webp",
       "back_floor_pixel": 1520,
       "back_pixel_scale": 0.9913850231941683,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_10_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_10_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.036549235875581676,
@@ -1041,8 +1041,8 @@
       }
     },
     "shy_male": {
-      "study": "res://assets/textures/characters/identity_v3/char_11_study_identity_v3.png",
-      "standing": "res://assets/textures/characters/identity_v3/char_11_stand_identity_v3.png",
+      "study": "res://assets/textures/characters/identity_v3/char_11_study_identity_v3.webp",
+      "standing": "res://assets/textures/characters/identity_v3/char_11_stand_identity_v3.webp",
       "layout": {
         "split_y": 721,
         "upper_height_gain": 0.026123904109588904,
@@ -1131,11 +1131,11 @@
         ]
       },
       "standing_floor_pixel": 1521,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_11_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_11_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_11_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_11_stand_back_v1.webp",
       "back_floor_pixel": 1508,
       "back_pixel_scale": 1.0080106809078773,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_11_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_11_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.012704657788462748,
@@ -1145,8 +1145,8 @@
       }
     },
     "tsundere_male": {
-      "study": "res://assets/textures/characters/identity_v3/char_12_study_identity_v3.png",
-      "standing": "res://assets/textures/characters/identity_v3/char_12_stand_identity_v3.png",
+      "study": "res://assets/textures/characters/identity_v3/char_12_study_identity_v3.webp",
+      "standing": "res://assets/textures/characters/identity_v3/char_12_stand_identity_v3.webp",
       "layout": {
         "split_y": 699,
         "upper_height_gain": 0.025326780821917676,
@@ -1235,11 +1235,11 @@
         ]
       },
       "standing_floor_pixel": 1519,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_12_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_12_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_12_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_12_stand_back_v1.webp",
       "back_floor_pixel": 1515,
       "back_pixel_scale": 0.9986728599867286,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_12_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_12_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": -0.007920333224614273,
@@ -1249,8 +1249,8 @@
       }
     },
     "quiet_female": {
-      "study": "res://assets/textures/characters/study_front_v1/char_13_study_down_v1.png",
-      "standing": "res://assets/textures/characters/standing_front_v2/char_13_stand_natural_v2.png",
+      "study": "res://assets/textures/characters/study_front_v1/char_13_study_down_v1.webp",
+      "standing": "res://assets/textures/characters/standing_front_v2/char_13_stand_natural_v2.webp",
       "layout": {
         "split_y": 707,
         "upper_height_gain": 0.025616643835616303,
@@ -1339,11 +1339,11 @@
         ]
       },
       "standing_floor_pixel": 1521,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_13_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_13_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_13_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_13_stand_back_v1.webp",
       "back_floor_pixel": 1505,
       "back_pixel_scale": 1.0120967741935485,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_13_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_13_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.006251238004541748,
@@ -1353,8 +1353,8 @@
       }
     },
     "lively_male": {
-      "study": "res://assets/textures/characters/identity_v3/char_14_study_identity_v3.png",
-      "standing": "res://assets/textures/characters/identity_v3/char_14_stand_identity_v3.png",
+      "study": "res://assets/textures/characters/identity_v3/char_14_study_identity_v3.webp",
+      "standing": "res://assets/textures/characters/identity_v3/char_14_stand_identity_v3.webp",
       "layout": {
         "split_y": 733,
         "upper_height_gain": 0.026558698630136848,
@@ -1443,11 +1443,11 @@
         ]
       },
       "standing_floor_pixel": 1519,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_14_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_14_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_14_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_14_stand_back_v1.webp",
       "back_floor_pixel": 1505,
       "back_pixel_scale": 1.0094149293880297,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_14_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_14_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.028187871309794055,
@@ -1457,8 +1457,8 @@
       }
     },
     "tsundere_female": {
-      "study": "res://assets/textures/characters/identity_v3/char_15_study_identity_v3.png",
-      "standing": "res://assets/textures/characters/identity_v3/char_15_stand_identity_v3.png",
+      "study": "res://assets/textures/characters/identity_v3/char_15_study_identity_v3.webp",
+      "standing": "res://assets/textures/characters/identity_v3/char_15_stand_identity_v3.webp",
       "layout": {
         "split_y": 729,
         "upper_height_gain": 0.026413767123287534,
@@ -1547,11 +1547,11 @@
         ]
       },
       "standing_floor_pixel": 1503,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_15_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_15_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_15_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_15_stand_back_v1.webp",
       "back_floor_pixel": 1491,
       "back_pixel_scale": 1.006765899864682,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_15_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_15_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.02103316686698109,
@@ -1561,8 +1561,8 @@
       }
     },
     "stern_male": {
-      "study": "res://assets/textures/characters/identity_v3/char_16_study_identity_v3.png",
-      "standing": "res://assets/textures/characters/identity_v3/char_16_stand_identity_v3.png",
+      "study": "res://assets/textures/characters/identity_v3/char_16_study_identity_v3.webp",
+      "standing": "res://assets/textures/characters/identity_v3/char_16_stand_identity_v3.webp",
       "layout": {
         "split_y": 723,
         "upper_height_gain": 0.02619636986301356,
@@ -1651,11 +1651,11 @@
         ]
       },
       "standing_floor_pixel": 1509,
-      "idle": "res://assets/textures/characters/idle_seated_v1/char_16_idle_seated_v1.png",
-      "standing_back": "res://assets/textures/characters/standing_back_v1/char_16_stand_back_v1.png",
+      "idle": "res://assets/textures/characters/idle_seated_v1/char_16_idle_seated_v1.webp",
+      "standing_back": "res://assets/textures/characters/standing_back_v1/char_16_stand_back_v1.webp",
       "back_floor_pixel": 1513,
       "back_pixel_scale": 0.9966755319148937,
-      "idle_back": "res://assets/textures/characters/seated_back_v1/char_16_seated_back_v1.png",
+      "idle_back": "res://assets/textures/characters/seated_back_v1/char_16_seated_back_v1.webp",
       "idle_back_layout": {
         "split_y": 950,
         "upper_height_gain": 0.019939478175987846,

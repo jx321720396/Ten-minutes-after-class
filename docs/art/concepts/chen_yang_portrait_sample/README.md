@@ -2,7 +2,7 @@
 
 2026-10-13，使用内置 imagegen 生成。仅档案美术接入，场内人物和关系规则保持原实现。
 
-- 素材：`assets/textures/characters/portraits/chen_yang_v01.png`。
+- 素材：`assets/textures/characters/portraits/chen_yang_v01.webp`。
 - 映射：`data/ui/npc_profile.json` 的 portraits，用开局种子编号映射表现资产，不用于行为判断。
 - 实录：`mobile-profile-1280x720.png`，Godot 4.7.2 在 main-mobile 工作区真实渲染。
 - 验收：档案 GUT 4 项 / 31 断言通过；配置、内核单测、公式与文档快门禁通过；档案脚本格式及 lint 通过。未导出手机包或进行真机验证。

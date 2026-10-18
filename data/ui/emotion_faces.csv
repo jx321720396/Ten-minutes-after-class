@@ -2,13 +2,13 @@
 # 依据：用户 2026-10-10 裁定（学习等行为时在气泡里配图）；图片来自 assets/textures/meme/
 # 列: param | value | unit | note
 param,value,unit,note
-face_relaxed_female,res://assets/textures/meme/relax_female.png,,放松（女）
-face_relaxed_male,res://assets/textures/meme/relax_male.png,,放松（男）
-face_angry_female,res://assets/textures/meme/irritable_female.png,,生气（女）
-face_angry_male,res://assets/textures/meme/irritable_male.png,,生气（男）
-face_crying_female,res://assets/textures/meme/breakdown_female.png,,难受（女）
-face_crying_male,res://assets/textures/meme/breakdown_male.png,,难受（男）
-face_happy_female,res://assets/textures/meme/excited_female.png,,开心（女）
-face_happy_male,res://assets/textures/meme/excited_male.png,,开心（男）
-face_studying_female,res://assets/textures/meme/bored_female.png,,学习中（女）—— 埋头做题
-face_studying_male,res://assets/textures/meme/bored_male.png,,学习中（男）—— 埋头做题
+face_relaxed_female,res://assets/textures/meme/relax_female.webp,,放松（女）
+face_relaxed_male,res://assets/textures/meme/relax_male.webp,,放松（男）
+face_angry_female,res://assets/textures/meme/irritable_female.webp,,生气（女）
+face_angry_male,res://assets/textures/meme/irritable_male.webp,,生气（男）
+face_crying_female,res://assets/textures/meme/breakdown_female.webp,,难受（女）
+face_crying_male,res://assets/textures/meme/breakdown_male.webp,,难受（男）
+face_happy_female,res://assets/textures/meme/excited_female.webp,,开心（女）
+face_happy_male,res://assets/textures/meme/excited_male.webp,,开心（男）
+face_studying_female,res://assets/textures/meme/bored_female.webp,,学习中（女）—— 埋头做题
+face_studying_male,res://assets/textures/meme/bored_male.webp,,学习中（男）—— 埋头做题

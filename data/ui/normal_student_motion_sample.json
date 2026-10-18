@@ -1,5 +1,5 @@
 {
-  "texture": "res://assets/textures/characters/motion_compare_v1/char_01_normal_sheet_v1.png",
+  "texture": "res://assets/textures/characters/motion_compare_v1/char_01_normal_sheet_v1.webp",
   "pixel_size": 0.005096525096525097,
   "alpha_threshold": 0.7,
   "clips": {

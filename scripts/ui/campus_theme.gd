@@ -132,7 +132,7 @@ static func apply_tree(root: Node) -> void:
 static func paper_card() -> StyleBoxTexture:
 	var cfg := settings()
 	var style := StyleBoxTexture.new()
-	style.texture = load("res://assets/textures/ui/paper/campus-paper-card-v1.png")
+	style.texture = load("res://assets/textures/ui/paper/campus-paper-card-v1.webp")
 	style.content_margin_left = cfg.paper_content_left
 	style.content_margin_top = cfg.paper_content_top
 	style.content_margin_right = cfg.paper_content_right
@@ -148,7 +148,7 @@ static func main_menu(view: Control) -> void:
 	view.get_node("Separator").hide()
 	var background := TextureRect.new()
 	background.name = "CampusBackground"
-	background.texture = load("res://assets/promotional/classroom-social-1920x1080-v1.png")
+	background.texture = load("res://assets/promotional/classroom-social-1920x1080-v1.webp")
 	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -157,7 +157,7 @@ static func main_menu(view: Control) -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var logo := TextureRect.new()
 	logo.name = "CampusLogo"
-	logo.texture = load("res://assets/logos/xiake-ten-minutes-logo-transparent-v1.png")
+	logo.texture = load("res://assets/logos/xiake-ten-minutes-logo-transparent-v1.webp")
 	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	logo.position = Vector2(cfg.logo_x, cfg.logo_y)
@@ -174,7 +174,7 @@ static func main_menu(view: Control) -> void:
 	panel.position = Vector2(cfg.menu_paper_x, cfg.menu_paper_y)
 	panel.size = Vector2(cfg.menu_paper_width, cfg.menu_paper_height)
 	var paper := StyleBoxTexture.new()
-	paper.texture = load("res://assets/textures/ui/paper/campus-menu-paper-v1.png")
+	paper.texture = load("res://assets/textures/ui/paper/campus-menu-paper-v1.webp")
 	panel.add_theme_stylebox_override("panel", paper)
 	view.add_child(panel)
 	view.move_child(panel, menu.get_index())
@@ -211,10 +211,10 @@ static func main_menu(view: Control) -> void:
 			item.focus_entered.connect(item.set_pressed.bind(true))
 			var gray_brush := StyleBoxTexture.new()
 			gray_brush.texture = load(
-				"res://assets/textures/ui/paper/campus-menu-brush-disabled-v1.png"
+				"res://assets/textures/ui/paper/campus-menu-brush-disabled-v1.webp"
 			)
 			var green_brush := StyleBoxTexture.new()
-			green_brush.texture = load("res://assets/textures/ui/paper/campus-menu-brush-v1.png")
+			green_brush.texture = load("res://assets/textures/ui/paper/campus-menu-brush-v1.webp")
 			for state in ["normal", "hover", "disabled"]:
 				item.add_theme_stylebox_override(state, gray_brush)
 			for state in ["pressed", "hover_pressed"]:

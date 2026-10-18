@@ -7,7 +7,7 @@
 - 自然站姿／轻微示意对照：parts_assembled_sample.png。
 - 动图：continuous_motion_sample.gif，96 帧 Godot 渲染结果编码为 16 fps GIF。
 - 教室实景：classroom_sample.png；近景 classroom_sample_close.png。
-- 素材：assets/textures/characters/modular_sample_v1/chenyang_continuous_v3.png。
+- 素材：assets/textures/characters/modular_sample_v1/chenyang_continuous_v3.webp。
 - 关节位置、权重区域、网格精度和动作幅度：data/ui/samples/chenyang_soft_mesh_sample.json。
 - 拼装及变形：tools/art_samples/chenyang_soft_mesh.gd。
 - 重现：godot --path . -s tools/art_samples/capture_chenyang_soft.gd。

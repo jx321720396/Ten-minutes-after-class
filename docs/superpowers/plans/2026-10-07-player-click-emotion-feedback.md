@@ -16,7 +16,7 @@
 - 当前成功落点尚无明确公开事件；UI 不应再次投射鼠标射线，自行猜目的地。
 - `scripts/ui/speech_bubble.gd` 是 Node2D 自绘无字对话气泡，不是本次表情素材组件。保留它，用新组件承载带图片的情绪反馈。
 - `appearance.csv` 已有 NPC gender 字段，但玩家使用末位专属节点，不能从 NPC 表或别名推断玩家版本。
-- 本次已生成点击图：`assets/textures/ui/movement/click_destination_v01.png`，1254×1254、RGBA，alpha 范围 0..255。暖橙空心菱形、深棕轮廓与中心点；这是完整图，不是图集，不需裁切帧。
+- 本次已生成点击图：`assets/textures/ui/movement/click_destination_v01.webp`，1254×1254、RGBA，alpha 范围 0..255。暖橙空心菱形、深棕轮廓与中心点；这是完整图，不是图集，不需裁切帧。
 - 仓库检索暂未找到已生成的八张情绪气泡；既有素材不重画。正式路径在素材收录任务中填写，缺素材明确报告，不以乱码路径或假文件接线。
 
 ## 2. 点击落点的用户规则

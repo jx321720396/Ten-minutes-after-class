@@ -2,10 +2,10 @@
   "design_size": [1920, 1080],
   "layer": 39,
   "backgrounds": {
-    "exam": "res://assets/backgrounds/office/office_idle_v01.png",
-    "academic": "res://assets/backgrounds/outcomes/academic_office_sunset_v01.png",
-    "dropout": "res://assets/backgrounds/outcomes/dropout_empty_desk_v01.png",
-    "end": "res://assets/backgrounds/outcomes/term_sunset_v01.png"
+    "exam": "res://assets/backgrounds/office/office_idle_v01.webp",
+    "academic": "res://assets/backgrounds/outcomes/academic_office_sunset_v01.webp",
+    "dropout": "res://assets/backgrounds/outcomes/dropout_empty_desk_v01.webp",
+    "end": "res://assets/backgrounds/outcomes/term_sunset_v01.webp"
   },
   "paper_rect": [380, 20, 1160, 840],
   "footer_rect": [470, 872, 980, 96],
@@ -29,7 +29,7 @@
   "line": "#d6c7ad",
   "shade": "#211d191f",
   "concept": {
-    "paper_texture": "res://assets/textures/ui/paper/outcome-paper-v01.png",
+    "paper_texture": "res://assets/textures/ui/paper/outcome-paper-v01.webp",
     "brush_texture": "res://assets/icons/ui/outcome_brush.svg",
     "title_font": 94, "score_font": 150, "stat_font": 52,
     "banner_font": 44,

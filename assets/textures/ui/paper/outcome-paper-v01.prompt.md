@@ -1,7 +1,7 @@
 # 结算素纸底框
 
 - 生成方式：内置 imagegen，透明背景。
-- 参考：`docs/art/concepts/exam_end_20261018/failure_dropout_v01.png`（已确认概念图）。
+- 参考：`docs/art/concepts/exam_end_20261018/failure_dropout_v01.webp`（已确认概念图）。
 - 实装：`data/ui/outcome_screen.json` → `concept.paper_texture`。
 
 提示词：

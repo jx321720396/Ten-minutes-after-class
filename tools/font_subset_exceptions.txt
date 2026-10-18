@@ -15,3 +15,10 @@
 ✓ ✕ ✗  # 勾/叉（chat_feedback_hud.gd）
 〜 〟 〰 〿  # 日文波浪线等标点（安全字符集里预置）
 📜  # 卷轴 emoji（美术包 README）
+‗  # 双下划线（LXGW WenKai 无此字形，只影响教室板书字体；HarmonyOS 有）
+
+# 2026-10-18：以下字形不在仓库里的 HarmonyOS 子集版（约 0.87 MiB）中，
+# 由当时未提交的新文案引入（leisure_effects.csv / opening_comic.json /
+# outcome_screen.json / backgrounds/outcomes/prompts.json 等）。
+# 要真正显示这些字，需要用完整版 HarmonyOS Sans SC 重新做子集，再重新导出。
+伸克勿叙吧城夕央奇宜市忆怀怖您悲惨憾摞旅月木杯梯橘毕溢珍瓷电磁罩耦胜脑腾贵逝铅飞  # 新增文案用字

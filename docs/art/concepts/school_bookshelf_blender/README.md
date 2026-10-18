@@ -8,7 +8,7 @@
 - `blender_preview.png`：Blender Cycles 实际渲染，非 AI 生成图。
 - `godot_preview.png`：同一 GLB 在 Godot 4.7.2 内实际渲染，使用既有独立书架展示场景的光照。
 - `assets/models/bookshelf/prop_bookshelf_blender_v2.glb`：仅家具和摆件，含材质与嵌入式木纹贴图，不含展示墙面、灯光、相机。
-- `assets/models/bookshelf/prop_bookshelf_blender_wood.png`：原创数学纹理，用于暖木色表面。
+- `assets/models/bookshelf/prop_bookshelf_blender_wood.webp`：原创数学纹理，用于暖木色表面。
 - `build_report.json`：生成版本、种子、对象数量与产物位置。
 
 柜体宽 1.0 m、高 1.55 m、深 0.36 m；顶部摆件另算。GLB 为米制、Y 向上，正面朝 +Z，原点在地面中心；Blender 工程 Z 向上、正面朝 -Y。不能直接沿用上一版朝 -Z 的相机位置。

@@ -7,7 +7,7 @@
 - manifest.json：人物编号、名称、sprite、参考图片及输出文件映射。
 - generation_prompts.json：完整提示词和每人外貌特征。
 - validation.json：图片尺寸、透明度与 SHA-256 检查。
-- 预览：docs/art/concepts/idle_seated_20261016/all_16_idle_seated.png。
+- 预览：docs/art/concepts/idle_seated_20261016/all_16_idle_seated.webp。
 
 预览工具：tools/capture_idle_roster.gd，使用 Godot 渲染素材对照、运行时教室截图及 16 人实际桌椅组合图。
 

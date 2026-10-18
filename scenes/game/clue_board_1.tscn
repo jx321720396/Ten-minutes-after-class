@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://15g00axq0xxy" path="res://scripts/game/clue_board_1.gd" id="1_script"]
 [ext_resource type="Script" path="res://scripts/ui/touch_scroll_container.gd" id="3_touch_scroll"]
-[ext_resource type="Texture2D" uid="uid://cti8ayrvx60ru" path="res://assets/textures/clueboard/01.png" id="2_ddmx5"]
+[ext_resource type="Texture2D" uid="uid://cti8ayrvx60ru" path="res://assets/textures/clueboard/01.webp" id="2_ddmx5"]
 [ext_resource type="PackedScene" path="res://scenes/character_head/blunt_female.tscn" id="4_bf"]
 [ext_resource type="PackedScene" path="res://scenes/character_head/blunt_male.tscn" id="4_bm"]
 [ext_resource type="PackedScene" path="res://scenes/character_head/lively_female.tscn" id="4_lf"]
@@ -21,7 +21,7 @@
 [ext_resource type="PackedScene" path="res://scenes/character_head/warm_male.tscn" id="4_wm"]
 [ext_resource type="Texture2D" uid="uid://dynpunggmu5fj" path="res://assets/textures/clueboard/chalk_stick_up.png" id="6_stick_up"]
 [ext_resource type="Texture2D" uid="uid://c2hjal68sxr7w" path="res://assets/textures/clueboard/chalk_cursor.png" id="7_chalk_cursor"]
-[ext_resource type="Texture2D" uid="uid://dxeqk8j3ir7rt" path="res://assets/textures/clueboard/eraser_cursor.png" id="8_eraser_cursor"]
+[ext_resource type="Texture2D" uid="uid://dxeqk8j3ir7rt" path="res://assets/textures/clueboard/eraser_cursor.webp" id="8_eraser_cursor"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tray"]
 bg_color = Color(0.16, 0.1, 0.06, 0.82)

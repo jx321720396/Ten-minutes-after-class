@@ -6,7 +6,7 @@
 
 - Godot场景：`scenes/game/classroom_2d_motion_sample.tscn`，F6运行。
 - 实录：`motion-20261012.gif`；坐姿：`seated-20261012.png`。
-- 图片：`assets/textures/samples/classroom_2d/background_v1.png` 和 `student_motion_v1.png`。
+- 图片：`assets/textures/samples/classroom_2d/background_v1.webp` 和 `student_motion_v1.png`。
 - 配置：`data/ui/classroom_2d_motion_sample.json`；纯Node2D/Sprite2D/Polygon2D，没有3D节点、光照或相机移动。
 - 录制：`godot --path . --script tools/capture_classroom_2d_motion_sample.gd`，再 `py tools/package_classroom_2d_motion_preview.py`。
 - 检查：`godot --headless --path . --script tools/verify_classroom_2d_motion_sample.gd`。

@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Texture2D" uid="uid://dux4t1qvj413i" path="res://assets/textures/meme/agitated_male.png" id="1_meme"]
+[ext_resource type="Texture2D" uid="uid://dux4t1qvj413i" path="res://assets/textures/meme/agitated_male.webp" id="1_meme"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_meme"]
 atlas = ExtResource("1_meme")

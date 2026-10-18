@@ -4,7 +4,7 @@
 
 ## 素材与提示词
 
-- `assets/textures/ui/backpack/items-v1.png`：原始装满书包参考，完整 navy canvas open school backpack，暖光、米色内衬、紫色课外书、银色 MP3 与白色耳机、橙色饼干包；透明背景，无文字或品牌。
+- `assets/textures/ui/backpack/items-v1.webp`：原始装满书包参考，完整 navy canvas open school backpack，暖光、米色内衬、紫色课外书、银色 MP3 与白色耳机、橙色饼干包；透明背景，无文字或品牌。
 - `empty-v1.png`：编辑上述图，只移除书、MP3、耳机、饼干包，保持书包轮廓、尺寸、缝线、拉链与光照。
 - `objects-v1.png`：从原图提取三件物品透明轮廓的中间参考。
 - `atlas-v1.png`：最终物品层；将原始三物品整理为透明 2×2 atlas，左上课外书、右上 MP3 与耳机、左下零食、右下空白；每格保留边距，不跨格，不加文字。
