@@ -11,6 +11,8 @@ signal replay_requested
 
 
 func _ready():
+	get_viewport().size_changed.connect(_fit_fullscreen)
+	_fit_fullscreen()
 	back_btn.pressed.connect(_on_back)
 	replay_btn.pressed.connect(_on_replay)
 	bgm_slider.value = BGM.get_bgm_volume() * 100.0
@@ -18,6 +20,12 @@ func _ready():
 	sfx_slider.value = SFX.get_sfx_volume() * 100.0
 	sfx_slider.value_changed.connect(_on_sfx_volume_changed)
 	TouchBind.bind_tree(self)
+
+
+func _fit_fullscreen() -> void:
+	preload("res://scripts/ui/fullscreen_panel.gd").fit(
+		$Overlay/CenterContainer, $Overlay/CenterContainer/Panel, Vector2(1280, 720)
+	)
 
 
 func _on_replay():

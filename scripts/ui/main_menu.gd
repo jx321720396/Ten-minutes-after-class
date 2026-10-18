@@ -81,8 +81,8 @@ func _start_new_game() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	GameState.start_game(rng.randi(), _npc_count())
-	# 教程由入口决定（28 章）：没看过、或设置里点了「重看」，这局进教室才弹。
-	GameState.tutorial_pending = not TutorialOverlay.is_seen() or GameState.replay_tutorial
+	# 上任漫画属于每局开场；已看记录不应跳过新游戏的身份与考核说明。
+	GameState.tutorial_pending = true
 	GameState.replay_tutorial = false
 	# 主菜单期间已后台预载教室场景时直接切 PackedScene，省掉约 0.5 秒同步读盘。
 	var packed := AssetPreloader.scene(SCENE_CLASSROOM)
