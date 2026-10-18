@@ -168,6 +168,9 @@ var _settle_acc: Array = []
 ## 配置：rules/psyche.csv（心理状态与跨天）、rules/activities.csv（单位与结算）
 var _psyche: Dictionary = {}
 var _acts: Dictionary = {}
+## 课间活动效果（2026-10-18）：behavior → {stress_per_unit, stress_once, grade_once, vitality_once}。
+## 数值在 rules/leisure_effects.csv；此前 6 种娱乐都是「每 10 秒 −5 压力」，选择没有区别。
+var _leisure_effects: Dictionary = {}
 var _seat_rel: Dictionary = {}
 var _harm_events: RefCounted  # 伤害事件（D07），脚本见 harm_events.gd
 ## D07 §10：本课间被老师制止（现场制止 / 调解 / 召唤到办公室）的学生，不能主动伤害。
@@ -252,6 +255,7 @@ func _load_config(tables: Dictionary) -> void:
 	_chat_space = _params(tables, CHAT_SPACE_TABLE)
 	_psyche = _params(tables, PSYCHE_TABLE)
 	_acts = _params(tables, ACTIVITIES_TABLE)
+	_leisure_effects = LeisureActions.build_effects(tables)
 	_seat_rel = _params(tables, SEAT_RELATIONS_TABLE)
 	_harm_events = HARM_EVENTS.new()
 	_harm_events.configure(_params(tables, HARM_TABLE))
@@ -259,10 +263,10 @@ func _load_config(tables: Dictionary) -> void:
 	_risk.configure(_params(tables, RISK_TABLE), _n)
 	_p = _params(tables, "rules/transmission")
 	_kp = _params(tables, "rules/kernel_params")
-	_grade_bands = _build_grade_bands(tables)
-	_probs = _build_behavior_probs(tables)
-	_thresholds_lookup = _build_thresholds(tables)
-	_behaviors = _build_behaviors(tables)
+	_grade_bands = TableBuilders.grade_bands(tables)
+	_probs = TableBuilders.behavior_probs(tables)
+	_thresholds_lookup = TableBuilders.thresholds(tables)
+	_behaviors = TableBuilders.behaviors(tables)
 	for kind in LEISURE_KINDS:
 		var prefix: String = LEISURE_KINDS[kind]
 		_behaviors[kind] = {
@@ -414,24 +418,39 @@ func _apply_bindings() -> void:
 			_a[fi * _n + tj] = float(str(b["affinity"]))
 
 
-## 成绩初始化（§17.1.1）：NPC 种子化均匀 [min,max)，玩家固定。消费 len(chars) 次 RNG。
+## 成绩初始化（§17.1.1）：**镜像配对**，开局班级平均分恒为 (min+max)/2。
 ## ⚠️ 必须紧跟 _init_relations() 之后调用，与 Python 同一点插入，保同种子 RNG 流不漂移。
-## 开局状态（《老师版规则合并稿》D01）：压力 0–20 随机、动力 = 该生压力、成绩 250–450 随机（均值 350）。
-## ⚠️ 随机数顺序固定（每名学生两次 random：压力、成绩），Python 参考实现需同序。
+## 开局状态（《老师版规则合并稿》D01）：压力 0–20 随机、动力 = 该生压力、成绩 min–max 镜像配对。
+## 平均分是**固定值而非期望值**（2026-10-18 裁定）：前 half 名学生各自均匀随机 [min,max)，
+## 后 half 名各自为其关于中值的镜像（g' = min + max − g），故总和恒为 n×(min+max)/2，
+## 任意种子下开局均分都是同一个数值 —— 否则开局随机抖动本身就会造出「必不达标」的局。
+## 中值随 data/rules/psyche.csv 的 grade_init_min/max 走，不写死 350。
+## 配对不固定：_chars 顺序来自本函数之前的 _rng.shuffle(pool)，配对每局随机分配。
+## 奇人数时最后一名取中值，均值同样严格成立。
+## ⚠️ 随机数顺序固定（先 n 次压力，每人一次；再 half 次成绩），Python 参考实现需同序。
 func _init_grade() -> void:
 	var smin := float(_psyche["stress_init_min"])
 	var smax := float(_psyche["stress_init_max"])
 	var gmin := float(_psyche["grade_init_min"])
 	var gmax := float(_psyche["grade_init_max"])
 	var vitality_pins_stress := int(_psyche["vitality_equals_stress"]) == 1
+	var n := _chars.size()
+	# 整数除法：半数学生随机、半数镜像（n 为奇数时中间那名取中值）
+	var half := n >> 1
+	var mirror_sum := gmin + gmax
 	_broken = []
-	for i in range(_chars.size()):
+	for i in range(n):
 		var stress := _clamp100(smin + _rng.random() * (smax - smin))
 		_stress[i] = stress
 		_vitality[i] = stress if vitality_pins_stress else 0.0
 		_gain_today[i] = 0.0
-		_grade[i] = gmin + _rng.random() * (gmax - gmin)
 		_broken.append(false)
+	for i in range(half):
+		var g := float(_rint(gmin + _rng.random() * (gmax - gmin)))
+		_grade[i] = g
+		_grade[half + i] = mirror_sum - g
+	if n % 2 == 1:
+		_grade[n - 1] = float(_rint(mirror_sum * 0.5))
 
 
 # ------------------------------------------------------------------ 空间层
@@ -673,6 +692,8 @@ func skip_class() -> void:
 	for i in range(_n):
 		_gain_today[i] += gain
 	# 崩溃判定保留：跳过期间压力冻结，跳过时判一次 = class 结束时判一次（兜底边界的邻居涓流抬压）。
+	# 睡觉跨段（2026-10-19）：先结算睡下的人再判崩溃，否则新崩溃者会被同一次结算唤醒。
+	_settle_sleep()
 	_check_breakdown()
 	_phase_index = (_phase_index + 1) % _active_phases.size()
 	_phase_setup_done = false
@@ -703,7 +724,9 @@ func _settle_finished_actions() -> void:
 		_last_finished[i] = _busy_act[i]
 		# D02 第 4 条：未满一个单位的部分按时间比例折算（压力按 2 秒 1 点；收益只按整数单位）。
 		_fold_pending_unit(i)
-		# D02 起减压不再在「完成」时结算：按每 10 秒 −5 压力由 _settle_units 逐单位给。
+		# 2026-10-18：活动自然完成时结算一次性附加效果（学业／动力，见 leisure_effects.csv）。
+		LeisureActions.apply_finished_bonus(self, i)
+		# 减压按各活动自己的压力率，由 _settle_units 逐单位给。
 		if LEISURE_KINDS.has(_busy_act[i]):
 			if _busy_act[i] == "eat_snack" and _snack_provider[i] != null:
 				# 分享零食（§9.1.4）：自然完成一个共同进食单位 → 对分享者结算一次分享好感；
@@ -824,9 +847,12 @@ func _settle_units() -> void:
 				# 2026-10-17：游戏状态回复动力 —— 与学习消耗对称，让动力能自动循环。
 				add_vitality(i, float(_acts["play_vitality_gain"]))
 		else:
+			# 逐活动压力率（rules/leisure_effects.csv，2026-10-18）：不同娱乐的减压效率不同。
+			var per_unit := LeisureActions.stress_per_unit(self, str(_current_act[i]))
 			while _settle_acc[i] >= unit_seconds:
 				_settle_acc[i] -= unit_seconds
-				add_stress(i, -float(_acts["relief_per_unit"]))
+				if per_unit != 0.0:
+					add_stress(i, per_unit)
 
 
 ## 该生此刻按哪一类结算："" = 不结算｜"study"｜"play"｜"leisure"。
@@ -1337,13 +1363,17 @@ func _failure_reason() -> String:
 				return "退学：%s 累计崩溃超过 3 次，或正式触发霸凌／孤立后再次崩溃" % "、".join(who)
 	if _exam != null and not _exam.last_passed():
 		return (
-			"首次考核不达标：第八天全班均分 %d，低于目标均分 %d"
-			% [int(round(_exam.last_exam_mean())), int(round(_exam.target_mean()))]
+			"考核不达标：第 %d 天全班均分 %d，低于目标均分 %d"
+			% [
+				_exam.last_exam_day(),
+				int(round(_exam.last_exam_mean())),
+				int(round(_exam.target_mean())),
+			]
 		)
 	return ""
 
 
-## 老师是否被辞退：首次考核不达标（D05）或出现退学（D06）。
+## 老师是否被辞退：任一次考核不达标（D05）或出现退学（D06）。
 func _class_failed() -> bool:
 	if _risk != null and _risk.has_dropout():
 		return true
@@ -1412,16 +1442,18 @@ func _settle_day() -> void:
 
 ## 当日学业收益并入成绩（《老师版规则合并稿》D01 + 主文档 §10.2 的日结类被动）。
 ## 顺序：群策群力（当天学业收益 +1 / 名达标同学）→ 善于吸收（净收益为正再 +3 成绩）
-## → 钳制到 [0, grade_max] → 正反馈按**实际提高量**给动力（初始成绩赋值不算提高）。
+## → 钳制到 [0, grade_max] → **四舍五入到整数分**（2026-10-18 裁定：成绩恒为整数值）
+## → 正反馈按**实际提高量**给动力（初始成绩赋值不算提高）。
 ## 主文档 §10.2 把「群策群力与收益转成绩的先后」列为待确认项；此处按「先并入当天收益、再转成成绩」实现。
 func _settle_daily_gain(i: int) -> void:
 	var net := _gain_today[i]
 	if _passives.has(i, PASSIVES.TEAM_SPIRIT):
 		net += _passives.team_spirit_gain(i, _team_spirit_count(i))
 	var before := _grade[i]
-	_grade[i] = clampf(
+	var merged := clampf(
 		_grade[i] + net + _passives.absorb_bonus(i, net), 0.0, float(_kp["grade_max"])
 	)
+	_grade[i] = float(_rint(merged))
 	var raised := _grade[i] - before
 	if raised > 0.0:
 		var bonus: float = _passives.grade_raised(i, raised)
@@ -1599,18 +1631,13 @@ func _update_environment() -> void:
 	_volume = clampf(_volume + rate * (target - _volume), 0.0, volume_max)
 
 
-## 压力涓流：偏差压力 + 学习/独处滴注（老师版删除噪声压力/噪声敌对/从众敌对）。
+## 压力涓流：只剩环境层的偏离氛围通道（老师版删除噪声压力/噪声敌对/从众敌对）。
+## 2026-10-19 删除「学习 +0.4 / 独处 −2」滴注：这两个键是学生版 §8.4 遗留
+## （`study_stress` 于 2026-10-09 由 1.0 标定到 0.4，`alone_stress` 于 2026-10-05 引入），
+## 老师版主文档无此条款；且 `_doing_study()` 恒 true 使独处分支本来就不可达。
+## 老师版的学习加压（`w_events.study_stress`，不联动动力）尚未接入，见主文档 §13.3。
 func _stress_drip() -> void:
 	_deviance_pressure()
-	for i in range(_n):
-		if not is_present(i):
-			continue
-		if _in_conversation[i]:
-			continue
-		if _doing_study(i):
-			add_stress(i, float(_probs["study_stress"]))
-		else:
-			add_stress(i, float(_probs["alone_stress"]))
 
 
 func _deviance_pressure() -> void:
@@ -1631,16 +1658,19 @@ func _deviance_pressure() -> void:
 			add_stress(i, k * (v - 0.72) * 10.0)
 
 
-func _doing_study(_i: int) -> bool:
-	return true
-
-
 # ------------------------------------------------------------------ 相位结算
+## 睡觉结算：醒来一次 −`sleep_relief` 压力（不联动）＋ +`sleep_vitality_gain` 动力。
+## 2026-10-19 起跨过紧邻上课段：课间段末不结算，等上课段末（`skip_class`）或下一非上课段末。
 func _settle_sleep() -> void:
+	var nxt := _phase_index + 1
+	if nxt < _active_phases.size() and str(_active_phases[nxt]["kind"]) == "class":
+		return
 	var relief := float(_probs.get("sleep_relief", 0.0))
+	var gain := float(_probs.get("sleep_vitality_gain", 0.0))
 	for i in range(_n):
 		if _sleeping[i]:
-			add_stress(i, -relief)
+			add_stress(i, -relief, false)
+			add_vitality(i, gain)
 			_sleeping[i] = false
 			_busy_until[i] = 0
 			_current_act[i] = null
@@ -1802,7 +1832,10 @@ func _verdict(i: int, j: int, kind: String = "join") -> Dictionary:
 
 # ------------------------------------------------------------------ 行为决策（D10）
 ## 每课间段开始掷一次睡觉（§10.8：睡 = 本段不做其他事，段粒度而非 tick）。
+## 2026-10-19：只在课间段掷；睡下后占满本段并跨过紧邻上课段，到下一段末才结算（`_settle_sleep`）。
 func _roll_sleep() -> void:
+	if _phase != "break":
+		return
 	if not _allowed("sleep"):
 		return
 	var p := float(_probs["sleep"])
@@ -3117,41 +3150,6 @@ func _index_by(tables: Dictionary, name: String, key: String) -> Dictionary:
 	for row in _rows(tables, name):
 		out[str(row[key])] = row
 	return out
-
-
-func _build_behavior_probs(tables: Dictionary) -> Dictionary:
-	var out := {}
-	for row in _rows(tables, "rules/behavior_probs"):
-		out[str(row["behavior"])] = float(str(row["base_p"]))
-	return out
-
-
-func _build_thresholds(tables: Dictionary) -> Dictionary:
-	var out := {}
-	for row in _rows(tables, "rules/behavior_thresholds"):
-		out["%s_%s" % [str(row["behavior"]), str(row["metric"])]] = float(str(row["value"]))
-	return out
-
-
-func _build_behaviors(tables: Dictionary) -> Dictionary:
-	var out := {}
-	for row in _rows(tables, "rules/behaviors"):
-		out[str(row["behavior"])] = {
-			"duration": int(float(str(row["duration"]))),
-			"payoff": float(str(row["payoff"])),
-			"kind": str(row["kind"]),
-			"noise": float(str(row.get("noise", "0"))),
-			"join_mode": str(row.get("join_mode", "none")).strip_edges(),
-		}
-	return out
-
-
-func _build_grade_bands(tables: Dictionary) -> Array:
-	var bands: Array = []
-	for row in _rows(tables, "rules/grade_table"):
-		bands.append([float(row["band_upper"]), float(row["ticks_per_point"])])
-	bands.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
-	return bands
 
 
 func _build_character_tags() -> Array:

@@ -74,6 +74,19 @@ func _on_settled(summary: Dictionary) -> void:
 func _on_report(ended: int) -> void:
 	_model.seal(ended, GameState.profile_notebook, _students)
 	_latest_day = maxi(_latest_day, ended)
+	# 考试／终局由 OutcomeScreen 接管。推理板只归档，不能盖住结算或持有全树暂停。
+	var has_outcome: bool = (
+		is_instance_valid(_clock)
+		and (
+			str(_clock.snapshot().mode) == "finished"
+			or (_core._exam.is_exam_day(ended) and not _core.exam_report(ended).is_empty())
+		)
+	)
+	if has_outcome:
+		_daily_report = false
+		if is_open():
+			close()
+		return
 	_daily_report = true
 	var room := get_parent().get_parent()
 	var transition := room.get_node_or_null("TransitionOverlay") if room != null else null

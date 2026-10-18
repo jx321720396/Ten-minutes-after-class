@@ -358,8 +358,27 @@ if all(k in _ps for k in _grade_keys):
           0 <= _ps["grade_init_min"] and _ps["grade_init_max"] <= _kp["grade_max"],
           "%s / %s" % (_ps["grade_init_min"], _ps["grade_init_max"]))
     check("开局成绩均值 = (min+max)/2",
-          abs((_ps["grade_init_min"] + _ps["grade_init_max"]) / 2.0 - 350.0) <= 1.0,
+          abs((_ps["grade_init_min"] + _ps["grade_init_max"]) / 2.0 - 430.0) <= 1.0,
           (float(_ps["grade_init_min"]) + float(_ps["grade_init_max"])) / 2.0)
+    # 镜像配对 + 「成绩恒为整数」要求 min+max 为偶数（中值才是整数分），否则两者不能同时成立。
+    check("grade_init_min + grade_init_max 为偶数（中值 = 整数分）",
+          int(_ps["grade_init_min"] + _ps["grade_init_max"]) % 2 == 0,
+          "%s + %s" % (_ps["grade_init_min"], _ps["grade_init_max"]))
+    _exam_rows = params("rules/exam.csv")
+    _exam_orders = sorted(
+        int(k[len("exam_day_"):]) for k in _exam_rows if k.startswith("exam_day_"))
+    _targets = [_exam_rows.get("exam_target_mean_%d" % k) for k in _exam_orders]
+    check("exam：每次周考都配了目标均分（exam_target_mean_<次序>）",
+          bool(_exam_orders) and all(t is not None for t in _targets),
+          "日期序 %s / 目标 %s" % (_exam_orders, _targets))
+    if _exam_orders and all(t is not None for t in _targets):
+        check("exam：目标均分逐次递增（450 → 480 → 500 → 520）",
+              all(a < b for a, b in zip(_targets, _targets[1:])), _targets)
+        check("exam：第 1 次目标高于开局班级均分",
+              _targets[0] > (_ps["grade_init_min"] + _ps["grade_init_max"]) / 2.0,
+              "%s / 开局 %s" % (
+                  _targets[0],
+                  (float(_ps["grade_init_min"]) + float(_ps["grade_init_max"])) / 2.0))
 check("psych：压力 / 动力范围与阈值合法",
       0 <= _ps["stress_init_min"] <= _ps["stress_init_max"] <= _ps["stat_max"]
       and _ps["stat_min"] == 0 and _ps["stat_max"] == 100
@@ -384,6 +403,22 @@ check("grade_table：末档上界 = grade_max",
       "末档 %s vs grade_max %s" % (_guppers[-1] if _guppers else "无", _kp.get("grade_max")))
 check("grade_table：上界与 ticks 均为正",
       all(u > 0 and t > 0 for u, t in zip(_guppers, _gtpp)))
+# 15. 课间活动效果（2026-10-18：每种活动效果不同；行动额度已于 2026-10-19 移除）
+_leisure_rows = load("rules/leisure_effects.csv")
+_le_by_behavior = {str(r["behavior"]): r for r in _leisure_rows}
+check("leisure_effects：覆盖全部娱乐与伙伴活动",
+      all(k in _le_by_behavior for k in
+          ("eat_snack", "chat", "roughhouse", "listen_music", "read_book", "play_phone")),
+      sorted(_le_by_behavior))
+check("leisure_effects：每种活动都是减压（stress_per_unit < 0）",
+      bool(_leisure_rows) and all(float(r["stress_per_unit"]) < 0 for r in _leisure_rows),
+      sorted(float(r["stress_per_unit"]) for r in _leisure_rows))
+check("leisure_effects：减压率不全相同（否则玩家感觉不到区别）",
+      len({float(r["stress_per_unit"]) for r in _leisure_rows}) >= 3,
+      sorted({float(r["stress_per_unit"]) for r in _leisure_rows}))
+check("leisure_effects：玩手机扣学业、看课外书加学业",
+      float(_le_by_behavior["play_phone"]["grade_once"]) < 0
+      and float(_le_by_behavior["read_book"]["grade_once"]) > 0)
 _exam_rows = load("rules/exam.csv")
 _exam = {r["param"]: r["value"] for r in _exam_rows}
 _exam_days = sorted(int(float(v)) for k, v in _exam.items() if k.startswith("exam_day_"))

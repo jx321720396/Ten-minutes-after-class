@@ -134,7 +134,6 @@
     "summon_picker": "选择学生 · 叫到办公室",
     "close": "关闭",
     "summon_pending": "正在召唤 %s，抵达后可进行办公室会面。",
-    "remaining": "剩余 %02d:%02d",
     "no_clock": "办公室 · 界面预览",
     "no_exam": "周考目标待配置",
     "finished": "学期结束",

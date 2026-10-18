@@ -306,7 +306,9 @@ func test_optimistic_relieves_stress_once_per_leisure() -> void:
 	assert_almost_eq(
 		core.stress(i), 50.0 - _number("optimistic_stress_relief"), 1e-9, "乐观：完成一次娱乐压力额外 −3"
 	)
-	assert_almost_eq(core.vitality(i), 50.0, 1e-9, "乐观的减压不联动动力")
+	# 2026-10-18：活动本身有动力回报（leisure_effects.vitality_once），乐观的减压仍不联动动力。
+	var earned: float = float(core._leisure_effects["listen_music"]["vitality_once"])
+	assert_almost_eq(core.vitality(i), 50.0 + earned, 1e-9, "乐观的减压不联动动力（动力只加活动自身回报）")
 
 
 # ------------------------------------------------------------------ 老师训斥

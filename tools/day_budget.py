@@ -77,7 +77,7 @@ def main():
 
     # —— 第八天目标可达性 ——
     init_mean = (float(psyche["grade_init_min"]) + float(psyche["grade_init_max"])) / 2.0
-    target = float(exam["exam_target_mean"])
+    target = float(exam.get("exam_target_mean_1", exam.get("exam_target_mean", 450.0)))
     exam_day = int(exam["exam_day_1"])
     need_total = (target - init_mean) * npc
     need_daily = need_total / exam_day

@@ -65,8 +65,9 @@ func test_term_ends_after_30_days() -> void:
 	var stack := _make_stack()
 	var core: SimCore = stack[0]
 	var clock: SimulationClock = stack[1]
-	# 本用例只验证 30 天学期的收束；把目标均分设 0 以免第八天考核触发辞退终止
+	# 本用例只验证 30 天学期的收束；清空按次目标并设兜底 0，避免第八天考核触发辞退终止
 	# （辞退终止另见 test_failure_reason_* 与时钟用例）。
+	core._exam._target_means.clear()
 	core._exam._target_mean = 0.0
 	# 用数组计数：GDScript 闭包按值捕获 int，数组才能跨 lambda 累积
 	var reports: Array = []

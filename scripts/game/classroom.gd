@@ -74,6 +74,10 @@ func _ready() -> void:
 	add_child(_outcome_screen)
 	_outcome_screen.bind_sources(core, clock, _term_report)
 	_outcome_screen.continue_requested.connect(_on_continue_requested)
+	var exam_comic := preload("res://scripts/ui/exam_comic.gd").new()
+	exam_comic.name = "ExamComic"
+	add_child(exam_comic)
+	exam_comic.bind_sources(core, clock)
 	transition.bind_clock(clock)
 	_bind_clue_board()
 	# 黑幕开始退场的瞬间就应用挂起的相位（含上课 / 每日归位），不等淡出结束
@@ -300,7 +304,8 @@ func _on_continue_requested() -> void:
 		# 转场黑幕任务：确认进入次日 → 显示「第 N 天」黑幕；
 		# 黑幕结束后的归位停留（0.7 秒）由走动组件在退场补跑时接管
 		var snap: Dictionary = clock.snapshot()
-		transition.show_day_start(int(snap.get("day", 0)), str(snap.get("display_name", "")))
+		if not bool(snap.get("is_exam_day", false)):
+			transition.show_day_start(int(snap.get("day", 0)), str(snap.get("display_name", "")))
 		return
 	push_warning("Classroom：未能进入下一天（学期已结束，或完整存档 / 简报组件尚未接入）——" + "时间停留在当前边界。")
 

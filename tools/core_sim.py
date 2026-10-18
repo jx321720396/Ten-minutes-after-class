@@ -176,6 +176,16 @@ class Sim:
         self.kp = load_params("rules/kernel_params.csv")
         self.psyche = load_params("rules/psyche.csv")
         self.acts = load_params("rules/activities.csv")
+        # 2026-10-18：课间活动效果（不同娱乐减压率/学业/动力不同）；
+        # 2026-10-19 回退每课间行动额度，活动不再限件数。
+        self.leisure_effects = {
+            r["behavior"]: {
+                "stress_per_unit": float(r["stress_per_unit"]),
+                "grade_once": float(r["grade_once"]),
+                "vitality_once": float(r["vitality_once"]),
+            }
+            for r in load_table("rules/leisure_effects.csv")
+        }
         self.seat_rel = load_params("rules/seat_relations.csv")
         self.harm = load_params("rules/harm.csv")
         self.risk_cfg = load_params("rules/risk.csv")
@@ -369,10 +379,16 @@ class Sim:
                     self.A[g][j] = 50.0
 
     def _init_grade(self):
-        """成绩初始化（§17.1.1）：NPC 种子化均匀 [min,max)。
+        """成绩初始化（§17.1.1）：镜像配对，开局均分恒为 (min+max)/2。
 
         ⚠️ 必须紧跟 `_init_relations()` 之后调用，与 GDScript 同一点插入，保同种子 RNG 流不漂移。
-        2026-10-16：开局成绩分布改由 rules/psyche.csv 给出（D01：250–450，均值 350）。
+        2026-10-16：开局成绩分布改由 rules/psyche.csv 给出（D01：250–450，中值 350）。
+        2026-10-18 裁定：**平均分是固定值而非期望值**。前 half 名学生各自均匀随机 [min,max)，
+        后 half 名各自为其关于中值的镜像（g' = min + max − g），故总和恒为 n×(min+max)/2，
+        任意种子下开局均分都是同一个数值，避免开局随机抖动本身造出「必不达标」的局。
+        配对不固定：`self.chars` 顺序来自本函数之前的 `rng.shuffle`，配对每局随机分配。
+        奇人数时最后一名取中值，均值同样严格成立。
+        ⚠️ RNG 顺序：先 n 次压力（每人一次），再 half 次成绩，与 GDScript 同序。
         ⚠️ 压力 / 动力 / 学业收益的完整 D01 口径尚未在本参考实现中同步（见
         docs/production/老师版待确认参数.md「本轮未做」第 3 条）。
         """
@@ -381,13 +397,21 @@ class Sim:
         gmin = self.psyche["grade_init_min"]
         gmax = self.psyche["grade_init_max"]
         pin_stress = int(self.psyche["vitality_equals_stress"]) == 1
-        for i in range(len(self.chars)):
+        n = len(self.chars)
+        half = n // 2
+        mirror_sum = gmin + gmax
+        for i in range(n):
             stress = clamp100(smin + self.rng.random() * (smax - smin))
             self.Stress[i] = stress
             self.Vitality[i] = stress if pin_stress else 0.0
             self.GainToday[i] = 0.0
-            self.Grade[i] = gmin + self.rng.random() * (gmax - gmin)
             self.Broken[i] = False
+        for i in range(half):
+            g = exam_rint(gmin + self.rng.random() * (gmax - gmin))
+            self.Grade[i] = float(g)
+            self.Grade[half + i] = float(mirror_sum - g)
+        if n % 2 == 1:
+            self.Grade[n - 1] = float(exam_rint(mirror_sum * 0.5))
 
     # ------------------------------------------------ 派生量
     def m_relation(self, i, j):
@@ -577,7 +601,10 @@ class Sim:
 
         ⚠️ 必须在**段**粒度而非 tick 粒度判定 —— 早期误写在 `decide_and_act` 里，
         结果每段掷 100 次、96% 的课间都在睡。规格的单位是"本课间"，不是"本 tick"。
+        2026-10-19：只在课间段掷 —— 上课段被黑幕跳过、不进段首判定，不再有跨段残留。
         """
+        if self.phase != "break":
+            return
         if not self.allowed("sleep"):
             return
         p = self.probs.get("sleep", 0.0)
@@ -1494,34 +1521,38 @@ class Sim:
 
     # ------------------------------------------------ 主循环
     def stress_drip(self):
-        self.deviance_pressure()   # 环境层：偏离氛围 → 压力（不是禁止，是代价）
-        """涓流：独处恢复 / 学习累积（主文档 §8.4）"""
-        for i in range(self.N):
-            if self.in_conversation[i]:
-                continue                      # 参与互动者已由 topic_stress 减压
-            if self.doing_study(i):
-                self.add_stress(i, self.probs["study_stress"])
-            else:
-                self.add_stress(i, self.probs["alone_stress"])
+        """涓流：只剩环境层的偏离氛围通道。
 
-    @staticmethod
-    def doing_study(i):
-        """原型简化：未参与互动即视为在原位学习（正式版按行为状态判定）"""
-        return True
+        2026-10-19 删除「学习 +0.4 / 独处 −2」滴注（`study_stress` / `alone_stress`）：
+        学生版 §8.4 遗留，老师版主文档无此条款；原 `doing_study()` 恒 true，独处分支
+        本来不可达。老师版的学习加压（`w_events.study_stress`，不联动动力）尚未接入。
+        """
+        self.deviance_pressure()   # 环境层：偏离氛围 → 压力（不是禁止，是代价）
 
     def settle_sleep(self):
-        """课间结束：睡了一整段的人**大幅减压**并醒来（§10.8）。
+        """睡觉结算（§10.8，2026-10-19 改版）：压力 −`sleep_relief`（不联动动力）＋ 动力 +`sleep_vitality_gain`。
 
-        "睡觉"是唯一"用社交机会换压力缓解"的策略 —— 它让压力有了一条
-        **主动可控**的出口（此前只有闲聊被动减压与时间衰减）。
+        睡觉跨过紧邻的上课段：课间段末**不**结算，等上课段结束（`skip_class`）或下一非上课段末
+        再醒 —— 即「触发就持续到下一段（含上课）结束」。上课段是黑幕跳过，结算点是它的末点。
         """
-        relief = self.probs.get("sleep_relief", 8.0)
+        if self.next_phase_is_class():
+            return
+        relief = self.probs.get("sleep_relief", 0.0)
+        gain = self.probs.get("sleep_vitality_gain", 0.0)
         for i in range(self.N):
             if self.sleeping[i]:
-                self.add_stress(i, -relief)
+                self.add_stress(i, -relief, linked=False)
+                self.add_vitality(i, gain)
                 self.sleeping[i] = False
                 self.busy_until[i] = 0
                 self.current_act[i] = None
+
+    def next_phase_is_class(self):
+        """下一段是否是上课段（黑幕跳过）：睡觉据此决定「本段末醒」还是「跨到上课段末」。"""
+        nxt = self.phase_index + 1
+        if nxt < 0 or nxt >= len(self.day_phases):
+            return False
+        return self.day_phases[nxt][0] == "class"
 
     def check_interrupt(self):
         """跨相位中断（统一边界协议 ③）：**尚未完成**的占用即被打断。
@@ -1568,6 +1599,8 @@ class Sim:
             # D02：减压不再在「完成」时结算（按每 10 秒 −5 压力由 settle_units 逐单位给）；
             # 未满一个单位的部分按时间比例折算。
             self.fold_pending_unit(i)
+            # 2026-10-18：活动自然完成时结算一次性附加效果（学业／动力）。
+            self.apply_finished_bonus(i)
             if self.busy_act[i] in LEISURE_KINDS:
                 if self.busy_act[i] == "eat_snack" and self.snack_provider[i] is not None:
                     # 分享零食（§9.1.4）：自然完成一个共同进食单位 → 对分享者结算一次分享好感；
@@ -1657,9 +1690,12 @@ class Sim:
                     self.add_stress(i, -self.acts["play_relief"], False)
                     self.add_vitality(i, self.acts["play_vitality_gain"])
             else:
+                # 逐活动压力率（rules/leisure_effects.csv，2026-10-18）。
+                per_unit = self.stress_per_unit(self.current_act[i])
                 while self.settle_acc[i] >= unit_seconds:
                     self.settle_acc[i] -= unit_seconds
-                    self.add_stress(i, -self.acts["relief_per_unit"])
+                    if per_unit:
+                        self.add_stress(i, per_unit)
 
     def fold_pending_unit(self, i):
         """未完成单位折算（D02 第 4 条）：压力每 2 秒 1 点，学业收益只按整数单位计。"""
@@ -1986,13 +2022,17 @@ class Sim:
         if not self.last_exam_passed():
             best_day = max(self.exam_means) if self.exam_means else 0
             return (
-                "首次考核不达标：全班均分 %d，低于目标均分 %d"
-                % (int(round(self.exam_means.get(best_day, 0.0))), int(round(self.exam_target_mean)))
+                "考核不达标：第 %d 天全班均分 %d，低于目标均分 %d"
+                % (
+                    best_day,
+                    int(round(self.exam_means.get(best_day, 0.0))),
+                    int(round(self.target_mean_for(best_day))),
+                )
             )
         return ""
 
     def class_failed(self):
-        """老师是否被辞退：首次考核不达标（D05）或出现退学（D06）。"""
+        """老师是否被辞退：任一次考核不达标（D05）或出现退学（D06）。"""
         if any(self.dropped):
             return True
         return not self.last_exam_passed()
@@ -2064,6 +2104,26 @@ class Sim:
                     self.H[j][i] = clamp100(self.H[j][i] + hostility)
         self.stats["seat_settles"] = self.stats.get("seat_settles", 0) + 1
 
+    def stress_per_unit(self, behavior):
+        """某活动每 10 秒的压力率（表缺失时回落旧的统一 relief_per_unit）。"""
+        effect = self.leisure_effects.get(behavior or "", {})
+        if not effect:
+            return -self.acts["relief_per_unit"]
+        return effect["stress_per_unit"]
+
+    def apply_finished_bonus(self, i):
+        """活动自然完成时的一次性附加效果（学业／动力）；睡觉走 sleep_relief 单独结算。"""
+        act = self.busy_act[i]
+        if not act or act == "sleep":
+            return
+        effect = self.leisure_effects.get(act, {})
+        if not effect:
+            return
+        if effect["grade_once"]:
+            self.GainToday[i] += effect["grade_once"]
+        if effect["vitality_once"]:
+            self.add_vitality(i, effect["vitality_once"])
+
     def begin_phase_state(self):
         """段首状态判定（D01 + 2026-10-16 上课段裁定）。
 
@@ -2095,8 +2155,12 @@ class Sim:
         by_key = {r["param"]: float(r["value"]) for r in rows if not r["param"].startswith("exam_day_")}
         self.exam_sigma = by_key.get("exam_noise_sigma", 12.0)
         self.exam_penalty = by_key.get("stress_exam_penalty", 15.0)
-        # D05：目标均分／考前加压／考后减压／考试当天只有考试。
-        self.exam_target_mean = by_key.get("exam_target_mean", 380.0)
+        # D05：目标均分（按次 exam_target_mean_<次序>，2026-10-18 起 450/480/500/520）／考前加压／考后减压／只有考试。
+        self.exam_target_means = {}
+        for r in rows:
+            if r["param"].startswith("exam_target_mean_"):
+                self.exam_target_means[int(r["param"][len("exam_target_mean_"):])] = float(r["value"])
+        self.exam_target_mean = by_key.get("exam_target_mean", 450.0)
         self.exam_pre_bonus = by_key.get("pre_exam_stress_bonus", 20.0)
         self.exam_post_cut = by_key.get("post_exam_stress_cut", 30.0)
         self.exam_only_day = int(by_key.get("exam_only_day", 1))
@@ -2107,6 +2171,16 @@ class Sim:
         self.exam_last = list(self.Grade)
         self.exam_rank = [0] * self.N
         self.exam_score = [0.0] * self.N
+
+    def target_mean_for(self, day):
+        """第 day 天那次考试的目标均分（按次配置；缺失或超出次数时沿用最近一次已配目标）。"""
+        index = self._exam_index(day)
+        if not self.exam_target_means:
+            return self.exam_target_mean
+        if index in self.exam_target_means:
+            return self.exam_target_means[index]
+        below = [k for k in sorted(self.exam_target_means) if k <= index]
+        return self.exam_target_means[below[-1] if below else min(self.exam_target_means)]
 
     def settle_exam(self, day):
         """周考 / 期末考。不改 Grade，不消耗 self.rng。非考试日直接返回。"""
@@ -2126,7 +2200,7 @@ class Sim:
         total = sum(scores)
         mean = (total / float(self.N)) if self.N > 0 else 0.0
         self.exam_means[day] = mean
-        self.exam_passed[day] = mean >= self.exam_target_mean
+        self.exam_passed[day] = mean >= self.target_mean_for(day)
         return True
 
     def is_exam_day(self, day):
@@ -2210,10 +2284,13 @@ class Sim:
 
         与 GDScript 内核 `skip_class()` 镜像：不调 begin_phase / 不逐 tick / 不调 end_phase，
         只推进游标到下一段；class 从不是末相位，故不会触发 settle_day。零 RNG 消费。
+        2026-10-19：本段是「课间睡下 → 跨过上课段」的结算点，先 `settle_sleep()` 再判崩溃，
+        否则本段新崩溃者会被同一次结算立刻唤醒，丢掉「当天只睡觉」的休息状态。
         """
         gain = self.acts["class_gain"]
         for i in range(self.N):
             self.GainToday[i] += gain
+        self.settle_sleep()
         self.check_breakdown()
         self.phase_index = (self.phase_index + 1) % len(self.day_phases)
         self.tick_in_phase = 0
@@ -2275,7 +2352,9 @@ class Sim:
                 self.phase_state[i] = "free"
             else:
                 self.add_stress(i, -carry_stress, False)
-            self.Grade[i] = max(0.0, min(self.kp["grade_max"], self.Grade[i] + self.GainToday[i]))
+            # 成绩恒为整数分：并入当天收益后四舍五入（对齐 GDScript 的 _rint，half-even）
+            self.Grade[i] = float(exam_rint(
+                max(0.0, min(self.kp["grade_max"], self.Grade[i] + self.GainToday[i]))))
             self.GainToday[i] = 0.0
         self.try_burst()                      # 每日一次：压力爆发按概率判定
         # D06：当天末判定霸凌 / 孤立与退学；用当天实际事件与当天末关系。

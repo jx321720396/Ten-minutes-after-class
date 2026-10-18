@@ -19,7 +19,10 @@ var _tokens: PackedInt32Array = PackedInt32Array()
 var _rank: PackedInt32Array = PackedInt32Array()
 var _reports: Dictionary = {}
 ## D05：目标均分／考前加压／考后减压／考试当天只有考试。
-var _target_mean := 380.0
+## 目标按次配置：`exam_target_mean_<次序>`（次序与 `exam_day_<次序>` 对应，2026-10-18 起 450/480/500/520）。
+## 该次没配则回落到 `exam_target_mean`；超出已配次数（如期末考）沿用最后一次的目标。
+var _target_mean := 450.0
+var _target_means: Array[float] = []
 var _pre_bonus := 20.0
 var _post_cut := 30.0
 var _only_day := 1
@@ -31,11 +34,17 @@ func configure(tables: Dictionary, seed_value: int, count: int, grade_max: float
 	_seed = seed_value
 	_grade_max = grade_max
 	_days.clear()
+	_target_means.clear()
 	for row in tables.get("rules/exam", {}).get("rows", []):
 		var key := str(row.get("param", ""))
 		var raw := str(row.get("value", ""))
 		if key.begins_with("exam_day_"):
 			_days.append(int(float(raw)))
+		elif key.begins_with("exam_target_mean_"):
+			var order := int(key.trim_prefix("exam_target_mean_"))
+			while _target_means.size() < order:
+				_target_means.append(NAN)
+			_target_means[order - 1] = float(raw)
 		elif key == "exam_noise_sigma":
 			_sigma = float(raw)
 		elif key == "exam_target_mean":
@@ -84,8 +93,27 @@ func exam_only_day() -> bool:
 	return _only_day == 1
 
 
+## 某次考试的目标均分（按次配置；超出次数沿用最后一次）。
+func target_mean_for(day: int) -> float:
+	return _target_mean_at(_index_of(day))
+
+
+## 最近一次已出分考试的目标均分；还没考过时返回第 1 次的目标。
 func target_mean() -> float:
-	return _target_mean
+	var best_day := -1
+	for key in _means.keys():
+		best_day = maxi(best_day, int(key))
+	if best_day < 0:
+		best_day = _days[0] if not _days.is_empty() else 1
+	return target_mean_for(best_day)
+
+
+func _target_mean_at(index: int) -> float:
+	var configured := _target_means.size()
+	if configured == 0:
+		return _target_mean
+	var value := _target_means[clampi(index, 1, configured) - 1]
+	return _target_mean if is_nan(value) else value
 
 
 func pre_stress_bonus() -> float:
@@ -101,11 +129,17 @@ func mean_of(day: int) -> float:
 	return float(_means.get(day, 0.0))
 
 
-## 最近一次已出分考试的班级均分（没考过返回 0）。
-func last_exam_mean() -> float:
+## 最近一次已出分考试的日次（没考过返回 0）。
+func last_exam_day() -> int:
 	var best_day := -1
 	for key in _means.keys():
 		best_day = maxi(best_day, int(key))
+	return best_day
+
+
+## 最近一次已出分考试的班级均分（没考过返回 0）。
+func last_exam_mean() -> float:
+	var best_day := last_exam_day()
 	if best_day < 0:
 		return 0.0
 	return float(_means[best_day])
@@ -178,13 +212,13 @@ func settle(
 				return scores[a] > scores[b]
 			return a < b
 	)
-	# D05：全班均分与目标均分（380）考核 —— 不达标老师被辞退（考核结果只读，不改成绩）。
+	# D05：全班均分与**该次**目标均分考核 —— 不达标老师被辞退（考核结果只读，不改成绩）。
 	var total := 0.0
 	for i in n:
 		total += scores[i]
 	var mean := (total / float(n)) if n > 0 else 0.0
 	_means[day] = mean
-	_passed[day] = mean >= _target_mean
+	_passed[day] = mean >= target_mean_for(day)
 	for place in order.size():
 		_rank[order[place]] = place + 1
 	var player := n - 1

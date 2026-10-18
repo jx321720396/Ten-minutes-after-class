@@ -1,0 +1,16 @@
+[remap]
+
+importer="keep"
+type=""
+uid="uid://c8rsrmuvsl0bh"
+
+[deps]
+
+source_file="res://data/rules/leisure_effects.csv"
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

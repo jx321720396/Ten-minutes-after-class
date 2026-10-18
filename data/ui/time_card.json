@@ -1,6 +1,6 @@
 {
-  "description": "老师版左上角时间／首次周考卡片。target_mean 为第八天首次考试的目标均分（D05，与 data/rules/exam.csv 的 exam_target_mean 同步）；分数直接读取 750 分制内核。",
-  "target_mean": 380,
+  "description": "老师版左上角时间／首次周考卡片。target_mean 为第八天首次考试的目标均分（D05，与 data/rules/exam.csv 的 exam_target_mean_1 同步；后续两次为 480 / 500 / 520）；分数直接读取 750 分制内核。",
+  "target_mean": 450,
   "target_is_provisional": false,
   "width": 340,
   "minimum_height": 224,

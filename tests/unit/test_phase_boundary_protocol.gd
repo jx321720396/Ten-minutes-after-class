@@ -99,23 +99,36 @@ func test_repeated_end_phase_is_idempotent() -> void:
 	assert_eq(core._stress[0], stress_after, "压力不再叠加")
 
 
-# ------------------------------------------------------------------ ② 睡眠收尾：跨段唤醒一次
+# ------------------------------------------------------------------ ② 睡眠收尾：课间睡下 → 跨过上课段，在它的末点结算一次
 
 
-func test_sleep_settles_once_across_phase_boundary() -> void:
+func test_sleep_survives_break_end_and_settles_after_class() -> void:
 	var core := _core()
-	_advance_to(core, 100)
+	_advance_to(core, 1)  # 已在课间段内（段首判定已完成）
 	core._sessions.clear()
-	var stress := core._stress
+	var stress: Array = core._stress
 	stress[0] = 50.0
 	core._stress = stress
+	var vitality: Array = core._vitality
+	vitality[0] = 50.0
+	core._vitality = vitality
 	var sleeping: Array = core._sleeping
 	sleeping[0] = true
 	core._sleeping = sleeping
 	var relief := float(core._probs.get("sleep_relief", 0.0))
-	core.finish_time_boundary()
-	assert_false(core._sleeping[0], "跨段睡眠被唤醒")
+	var gain := float(core._probs.get("sleep_vitality_gain", 0.0))
+
+	# 课间段末：下一段是上课 → 不唤醒、不减压（2026-10-19：睡觉跨过紧邻上课段）
+	core._settle_sleep()
+	assert_true(core._sleeping[0], "课间末不唤醒：睡觉跨过紧邻的上课段")
+	assert_almost_eq(core._stress[0], 50.0, 0.001, "课间末不减压")
+
+	# 上课段末（`skip_class()` 被调用的位置）→ 结算一次
+	core._phase_index += 1
+	core._settle_sleep()
+	assert_false(core._sleeping[0], "上课段结束时醒来")
 	assert_almost_eq(core._stress[0], 50.0 - relief, 0.001, "睡眠减压恰好一次")
+	assert_almost_eq(core._vitality[0], 50.0 + gain, 0.001, "睡觉同时动力 +10")
 
 
 # ------------------------------------------------------------------ 抽象内核：无移动输入，is_moving 恒 false

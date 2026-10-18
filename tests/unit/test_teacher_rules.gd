@@ -25,9 +25,9 @@ func test_initial_distribution_follows_d01() -> void:
 		assert_true(stress >= 0.0 and stress <= 20.0, "开局压力 0–20（D01）")
 		assert_almost_eq(core.vitality(i), stress, 0.0001, "开局动力 = 该生压力（D01）")
 		var grade := core.grade(i)
-		assert_true(grade >= 250.0 and grade <= 450.0, "开局成绩 250–450（D01）")
+		assert_true(grade >= 330.0 and grade <= 530.0, "开局成绩 330–530（D01）")
 		total += grade
-	assert_almost_eq(total / float(core.node_count()), 350.0, 60.0, "开局平均成绩落在 250–450 的中段（D01）")
+	assert_almost_eq(total / float(core.node_count()), 430.0, 0.0001, "开局均分恒为 430（镜像配对，D01）")
 
 
 func test_phase_state_follows_vitality_thresholds() -> void:
@@ -61,7 +61,11 @@ func test_leisure_relieves_every_10_seconds() -> void:
 	core._current_act[0] = "listen_music"
 	for _t in range(10):
 		core._settle_units()
-	assert_almost_eq(core.stress(0), 45.0, 0.0001, "娱乐每 10 秒 -5 压力（D02）")
+	# 2026-10-18：减压率改为按活动查表（listen_music −4.5/10 秒），不再统一 −5。
+	var per_unit: float = float(core._leisure_effects["listen_music"]["stress_per_unit"])
+	assert_almost_eq(
+		core.stress(0), 50.0 + per_unit, 0.0001, "娱乐每 10 秒按活动自身减压率（D02 + leisure_effects）"
+	)
 
 
 func test_play_state_costs_gain_relieves_stress_and_restores_vitality() -> void:
@@ -464,9 +468,9 @@ func test_failure_reason_reports_exam_failure_with_numbers() -> void:
 	core._exam._means[8] = 300.0
 	core._exam._passed[8] = false
 	var reason := core._failure_reason()
-	assert_true(reason.contains("首次考核不达标"), "考核不达标时给出对应判据")
+	assert_true(reason.contains("考核不达标"), "考核不达标时给出对应判据")
 	assert_true(reason.contains("300"), "原因给出实际均分")
-	assert_true(reason.contains("380"), "原因给出目标均分")
+	assert_true(reason.contains("450"), "原因给出该次目标均分")
 
 
 func test_no_failure_reason_when_no_trigger() -> void:

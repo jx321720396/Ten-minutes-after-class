@@ -2,7 +2,7 @@ class_name BehaviorBadgePresenter
 extends CanvasLayer
 ## 头顶行为徽标（§20.1.4）：只反映**看得见的公开状态**，不做动画、不参与着色逻辑。
 ##
-## 本批接线的徽标是**公开活动**（听音乐 / 吃零食 / 看课外书）：在人物头侧挂一行文字。
+## 本批接线的徽标是**公开活动**（听音乐 / 吃零食 / 看课外书）：在当前立绘头顶居中显示。
 ## 徽标数据完全由内核的公开状态给出，本组件不自己推断、也不缓存判定结果。
 ##
 ## ⚠️ 反例（§20.1.4 明确不做）：不给「压力高」「好感高」「正在被排挤」这类**隐藏状态**做徽标 ——
@@ -10,15 +10,17 @@ extends CanvasLayer
 
 const COLOR_PAPER := Color(0.99, 0.98, 0.90, 0.98)
 const COLOR_EDGE := Color(0.45, 0.42, 0.34)
-## 没有 3D 锚点时的退化高度（米）
-const FALLBACK_HEIGHT := 1.5
+## 字号、屏幕缩放与头顶间隙统一配置。
+const LAYOUT_PATH := "res://data/ui/behavior_badges.json"
 
 var _core: Variant = null
 var _actors: Node3D = null
 var _activity_badges: Dictionary = {}
+var _layout_settings: Dictionary = {}
 
 
 func _ready() -> void:
+	_layout_settings = JSON.parse_string(FileAccess.get_file_as_string(LAYOUT_PATH))
 	set_process(true)
 
 
@@ -57,7 +59,7 @@ func _sync() -> void:
 	_sync_activities()
 
 
-## 公开活动（听音乐 / 吃零食 / 看课外书）的头侧文字徽标。
+## 公开活动（听音乐 / 吃零食 / 看课外书）的头顶文字徽标。
 func _sync_activities() -> void:
 	var wanted := {}
 	if _core != null and is_instance_valid(_core):
@@ -89,18 +91,35 @@ func _layout() -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
 		return
+	var view_scale := clampf(
+		get_viewport().get_visible_rect().size.y / float(_layout_settings.reference_height_pixels),
+		float(_layout_settings.minimum_view_scale),
+		float(_layout_settings.maximum_view_scale)
+	)
 	for index in _activity_badges:
-		(_activity_badges[index] as Label).position = (
-			camera.unproject_position(_anchor_of(int(index))) + Vector2(-36.0, -52.0)
+		var badge := _activity_badges[index] as Label
+		var world := _anchor_of(int(index))
+		badge.visible = not camera.is_position_behind(world)
+		badge.add_theme_font_size_override("font_size", int(_layout_settings.font_size))
+		badge.size = badge.get_minimum_size()
+		badge.scale = Vector2.ONE * view_scale
+		badge.position = (
+			camera.unproject_position(world)
+			- Vector2(
+				badge.size.x * view_scale * 0.5,
+				(badge.size.y + float(_layout_settings.head_gap_pixels)) * view_scale
+			)
 		)
 
 
 func _anchor_of(index: int) -> Vector3:
 	if _actors != null and is_instance_valid(_actors):
+		if _actors.has_method("head_position_of"):
+			return _actors.head_position_of(index)
 		var anchor: Node3D = _actors.feedback_anchor_of(index)
 		if anchor != null and is_instance_valid(anchor):
 			return anchor.global_position
 	if _core == null or not is_instance_valid(_core):
 		return Vector3.ZERO
 	var position: Vector2 = _core.position_of(index)
-	return Vector3(position.x, FALLBACK_HEIGHT, position.y)
+	return Vector3(position.x, float(_layout_settings.fallback_height_m), position.y)

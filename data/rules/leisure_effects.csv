@@ -1,0 +1,18 @@
+# 课间活动效果（2026-10-18 裁定：活动之间必须有区别）
+# 背景：此前 6 种娱乐都是「每 10 秒 −5 压力」，时长不同但单位时间效果一致，
+# 学生选哪个都没区别。本表让每种活动有自己的画像（减压效率 / 学业代价 / 动力回报）。
+# 列：
+#   behavior         行为名（与 leisure.csv / behaviors.csv / LEISURE_KINDS 一致）
+#   stress_per_unit  每 10 秒（activities.unit_seconds）的压力变化，按单位累加
+#   grade_once       完成时一次性给/扣的学业收益（正数加、负数扣）
+#   vitality_once    完成时一次性给/扣的动力（不联动压力）
+# 数值口径：活动总减压 = stress_per_unit × (时长 / 10)。例如听歌 40 秒 = 4 单位 × −4.5 = −18。
+# ⚠️ 睡觉不在此表：它由 behavior_probs.csv 的 sleep_relief / sleep_vitality_gain 结算
+#    （段末一次，且跨过紧邻上课段），避免两处定义同一个效果。
+behavior,stress_per_unit,grade_once,vitality_once,note
+eat_snack,-5,0,1,吃零食 10 秒：−5 压力 / +1 动力（便宜、可连做）
+chat,-4,0,1,聊天 20 秒：−8 压力 / +1 动力（顺带关系流动）
+roughhouse,-4,0,2,打闹 30 秒：−12 压力 / +2 动力（减压好但有伤害风险）
+listen_music,-4.5,0,2,听歌 40 秒：−18 压力 / +2 动力（主力减压）
+read_book,-3,1,0,看课外书 40 秒：−12 压力 / +1 学业（唯一兼顾成绩）
+play_phone,-5,-2,3,玩手机 50 秒：−25 压力 / −2 学业 / +3 动力（最省心但亏成绩）

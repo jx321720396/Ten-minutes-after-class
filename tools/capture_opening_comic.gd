@@ -26,6 +26,8 @@ func _run() -> void:
 		while comic.state.revealed < 4:
 			comic.advance()
 		assert(comic.state.page == page)
+		for panel in comic._panels:
+			assert(panel.get_child_count() == 0, "dialogue must be baked into the image")
 		await create_timer(0.5).timeout
 		await _save("page_%02d_1920" % (page + 1))
 		root.size = Vector2i(1280, 720)

@@ -73,12 +73,22 @@ custom_minimum_size = Vector2(430, 88)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Countdown" type="Label" parent="Design/Header/CountdownCard"]
+[node name="CountdownRows" type="VBoxContainer" parent="Design/Header/CountdownCard"]
+layout_mode = 2
+alignment = 1
+
+[node name="Countdown" type="Label" parent="Design/Header/CountdownCard/CountdownRows"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="RemainingBar" type="ProgressBar" parent="Design/Header/CountdownCard/CountdownRows"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+show_percentage = false
 
 [node name="Pause" type="Button" parent="Design/Header"]
 unique_name_in_owner = true

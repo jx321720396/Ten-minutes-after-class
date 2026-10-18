@@ -1,5 +1,7 @@
 # tools/ —— 离线脚本
 
+考试漫画验收：`godot --headless --path . --script res://tools/smoke_exam_comic.gd` 检查自动播放、冻结、成绩接线、未达标与防重复结算；加 `-- --live` 验证真实教室入口。使用图形渲染并加 `-- --capture` 可生成分镜与成绩截图至 `tools/out/exam_comic/`。
+
 压力灯光验证：`godot --headless --path . --script tools/verify_pressure_lighting.gd` 检查真实教室平滑过渡、固定镜头更新、旧玩家排除及压力只读；去掉 `--headless` 可生成三档截图至 `tools/out/pressure_lighting/`。
 
 > 状态：生效 ｜ 维护者：程序 ｜ 最后更新：2026-10-08

@@ -12,6 +12,8 @@ var _clock: Node
 var _preview: TextureRect
 var _phase_names: Dictionary
 var _weekly_copy: Dictionary
+var _time_card: Dictionary
+var _last_time: Dictionary = {}
 var _meeting: Control
 var _ask_layer: Control
 var _ask_body: Label
@@ -23,6 +25,13 @@ func _ready() -> void:
 		FileAccess.get_file_as_string("res://data/ui/time_card.json")
 	)
 	_weekly_copy = time_card.get("messages", {})
+	_time_card = time_card
+	%RemainingBar.custom_minimum_size.y = float(time_card.bar_height)
+	for key in ["background", "fill"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(config.hover if key == "background" else config.ink)
+		style.set_corner_radius_all(int(time_card.bar_radius))
+		%RemainingBar.add_theme_stylebox_override(key, style)
 	_phase_names = (
 		JSON
 		. parse_string(FileAccess.get_file_as_string("res://data/ui/time_card.json"))
@@ -108,7 +117,13 @@ func action_button(key: String) -> Button:
 	return _buttons.get(key)
 
 
+func _process(_delta: float) -> void:
+	if is_instance_valid(_clock) and _clock.is_paused() != bool(_last_time.get("paused", false)):
+		_update_time(_clock.snapshot())
+
+
 func _update_time(snapshot: Dictionary) -> void:
+	_last_time = snapshot
 	var phase: String = str(snapshot.get("phase_id", ""))
 	%Time.text = (
 		"第%d天 · %s"
@@ -118,17 +133,38 @@ func _update_time(snapshot: Dictionary) -> void:
 		]
 	)
 	var mode := str(snapshot.get("mode", ""))
+	%RemainingBar.visible = mode == "running"
+	%RemainingBar.value = (1.0 - clampf(float(snapshot.get("progress", 0.0)), 0.0, 1.0)) * 100.0
 	if mode == "report" or mode == "finished":
 		%Countdown.text = config.copy.report if mode == "report" else config.copy.finished
 		return
-	var seconds := int(ceil(float(snapshot.get("remaining_seconds", 0.0))))
-	%Countdown.text = config.copy.remaining % [seconds / 60, seconds % 60]
+	%Countdown.text = str(_weekly_copy.week_unknown)
 	var exam_day := int(snapshot.get("first_exam_day", 0))
 	var day := int(snapshot.get("day", 0))
 	if exam_day > day:
-		%Countdown.text = str(_weekly_copy.week_future) % (exam_day - day) + "\n" + %Countdown.text
+		%Countdown.text = str(_weekly_copy.week_future) % (exam_day - day)
 	elif exam_day == day and day > 0:
-		%Countdown.text = str(_weekly_copy.week_today) + "\n" + %Countdown.text
+		%Countdown.text = str(_weekly_copy.week_today)
+	elif exam_day > 0:
+		%Countdown.text = str(_weekly_copy.week_past)
+	var color := Color(config.ink)
+	var status := ""
+	if bool(snapshot.get("paused", false)):
+		status = str(_weekly_copy.paused)
+		color = Color(_time_card.bar_paused_color)
+	elif %RemainingBar.value <= float(_time_card.ending_remaining_ratio) * %RemainingBar.max_value:
+		status = str(
+			(
+				_weekly_copy.class_ending
+				if snapshot.get("kind", "") == "class"
+				else _weekly_copy.break_ending
+			)
+		)
+		color = Color(_time_card.bar_ending_color)
+	if not status.is_empty():
+		%Time.text += " · " + status
+	var fill := %RemainingBar.get_theme_stylebox("fill") as StyleBoxFlat
+	fill.bg_color = color
 	%Countdown.add_theme_font_size_override("font_size", int(config.small_font_size))
 
 

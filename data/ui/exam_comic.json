@@ -1,0 +1,45 @@
+{
+  "design_size": [
+    1920,
+    1080
+  ],
+  "layer": 47,
+  "image": "res://assets/illustrations/exam_comic/exam_day_v01.webp",
+  "panel_seconds": 3.2,
+  "fade_seconds": 0.5,
+  "paper": "#f6efdf",
+  "ink": "#24211d",
+  "font_size": 32,
+  "title_rect": [
+    48,
+    30,
+    1100,
+    64
+  ],
+  "caption_rect": [
+    48,
+    934,
+    1824,
+    104
+  ],
+  "title": "第 %d 天 · 考试",
+  "captions": [
+    "铃声响起，试卷传到了每个人手中。",
+    "教室里只剩下笔尖划过纸面的声音。",
+    "考试结束。收齐试卷，等待成绩。"
+  ],
+  "hint": "点击继续 · 播放结束后查看成绩",
+  "hint_rect": [
+    1120,
+    32,
+    750,
+    64
+  ],
+  "hint_font": 24,
+  "panel_edges": [
+    0,
+    0.274,
+    0.73,
+    1
+  ]
+}

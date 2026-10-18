@@ -131,6 +131,12 @@ func _on_term_finished(_ended_day: int) -> void:
 func _sync_with(snapshot_data: Dictionary) -> void:
 	var kind := str(snapshot_data.get("kind", ""))
 	var running := str(snapshot_data.get("mode", "")) == SimulationClock.MODE_RUNNING
+	if bool(snapshot_data.get("is_exam_day", false)):
+		if _tween != null and _tween.is_valid():
+			_tween.kill()
+		_begin_dismiss()
+		_on_fade_out_done()
+		return
 	if not running:
 		_hide_overlay()
 		return

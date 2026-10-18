@@ -37,15 +37,20 @@ func _run() -> void:
 	core._exam._penalty = 0.0
 	core._grade.fill(target + 6.5)
 	core._exam.settle(exam_day, core._grade, core._stress, core._alias_list())
+	var board: CanvasLayer = scene.get_node("UI/ClueBoardEntry")
+	board.open()
 	_boundary(clock, exam_day)
+	_check(not board.is_open() and not paused, "考试结算收起旧手记并释放全树暂停")
 	_check(screen.visible and str(screen.get("_data").kind) == "exam", "考试信号打开达标页")
 	_check(not clock.continue_after_report(), "考试未确认时阻止其他继续入口")
 	_press(screen, "继续带班")
 	_check(not screen.visible and str(clock.snapshot().mode) == "running", "原生继续按钮接回真实主场景")
+	_check(not paused and not clock.is_held_by(&"outcome_screen"), "考试确认后解除结算冻结")
 	core._grade.fill(target - 7.4)
 	core._exam.settle(exam_day, core._grade, core._stress, core._alias_list())
 	_boundary(clock, exam_day)
 	_check(screen.visible and str(screen.get("_data").kind) == "academic", "成绩不达标打开专用辞退页")
+	_check(not board.is_open() and not paused, "失败时推理板不能遮盖辞退界面")
 	_check(not clock.continue_after_report(), "辞退后不能继续")
 	_press(screen, "查看本局回顾")
 	_check(
@@ -97,8 +102,9 @@ func _run() -> void:
 	_check(var_to_bytes([core._rng._mt, core._rng._mti]) == rng_state, "结束页重绘不消费内核随机数")
 	_press(screen, "重新开始")
 	var restarted := false
-	for frame in 240:
-		await process_frame
+	var restart_started := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - restart_started < 30000:
+		await create_timer(0.1).timeout
 		if (
 			current_scene == null
 			or current_scene.scene_file_path != "res://scenes/game/classroom3D.tscn"
@@ -108,6 +114,10 @@ func _run() -> void:
 			restarted = true
 			break
 	_check(restarted, "重新开始按钮创建新的本局内核并进入教室")
+	if not restarted:
+		print("OUTCOME LIVE FLOW: FAIL failures=", _failures)
+		quit(1)
+		return
 	if restarted:
 		clock = current_scene.get_node("Clock")
 		clock.hold(&"outcome_smoke")

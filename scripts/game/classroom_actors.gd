@@ -156,6 +156,25 @@ func feedback_anchor_of(i: int) -> Node3D:
 	return actor.get_node_or_null("FeedbackAnchor") as Node3D
 
 
+## 状态文字使用当前可见立绘头顶，坐姿与站姿分别取实际图片边界。
+func head_position_of(i: int) -> Vector3:
+	var actor := actor_for(i)
+	if actor == null:
+		return Vector3.ZERO
+	var sprite := actor.get_node_or_null("Sprite") as Sprite3D
+	var pose: Node3D = _seated_poses.get(i)
+	if is_instance_valid(pose) and (sprite == null or not sprite.visible):
+		var upper := pose.get_node_or_null("Upper") as Sprite3D
+		if upper != null and upper.is_visible_in_tree():
+			var box := upper.get_aabb()
+			return upper.to_global(Vector3(box.get_center().x, box.end.y, box.get_center().z))
+	if sprite != null:
+		var box := sprite.get_aabb()
+		return sprite.to_global(Vector3(box.get_center().x, box.end.y, box.get_center().z))
+	var anchor := feedback_anchor_of(i)
+	return anchor.global_position if anchor != null else actor.global_position
+
+
 ## 单场景调试：直接运行本场景（不经主菜单）时自动建一个演示局，并写入 GameState，
 ## 让同级的表现层组件（classroom_roam）读到同一个内核实例。正常流程不会走到这里。
 func _start_demo_game() -> Variant:

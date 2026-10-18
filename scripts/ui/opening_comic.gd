@@ -7,7 +7,6 @@ const CONFIG := "res://data/ui/opening_comic.json"
 const SEEN := "user://teacher_opening_comic_v1.dat"
 const STATE := preload("res://scripts/ui/opening_comic_state.gd")
 const PANEL := preload("res://scripts/ui/opening_comic_panel.gd")
-const BUBBLE := preload("res://scripts/ui/opening_comic_bubble.gd")
 const FONTS := preload("res://scripts/ui/game_fonts.gd")
 
 var seen_path := SEEN
@@ -109,9 +108,6 @@ func _show_page() -> void:
 		panel.modulate.a = 0.0
 		_page.add_child(panel)
 		_panels.append(panel)
-		_add_dialogue(panel, str(entry.dialogue[i]), _cfg.dialogue_rects[i], i)
-		if entry.has("assessment") and i == 1:
-			_add_dialogue(panel, str(entry.assessment), _cfg.assessment_rect)
 
 
 func _reveal(index: int) -> void:
@@ -163,38 +159,6 @@ func _build() -> void:
 	# 页面插画后来加入，标题、操作提示始终位于最上层。
 	_title.z_index = 2
 	_hint.z_index = 2
-
-
-func _add_dialogue(parent: Control, text: String, rect: Array, index: int = -1) -> void:
-	if text.is_empty():
-		return
-	var box: PanelContainer = BUBBLE.new() if index >= 0 else PanelContainer.new()
-	box.position = Vector2(rect[0], rect[1])
-	box.size = Vector2(rect[2], rect[3])
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if index >= 0:
-		box.tail_anchor = float(_cfg.tail_anchors[index])
-		box.tail_width = float(_cfg.tail_width)
-		box.tail_depth = float(_cfg.tail_depth)
-		box.tail_lean = float(_cfg.tail_leans[index])
-		box.fill = Color(_cfg.bubble)
-		box.ink = Color(_cfg.ink)
-		box.border = float(_cfg.border_pixels)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(_cfg.bubble)
-	style.border_color = Color(_cfg.ink)
-	style.set_border_width_all(int(_cfg.border_pixels))
-	style.set_corner_radius_all(int(_cfg.bubble_radius))
-	style.content_margin_left = float(_cfg.padding)
-	style.content_margin_right = float(_cfg.padding)
-	style.content_margin_top = float(_cfg.padding)
-	style.content_margin_bottom = float(_cfg.padding)
-	box.add_theme_stylebox_override("panel", style)
-	parent.add_child(box)
-	var label := _label(box, text, [], int(_cfg.body_font))
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
 func _label(parent: Node, text: String, rect: Array, font_size: int) -> Label:

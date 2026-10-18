@@ -15,6 +15,45 @@ static func start_leisure(c: SimCore, i: int, kind: String) -> bool:
 	return true
 
 
+## 课间活动效果表（rules/leisure_effects.csv，2026-10-18）：每种娱乐有自己的减压率与附加收益。
+static func build_effects(tables: Dictionary) -> Dictionary:
+	var out := {}
+	for row in tables.get("rules/leisure_effects", {}).get("rows", []):
+		var key := str(row.get("behavior", "")).strip_edges()
+		if key.is_empty():
+			continue
+		out[key] = {
+			"stress_per_unit": float(str(row.get("stress_per_unit", "0"))),
+			"grade_once": float(str(row.get("grade_once", "0"))),
+			"vitality_once": float(str(row.get("vitality_once", "0"))),
+		}
+	return out
+
+
+## 某活动每 10 秒的压力率（效果表缺失时回落到旧的统一 relief_per_unit）。
+static func stress_per_unit(c: SimCore, behavior: String) -> float:
+	var effect: Dictionary = c._leisure_effects.get(behavior, {})
+	if effect.is_empty():
+		return -float(c._acts["relief_per_unit"])
+	return float(effect.get("stress_per_unit", 0.0))
+
+
+## 活动自然完成时的一次性附加效果（学业／动力）。
+static func apply_finished_bonus(c: SimCore, i: int) -> void:
+	var act := str(c._busy_act[i])
+	if act.is_empty() or act == "sleep":
+		return
+	var effect: Dictionary = c._leisure_effects.get(act, {})
+	if effect.is_empty():
+		return
+	var grade := float(effect.get("grade_once", 0.0))
+	if grade != 0.0:
+		c._gain_today[i] += grade
+	var vitality := float(effect.get("vitality_once", 0.0))
+	if vitality != 0.0:
+		c.add_vitality(i, vitality)
+
+
 static func select_roster(pool: Array, npc_count: int, leisure: Dictionary) -> Array:
 	var selected: Array = []
 	# 持书配额是单值（rules/leisure.csv 的 book_count）；不得超过本局人数，否则下面会选出超过 npc_count 的人

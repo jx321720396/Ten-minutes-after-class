@@ -132,6 +132,14 @@ func _run(tables: Dictionary, strategy: String, days: int, seed_value: int, npc:
 		for _t in range(2000):
 			if core.day() != d + 1:
 				break
+			# 上课段与实时时钟 / Python run_day 同口径：黑幕跳过（class_gain + 崩溃判定），
+			# 不逐 tick、不采样。漏这一步会漏掉每天 +6 的上课收益，并让学生上课照常学/玩，
+			# 使各策略成绩被系统性低估（2026-10-18 修）。
+			# ⚠️ 判据必须用 time_snapshot()["kind"]：phase() 返回的是 _begin_phase 缓存的 _phase，
+			#    而 skip_class() 只推进索引、不更新它，用 phase() 会卡在上课段出不来。
+			if str(core.time_snapshot()["kind"]) == "class":
+				core.skip_class()
+				continue
 			ticks += 1
 			if core.phase_index() != last_phase:
 				last_phase = core.phase_index()
@@ -397,6 +405,10 @@ func _print_structure(tables: Dictionary, seed_value: int, npc: int) -> void:
 		for _t in range(2000):
 			if core.day() != _d + 1:
 				break
+			# 上课段黑幕跳过（见 _run 的同一修正；判据用 time_snapshot 而非 phase）
+			if str(core.time_snapshot()["kind"]) == "class":
+				core.skip_class()
+				continue
 			if core.phase_index() != last_phase:
 				last_phase = core.phase_index()
 				quota_left = quota if core.phase() == "break" else 0

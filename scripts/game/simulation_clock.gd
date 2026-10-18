@@ -257,6 +257,24 @@ func skip_class() -> bool:
 	return true
 
 
+## 考试演出结束后跑完当天原有 tick／边界，只发布最终成绩边界。
+## 不调用 skip_class，避免给考试日额外发放普通上课收益。
+func complete_exam_day() -> bool:
+	if _core == null or _mode != MODE_RUNNING:
+		return false
+	var day := int(_core.time_snapshot().day)
+	if not _core._exam.is_exam_day(day):
+		return false
+	while int(_core.time_snapshot().day) == day:
+		_core.advance_tick()
+		_core.finish_time_boundary()
+	_accumulator = 0.0
+	_ended_day = day
+	_enter_report()
+	time_updated.emit(snapshot())
+	return true
+
+
 ## 暂停：按拥有者集合管理，可重入；同名重复添加不累计，最后一个释放才恢复。
 func hold(who: StringName) -> void:
 	_paused_by[who] = true
@@ -341,6 +359,10 @@ func snapshot() -> Dictionary:
 			out[row["param"]] = float(row["value"])
 	out["display_name"] = _display_name_of(str(out.get("phase_id", "")))
 	var day := int(out.get("day", 0))
+	out["is_exam_day"] = running and _core != null and _core._exam.is_exam_day(day)
+	if bool(out["is_exam_day"]):
+		out["display_name"] = "考试"
+		out["player_control"] = false
 	if _core != null and _core.has_method("exam_banner"):
 		out["exam_banner"] = _core.exam_banner(day) if running else ""
 		out["exam_report"] = _core.exam_report(_ended_day) if not running else ""

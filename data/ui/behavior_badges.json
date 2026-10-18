@@ -1,0 +1,8 @@
+{
+  "font_size": 26,
+  "head_gap_pixels": 6,
+  "reference_height_pixels": 1080,
+  "minimum_view_scale": 0.5,
+  "maximum_view_scale": 1.5,
+  "fallback_height_m": 1.5
+}
