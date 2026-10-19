@@ -142,6 +142,17 @@ func show_message(message: String) -> void:
 	_message.text = message
 
 
+## 换座完成后的留页刷新（2026-10-19 裁定：换座不耗时，老师可以接着换下一组）。
+## 按新座位重排卡片、清空已选，并给出这一组的换座结果。
+func refresh_after_seat_change(first: int, second: int) -> void:
+	_first = -1
+	_second = -1
+	_rebuild_cards()
+	if _core == null or first < 0 or second < 0:
+		return
+	show_message(str(_config.copy.seat_done) % [str(_core.alias(first)), str(_core.alias(second))])
+
+
 func _confirm() -> void:
 	if _first >= 0 and _second >= 0:
 		seat_requested.emit(_first, _second)

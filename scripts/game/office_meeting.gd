@@ -115,7 +115,7 @@ func status_text(snapshot: Dictionary) -> String:
 		var label := str(_config.get(command, command))
 		if command == "office_chat":
 			label = str(_config.get("%s_status" % str(snapshot.get("chat_kind", "")), label))
-		return _config.remaining % [label, int(snapshot.remaining_seconds)]
+		return label
 	return str(_config.waiting if int(snapshot.get("called", -1)) >= 0 else _config.idle_status)
 
 

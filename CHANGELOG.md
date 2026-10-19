@@ -1,5 +1,23 @@
 # 变更记录
 
+## 2026-10-19 教室聊天头顶符号优化
+
+- 聊天改为头顶附近短距离上浮，0.9–1.3 秒随机发射、持续 1.4 秒，每人最多 2 个；成员错峰出现，同组使用固定双色，降低星星频率。
+- 聊天符号跟随当前可见立绘头顶，向两侧错开姓名位置，限制移动端缩放并在屏幕边缘内收；聊天结束后 0.2 秒淡出，隐藏成员立即清除，切局彻底清理。
+- 参数集中在 `data/ui/behavior_particles.json`；学习、听歌、零食与阅读保持原效果。只读会话，使用独立表现随机数和真实时间，不改变行为、关系矩阵与结算。
+
+
+## 2026-10-19 换座位不耗时间、换完留在选座页，被换座学生的打断口径
+
+- **用户需求**：换座位不消耗课间时间；换完停在当前页面可以立刻换下一组；被换座位的同学按「老师进教室」的口径打断行为。
+- **数值**：`data/rules/teacher_commands.csv` 的 `seat_change_seconds` 由 10 改为 0（配置驱动，配回 >0 仍是旧的延时口径）。
+- **内核**（`scripts/core/teacher_commands.gd::start_seat_change`）：`seat_change_seconds <= 0` 时当场 `apply_seat_change` 并清空命令槽 —— 提交即交换座位、重算邻接，不占用命令槽、不消耗课间时间，因此可以连续调多组；同时不存在「换座窗口」，`is_seat_changing` 恒为 false（判断保留给把耗时配回 >0 的口径，`sim_core._settle_neighbor_drip` / `_seat_eligible` 的排除段不受影响）。
+- **打断口径**（用户裁定）：保留 `interrupt_for_seat_change` 全套 —— 保留已得收益、不发放完成奖励、清空当前活动，并从聊天会话／打闹组移出；**不额外加压力**。
+- **界面**（`scripts/game/office_hub.gd::_confirm_seats` + `scripts/ui/student_roster.gd::refresh_after_seat_change`）：换座成功后不再关闭选座页，改为按新座位重排卡片、清空已选，并在提示行显示「已换座：A ↔ B · 可以接着换下一组」（文案 `data/ui/office_hub.json` 的 `roster.copy.seat_done`）。失败仍显示原有 rejected 提示、不关页。
+- **文案同步**：百科「调座位」词条去掉「10 秒后生效 / 换座窗口」描述，改为当场生效、不占时间、换完留在选座页；「座位关系」词条的离座举例同步。主文档 §6.1 表格与 §6.2 边界改写，`tools/split_teacher_gdd.py` 重新生成 15 章移动端阅读分册（仅 banner digest 与受影响章节变化）。
+- **回归**：`tests/unit/test_teacher_rules.gd` 替换为 3 项（即时生效且不占命令槽／打断双方且不加压力／不再有换座窗口）；`tests/unit/test_teacher_command_ui.gd` 改为断言即时完成、命令槽为空、换完 `picker_visible()`；`tests/unit/test_student_roster.gd` 去掉 tick 推进并新增「换完留在选座页、已选清空」用例。
+- **验证**：`check_config` 191 项、`test_core` 132 项、`verify_formula` 9 项、`check_docs` 全绿；`gdformat --check scripts/`（99 文件）通过；`check_export_imports` 通过。`gdlint` 仍有 2 个既有红项（`sim_core.gd` 3221 行超 3200 —— 原 3220，本次只 +1 行注释；`scripts/ui/teacher_interlude.gd` 的 duplicated-load，属工作区另一份未提交的「打断插曲」WIP，未被本次触碰）。字体子集检查的 5 个缺字同样来自那份未跟踪的 `data/ui/teacher_interlude.json`（努／恼／油／烦／迈），本次新增文案没有引入新字符。本机没有可执行的 Godot，GUT 用例未实跑。
+
 ## 2026-10-19 修复档案「当前活动」只显示「活动中」
 
 - **原因**：`data/ui/npc_profile.json` 的 `activities` 文案表用的是学生版旧键名（`music`／`snack`／`phone`），而内核 `LEISURE_KINDS` 实际返回 `listen_music`／`eat_snack`／`play_phone`；表里也没有 `sleep`／`leave_class`。查不到键就回落到脚本里硬编码的「活动中」，于是听歌、吃零食、玩手机、睡觉、出门的学生在档案里一律显示「当前活动：活动中」。
@@ -2440,3 +2458,11 @@
 
 ### 文档
 - 《下课十分钟》游戏玩法文档 **v3.0** 定稿：一局 = 一学期 30 天、每天 3 段课间 + 2 段上课发酵、非线性影响力传导（阈值 + 竞争归一化 + tanh 饱和）、四层人物分离、推理板矛盾高亮闭环。
+
+- 2026-10-19：六种老师干预接入画像过场、循环提示、剩余时间及收起／中止；新增调解中止，保留已发生的制止结果。
+
+- 2026-10-19：老师过场补充六种独立肢体姿态及前倾强调，训斥使用伸食指指向学生画像；沿用可中止、上课冻结。
+
+- 2026-10-19：老师动作演出改为独立全局居中弹窗，加入全屏遮罩与背景输入拦截、横竖尺寸适配，返回键收起；世界时间继续推进。
+
+- 2026-10-19：移除办公室左侧会面状态的重复倒计时，仅全局动作弹窗显示剩余时间。

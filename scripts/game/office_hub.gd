@@ -22,6 +22,7 @@ var _picker_kind := ""
 var _pair_first := -1
 var _saved_visible: Dictionary = {}
 var _ask_seen := 0
+var _interlude: Control
 # 进入办公室前的页面（classroom / monitor）。办公室是子页面，返回时回这里，
 # 不写死回办公室或监控；空串表示没有来路（开局直接进场等）。
 var _office_origin := ""
@@ -59,6 +60,16 @@ func bind_classroom(room: Node) -> void:
 	_return = _teacher.get_node("%ReturnOffice")
 	replay.tooltip_text = _teacher.config.copy.disabled_tutorial
 	_build_picker()
+	_interlude = preload("res://scripts/ui/teacher_interlude.gd").new()
+	var modal_layer := CanvasLayer.new()
+	modal_layer.name = "TeacherInterludeLayer"
+	var modal_config: Dictionary = JSON.parse_string(
+		FileAccess.get_file_as_string("res://data/ui/teacher_interlude.json")
+	)
+	modal_layer.layer = int(modal_config.layer)
+	add_child(modal_layer)
+	modal_layer.add_child(_interlude)
+	_interlude.cancel_requested.connect(_cancel_intervention)
 	_capture_classroom_state()
 	# 2026-10-18 裁定：开局老师直接进教室，不再以监控视角开场；
 	# 走真实 enter_classroom，含 D03「每个课间首次进入 → 全班压力 +5」。
@@ -141,6 +152,8 @@ func _process(_delta: float) -> void:
 		return
 	var core: Variant = _room.get_node("Actors").current_core()
 	var snapshot: Dictionary = core.teacher_commands().snapshot()
+	if _interlude != null:
+		_interlude.refresh(core, snapshot)
 	_view.update_commands(core, snapshot)
 	_teacher.update_commands(snapshot, _view.command_status(snapshot))
 	_apply_talk_fast_forward(snapshot)
@@ -202,6 +215,12 @@ func _refresh_profile_binding() -> void:
 	_room.get_node("UI/NpcProfile").bind_sources(
 		_room.get_node("Actors").current_core(), _room.get_node("Actors"), null
 	)
+
+
+func _cancel_intervention() -> void:
+	var core: Variant = _room.get_node("Actors").current_core()
+	core.teacher_commands().cancel_intervention()
+	_process(0.0)
 
 
 func _on_action(action: String) -> void:
@@ -295,7 +314,9 @@ func _show_picker(kind: String, back_target := "") -> void:
 func _confirm_seats(first: int, second: int) -> void:
 	var core: Variant = _room.get_node("Actors").current_core()
 	if core.teacher_commands().start_seat_change(core, first, second):
-		close_picker()
+		# 2026-10-19 裁定：换座即时生效、不耗课间时间，换完**留在选座页**，
+		# 卡片按新座位重排并清空已选，老师可以直接接着换下一组。
+		_picker.refresh_after_seat_change(first, second)
 	else:
 		_picker.show_message(str(_view.config.meeting.rejected))
 	_process(0.0)
@@ -350,6 +371,11 @@ func close_picker() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _interlude != null and _interlude.visible:
+		if event.is_action_pressed("ui_cancel"):
+			_interlude.collapse()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("ui_cancel"):
 		# 暂停菜单自己收 ESC（本节点 PROCESS_MODE_ALWAYS 会早于它收到）；暂停中不切页面。
 		if get_tree().paused:

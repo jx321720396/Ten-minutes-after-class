@@ -29,7 +29,8 @@
       "idle": "全班 16 人 · 按当前座位排列",
       "seat": "%d排%d座",
       "selected": "已选",
-      "target": "换座对象"
+      "target": "换座对象",
+      "seat_done": "已换座：%s ↔ %s　｜　可以接着换下一组"
     }
   },
   "design_size": [

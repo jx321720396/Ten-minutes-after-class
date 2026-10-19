@@ -108,11 +108,12 @@ func test_real_ui_summons_displays_all_students_and_returns_them() -> void:
 	hub.select_student(1)
 	assert_eq(commands.current_command(), "")
 	hub._picker.confirm.pressed.emit()
-	assert_eq(commands.current_command(), "seat_change")
-	for tick in range(10):
-		commands.tick(core)
-	room.get_node("Actors")._process(0.0)
+	# 2026-10-19 裁定：换座不耗课间时间 → 提交即生效、不占命令槽，换完留在选座页继续换。
+	assert_eq(commands.current_command(), "", "换座即时完成，不占用命令槽")
+	assert_eq(commands.remaining_seconds(), 0, "换座不消耗课间时间")
 	assert_ne(str(core.seat_of(0)), seat_before)
+	assert_true(hub.picker_visible(), "换完留在选座页，可以接着换下一组")
+	room.get_node("Actors")._process(0.0)
 	assert_eq(str(room.get_node("Actors").seat_node_of(0).name), str(core.seat_of(0)))
 	assert_true(core._at_own_seat(0), "New visual and core seat anchors must agree")
 	core._h[1] = 60.0

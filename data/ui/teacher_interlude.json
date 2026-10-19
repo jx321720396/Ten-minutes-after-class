@@ -1,0 +1,103 @@
+{
+  "width": 900,
+  "height": 490,
+  "bottom": 28,
+  "font_size": 25,
+  "title_size": 32,
+  "button_height": 58,
+  "cycle_seconds": 2.4,
+  "sway": 5,
+  "enter_seconds": 0.3,
+  "paper": "#fff4de",
+  "ink": "#443e38",
+  "accent": "#be795a",
+  "cancel": "中止行动",
+  "hide": "收起演出",
+  "held": "上课中 · 下课后继续",
+  "remaining": "剩余 %d 秒",
+  "teacher": "老师",
+  "student": "同学",
+  "actions": {
+    "comfort": {
+      "title": "安抚",
+      "beats": [
+        "听听你的想法",
+        "慢慢说，我在听",
+        "一起缓一缓"
+      ],
+      "symbol": "～",
+      "color": "#82afa1",
+      "pose": 0,
+      "lean": 2
+    },
+    "praise": {
+      "title": "表扬",
+      "beats": [
+        "看见你的进步",
+        "这次做得很好",
+        "继续保持"
+      ],
+      "symbol": "☆",
+      "color": "#d5a650",
+      "pose": 1,
+      "lean": -2
+    },
+    "scold": {
+      "title": "训斥",
+      "beats": [
+        "严肃提醒",
+        "说清问题",
+        "提出要求"
+      ],
+      "symbol": "！",
+      "color": "#bb7465",
+      "pose": 2,
+      "lean": 5
+    },
+    "ask": {
+      "title": "打听",
+      "beats": [
+        "侧耳倾听",
+        "低声交谈",
+        "记下线索"
+      ],
+      "symbol": "？",
+      "color": "#849bb5",
+      "pose": 3,
+      "lean": 3
+    },
+    "encourage": {
+      "title": "鼓励交流",
+      "beats": [
+        "聊聊身边的同学",
+        "试着走出一步",
+        "等待一次交流机会"
+      ],
+      "symbol": "…",
+      "color": "#a28ab3",
+      "pose": 4,
+      "lean": 3
+    },
+    "mediate": {
+      "title": "调解矛盾",
+      "beats": [
+        "分别听取双方意见",
+        "把事情说清楚",
+        "寻找相处的办法"
+      ],
+      "symbol": "…",
+      "color": "#8aab93",
+      "pose": 5,
+      "lean": -2
+    }
+  },
+  "pose_atlas": "res://assets/textures/characters/teacher_gestures_v1/teacher_gestures.png",
+  "pose_columns": 3,
+  "pose_rows": 2,
+  "pose_width": 230,
+  "pose_height": 215,
+  "pose_emphasis": 0.025,
+  "layer": 7,
+  "backdrop": "#19202a99",
+  "margin": 48
+}

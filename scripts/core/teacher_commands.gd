@@ -9,7 +9,8 @@ extends RefCounted
 ##   · 召唤与遣返都即时完成；办公室同时只召唤一名学生
 ##   · 办公室聊天统一 20 秒（安抚 / 表扬 / 训斥 / 打听 / 鼓励），召唤与遣返另计
 ##   · 去教室：即时、不设固定耗时；每个课间首次进入 → 全班压力 +5（同一课间不重复）
-##   · 调座位：发起后 10 秒生效
+##   · 调座位：即时生效、不耗课间时间（2026-10-19 裁定）；发起即打断双方当前活动，
+##     换座不再有「换座窗口」，因此也不再有暂停涓流的中间态
 ##   · 上课统一边界：上课期间不执行命令、不产生未完成命令的效果；未完成命令保留到下一个课间
 ##
 ## 待确认（合并稿未定，本模块不擅自新增数值）：
@@ -336,6 +337,16 @@ func office_chat(core: Variant, kind: String) -> bool:
 ## 中断正在进行的办公室谈话：当作从未发生（谈话效果只在 _finish 结算，未到不结算）。
 ## 打听／鼓励尚未结算，取消后可重新选择；已流逝的课间时间不退（期间其余学生仍在行动）。
 ## 返回是否真的取消了一项在途谈话（无在途谈话返回 false）。
+func cancel_intervention() -> bool:
+	if _command == "mediate":
+		# 已制止的冲突保留；取消尚未完成的减敌对结算。
+		_mediate_pair = {}
+		_command = ""
+		_remaining = 0
+		return true
+	return cancel_office_chat()
+
+
 func cancel_office_chat() -> bool:
 	if _command != "office_chat":
 		return false
@@ -389,7 +400,10 @@ func enter_classroom(core: Variant) -> bool:
 	return true
 
 
-## 调座位（D03 第 4 / 5 / 6 条）：发起后 10 秒生效；发起时打断参与者当前行为。
+## 调座位（D03 第 4 / 5 / 6 条）：发起即生效、不耗课间时间（2026-10-19 裁定）；
+## 发起时打断参与者当前行为（保留已得收益、不发放完成奖励，并从会话 / 打闹组移出）。
+## `seat_change_seconds` 仍走配置：配成 >0 时回到「延时生效」的旧口径（换座窗口内暂停涓流），
+## 配成 0（当前值）则当场交换座位、不占用命令槽，老师可以连续调下一组。
 func start_seat_change(core: Variant, a: int, b: int) -> bool:
 	if _exam_blocked(core):
 		return false
@@ -399,11 +413,19 @@ func start_seat_change(core: Variant, a: int, b: int) -> bool:
 		return false
 	if a >= int(core.node_count()) or b >= int(core.node_count()):
 		return false
-	_command = "seat_change"
-	_remaining = int(_timing["seat_change_seconds"])
-	_seat_change = {"a": a, "b": b}
+	var duration := int(_timing.get("seat_change_seconds", 0))
 	core.interrupt_for_seat_change(a)
 	core.interrupt_for_seat_change(b)
+	if duration <= 0:
+		# 即时生效：不占命令槽、不消耗课间时间，打断与换座在同一时刻完成。
+		_command = ""
+		_remaining = 0
+		_seat_change = {}
+		core.apply_seat_change(a, b)
+		return true
+	_command = "seat_change"
+	_remaining = duration
+	_seat_change = {"a": a, "b": b}
 	return true
 
 
@@ -685,6 +707,8 @@ func _seconds_left_in_break(core: Variant) -> int:
 
 # ------------------------------------------------------------------ 只读快照
 ## 该生是否处在换座窗口内（D03 第 5 条）：换座期间不参加课间涓流（既不作接收者也不作来源）。
+## 2026-10-19 起换座即时生效（`seat_change_seconds` = 0），窗口不存在 → 恒为 false；
+## 保留此判断给「把耗时配回 >0」的旧口径。
 func is_seat_changing(i: int) -> bool:
 	if _command != "seat_change" or _seat_change.is_empty():
 		return false
@@ -701,6 +725,7 @@ func snapshot() -> Dictionary:
 		"ask_records": _ask_records.duplicate(true),
 		"ask_id": _ask_id,
 		"seat_change": _seat_change.duplicate(true),
+		"mediate_pair": _mediate_pair.duplicate(true),
 		"held_by_class": _held,
 		"entered_this_break": _entered_this_break,
 	}

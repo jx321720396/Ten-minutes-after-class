@@ -957,6 +957,7 @@ func _settle_neighbor_drip() -> void:
 		if _broken[i] or not is_present(i) or not in_own_seat(i):
 			continue
 		# D03 第 5 条：换座期间的学生不参加课间涓流（既不作接收者也不作来源）。
+		# 2026-10-19 起换座即时生效（seat_change_seconds=0）→ 无窗口；保留给配回 >0 的口径。
 		if _teacher_commands.is_seat_changing(i):
 			continue
 		var studying := 0

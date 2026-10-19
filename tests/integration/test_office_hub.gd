@@ -38,6 +38,8 @@ func _run() -> void:
 	check(not scene.get_node("ActionBar").visible, "老师教室不显示学生行为栏")
 	check(not scene.get_node("ChatHUD").visible, "老师界面移除旧学生事件反馈")
 	check(not scene.get_node("ChatHUD").is_processing(), "旧邀请不能继续刷新弹窗")
+	check(hub._interlude.get_parent() is CanvasLayer, "老师演出使用独立全局弹窗层")
+	check(hub._interlude.get_parent() != hub, "弹窗不与办公室共用绘制层")
 	scene.get_node("Player").enabled = true
 	scene.get_node("TransitionOverlay").force_hide()
 	scene.get_node("TimeFlow").refresh()

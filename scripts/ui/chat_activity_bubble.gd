@@ -14,6 +14,8 @@ var _bubbles: Dictionary = {}
 var _hidden: Dictionary = {}
 var _settings: Dictionary = {}
 var _styles: Dictionary = {}
+var _chat_settings: Dictionary = {}
+var _retiring: Array[Dictionary] = []
 var _icons: Dictionary = {}
 ## 位图字形（白色贴图，运行时按 style 配色 modulate）；缺失或未导入时静默回退字体字形。
 var _bitmaps: Dictionary = {}
@@ -49,6 +51,10 @@ func bind_time_flow(flow: TimeFlow) -> void:
 
 func hide_member(index: int) -> void:
 	_hidden[index] = true
+	for k in range(_retiring.size() - 1, -1, -1):
+		if int(_retiring[k]["index"]) == index:
+			(_retiring[k]["root"] as Control).queue_free()
+			_retiring.remove_at(k)
 	_sync()
 
 
@@ -65,6 +71,9 @@ func clear_hidden() -> void:
 func clear() -> void:
 	for emitter in _bubbles.values():
 		(emitter["root"] as Control).queue_free()
+	for emitter in _retiring:
+		(emitter["root"] as Control).queue_free()
+	_retiring.clear()
 	_bubbles.clear()
 	_hidden.clear()
 
@@ -108,6 +117,7 @@ func _process(delta: float) -> void:
 
 func _sync() -> void:
 	var wanted := {}
+	var chat_groups := {}
 	if is_instance_valid(_core):
 		for i in range(int(_core.node_count())):
 			var kind := str(_core.activity_of(i))
@@ -116,47 +126,88 @@ func _sync() -> void:
 		for session in _core.get_active_sessions():
 			if str(session["kind"]) != "chat":
 				continue
-			for member in session["members"]:
+			var members: Array = session["members"]
+			for member in members:
 				if not _hidden.has(int(member)):
 					wanted[int(member)] = "chat"
+					chat_groups[int(member)] = {
+						"slot": int(session["session_id"]) % _styles["chat"]["colors"].size(),
+						"phase":
+						members.find(member) * float(_chat_settings["member_stagger_seconds"])
+					}
 	for index in _bubbles.keys():
 		if not wanted.has(index) or wanted[index] != emitter_kind(index):
-			(_bubbles[index]["root"] as Control).queue_free()
+			var old: Dictionary = _bubbles[index]
+			if old["kind"] == "chat" and not _hidden.has(index):
+				old["retire_left"] = float(_chat_settings["end_fade_seconds"])
+				_retiring.append(old)
+			else:
+				(old["root"] as Control).queue_free()
 			_bubbles.erase(index)
 	for index in wanted:
 		if _bubbles.has(index):
+			if chat_groups.has(index):
+				_bubbles[index]["slot"] = chat_groups[index]["slot"]
 			continue
 		var root := Control.new()
 		root.name = "Symbols_%d" % index
 		root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(root)
-		_bubbles[index] = {"root": root, "kind": wanted[index], "timer": 0.0, "particles": []}
+		var group: Dictionary = chat_groups.get(index, {})
+		_bubbles[index] = {
+			"root": root,
+			"index": index,
+			"kind": wanted[index],
+			"timer": group.get("phase", 0.0),
+			"slot": group.get("slot", 0),
+			"particles": []
+		}
 
 
 func _advance(delta: float) -> void:
+	for k in range(_retiring.size() - 1, -1, -1):
+		var emitter: Dictionary = _retiring[k]
+		emitter["retire_left"] = float(emitter["retire_left"]) - delta
+		(emitter["root"] as Control).modulate.a = maxf(
+			0.0, float(emitter["retire_left"]) / float(_chat_settings["end_fade_seconds"])
+		)
+		if float(emitter["retire_left"]) <= 0.0:
+			(emitter["root"] as Control).queue_free()
+			_retiring.remove_at(k)
 	for index in _bubbles:
 		var emitter: Dictionary = _bubbles[index]
+		var settings := _settings_for(str(emitter["kind"]))
 		var particles: Array = emitter["particles"]
 		for k in range(particles.size() - 1, -1, -1):
 			var particle: Dictionary = particles[k]
 			particle["age"] = float(particle["age"]) + delta
-			if float(particle["age"]) >= float(_settings["lifetime_seconds"]):
+			if float(particle["age"]) >= float(settings["lifetime_seconds"]):
 				(particle["node"] as Control).queue_free()
 				particles.remove_at(k)
 		emitter["timer"] = float(emitter["timer"]) - delta
 		# 大倍率不补喷积压粒子，保持画面稀疏与节点数有界。
 		if float(emitter["timer"]) <= 0.0:
-			emitter["timer"] = float(_settings["interval_seconds"])
-			if particles.size() < int(_settings["max_per_actor"]):
+			emitter["timer"] = (
+				_rng.randf_range(
+					float(settings["interval_min_seconds"]), float(settings["interval_max_seconds"])
+				)
+				if emitter["kind"] == "chat"
+				else float(settings["interval_seconds"])
+			)
+			if particles.size() < int(settings["max_per_actor"]):
 				_spawn(int(index), emitter)
 
 
 func _spawn(index: int, emitter: Dictionary) -> void:
+	var settings := _settings_for(str(emitter["kind"]))
 	var style: Dictionary = _styles[str(emitter["kind"])]
 	var symbols: Array = style["symbols"]
 	var colors: Array = style["colors"]
 	var symbol := str(symbols[_rng.randi_range(0, symbols.size() - 1)])
-	var color := Color(str(colors[_rng.randi_range(0, colors.size() - 1)]))
+	var color_index := _rng.randi_range(0, colors.size() - 1)
+	if emitter["kind"] == "chat":
+		color_index = (int(emitter["slot"]) + _rng.randi_range(0, 1)) % colors.size()
+	var color := Color(str(colors[color_index]))
 	var side := -1.0 if _rng.randi_range(0, 1) == 0 else 1.0
 	# 每个粒子单独扰动速度与大小：同批粒子不再像复制粘贴（只用独立 RNG，不碰模拟随机流）
 	var speed_scale := (
@@ -172,9 +223,14 @@ func _spawn(index: int, emitter: Dictionary) -> void:
 	var visual := _make_symbol(symbol, color)
 	(emitter["root"] as Control).add_child(visual)
 	var origin := _anchor_of(index)
-	origin.x += side * float(_settings["spread_m"])
+	if emitter["kind"] == "chat":
+		origin = _chat_anchor_of(index)
+	origin.x += side * float(settings["spread_m"])
 	(emitter["particles"] as Array).append(
 		{
+			"index": index,
+			"kind": emitter["kind"],
+			"settings": settings,
 			"node": visual,
 			"age": 0.0,
 			"origin": origin,
@@ -183,7 +239,7 @@ func _spawn(index: int, emitter: Dictionary) -> void:
 			"size_scale": size_scale,
 			"rotation":
 			_rng.randf_range(
-				-float(_settings["rotation_radians"]), float(_settings["rotation_radians"])
+				-float(settings["rotation_radians"]), float(settings["rotation_radians"])
 			)
 		}
 	)
@@ -241,44 +297,48 @@ static func _ease_out(t: float, power: float) -> float:
 
 
 func _sample(particle: Dictionary) -> Dictionary:
+	var settings: Dictionary = particle.get("settings", _settings)
 	var age := float(particle["age"])
-	var lifetime := float(_settings["lifetime_seconds"])
+	var lifetime := float(settings["lifetime_seconds"])
 	var t := clampf(age / lifetime, 0.0, 1.0)
 	var origin: Vector3 = particle["origin"]
+	if particle.get("kind", "") == "chat":
+		origin = _chat_anchor_of(int(particle["index"]))
+		origin.x += float(particle["side"]) * float(settings["spread_m"])
 	var speed := float(particle.get("speed_scale", 1.0))
 	var height := maxf(
-		float(_settings["floor_height_m"]),
+		float(settings["floor_height_m"]),
 		(
 			origin.y
-			+ float(_settings["rise_speed_m"]) * speed * age
-			- float(_settings["gravity_m"]) * speed * age * age * 0.5
+			+ float(settings["rise_speed_m"]) * speed * age
+			- float(settings["gravity_m"]) * speed * age * age * 0.5
 		)
 	)
 	# 弹入：刚出现的一小段由小到大，避免"凭空突然出现"
-	var appear := clampf(t / float(_settings["appear_span"]), 0.0, 1.0)
-	var appear_factor := lerpf(float(_settings["appear_scale"]), 1.0, _ease_out(appear, 2.0))
+	var appear := clampf(t / float(settings["appear_span"]), 0.0, 1.0)
+	var appear_factor := lerpf(float(settings["appear_scale"]), 1.0, _ease_out(appear, 2.0))
 	# 缩小改用幂曲线（1.0 = 旧的线性）：前期保持大小，末段才快速收敛
-	var shrink := pow(t, float(_settings["scale_ease_power"]))
+	var shrink := pow(t, float(settings["scale_ease_power"]))
 	# 横向漂移改为减速（1.0 = 旧的匀速）
-	var drift := _ease_out(t, float(_settings["drift_ease_power"]))
+	var drift := _ease_out(t, float(settings["drift_ease_power"]))
 	return {
 		"height": height,
 		"scale":
 		(
 			(
-				lerpf(1.0, float(_settings["minimum_scale"]), shrink)
+				lerpf(1.0, float(settings["minimum_scale"]), shrink)
 				* float(particle.get("size_scale", 1.0))
 			)
 			* appear_factor
 		),
-		"alpha": 1.0 - smoothstep(float(_settings["fade_start"]), 1.0, t),
+		"alpha": 1.0 - smoothstep(float(settings["fade_start"]), 1.0, t),
 		"position":
 		Vector3(
 			(
 				origin.x
 				+ (
 					float(particle["side"])
-					* float(_settings["side_speed_m"])
+					* float(settings["side_speed_m"])
 					* speed
 					* lifetime
 					* drift
@@ -299,14 +359,39 @@ func _layout() -> void:
 		float(_settings["minimum_view_scale"]),
 		float(_settings["maximum_view_scale"])
 	)
-	for emitter in _bubbles.values():
+	for emitter in _bubbles.values() + _retiring:
 		for particle in emitter["particles"]:
 			var sample := _sample(particle)
 			var node: Control = particle["node"]
 			var world: Vector3 = sample["position"]
 			node.visible = not camera.is_position_behind(world)
-			node.position = camera.unproject_position(world)
-			node.scale = Vector2.ONE * float(sample["scale"]) * view_scale
+			var screen := camera.unproject_position(world)
+			var particle_scale := view_scale
+			if particle.get("kind", "") == "chat":
+				particle_scale = clampf(
+					view_scale,
+					float(_chat_settings["minimum_view_scale"]),
+					float(_chat_settings["maximum_view_scale"])
+				)
+				screen += (
+					Vector2(
+						float(particle["side"]) * float(_chat_settings["screen_side_pixels"]),
+						-float(_chat_settings["screen_lift_pixels"])
+					)
+					* particle_scale
+				)
+				var margin := float(_chat_settings["edge_margin_pixels"]) * particle_scale
+				var viewport_size := get_viewport().get_visible_rect().size
+				# 完全离屏的学生不在边缘留下符号。
+				node.visible = (
+					node.visible
+					and Rect2(Vector2.ZERO, viewport_size).has_point(
+						camera.unproject_position(world)
+					)
+				)
+				screen = screen.clamp(Vector2.ONE * margin, viewport_size - Vector2.ONE * margin)
+			node.position = screen
+			node.scale = Vector2.ONE * float(sample["scale"]) * particle_scale
 			node.modulate.a = float(sample["alpha"])
 			node.rotation = float(particle["rotation"])
 
@@ -330,6 +415,8 @@ func _load_style() -> void:
 	var config: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(STYLE_PATH))
 	_settings = config["settings"]
 	_styles = config["styles"]
+	_chat_settings = _settings.duplicate()
+	_chat_settings.merge(config["chat_settings"], true)
 	for key in config["icons"]:
 		var image := Image.new()
 		if image.load_svg_from_string(str(config["icons"][key])) == OK:
@@ -340,3 +427,16 @@ func _load_style() -> void:
 			_bitmaps[key] = load(path)
 		else:
 			push_warning("符号贴图缺失，回退字体字形：%s" % path)
+
+
+func _settings_for(kind: String) -> Dictionary:
+	return _chat_settings if kind == "chat" else _settings
+
+
+func _chat_anchor_of(index: int) -> Vector3:
+	if is_instance_valid(_actors):
+		return _actors.head_position_of(index) + Vector3.UP * float(_chat_settings["head_lift_m"])
+	return (
+		_anchor_of(index)
+		+ Vector3.UP * (float(_chat_settings["head_lift_m"]) - float(_settings["head_lift_m"]))
+	)

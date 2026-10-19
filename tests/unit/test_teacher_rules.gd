@@ -370,36 +370,49 @@ func test_teacher_command_deferred_by_class() -> void:
 	assert_eq(tc.remaining_seconds(), remaining - 1, "下课后续跑（当前按「保留已用时间」，待确认）")
 
 
-func test_seat_change_applies_after_10_seconds() -> void:
+func test_seat_change_applies_immediately_without_consuming_time() -> void:
 	var core := _core()
 	var tc := core.teacher_commands()
+	core._begin_phase_state()
 	var seat_a := core.seat_of(0)
 	var seat_b := core.seat_of(1)
-	assert_true(tc.start_seat_change(core, 0, 1), "可以发起调座位（D03 第 4 条）")
-	assert_eq(core.seat_of(0), seat_a, "10 秒内尚未生效（D03 第 4 条）")
-	for _t in range(10):
-		tc.tick(core)
-	assert_eq(core.seat_of(0), seat_b, "10 秒后生效：座位交换（D03 第 4 条）")
+	core._stress[0] = 50.0
+	assert_true(tc.start_seat_change(core, 0, 1), "可以调座位（D03 第 4 条）")
+	# 2026-10-19 裁定：换座位不消耗课间时间 → 发起即生效，不占命令槽。
+	assert_eq(core.seat_of(0), seat_b, "调座位即时生效：座位交换")
 	assert_eq(core.seat_of(1), seat_a, "两人的座位互换")
+	assert_eq(tc.current_command(), "", "换座不占用命令槽，可以接着调下一组")
+	assert_eq(tc.remaining_seconds(), 0, "换座不消耗课间时间")
+	assert_false(tc.is_seat_changing(0), "即时口径下没有「换座窗口」")
+	assert_almost_eq(core.stress(0), 50.0, 0.0001, "打断不额外加压力")
 
 
-func test_seat_change_parks_neighbor_drip() -> void:
+func test_seat_change_interrupts_both_students_without_stress() -> void:
+	var core := _core()
+	var tc := core.teacher_commands()
+	core._begin_phase_state()
+	core._stress[0] = 40.0
+	core._stress[1] = 40.0
+	core._current_act[0] = "play_phone"
+	core._busy_act[0] = "play_phone"
+	core._busy_phase[0] = core._phase_index
+	core._busy_until[0] = core._global_tick + 10
+	assert_true(tc.start_seat_change(core, 0, 1), "换座即时生效")
+	assert_eq(core._busy_act[0], null, "被换座的学生当前活动被打断（D03 第 6 条）")
+	assert_almost_eq(core.stress(0), 40.0, 0.0001, "打断不加压力")
+	assert_almost_eq(core.stress(1), 40.0, 0.0001, "打断不加压力")
+
+
+func test_seat_change_has_no_parking_window_for_neighbor_drip() -> void:
 	var core := _core()
 	var tc := core.teacher_commands()
 	core._begin_phase_state()
 	core._phase_state[0] = "study"
 	core._phase_state[1] = "free"
-	var seat0 := str(core._seat_of[0])
-	var neighbor_seat := ""
-	for seat_id in core._neighbors[seat0]:
-		neighbor_seat = str(seat_id)
-		break
-	core._seat_of[1] = neighbor_seat
-	core._build_neighbor_idx()
-	core._stress[1] = 0.0
-	assert_true(tc.start_seat_change(core, 0, 1), "换座窗口开始")
-	core._settle_neighbor_drip()
-	assert_almost_eq(core.stress(1), 0.0, 0.0001, "换座期间不参加课间涓流（D03 第 5 条）")
+	assert_true(tc.start_seat_change(core, 0, 1), "换座即时生效")
+	assert_false(tc.is_seat_changing(0), "不再有换座窗口（2026-10-19：不耗时）")
+	assert_false(tc.is_seat_changing(1), "不再有换座窗口（2026-10-19：不耗时）")
+	assert_eq(core._neighbor_idx.size(), core.node_count(), "换座后按新座位重建邻接索引")
 
 
 func test_class_phase_enters_study_above_30_and_never_plays() -> void:

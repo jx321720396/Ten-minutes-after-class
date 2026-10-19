@@ -49,9 +49,8 @@ func test_roster_follows_changed_seats_instead_of_character_order() -> void:
 	var commands := core.teacher_commands()
 	var original_first := str(core.seat_of(0))
 	var original_second := str(core.seat_of(1))
+	# 2026-10-19：换座即时生效、不耗时间，不再需要 tick 推进。
 	assert_true(commands.start_seat_change(core, 0, 1))
-	for tick in range(10):
-		commands.tick(core)
 	var roster = ROSTER.new()
 	add_child_autofree(roster)
 	roster.open(core, "profile")
@@ -64,6 +63,22 @@ func test_roster_follows_changed_seats_instead_of_character_order() -> void:
 	for slot in range(roster.cards.size()):
 		var index := int(roster.cards[slot].get_meta("student_index"))
 		assert_eq(str(core.seat_of(index)), "P%d" % (slot + 1))
+
+
+func test_roster_stays_open_and_clears_selection_after_seat_change() -> void:
+	var core := SimCore.new(20261018, 16, ConfigLoader.new().load_all())
+	var roster = ROSTER.new()
+	add_child_autofree(roster)
+	roster.open(core, "seats")
+	roster.select_student(0)
+	roster.select_student(1)
+	assert_eq(int(roster.get("_first")), 0)
+	roster.refresh_after_seat_change(0, 1)
+	assert_true(roster.visible, "换完留在选座页")
+	assert_eq(int(roster.get("_first")), -1, "换完清空已选，可以接着选下一组")
+	assert_eq(int(roster.get("_second")), -1, "换完清空已选，可以接着选下一组")
+	assert_true(roster.confirm.disabled, "没有选人时确认按钮不可用")
+	assert_eq(roster.cards.size(), core.node_count(), "卡片按新座位重排后仍在页上")
 
 
 func test_fullscreen_panels_and_roster_controls_fit_phone_aspect_ratios() -> void:
