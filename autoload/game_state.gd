@@ -23,6 +23,8 @@ var replay_tutorial := false
 ## 本次进教室是否要弹新手教程（由入口决定：主菜单开新局置位，教室消费后清零）。
 ## 教室自身不读「已看」文件——直接实例化教室（测试 / 调试）永远零教程、零冻结。
 var tutorial_pending := false
+## 第 0 天报到日教程：教程局不写存档；结束后同种子重建正式局（见 finish_tutorial）。
+var tutorial_mode := false
 ## 主菜单开幕是否已经显示过「第 N 天」黑幕（教室进场消费一次，避免重复盖卡片）。
 var opening_day_shown := false
 ## 教室场景注入的时钟引用（存档 / 读档用；SimulationClock 是场景节点，不在 autoload 里）。
@@ -36,6 +38,7 @@ var force_roam_decide := false
 
 
 func start_game(new_seed: int, new_npc_count: int) -> void:
+	tutorial_mode = false  # 入口在 start_game 之后显式置位；正式局／重开默认不是教程
 	profile_notebook = {"current": {}, "history": [], "seen": {}}
 	force_roam_decide = false
 	seed = new_seed
@@ -50,6 +53,13 @@ func start_game(new_seed: int, new_npc_count: int) -> void:
 
 func end_game() -> void:
 	sim_core = null
+
+
+## 结束第 0 天报到日：同种子重建正式局，教程中的学生状态、关系、座位与笔记全部丢弃。
+func finish_tutorial() -> void:
+	var s := seed
+	var n := npc_count
+	start_game(s, n)
 
 
 ## 把内核事件出口绑到 EventBus 四信号（D11 缺口④）。
@@ -83,6 +93,9 @@ func sync_time(snapshot: Dictionary) -> void:
 ## 打包本局快照并写盘（单槽 user://savegame.dat）。日末自动存档与暂停菜单手动存档共用。
 ## 返回是否写入成功（false = 无内核实例或磁盘写入失败）。
 func save_snapshot() -> bool:
+	if tutorial_mode:
+		push_warning("GameState：报到日教程期间不写存档。")
+		return false
 	if sim_core == null:
 		push_warning("GameState：没有本局内核，无法存档。")
 		return false

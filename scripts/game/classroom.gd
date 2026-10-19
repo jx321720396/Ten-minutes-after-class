@@ -30,6 +30,8 @@ const TERM_REPORT_SCENE := preload("res://scenes/ui/term_report.tscn")
 
 var _term_report: CanvasLayer
 var _outcome_screen: CanvasLayer
+## 开场漫画实例：教程模式下等它播完再启动报到日步骤。
+var _opening_comic: Node = null
 ## 教程步进用：最近一次被选中的行为栏 kind（提交时连同状态一起转发给教程）
 var _tutorial_armed: StringName = &""
 
@@ -110,12 +112,15 @@ func _bind_opening_comic() -> void:
 	var comic := preload("res://scripts/ui/opening_comic.gd").new()
 	comic.name = "OpeningComic"
 	add_child(comic)
+	_opening_comic = comic
 	var settings: Control = pause_menu.settings_panel
 	settings.replay_btn.disabled = false
 	settings.replay_btn.tooltip_text = ""
 	settings.replay_requested.connect(func(): comic.start(clock))
 	if GameState.tutorial_pending:
 		GameState.tutorial_pending = false
+		if GameState.tutorial_mode:
+			comic.finished.connect(_start_tutorial, CONNECT_ONE_SHOT)
 		comic.start(clock)
 
 
@@ -126,42 +131,74 @@ func _install_office() -> void:
 	hub.bind_classroom(self)
 
 
-## 新手教程（28 章 P0）：只有入口（主菜单开新局）置了 tutorial_pending 才弹；
-## 直接实例化教室（测试 / 调试）永远零教程、零冻结。开场卡期间用 clock.hold 冻结世界。
-func _bind_tutorial() -> void:
-	var settings: Control = pause_menu.settings_panel
-	if settings != null and settings.has_signal("replay_requested"):
-		settings.replay_requested.connect(_on_tutorial_replay)
-	action_bar.behavior_armed.connect(_on_tutorial_armed)
-	if not GameState.tutorial_pending:
+## 第 0 天报到日（docs/design/新手教程-报到日-2026-10-19.md）：
+## 开场漫画播完后启动；教程期间不写存档，结束时同种子重建正式局。
+func _start_tutorial() -> void:
+	if not GameState.tutorial_mode:
 		return
-	GameState.tutorial_pending = false
-	clock.hold(&"tutorial")
+	var core: Variant = actors.call("current_core")
+	if core != null:
+		_seed_tutorial_state(core)
+	var hub: Node = get_node_or_null("OfficeHub")
+	var anchors := {"time_hud": time_hud._panel}
+	var card: Variant = time_hud._attention_card
+	if card != null:
+		anchors["attention_card"] = card
+		if card.has_signal("details_opened"):
+			card.details_opened.connect(_on_tutorial_risk_details_opened)
+	if hub != null:
+		if hub.has_signal("tutorial_event"):
+			hub.connect("tutorial_event", _on_tutorial_event)
+		if hub.has_method("tutorial_anchors"):
+			var extra: Variant = hub.call("tutorial_anchors")
+			if extra is Dictionary:
+				anchors.merge(extra, true)
+	if npc_profile.has_signal("opened"):
+		npc_profile.opened.connect(_on_tutorial_profile_opened)
+	tutorial.bind_world(clock, player, anchors)
 	if not tutorial.intro_closed.is_connected(_on_tutorial_intro_closed):
 		tutorial.intro_closed.connect(_on_tutorial_intro_closed, CONNECT_ONE_SHOT)
-	# 锚点必须传 Control：TimeHUD / 行为栏本体是 CanvasLayer，高亮矩形取的是它们内部的纸卡面板
-	tutorial.bind_world(
-		clock, player, {"time_hud": time_hud._panel, "action_bar": action_bar._panel}
-	)
+	if not tutorial.tutorial_finished.is_connected(_on_tutorial_finished):
+		tutorial.tutorial_finished.connect(_on_tutorial_finished, CONNECT_ONE_SHOT)
+	clock.hold(&"tutorial")
 	tutorial.start_first_run()
+
+
+## 教学情境只设初始状态，不指定学生之后做什么（不违反不脚本化原则）。
+## 直接写内核平铺数组：教程局独立、结束后整体丢弃，不进入正式局。
+func _seed_tutorial_state(core: Variant) -> void:
+	var n := int(core.node_count())
+	if n < 2:
+		return
+	core._stress[0] = 80.0
+	core._a[0 * n + 1] = 60.0
+	core._h[0 * n + 1] = 60.0
+	core._h[1 * n + 0] = 60.0
+
+
+func _on_tutorial_event(event: StringName) -> void:
+	tutorial.notify_event(event)
+
+
+func _on_tutorial_profile_opened(_index: int) -> void:
+	tutorial.notify_event(&"profile_opened")
+
+
+func _on_tutorial_risk_details_opened() -> void:
+	tutorial.notify_event(&"risk_card_opened")
 
 
 func _on_tutorial_intro_closed() -> void:
 	clock.release(&"tutorial")
 
 
-## 设置菜单「重看教程」：教室里直接重放（不置 pending，立刻弹）。
-func _on_tutorial_replay() -> void:
-	if tutorial.is_running():
-		return
-	clock.hold(&"tutorial")
-	if not tutorial.intro_closed.is_connected(_on_tutorial_intro_closed):
-		tutorial.intro_closed.connect(_on_tutorial_intro_closed, CONNECT_ONE_SHOT)
-	# 同上：锚点传内部面板，不传 CanvasLayer 本体
-	tutorial.bind_world(
-		clock, player, {"time_hud": time_hud._panel, "action_bar": action_bar._panel}
-	)
-	tutorial.start_first_run()
+func _on_tutorial_finished() -> void:
+	clock.release(&"tutorial")
+	GameState.finish_tutorial()
+	GameState.opening_day_shown = true
+	var error := get_tree().change_scene_to_file("res://scenes/game/classroom3D.tscn")
+	if error != OK:
+		push_error("无法进入正式第一天：%s" % error_string(error))
 
 
 func _on_tutorial_armed(kind: StringName) -> void:

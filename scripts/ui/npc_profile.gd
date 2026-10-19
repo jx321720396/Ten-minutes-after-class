@@ -5,6 +5,8 @@ extends CanvasLayer
 signal closed
 signal tool_requested(action: String)
 signal summon_requested(index: int)
+## 档案真正打开（教程步骤 profile_opened 用）。
+signal opened(index: int)
 
 const PORTRAITS = preload("res://scripts/ui/student_portraits.gd")
 const DATA = preload("res://scripts/ui/npc_profile_data.gd")
@@ -122,6 +124,7 @@ func open_profile(index: int) -> void:
 	_show_page(false)
 	$Root.show()
 	%Close.grab_focus()
+	opened.emit(index)
 
 
 func close() -> void:

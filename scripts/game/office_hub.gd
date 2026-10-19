@@ -1,6 +1,9 @@
 extends CanvasLayer
 ## 保留教室与时钟的视图协调器，不承担老师行为规则。
 
+## 报到日教程事件出口：只在真实操作成功时发，不改变任何玩法状态。
+signal tutorial_event(event: StringName)
+
 const OFFICE := preload("res://scenes/game/office.tscn")
 const TEACHER_UI := preload("res://scenes/ui/teacher_classroom.tscn")
 const TEACHER_PRESENCE := preload("res://scenes/components/teacher_presence.tscn")
@@ -25,6 +28,8 @@ var _pair_first := -1
 var _saved_visible: Dictionary = {}
 var _ask_seen := 0
 var _interlude: Control
+## 上一帧的命令名：用于检测 office_chat 真正结束（教程 talk_completed）。
+var _last_command := ""
 # 进入办公室前的页面（classroom / monitor）。办公室是子页面，返回时回这里，
 # 不写死回办公室或监控；空串表示没有来路（开局直接进场等）。
 var _office_origin := ""
@@ -102,6 +107,21 @@ func teacher_view() -> Control:
 	return _teacher
 
 
+## 教程锚点：只返回当前真实存在的 Control；未知 id 由覆盖层静默跳过。
+## 教程开局在教室视图，优先指向教师界面的按钮；办公室监控入口另给 office_monitor。
+func tutorial_anchors() -> Dictionary:
+	var anchors := {}
+	if _teacher != null:
+		anchors["profile"] = _teacher.get_node_or_null("Design/Frame/Rows/Profile")
+		anchors["summon"] = _teacher.get_node_or_null("Design/Frame/Rows/PrivateChat")
+		anchors["monitor"] = _teacher.get_node_or_null("Design/Frame/Rows/ReturnOffice")
+		anchors["seats"] = _teacher.get_node_or_null("Design/Frame/Rows/Seats")
+		anchors["mediate"] = _teacher.get_node_or_null("Design/Frame/Rows/Conflict")
+	if _view != null:
+		anchors["office_monitor"] = _view.get_node_or_null("Design/Navigation/Monitor")
+	return anchors
+
+
 func set_mode(next: String) -> bool:
 	if next not in ["office", "monitor", "classroom"] or _room == null:
 		return false
@@ -124,7 +144,10 @@ func set_mode(next: String) -> bool:
 		_room.get_node("ActionBar").backpack.close()
 	elif next != "office":
 		_office_origin = ""
+	var entered_monitor := next == "monitor" and _mode != "monitor"
 	_mode = next
+	if entered_monitor:
+		tutorial_event.emit(&"monitor_entered")
 	_teacher_presence.set_view_mode(next)
 	_view.visible = next == "office"
 	_teacher.visible = next != "office"
@@ -168,6 +191,10 @@ func _process(_delta: float) -> void:
 		return
 	var core: Variant = _room.get_node("Actors").current_core()
 	var snapshot: Dictionary = core.teacher_commands().snapshot()
+	var command := str(snapshot.get("command", ""))
+	if _last_command == "office_chat" and command != "office_chat":
+		tutorial_event.emit(&"talk_completed")
+	_last_command = command
 	if _interlude != null:
 		_interlude.refresh(core, snapshot)
 	if _voice_window_active:
@@ -271,7 +298,8 @@ func _on_action(action: String) -> void:
 		var core: Variant = _room.get_node("Actors").current_core()
 		var commands = core.teacher_commands()
 		if action == "send_back":
-			commands.send_back(core)
+			if commands.send_back(core):
+				tutorial_event.emit(&"sent_back")
 		else:
 			commands.office_chat(core, action)
 		_process(0.0)
@@ -432,6 +460,7 @@ func _confirm_seats(first: int, second: int) -> void:
 		# 2026-10-19 裁定：换座即时生效、不耗课间时间，换完**留在选座页**，
 		# 卡片按新座位重排并清空已选，老师可以直接接着换下一组。
 		_picker.refresh_after_seat_change(first, second)
+		tutorial_event.emit(&"seat_changed")
 	else:
 		_picker.show_message(str(_view.config.meeting.rejected))
 	_process(0.0)
@@ -459,6 +488,7 @@ func select_student(index: int) -> void:
 		var accepted: bool = commands.mediate(core, _pair_first, index)
 		if accepted:
 			close_picker()
+			tutorial_event.emit(&"mediated")
 		else:
 			_picker.show_message(
 				(
@@ -476,6 +506,7 @@ func select_student(index: int) -> void:
 	else:
 		if core.teacher_commands().summon(core, index):
 			close_picker()
+			tutorial_event.emit(&"summoned")
 		else:
 			_picker.show_message(str(_view.config.meeting.rejected))
 	_process(0.0)

@@ -1,14 +1,13 @@
 class_name TutorialOverlay
 extends CanvasLayer
-## 新手教程覆盖层（P0，docs/gdd/v4/28-新手教程设计.md）：开场纸卡 + 首课间分步提示 + 跳过。
+## 老师版新手教程覆盖层（第 0 天报到日，docs/design/新手教程-报到日-2026-10-19.md）。
 ##
-## 纪律：纯表现层——只消费调用方喂进来的事件（行为选中 / 提交），自己轮询玩家位移与
-## 教室阶段；不读 NPC 隐藏数值、不写任何矩阵。把本组件整体删掉，游戏行为零变化。
+## 纪律：纯表现层——只消费调用方喂进来的事件（notify_event），自己轮询步骤计时；
+## 不读 NPC 隐藏数值、不写任何矩阵。把本组件整体删掉，正式局行为零变化。
 ## 文案全部来自 data/ui/tutorial.json（本地化纪律），本脚本零中文字面量。
 ##
-## 流程：start_first_run() → 开场纸卡（调用方负责在此期间冻结时钟）→ intro_closed →
-## 步进提示（S1–S5，条件推进 / 超时放行 / 课间结束静默收尾）→ tutorial_finished。
-## 「已看」标记写 seen_path（默认 user://tutorial_seen.dat）；测试可换成临时文件。
+## 流程：start_first_run() → 开场纸卡 → intro_closed → 步进提示（done_event / 超时 /
+## 说明卡）→ tutorial_finished。教程时钟由调用方管理：每段开始 hold，玩家点继续释放。
 
 signal intro_closed
 signal tutorial_finished
@@ -17,11 +16,7 @@ const CFG_PATH := "res://data/ui/tutorial.json"
 const DEFAULT_SEEN_PATH := "user://tutorial_seen.dat"
 ## 压在转场黑幕（TransitionOverlay layer=10）之上，开场卡不被盖住
 const UI_LAYER := 45
-## S2「移动」的完成判定：离步起点超过这个距离（米）
-const MOVE_DONE_METERS := 1.2
-const HINT_WIDTH := 640.0
-## 步骤 id → 该步等待的提交行为（动作栏 kind）
-const COMMIT_KIND_OF := {&"s4_chat": &"chat"}
+const HINT_WIDTH := 720.0
 ## 提示条内「下一步」按钮的尺寸（热区 ≥44，§20.0.4）
 const HINT_NEXT_MIN := Vector2(96, 44)
 
@@ -41,10 +36,6 @@ var _running := false
 var _card_index := 0
 var _step_index := -1
 var _step_elapsed := 0.0
-var _move_anchor := Vector3.ZERO
-var _tracking_move := false
-var _player: Node3D = null
-var _clock: SimulationClock = null
 var _anchors: Dictionary = {}
 
 var _root: Control
@@ -57,6 +48,10 @@ var _hint_label: Label
 var _hint_next_btn: Button
 var _skip_btn: Button
 var _highlight: PanelContainer
+var _info_overlay: Control
+var _info_title: Label
+var _info_rows: VBoxContainer
+var _info_close_btn: Button
 
 
 func _ready() -> void:
@@ -78,10 +73,8 @@ func _load_cfg() -> Dictionary:
 # ------------------------------------------------------------------ 绑定
 
 
-## 注入运行期依赖：时钟（阶段守卫用）、玩家（位移判定用）、界面锚点（高亮用）。
-func bind_world(clock: SimulationClock, player: Node3D, anchors: Dictionary) -> void:
-	_clock = clock
-	_player = player
+## 注入界面锚点。时钟与玩家参数保留以兼容现有教室调用；教程时钟由调用方管理。
+func bind_world(_clock: SimulationClock, _player: Node3D, anchors: Dictionary) -> void:
 	_anchors = anchors
 
 
@@ -90,6 +83,14 @@ func bind_world(clock: SimulationClock, player: Node3D, anchors: Dictionary) -> 
 
 static func is_seen() -> bool:
 	return FileAccess.file_exists(DEFAULT_SEEN_PATH)
+
+
+## 固定教程种子：保证每次报到日的学生初始状态一致（可在 tutorial.json 改）。
+static func tutorial_seed() -> int:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(CFG_PATH))
+	if parsed is Dictionary:
+		return int(parsed.get("seed", 20261019))
+	return 20261019
 
 
 func is_running() -> bool:
@@ -112,23 +113,25 @@ func skip() -> void:
 	_finish()
 
 
-# ------------------------------------------------------------------ 事件入口（由教室转发）
+# ------------------------------------------------------------------ 事件入口（由教室 / 办公室转发）
 
 
-## 行为栏任意按钮被选中（S3 的完成条件）。
-func notify_armed(_kind: StringName) -> void:
-	if _running and _current_step_id() == &"s3_action":
-		_advance()
-
-
-## 一次行为真正提交（ACTIVE=开始跑 / REJECTED=被拒也算「开口了」）。
-## 只有当前步骤等待的 kind 匹配才推进（S4 等闲聊、S5 等观察）。
-func notify_committed(kind: StringName) -> void:
-	if not _running:
+## 真实操作完成时通知教程。只有当前步骤等待的 done_event 匹配才推进。
+func notify_event(event: StringName) -> void:
+	if not _running or is_intro_open() or is_info_open():
 		return
-	var expected: StringName = COMMIT_KIND_OF.get(_current_step_id(), &"")
-	if expected != &"" and kind == expected:
+	var step := _current_step()
+	if str(step.get("done_event", "")) == str(event):
 		_advance()
+
+
+## 兼容旧教室接线：老师版新教程不使用行为栏 arm / commit 事件。
+func notify_armed(_kind: StringName) -> void:
+	pass
+
+
+func notify_committed(_kind: StringName) -> void:
+	pass
 
 
 # ------------------------------------------------------------------ 每帧推进
@@ -137,19 +140,14 @@ func notify_committed(kind: StringName) -> void:
 func _process(delta: float) -> void:
 	if not visible:
 		return
-	_sync_highlight()
-	if not _running or is_intro_open():
+	_sync_positions()
+	if not _running or is_intro_open() or is_info_open():
 		return
-	if not _phase_allows_steps():
-		_finish()  # 课间结束：静默收尾，不跨课间追进度
+	var step := _current_step()
+	if step.is_empty():
+		_finish()
 		return
 	_step_elapsed += delta
-	var step: Dictionary = _current_step()
-	if _tracking_move and _player != null and is_instance_valid(_player):
-		if _player.global_position.distance_to(_move_anchor) >= MOVE_DONE_METERS:
-			_tracking_move = false
-			_advance()
-			return
 	var auto_pass := float(step.get("auto_pass_seconds", 0.0))
 	if auto_pass > 0.0 and _step_elapsed >= auto_pass:
 		_advance()
@@ -180,8 +178,8 @@ func _last_card() -> bool:
 
 
 func _on_hint_next() -> void:
-	# 「下一步」：手动推进当前提示；开场卡期间不生效（那边有自己的「开始上课」）
-	if _running and not is_intro_open():
+	# 「下一步」：手动推进当前提示；开场卡与说明卡各有自己的按钮
+	if _running and not is_intro_open() and not is_info_open():
 		_advance()
 
 
@@ -204,15 +202,51 @@ func _close_intro() -> void:
 
 func _apply_step() -> void:
 	var step := _current_step()
+	if step.is_empty():
+		_finish()
+		return
 	_step_elapsed = 0.0
+	var info_id := str(step.get("info_card", ""))
+	if not info_id.is_empty():
+		_hint_bar.visible = false
+		_highlight.visible = false
+		_show_info(info_id)
+		return
 	_hint_label.text = str(step.get("text", ""))
 	_hint_bar.visible = true
 	_hint_next_btn.visible = true
 	_skip_btn.visible = true
-	_tracking_move = _current_step_id() == &"s2_move" and _player != null
-	if _tracking_move:
-		_move_anchor = _player.global_position
 	_show_anchor(str(step.get("anchor", "")))
+
+
+func _show_info(info_id: String) -> void:
+	var cards: Dictionary = _cfg.get("info_cards", {})
+	var rows: Array = cards.get(info_id, [])
+	if rows.is_empty():
+		_advance()
+		return
+	for child in _info_rows.get_children():
+		_info_rows.remove_child(child)
+		child.queue_free()
+	_info_title.text = _label("info_title")
+	for row in rows:
+		var line := Label.new()
+		line.text = "%s：%s" % [str(row.get("name", "")), str(row.get("text", ""))]
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		line.custom_minimum_size = Vector2(520, 0)
+		line.add_theme_color_override("font_color", COLOR_INK)
+		line.add_theme_font_size_override("font_size", 23)
+		_info_rows.add_child(line)
+	_info_close_btn.text = _label("info_close")
+	_info_overlay.visible = true
+	_skip_btn.visible = true
+
+
+func _on_info_close() -> void:
+	if not is_info_open():
+		return
+	_info_overlay.visible = false
+	_advance()
 
 
 func _show_anchor(anchor_id: String) -> void:
@@ -222,7 +256,7 @@ func _show_anchor(anchor_id: String) -> void:
 	_highlight.visible = true
 
 
-func _sync_highlight() -> void:
+func _sync_positions() -> void:
 	if _hint_bar.visible:
 		_hint_bar.position = Vector2((_root.size.x - _hint_bar.size.x) * 0.5, 16.0)
 	if not _highlight.visible:
@@ -248,10 +282,6 @@ func _current_step() -> Dictionary:
 	return steps[_step_index]
 
 
-func _current_step_id() -> StringName:
-	return StringName(str(_current_step().get("id", "")))
-
-
 func _advance() -> void:
 	var steps: Array = _cfg.get("steps", [])
 	if _step_index + 1 >= steps.size():
@@ -264,22 +294,16 @@ func _advance() -> void:
 func _finish() -> void:
 	var was_intro := is_intro_open()
 	_running = false
-	_tracking_move = false
 	_hint_bar.visible = false
 	_highlight.visible = false
 	_skip_btn.visible = false
 	_card_overlay.visible = false
+	_info_overlay.visible = false
 	if was_intro:
-		# 跳过发生在开场卡期间也要通知教室释放时钟，否则世界永远冻结
+		# 跳过发生在开场卡期间也要通知调用方释放时钟，否则世界永远冻结
 		intro_closed.emit()
 	_write_seen()
 	tutorial_finished.emit()
-
-
-func _phase_allows_steps() -> bool:
-	if _clock == null or not is_instance_valid(_clock):
-		return true
-	return str(_clock.snapshot().get("kind", "")) == "break"
 
 
 func _label(key: String) -> String:
@@ -294,6 +318,10 @@ func _write_seen() -> void:
 
 func is_intro_open() -> bool:
 	return _card_overlay != null and _card_overlay.visible
+
+
+func is_info_open() -> bool:
+	return _info_overlay != null and _info_overlay.visible
 
 
 # ------------------------------------------------------------------ UI 搭建（样式同纸面基线 §20.0.3）
@@ -361,6 +389,8 @@ func _build_ui() -> void:
 	_next_btn.add_theme_font_size_override("font_size", 26)
 	_next_btn.pressed.connect(_on_next_pressed)
 	vbox.add_child(_next_btn)
+
+	_build_info_ui()
 
 	_hint_bar = PanelContainer.new()
 	_hint_bar.name = "HintBar"
@@ -433,6 +463,47 @@ func _build_ui() -> void:
 	_root.add_child(_highlight)
 
 
+func _build_info_ui() -> void:
+	_info_overlay = ColorRect.new()
+	_info_overlay.name = "InfoOverlay"
+	_info_overlay.color = COLOR_OVERLAY
+	_info_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_info_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_info_overlay.visible = false
+	_root.add_child(_info_overlay)
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_info_overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(600, 0)
+	panel.add_theme_stylebox_override("panel", _paper_style())
+	center.add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 14)
+	panel.add_child(vbox)
+
+	_info_title = Label.new()
+	_info_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_info_title.add_theme_color_override("font_color", COLOR_INK)
+	_info_title.add_theme_font_size_override("font_size", 30)
+	vbox.add_child(_info_title)
+
+	_info_rows = VBoxContainer.new()
+	_info_rows.add_theme_constant_override("separation", 10)
+	vbox.add_child(_info_rows)
+
+	_info_close_btn = Button.new()
+	_info_close_btn.custom_minimum_size = Vector2(180, 52)
+	_info_close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_info_close_btn.add_theme_color_override("font_color", COLOR_ACCENT)
+	_info_close_btn.add_theme_font_size_override("font_size", 24)
+	_info_close_btn.pressed.connect(_on_info_close)
+	vbox.add_child(_info_close_btn)
+
+
 func _paper_style() -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = COLOR_PAPER
@@ -447,7 +518,12 @@ func _paper_style() -> StyleBoxFlat:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# 只在开场卡期间接管 Esc（跳过教程）；步进提示阶段 Esc 仍归暂停菜单。
-	if visible and _running and is_intro_open() and event.is_action_pressed("ui_cancel"):
+	# 开场卡期间 Esc = 跳过教程；说明卡期间 Esc = 关闭说明；步进提示仍归暂停菜单。
+	if not visible or not _running or not event.is_action_pressed("ui_cancel"):
+		return
+	if is_intro_open():
 		skip()
+		get_viewport().set_input_as_handled()
+	elif is_info_open():
+		_on_info_close()
 		get_viewport().set_input_as_handled()

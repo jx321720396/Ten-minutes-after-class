@@ -1,52 +1,175 @@
 {
-  "version": 1,
-  "note": "新手教程文案（docs/gdd/v4/28-新手教程设计.md §28.7）。steps.timeout_seconds=0 表示不设超时、跟到课间结束；anchor 为空表示该步不高亮界面锚点。",
+  "version": 2,
+  "seed": 20261019,
+  "note": "老师版第 0 天报到日教程（docs/design/新手教程-报到日-2026-10-19.md）。steps 用 done_event 推进；info_card 指向 info_cards 里的说明卡；timeout_seconds=0 表示不设超时；anchor 为空或锚点未接线时静默不高亮。",
   "labels": {
-    "next": "开始上课",
+    "next": "开始报到",
     "next_hint": "下一步",
-    "skip": "跳过教程"
+    "skip": "跳过教程",
+    "info_title": "老师能做的事",
+    "info_close": "知道了"
   },
   "intro_cards": [
     {
-      "id": "card_who",
-      "title": "转学第一天",
-      "text": "你是 3 班的转学生。这学期 30 天，没人认识你——一切从零开始。"
+      "id": "card_report_day",
+      "title": "报到日",
+      "text": "今天是报到日。明天才正式接班——先看看这个班。"
     },
     {
       "id": "card_day",
       "title": "一天怎么过",
-      "text": "每天三段课间是你的时间。上课铃一响，只能看着班里自己发酵。"
+      "text": "每天三个课间，每段一百秒；办公室谈一次话要二十秒。铃一响就上课。"
     },
     {
-      "id": "card_free",
-      "title": "没有标准答案",
-      "text": "想跟谁好、想看谁笑话、想安静读书，都行。下课了。"
+      "id": "card_goal",
+      "title": "两件事",
+      "text": "第八天第一次考试，班级均分要到 450；同时别让任何人崩溃、被霸凌或被孤立。"
     }
   ],
   "steps": [
     {
-      "id": "s1_time",
-      "text": "左上是日子。课间一结束就会上课，别磨蹭。",
+      "id": "t1_time",
+      "text": "左上是时间卡：三个课间、每段一百秒。点一下还能换速度。",
       "anchor": "time_hud",
+      "auto_pass_seconds": 5.0
+    },
+    {
+      "id": "t2_profile",
+      "text": "打开「同学档案」，先看一个学生现在什么状态。",
+      "anchor": "profile",
+      "done_event": "profile_opened",
+      "timeout_seconds": 45.0
+    },
+    {
+      "id": "t3_stress",
+      "text": "压力过 90 会崩溃；动力低于 30 就只想玩。安抚降压力，表扬加动力。",
+      "anchor": "",
+      "auto_pass_seconds": 8.0
+    },
+    {
+      "id": "t4_attention",
+      "text": "「需要关注」列出高压学生，点一条能看到详情。",
+      "anchor": "attention_card",
+      "done_event": "risk_card_opened",
+      "timeout_seconds": 30.0
+    },
+    {
+      "id": "t5_monitor",
+      "text": "先点「返回办公室」，再进「教室监控」看看：谁在学、谁在玩、谁在走动。",
+      "anchor": "monitor",
+      "done_event": "monitor_entered",
+      "timeout_seconds": 45.0
+    },
+    {
+      "id": "t6_class",
+      "text": "上课了。学生按自己的状态行动，你只能等下课。",
+      "anchor": "",
       "auto_pass_seconds": 3.0
     },
     {
-      "id": "s2_move",
-      "text": "点地面走走，或者用 WASD。",
-      "anchor": "",
-      "timeout_seconds": 20.0
+      "id": "t7_summon",
+      "text": "点「私聊」挑一个高压学生，叫到办公室谈一次。",
+      "anchor": "summon",
+      "done_event": "summoned",
+      "timeout_seconds": 60.0
     },
     {
-      "id": "s3_action",
-      "text": "右边是能做的事：先点一件事，再点一个人。",
-      "anchor": "action_bar",
-      "timeout_seconds": 20.0
+      "id": "t8_meeting",
+      "text": "看他的压力、动力和今日学业收益。",
+      "anchor": "",
+      "auto_pass_seconds": 5.0
     },
     {
-      "id": "s4_chat",
-      "text": "走近一个同学，点「闲聊」，再点他。聊什么都行。",
+      "id": "t9_comfort",
+      "text": "点「安抚」：20 秒，压力降 20，动力也会跟着降 20。",
+      "anchor": "comfort",
+      "done_event": "talk_completed",
+      "timeout_seconds": 60.0
+    },
+    {
+      "id": "t10_send_back",
+      "text": "谈完点「送回教室」。一个课间只够谈几次。",
+      "anchor": "send_back",
+      "done_event": "sent_back",
+      "timeout_seconds": 30.0
+    },
+    {
+      "id": "t11_office_info",
+      "text": "",
       "anchor": "",
-      "timeout_seconds": 0.0
+      "info_card": "office_actions"
+    },
+    {
+      "id": "t12_seat",
+      "text": "回教室后点「调整座位」：不花课间时间，可以连续换；两人会当场中断当前活动。",
+      "anchor": "seats",
+      "done_event": "seat_changed",
+      "timeout_seconds": 60.0
+    },
+    {
+      "id": "t13_class_info",
+      "text": "",
+      "anchor": "",
+      "info_card": "class_actions"
+    },
+    {
+      "id": "t14_mediate",
+      "text": "回教室点「调解」，选敌对超过 50 的两人；完成后双方各降 5。",
+      "anchor": "mediate",
+      "done_event": "mediated",
+      "timeout_seconds": 60.0
+    },
+    {
+      "id": "t15_risk",
+      "text": "霸凌和孤立要连续两天满足条件才正式触发，所以每天都要看关注卡片。",
+      "anchor": "attention_card",
+      "auto_pass_seconds": 10.0
     }
-  ]
+  ],
+  "info_cards": {
+    "office_actions": [
+      {
+        "name": "安抚",
+        "text": "20 秒。压力 −20，动力也跟着 −20；已经学到的成绩不会掉。"
+      },
+      {
+        "name": "表扬",
+        "text": "20 秒。只给动力 +15，不加压力，也不直接加成绩。"
+      },
+      {
+        "name": "训斥",
+        "text": "20 秒。压力 +30，动力也跟着 +30；不直接加成绩。"
+      },
+      {
+        "name": "打听",
+        "text": "20 秒。每个课间全班只能成功一次，给你一条消息和最多三条关系。"
+      },
+      {
+        "name": "鼓励",
+        "text": "20 秒。四个课间内，让他去找人聊一次；不直接加好感、动力或成绩。"
+      },
+      {
+        "name": "送回教室",
+        "text": "即时。谈完就送回，别占着办公室。"
+      }
+    ],
+    "class_actions": [
+      {
+        "name": "巡视／去教室",
+        "text": "每课间第一次进教室，全班压力 +5；重复进不再加。"
+      },
+      {
+        "name": "全班训斥",
+        "text": "全班压力 +30。"
+      },
+      {
+        "name": "调座位",
+        "text": "即时，不花课间时间，可以连续换；两人会当场中断当前活动。"
+      },
+      {
+        "name": "调解",
+        "text": "20 秒。任一方向敌对超过 50，完成后双方各 −5；没有达到就不用调解。"
+      }
+    ]
+  }
 }

@@ -2,6 +2,8 @@ extends PanelContainer
 ## 只读风险关注纸卡：霸凌／孤立读取日末判定，崩溃读取当前状态。
 
 signal student_requested(index: int)
+## 风险详情弹层打开（教程步骤 risk_card_opened 用）。
+signal details_opened
 
 const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
 const GameFonts := preload("res://scripts/ui/game_fonts.gd")
@@ -183,6 +185,7 @@ func _open_details(kind: String) -> void:
 	_detail_kind = kind
 	_refresh_details()
 	_details.show()
+	details_opened.emit()
 
 
 ## 由 TimeHUD 转调：强制收起风险详情弹层（弹层压在 layer 31，会遮住其它页面）。

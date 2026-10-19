@@ -102,13 +102,19 @@ func _start_new_game() -> void:
 		return
 	_starting_new_game = true
 	_show_opening()
-	# §4.1 契约：先建本局唯一的内核实例，再切课间空间——教室只读 GameState.sim_core
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	GameState.start_game(rng.randi(), _npc_count())
+	# §4.1 契约：先建本局唯一的内核实例，再切课间空间——教室只读 GameState.sim_core。
+	# 第 0 天报到日：未看过教程或设置里点了「重看」→ 固定教程种子；否则随机开局。
+	var wants_tutorial := GameState.replay_tutorial or not TutorialOverlay.is_seen()
+	GameState.replay_tutorial = false
+	if wants_tutorial:
+		GameState.start_game(TutorialOverlay.tutorial_seed(), _npc_count())
+		GameState.tutorial_mode = true
+	else:
+		var rng := RandomNumberGenerator.new()
+		rng.randomize()
+		GameState.start_game(rng.randi(), _npc_count())
 	# 上任漫画属于每局开场；已看记录不应跳过新游戏的身份与考核说明。
 	GameState.tutorial_pending = true
-	GameState.replay_tutorial = false
 	# 教室进场不再重复盖「第 N 天」：开幕已经显示过（由转场组件消费后清零）。
 	GameState.opening_day_shown = true
 	var packed := await _wait_until_loaded()
@@ -173,6 +179,7 @@ func _on_continue():
 		return
 	# 读档不弹教程：本局是恢复，不是新开局。
 	GameState.tutorial_pending = false
+	GameState.tutorial_mode = false
 	var packed := AssetPreloader.scene(SCENE_CLASSROOM)
 	var error := (
 		get_tree().change_scene_to_packed(packed)
