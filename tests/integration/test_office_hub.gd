@@ -191,6 +191,35 @@ func _run() -> void:
 	check(hub.picker_visible(), "滚动消费拖动后，松手不得选中学生")
 	check(not scene.get_node("UI/NpcProfile").is_open(), "列表滚动不打开档案")
 	hub.close_picker()
+	# 2026-10-18：教室点「私聊」先进办公室再弹名单；玩家在名单里按「返回」要回到教室，
+	# 不能停在办公室（此前返回写死回办公室／监控）。
+	check(hub.set_mode("classroom"), "无命令时可从办公室回教室")
+	hub._on_teacher_action("private_chat")
+	check(hub.mode_name() == "office" and hub.picker_visible(), "教室私聊先进办公室并弹出选人名单")
+	hub._picker.closed.emit()
+	check(hub.mode_name() == "classroom", "名单「返回」回到进入前的教室")
+	hub._on_teacher_action("private_chat")
+	var cancel := InputEventAction.new()
+	cancel.action = "ui_cancel"
+	cancel.pressed = true
+	hub._unhandled_input(cancel)
+	check(hub.mode_name() == "classroom", "名单开着时 ESC 也回到教室")
+	hub._on_teacher_action("private_chat")
+	hub.close_picker()
+	hub._unhandled_input(cancel)
+	check(hub.mode_name() == "classroom", "办公室内 ESC 回到进入前的教室")
+	hub.set_mode("monitor")
+	hub.set_mode("office")
+	hub._unhandled_input(cancel)
+	check(hub.mode_name() == "monitor", "从监控进办公室的 ESC 回到监控")
+	# 办公室内部点「叫同学来」：取消只关名单，必须留在办公室（不能跳回教室）。
+	hub.set_mode("classroom")
+	hub.set_mode("office")
+	hub.open_tool("summon")
+	hub._picker.closed.emit()
+	check(hub.mode_name() == "office", "办公室内「叫同学来」取消后留在办公室")
+	hub._picker.closed.emit()
+	check(hub.mode_name() == "office", "名单已关时再触发返回不得切页面")
 	for dimensions in [Vector2i(1920, 1080), Vector2i(1280, 720)]:
 		root.content_scale_size = dimensions
 		root.size = dimensions

@@ -22,6 +22,12 @@ var _picker_kind := ""
 var _pair_first := -1
 var _saved_visible: Dictionary = {}
 var _ask_seen := 0
+# 进入办公室前的页面（classroom / monitor）。办公室是子页面，返回时回这里，
+# 不写死回办公室或监控；空串表示没有来路（开局直接进场等）。
+var _office_origin := ""
+# 打开当前这份名单时要记住的「上一界面」：只有进办公室顺带弹名单时才填（教室／监控）。
+# 空串 = 办公室内部自己打开的名单，取消后不切页面。
+var _picker_back_target := ""
 
 
 func bind_classroom(room: Node) -> void:
@@ -71,22 +77,26 @@ func teacher_view() -> Control:
 	return _teacher
 
 
-func set_mode(next: String) -> void:
+func set_mode(next: String) -> bool:
 	if next not in ["office", "monitor", "classroom"] or _room == null:
-		return
+		return false
 	var core: Variant = _room.get_node("Actors").current_core()
 	var commands = core.teacher_commands()
 	if next == "classroom" and _mode != "classroom":
 		if commands.current_command() != "" or commands.called_index() >= 0:
-			return
+			return false
 		commands.enter_classroom(core)
 	# Office thumbnail keeps the last teacher-free monitor frame.
 	# Hiding a sprite cannot change the viewport image already rendered this frame.
 	if _mode == "monitor" and next != "monitor":
 		_view.capture_preview()
 	if next == "office" and _mode != "office":
+		# 记下来路：办公室里的「返回」（名单返回 / ESC）要回到进入前的页面。
+		_office_origin = _mode if _mode in ["classroom", "monitor"] else ""
 		_capture_classroom_state()
 		_room.get_node("ActionBar").backpack.close()
+	elif next != "office":
+		_office_origin = ""
 	_mode = next
 	_teacher_presence.set_view_mode(next)
 	_view.visible = next == "office"
@@ -99,6 +109,31 @@ func set_mode(next: String) -> void:
 		node.visible = _saved_visible[path] if path == "TimeHUD" and next != "office" else false
 	_refresh_profile_binding()
 	_process(0.0)
+	return true
+
+
+## 离开办公室：回到进入前的页面（教室 → 教室，监控 → 监控）；没有来路才回监控。
+## 命令进行中／学生还在等时 set_mode 会拒绝切教室，退回监控（与旧行为一致）。
+func _leave_office() -> void:
+	var destination := _office_origin if _office_origin != "" else "monitor"
+	if not set_mode(destination):
+		set_mode("monitor")
+
+
+## 选人名单的「‹ 返回」= 玩家自己取消，回到「打开这份名单之前的界面」。
+## 教室／监控点私聊（或档案「叫来办公室」）是先进办公室再弹名单，所以打开时要显式传回进入前的页面；
+## 办公室内部自己打开的名单（叫同学来、同学档案、调座位…）没传目标，取消后就留在办公室。
+func _on_picker_closed() -> void:
+	var target := _picker_back_target
+	_picker_back_target = ""
+	close_picker()
+	if target == "" or target == _mode:
+		return
+	# 学生已叫来 / 谈话进行中：不把人丢在办公室，留在当前页面。
+	var commands = _room.get_node("Actors").current_core().teacher_commands()
+	if commands.current_command() != "" or commands.called_index() >= 0:
+		return
+	set_mode(target)
 
 
 func _process(_delta: float) -> void:
@@ -157,8 +192,9 @@ func _capture_classroom_state() -> void:
 
 
 func _on_profile_summon(index: int) -> void:
+	var origin := _mode
 	set_mode("office")
-	open_tool("summon")
+	_show_picker("summon", origin)
 	select_student(index)
 
 
@@ -201,8 +237,10 @@ func _on_teacher_action(action: String) -> void:
 		if action == "classroom":
 			_enter_classroom()
 	elif action == "private_chat":
+		# 教室／监控点「私聊」= 进办公室并选人；取消这份名单就回到进入前的页面。
+		var origin := _mode
 		set_mode("office")
-		open_tool("summon")
+		_show_picker("summon", origin)
 	elif action in ["seats", "mediate"]:
 		_show_picker(action)
 	else:
@@ -242,12 +280,14 @@ func _build_picker() -> void:
 	_picker_layer.add_child(_picker)
 	_picker.student_selected.connect(select_student)
 	_picker.seat_requested.connect(_confirm_seats)
-	_picker.closed.connect(close_picker)
+	_picker.closed.connect(_on_picker_closed)
 
 
-func _show_picker(kind: String) -> void:
+func _show_picker(kind: String, back_target := "") -> void:
 	_picker_kind = kind
 	_pair_first = -1
+	# 空串 = 办公室内部打开的名单：取消后留在原页面（不切视图）。
+	_picker_back_target = back_target
 	var core: Variant = _room.get_node("Actors").current_core()
 	_picker.open(core, kind)
 
@@ -311,13 +351,16 @@ func close_picker() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
+		# 暂停菜单自己收 ESC（本节点 PROCESS_MODE_ALWAYS 会早于它收到）；暂停中不切页面。
+		if get_tree().paused:
+			return
 		if picker_visible():
-			close_picker()
+			_on_picker_closed()
 			get_viewport().set_input_as_handled()
 			return
 		if _mode == "office":
-			# 办公室是教室的子页面：返回键回到上一个页面（教师监控视图）。
-			set_mode("monitor")
+			# 办公室是教室的子页面：返回键回到进入前的页面（教室／监控），不写死回监控。
+			_leave_office()
 			get_viewport().set_input_as_handled()
 			return
 	if _mode == "office" or get_tree().paused:

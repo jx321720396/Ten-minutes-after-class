@@ -1,5 +1,12 @@
 # 变更记录
 
+## 2026-10-19 修复办公室「返回」写死：名单返回与 ESC 回到进入前的页面
+
+- **问题**（用户报）：教室点「私聊」会先进办公室、再弹出选人名单（与办公室「叫学生来」同一套名单 UI）；在名单里按「‹ 返回」只关掉名单、人被留在办公室，ESC 也写死切到监控。感受上就是「返回直接回到办公室」。
+- **改法**（`scripts/game/office_hub.gd`）：进入办公室时记下来路 `_office_origin`（教室／监控，供 ESC 用）；名单则**在打开时显式快照「上一界面」** `_picker_back_target` —— 只有「进办公室并顺带弹名单」那一步（教室／监控点「私聊」、档案页「叫来办公室」）才填，办公室内部自己打开的名单（叫同学来、同学档案、调座位）留空，取消后就留在办公室。`set_mode` 改为返回 `bool`（切教室被命令拦下时为 false），新增 `_leave_office()` / `_on_picker_closed()`；名单开着时 ESC 与「返回」等价；暂停中 ESC 不再被本节点消费（此前会先于暂停菜单切页面）。
+- **回归**：`tests/integration/test_office_hub.gd` 新增 8 项检查（教室私聊→名单返回→回教室、名单开着时 ESC、办公室内 ESC、监控来路回监控、办公室内「叫同学来」取消留在办公室、名单已关时重复返回不切页）；去掉本次修复的两处关键判断后该测试分别实测 FAIL 1 项与 FAIL 2 项。门禁：`check_config` 191、`test_core` 133、`verify_formula` 9、`check_docs` 全绿，`gdformat --check scripts/`（98 文件）与 `gdlint scripts/` 通过，`test_office_hub` PASS。
+- **既有失败（与本次无关）**：GUT 侧 `test_teacher_command_ui` / `test_teacher_presence` / `test_teacher_enter_classroom` 因 `classroom3D.tscn` 引用 `mat_wood.tres` 的无效 UID 引擎警告被判 Unexpected Errors；未改动代码时同样失败。
+
 ## 2026-10-19 合并远端并修复导航等待期间的场景销毁错误
 
 - 合并 `origin/main-mobile`（老师谈话自动快进 4×、需要关注卡新增「崩溃预警」行、百科层级高于时间 HUD、开幕漫画提前绑定）。
