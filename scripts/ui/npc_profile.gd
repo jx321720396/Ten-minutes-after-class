@@ -338,7 +338,9 @@ func _refresh_status() -> void:
 		activity = "moving"
 	elif not _core.is_present(_index):
 		activity = "absent"
-	%Activity.text = words("activity") + str(_config.activities.get(activity, "活动中"))
+	%Activity.text = (
+		words("activity") + str(_config.activities.get(activity, words("activity_unknown")))
+	)
 	%Passive.text = _passive_text(str(snapshot.get("passive_id", "")))
 	%Goal.text = str(snapshot.get("communication_goal", words("goal_missing")))
 	%StatusDetails.text = words(
@@ -350,7 +352,9 @@ func _refresh_status() -> void:
 			"gain": _number(gain, true)
 		}
 	)
-	%StatusDetails.text += "\n" + words("fight_count", {"count": str(int(snapshot.get("fight_count", 0)))})
+	%StatusDetails.text += (
+		"\n" + words("fight_count", {"count": str(int(snapshot.get("fight_count", 0)))})
+	)
 	# 群策群力（主文档 §10.2）：该生可以看到所有其他同学对本人好感 —— 只读展示，不写矩阵。
 	# 放在状态摘要之后、明细之前，档案一打开就能看到，不用滚到底。
 	if bool(snapshot.get("reveals_incoming_affinity", false)):

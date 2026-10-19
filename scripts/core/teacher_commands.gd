@@ -430,7 +430,9 @@ func _finish(core: Variant) -> void:
 				var a := int(_mediate_pair["a"])
 				var b := int(_mediate_pair["b"])
 				if core._harm_events != null:
-					core._harm_events.finish_mediate(core, a, b, bool(_mediate_pair.get("apply_cut", true)))
+					core._harm_events.finish_mediate(
+						core, a, b, bool(_mediate_pair.get("apply_cut", true))
+					)
 				core._note_stopped(a)
 				core._note_stopped(b)
 			_mediate_pair = {}

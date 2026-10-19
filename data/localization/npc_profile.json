@@ -46,6 +46,7 @@
   "reverse": "查看反向 ⇄",
   "forward": "查看正向 ⇄",
   "activity": "当前活动：",
+  "activity_unknown": "活动中",
   "settlement": "今日收益次日结算，当前成绩不含未结算收益。",
   "settlement_known": "当前成绩不含今日未结算收益 · 按已累计收益结算：{grade}分。",
   "passive_missing": "—\n暂无公开被动记录",

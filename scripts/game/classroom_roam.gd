@@ -100,6 +100,9 @@ var _decide_timer := 0.0
 var _max_decides_per_break: int = 1
 ## 本课间还剩几批决策额度
 var _decides_remaining: int = 0
+## 课间冲突（吵架 / 推搡 / 打架）在场人名与目标点
+var _was_in_conflict: Array = []
+var _conflict_goal: Dictionary = {}
 
 
 func bind_time_flow(flow: TimeFlow) -> void:
@@ -445,10 +448,6 @@ func force_decide() -> void:
 		_decides_remaining = _max_decides_per_break
 	_decide_timer = 0.0
 	_decide_batch()
-
-
-var _was_in_conflict: Array = []
-var _conflict_goal: Dictionary = {}
 
 
 ## 吵架 / 推搡 / 打架的两人走到左侧柜子旁的空地；结束后走回自己的座位。

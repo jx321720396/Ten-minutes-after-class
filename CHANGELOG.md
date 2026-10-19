@@ -1,5 +1,14 @@
 # 变更记录
 
+## 2026-10-19 修复档案「当前活动」只显示「活动中」
+
+- **原因**：`data/ui/npc_profile.json` 的 `activities` 文案表用的是学生版旧键名（`music`／`snack`／`phone`），而内核 `LEISURE_KINDS` 实际返回 `listen_music`／`eat_snack`／`play_phone`；表里也没有 `sleep`／`leave_class`。查不到键就回落到脚本里硬编码的「活动中」，于是听歌、吃零食、玩手机、睡觉、出门的学生在档案里一律显示「当前活动：活动中」。
+- **修复**：文案表改用内核真实活动名（`listen_music`／`eat_snack`／`play_phone`／`read_book`／`study`／`chat`／`roughhouse`）并补齐 `sleep`（睡觉）、`leave_class`（出门），删除内核不产生的 `review`／`homework`；回落文案移入 `data/localization/npc_profile.json`（`activity_unknown`），`npc_profile.gd` 不再硬编码中文。顺带补齐 `data/ui/term_report.json` 遗漏的 `play_phone`。合并远端「课间冲突」后同时保留新加的 `quarrel`／`shove`／`fight` 三档文案（吵架／推搡／打架）。
+- **防回归**：`tools/check_config.py` 新增「ui/npc_profile：当前活动文案覆盖全部内核活动名」（对 `rules/leisure_effects.csv` 的行为名 + `study`／`sleep`／`leave_class`／`moving`／`absent` + 冲突三档逐键核对）；`tests/unit/test_npc_profile.gd` 新增档案活动卡断言（11 种活动 + 空闲）。
+- **合并带入的格式修复**：`gdformat` 重排合并后超长的两行（`scripts/core/teacher_commands.gd` 的 `finish_mediate` 调用、`scripts/ui/npc_profile.gd` 的打架次数行）；`scripts/game/classroom_roam.gd` 的 `_was_in_conflict`／`_conflict_goal` 两个成员变量从文件中部移到顶部变量区（`class-definitions-order`）。
+- **验证**：`check_config` 191 项、`test_core` 132 项、`verify_formula` 9 项、`check_docs` 全通过；`gdformat --check scripts/`（98 文件）通过；两套字体子集检查通过（新增文案未引入新字符）；`gdlint scripts/` 仅余 1 个既有红项（见下）。本机没有可执行的 Godot，GUT 用例未实跑。
+- **既有红项（与本次改动无关）**：`scripts/core/sim_core.gd` 3220 行超过 `.gdlintrc` 的 `max-file-lines: 3200`，由远端「课间冲突改为吵架、推搡、打架」提交带入；该配置注释写明「再涨必须优先拆类，不再抬」，本次按用户裁定只记录、不抬限制。
+
 ## 2026-10-18 课间冲突改为吵架、推搡、打架
 
 - 推翻 2026-10-16「取消敌对等于 90 必然打架」。课间开始按双方敌对较低值判定一次：≥90 打架，≥60 推搡，≥40 吵架。每人每课间一场，不改压力。

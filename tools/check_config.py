@@ -423,6 +423,15 @@ check("leisure_effects：减压率不全相同（否则玩家感觉不到区别�
 check("leisure_effects：玩手机扣学业、看课外书加学业",
       float(_le_by_behavior["play_phone"]["grade_once"]) < 0
       and float(_le_by_behavior["read_book"]["grade_once"]) > 0)
+# 15b. 档案「当前活动」文案（2026-10-19）：键名必须是内核真实活动名
+#      （`_current_act` 的取值 / LEISURE_KINDS / 课间冲突三档），否则档案只能显示兜底文案「活动中」。
+_profile_ui = json.loads(read(os.path.join(DATA, "ui", "npc_profile.json")))
+_act_names = _profile_ui.get("activities", {})
+_need_acts = sorted(set(_le_by_behavior) |
+                    {"study", "sleep", "leave_class", "moving", "absent", ""} |
+                    {"quarrel", "shove", "fight"})
+_missing_acts = sorted(set(_need_acts) - set(_act_names))
+check("ui/npc_profile：当前活动文案覆盖全部内核活动名", not _missing_acts, _missing_acts)
 _exam_rows = load("rules/exam.csv")
 _exam = {r["param"]: r["value"] for r in _exam_rows}
 _exam_days = sorted(int(float(v)) for k, v in _exam.items() if k.startswith("exam_day_"))

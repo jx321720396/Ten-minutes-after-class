@@ -91,6 +91,41 @@ func test_individual_grade_and_settlement_display_whole_points() -> void:
 	profile.close()
 
 
+func test_activity_card_shows_concrete_activity_not_generic_fallback() -> void:
+	var profile = PROFILE.instantiate()
+	add_child_autofree(profile)
+	var core := SimCore.new(12345, 16)
+	profile.bind_sources(core, null, null)
+	profile.open_profile(0)
+	# 2026-10-19：档案活动名必须命中 data/ui/npc_profile.json 的 activities 表，
+	# 键名用内核真实活动名（LEISURE_KINDS / _current_act），不得回落到兜底文案。
+	var cases := [
+		["study", "学习"],
+		["chat", "聊天"],
+		["roughhouse", "打闹"],
+		["listen_music", "听音乐"],
+		["eat_snack", "吃零食"],
+		["play_phone", "玩手机"],
+		["read_book", "看课外书"],
+		["sleep", "睡觉"],
+		["quarrel", "吵架"],
+		["shove", "推搡"],
+		["fight", "打架"],
+	]
+	for entry in cases:
+		core._current_act[0] = str(entry[0])
+		profile._refresh_status()
+		assert_eq(
+			profile.get_node("%Activity").text,
+			"当前活动：" + str(entry[1]),
+			"档案显示具体活动名（%s）" % str(entry[0])
+		)
+	core._current_act[0] = null
+	profile._refresh_status()
+	assert_eq(profile.get_node("%Activity").text, "当前活动：空闲")
+	profile.close()
+
+
 func after_each() -> void:
 	get_tree().paused = false
 
