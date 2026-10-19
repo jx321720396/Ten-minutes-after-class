@@ -2,6 +2,8 @@ extends Control
 ## 办公室纯表现视图；可单独运行预览，不创建或修改模拟。
 
 signal action_requested(action: String)
+signal voice_hold_started(action: String)
+signal voice_hold_ended(action: String)
 
 const FONTS := preload("res://scripts/ui/game_fonts.gd")
 const CONFIG_PATH := "res://data/ui/office_hub.json"
@@ -17,6 +19,7 @@ var _last_time: Dictionary = {}
 var _meeting: Control
 var _ask_layer: Control
 var _ask_body: Label
+var _voice_badge_on := false
 
 
 func _ready() -> void:
@@ -80,15 +83,35 @@ func _ready() -> void:
 	_meeting.setup(self)
 	_fit()
 	_meeting.action_requested.connect(func(action: String) -> void: action_requested.emit(action))
+	_meeting.voice_hold_started.connect(
+		func(action: String) -> void: voice_hold_started.emit(action)
+	)
+	_meeting.voice_hold_ended.connect(func(action: String) -> void: voice_hold_ended.emit(action))
 	_build_ask_dialog()
 
 
 func update_commands(core: Variant, snapshot: Dictionary) -> void:
+	_update_voice_badge()
 	_meeting.refresh(core, snapshot)
 	_buttons.summon.disabled = (
 		int(snapshot.called) >= 0 or str(snapshot.command) != "" or bool(snapshot.held_by_class)
 	)
 	_buttons.classroom.disabled = int(snapshot.called) >= 0 or str(snapshot.command) != ""
+
+
+## 声量模式常驻小标记：只改办公室标题，提醒玩家当前处于可选挑战模式。
+func _update_voice_badge() -> void:
+	var on := false
+	var settings := get_node_or_null("/root/VoiceSettings")
+	if settings != null:
+		on = bool(settings.is_enabled())
+	if on == _voice_badge_on:
+		return
+	_voice_badge_on = on
+	var title := str(config.copy.title)
+	if on:
+		title += " · " + str(config.copy.get("voice_mode_badge", "声量模式"))
+	%Title.text = title
 
 
 func meeting_visible() -> bool:
@@ -101,6 +124,15 @@ func command_status(snapshot: Dictionary) -> String:
 
 func meeting_texture() -> Texture2D:
 	return _meeting.meeting_texture()
+
+
+func set_voice_live(active: bool, intensity: float, tier: int) -> void:
+	_meeting.set_voice_live(active, intensity, tier)
+
+
+## 演出弹窗复用办公室声量条的同一份展示状态。
+func voice_state(core: Variant, snapshot: Dictionary) -> Dictionary:
+	return _meeting.voice_state(core, snapshot)
 
 
 func show_student(core: Variant, index: int) -> void:

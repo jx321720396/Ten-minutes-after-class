@@ -1,0 +1,38 @@
+# 声量系统参数（可选挑战模式；2026-10-19）
+# 依据：docs/design/声量系统-2026-10-19.md
+# 默认关闭；关闭时不读取本表。开启后由 TeacherCommands 的 VoiceRules 读取。
+# 四档：轻声 / 平常 / 提高 / 吼；平常档 = 1.0 = 现行数值。
+param,value,unit,note
+window_seconds,5.0,s,声量采样窗口（真实秒，含在声量模式谈话内）
+voice_chat_seconds,10,s,声量模式下的办公室谈话时长（常模仍 20 秒）
+prompt_seconds,0.3,s,开始采样前的“喊！”提示
+mic_median_frames,5,帧,麦克风强度中值滤波帧数（奇数，约 0.08 秒）
+mic_attack_seconds,0.12,s,平滑上升时间常数（2026-10-19 调快：原 0.20 太慢）
+mic_release_seconds,0.35,s,平滑下降时间常数（比上升慢，抹平音节间隙）
+mic_average_seconds,2.5,s,实时档位与定档的滑动平均窗口（尾部 N 秒；原为整窗 5 秒）
+tier_hysteresis,4.0,点,实时档位回差：跨档需超过边界此值
+tier1_min,0,点,轻声下限
+tier1_mult,0.6,倍,轻声倍率
+tier2_min,25,点,平常下限
+tier2_mult,1.0,倍,平常倍率（等于现行数值）
+tier3_min,50,点,提高下限
+tier3_mult,1.4,倍,提高倍率
+tier4_min,75,点,吼下限
+tier4_mult,1.7,倍,吼倍率
+mic_floor_ratio,1.5,比例,环境噪声门限 = max(floor × 此值, ref × gate_ratio)
+mic_gate_ratio,0.15,比例,相对平常音量的噪声门限
+mic_shout_min_ratio,2.2,比例,喊声参考下限 = ref × 此值
+mic_shout_max_ratio,4.0,比例,喊声参考上限 = ref × 此值
+hold_curve_exp,1.2,指数,按住蓄力曲线 I = 100 × (t / window) ^ 此值
+duck_db,-12,dB,采样期间 Music/SFX 压低量
+calib_floor_seconds,1.5,s,校准：安静采样时长
+calib_ref_seconds,2.0,s,校准：平常音量采样时长
+calib_shout_seconds,1.5,s,校准：最大声采样时长
+encourage_tier1_pool,neighbors,枚举,轻声目标池：邻座
+encourage_tier2_pool,all,枚举,平常目标池：全班
+encourage_tier3_pool,nearest3,枚举,提高目标池：最近 3 人
+encourage_tier4_pool,all,枚举,吼目标池：全班
+encourage_tier1_pick,nearest,枚举,轻声选人：最近
+encourage_tier2_pick,nearest,枚举,平常选人：最近（现行）
+encourage_tier3_pick,affinity,枚举,提高选人：好感最高
+encourage_tier4_pick,affinity,枚举,吼选人：好感最高

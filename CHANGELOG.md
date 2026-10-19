@@ -1,5 +1,14 @@
 # 变更记录
 
+## 2026-10-19 表扬接入声量（用户裁定）
+
+- **范围**：声量从 安抚／训斥／鼓励 扩到 **安抚／表扬／训斥／鼓励**；安抚行为不变。
+- **数值**（`scripts/core/teacher_commands.gd::voice_effect`）：表扬只缩放动力，基础 +15 × 倍率四舍五入 → 轻声 +9／平常 +15／提高 +21／吼 +26；不加压力、不走压力联动。
+- **时长**：声量模式下表扬谈话也改为 10 秒（0.3 秒提示 + 5 秒采样 + 锁档），与其余三项一致。
+- **界面**（`scripts/game/office_meeting.gd`）：表扬按钮接入按住／点击采样；声量条预览改为「表扬 · 档位 → 动力 +N」（`data/ui/office_hub.json` 的 `voice_praise`），不显示压力预警；演出弹窗同步显示；设置里的二次确认文案同步为四项。
+- **文档**：主文档 §6.1／§6.4、设计文档 §1／§3／§5.3／附录 B 同步；分册已重新生成。
+- **回归**：`test_voice_rules` 的「表扬忽略档位」用例改为「吼表扬 +26 动力」；关闭声量时 `test_teacher_rules` 的固定 +15 用例保持通过。
+
 ## 2026-10-19 教室聊天头顶符号优化
 
 - 聊天改为头顶附近短距离上浮，0.9–1.3 秒随机发射、持续 1.4 秒，每人最多 2 个；成员错峰出现，同组使用固定双色，降低星星频率。
@@ -26,6 +35,27 @@
 - **合并带入的格式修复**：`gdformat` 重排合并后超长的两行（`scripts/core/teacher_commands.gd` 的 `finish_mediate` 调用、`scripts/ui/npc_profile.gd` 的打架次数行）；`scripts/game/classroom_roam.gd` 的 `_was_in_conflict`／`_conflict_goal` 两个成员变量从文件中部移到顶部变量区（`class-definitions-order`）。
 - **验证**：`check_config` 191 项、`test_core` 132 项、`verify_formula` 9 项、`check_docs` 全通过；`gdformat --check scripts/`（98 文件）通过；两套字体子集检查通过（新增文案未引入新字符）；`gdlint scripts/` 仅余 1 个既有红项（见下）。本机没有可执行的 Godot，GUT 用例未实跑。
 - **既有红项（与本次改动无关）**：`scripts/core/sim_core.gd` 3220 行超过 `.gdlintrc` 的 `max-file-lines: 3200`，由远端「课间冲突改为吵架、推搡、打架」提交带入；该配置注释写明「再涨必须优先拆类，不再抬」，本次按用户裁定只记录、不抬限制。
+
+## 2026-10-19 声量麦克风曲线调快：最近 2.5 秒滑动平均
+
+- **问题**（用户反馈）：麦克风模式上升太慢，持续喊也到不了「吼」——档位用的是从 0 开始的整窗 5 秒累计平均，前段安静与爬升把均值拖住。
+- **调整**（`data/rules/voice.csv`）：`mic_attack_seconds` 0.20→0.12、`mic_median_frames` 7→5；新增 `mic_average_seconds=2.5`，实时档位、声量条与最终定档改用最近 2.5 秒的滑动平均（采样窗口仍 5 秒）。`VoiceRules`／`VoiceInput` 与 `check_config` 校验同步。
+- **口径**：仍是多帧平滑后的平均，不看峰值与最后一帧；短促喊声仍被摊薄。平常档 1.0 与其余数值未变。
+- **文档**：主文档 §6.4 判定段与 [声量系统设计](docs/design/声量系统-2026-10-19.md) §6 已同步。
+- **回归**：`test_voice_input` 新增「先安静再持续大声 → 吼」用例；`check_config` 新增平均窗口区间校验。
+
+## 2026-10-19 声量可选挑战模式实装（Phase 1/2）
+
+- 新增 `data/rules/voice.csv`（四档阈值／倍率、麦克风比例、按住曲线、校准时长、压低 dB、鼓励目标池；`.import` 为 `keep`）与 `scripts/core/voice.gd`；`TeacherCommands` 按 `chat_tier` 乘倍率，鼓励按档位选人并随存档保留；**平常档 1.0 = 现行数值**。
+- 声量模式下训斥／安抚／鼓励谈话改为 **10 秒**（常模仍 20 秒），采样窗口 **5 秒**，采样期间强制 **1×**；`voice_chat_seconds` 进 `voice.csv`。
+- 麦克风输入加 **7 帧中值 + 非对称 EMA（0.20s/0.35s）** 平滑与 **4 点档位回差**，声量条和实时档位不再随单帧尖峰/阈值抖动；最终档位取 5 秒窗口平均（沿用 4 点回差，与显示一致），不取最后一秒/最后一帧。
+- 设置新增“声量模式（挑战）”开关，**默认关闭**；每次从关到开二次确认“使用本功能可能无法通关”；关闭时不采样、不请求麦克风、不显示声量条，按固定数值结算。`VoiceSettings` 存 `user://settings.cfg` 的 `voice` 段。
+- 输入：Godot 4.7 `AudioServer` 输入设备 API（麦克风）+ 按住蓄力；触屏按住由 `TouchBind` 转发 `button_down/up`；`VoiceCalibration` 三步校准；办公室四段条、预计压力／崩溃预警、模式小标记；采样期间压低 Music/SFX 并释放 4× 快进。
+- 字体子集已重建（新增“予／吼／喊／战／授”等字）；`export_presets.cfg` 的 `RECORD_AUDIO=true`；导出前仍需按既有流程复查预设是否被编辑器覆盖。
+- 测试：新增 `test_voice_rules` 8/8、`test_voice_input` 7/7、`test_voice_settings_ui` 4/4、`test_confirm_dialog` 6/6、`test_touch_bind_hold` 2/2、`test_voice_office_flow` 1/1，`test_office_hub` PASS；`check_config` 203、`test_core` 132、`verify_formula` 9、`check_docs` 全绿。
+- 合并适配（2026-10-19）：远端「行动演出」全局弹窗会盖住办公室面板，声量条已并入演出弹窗——`teacher_interlude` 复用 `office_meeting.voice_state()` 的同一份档位／预计效果数据，采样与锁档期间都能看到实时强度，避免两处口径漂移。
+- 未完成：真机麦克风权限／采样／校准、Android 导出复验、平衡试玩。全量 GUT 仍有既有失败（如 `test_teacher_rules` 开局压力旧断言、`test_teacher_command_ui` 调解 −5 旧断言），与本功能无关。
+
 ## 2026-10-19 声量系统设计定稿（未实装）
 
 - 新增 [声量系统设计](docs/design/声量系统-2026-10-19.md)：办公室训斥／安抚／鼓励按玩家出声力度分四档（轻声／平常／提高／吼），倍率 0.6／1.0／1.4／1.7；平常档等于现行数值，不改现有标定。

@@ -2,6 +2,7 @@ extends Control
 
 signal confirmed_clear
 signal confirmed_keep
+signal confirmed_warning
 signal cancelled
 
 ## 两种口径的文案与颜色。2026-10-17 起主菜单只在有存档时打开本面板（三键口径）；
@@ -18,10 +19,13 @@ const COLOR_INK := Color(0.15, 0.16, 0.22, 1)
 @onready var title_label: Label = $CenterContainer/Panel/VBox/Title
 @onready var msg_label: Label = $CenterContainer/Panel/VBox/Msg
 
+var _warning := false
+
 
 func _ready():
 	get_viewport().size_changed.connect(_fit_fullscreen)
 	_fit_fullscreen()
+	msg_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	clear_btn.pressed.connect(_on_clear)
 	keep_btn.pressed.connect(_on_keep)
 	cancel_btn.pressed.connect(_on_cancel)
@@ -38,6 +42,7 @@ func _fit_fullscreen() -> void:
 ## · has_save = true：三键（清除重开 / 保留开始 / 取消），按钮维持场景里的警示红；
 ## · has_save = false：两键（确定 / 取消），隐藏「保留存档」，确定键用墨色。
 func open(has_save: bool) -> void:
+	_warning = false
 	if has_save:
 		title_label.text = "检测到存档"
 		msg_label.text = "检测到本地存档，请选择：\n· 清除存档并开始新游戏\n· 保留存档并开始新游戏"
@@ -53,8 +58,24 @@ func open(has_save: bool) -> void:
 	visible = true
 
 
+## 声量模式二次确认：复用同一块纸面板，只保留「仍然开启 / 取消」。
+## 提示文案由调用方传入，避免把设置菜单的规则写死在共享组件里。
+func open_warning(title: String, message: String, ok_text: String = "仍然开启") -> void:
+	_warning = true
+	title_label.text = title
+	msg_label.text = message
+	clear_btn.text = ok_text
+	clear_btn.remove_theme_color_override("font_color")
+	keep_btn.visible = false
+	cancel_btn.text = "取消"
+	visible = true
+
+
 func _on_clear():
-	emit_signal("confirmed_clear")
+	if _warning:
+		emit_signal("confirmed_warning")
+	else:
+		emit_signal("confirmed_clear")
 
 
 func _on_keep():

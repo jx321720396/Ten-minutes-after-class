@@ -333,6 +333,17 @@ func release_fast_forward(owner: StringName) -> void:
 		_time_flow.release_fast_forward(owner)
 
 
+## 声量采样窗口强制 1×：正常速度锁优先于快进锁与玩家自选档。
+func request_normal_speed(owner: StringName) -> void:
+	if is_instance_valid(_time_flow):
+		_time_flow.request_normal_speed(owner)
+
+
+func release_normal_speed(owner: StringName) -> void:
+	if is_instance_valid(_time_flow):
+		_time_flow.release_normal_speed(owner)
+
+
 ## 只读快照：内核时间字段 + 时钟自身状态（mode / paused / remaining_seconds / progress / ended_day）。
 func snapshot() -> Dictionary:
 	var out: Dictionary = {}

@@ -23,6 +23,8 @@ extends RefCounted
 
 var _timing: Dictionary = {}
 var _acts: Dictionary = {}
+## 声量规则（可选挑战模式）；关闭时仍存在，但只在开启时由表现层写入档位。
+var _voice: VoiceRules = VoiceRules.new()
 
 ## 当前命令："", "summon", "office_chat", "send_back", "seat_change"
 var _command := ""
@@ -33,6 +35,8 @@ var _remaining := 0
 var _called := -1
 ## 办公室聊天的类型（"comfort" / "praise" / "scold" / "ask" / "encourage"）
 var _chat_kind := ""
+## 本次谈话的声量档位（1–4）；默认 2（平常）= 现行数值。
+var _chat_tier := 2
 ## 调座位：{"a": int, "b": int}
 var _seat_change := {}
 ## 上课期间挂起的命令（下课后继续）
@@ -59,13 +63,16 @@ var _encourage_target: Array = []
 var _encourage_mode: Array = []
 ## 剩余课间次数（含当前课间；跨上课保留；考试日无课间不消耗）
 var _encourage_breaks: Array = []
+## 生成目标时的声量档位（1–4）；实际选人发生在之后，档位随目标保存。
+var _encourage_tier: Array = []
 ## "" = 无目标；"active" / "done" / "rejected" / "expired"（观察层只读）
 var _encourage_status: Array = []
 
 
-func configure(timing: Dictionary, activities: Dictionary) -> void:
+func configure(timing: Dictionary, activities: Dictionary, voice_table: Dictionary = {}) -> void:
 	_timing = timing
 	_acts = activities
+	_voice.configure_table(voice_table)
 
 
 ## 鼓励目标有效期（课间数，含当前课间）。
@@ -79,17 +86,19 @@ func reset_encourage(n: int) -> void:
 	_encourage_target.clear()
 	_encourage_mode.clear()
 	_encourage_breaks.clear()
+	_encourage_tier.clear()
 	_encourage_status.clear()
 	for _i in range(n):
 		_encourage_target.append(-1)
 		_encourage_mode.append("")
 		_encourage_breaks.append(0)
+		_encourage_tier.append(2)
 		_encourage_status.append("")
 
 
 ## 老师完成 20 秒鼓励后生成一次聊天目标。已有未结束目标时重复鼓励无效（不覆盖、不叠加）。
-## target >= 0 = 指定对象；target < 0 = 自主找最近娱乐对象。
-func start_encourage(i: int, target: int) -> bool:
+## target >= 0 = 指定对象；target < 0 = 自主按档位选娱乐对象。tier = 本次声量档位（1–4）。
+func start_encourage(i: int, target: int, tier: int = 2) -> bool:
 	if i < 0 or i >= _encourage_status.size():
 		return false
 	if _encourage_status[i] == "active":
@@ -97,6 +106,7 @@ func start_encourage(i: int, target: int) -> bool:
 	_encourage_target[i] = target
 	_encourage_mode[i] = "specified" if target >= 0 else "auto"
 	_encourage_breaks[i] = encourage_valid_breaks()
+	_encourage_tier[i] = clampi(tier, 1, 4)
 	_encourage_status[i] = "active"
 	return true
 
@@ -114,6 +124,7 @@ func encourage_snapshot(core: Variant, i: int) -> Dictionary:
 		"target": _encourage_target[i],
 		"mode": _encourage_mode[i],
 		"breaks_left": _encourage_breaks[i],
+		"tier": _encourage_tier[i],
 		"status": _encourage_status[i],
 		"wait_reason": _wait_reason(core, i),
 	}
@@ -207,24 +218,72 @@ func try_encourage(core: Variant, i: int) -> bool:
 	return false  # 条件不满足等：保持 active，下一决策点再试
 
 
-## 鼓励专用选人（D09）：距离最近、正在娱乐且符合聊天条件；并列带种子随机。
+## 鼓励专用选人（D09 + 声量）：按该学生目标的声量档位取目标池与选人方式。
+## 轻声只从前后左右邻座中选；平常取距离最近（现行）；提高取最近 3 人中好感最高；
+## 吼取全班好感最高。并列时距离近者优先，再带种子随机。
 func _pick_encourage_target(core: Variant, i: int) -> int:
-	var best: Array = []
-	var best_dist := 1e9
+	var tier := 2
+	if i >= 0 and i < _encourage_tier.size():
+		tier = int(_encourage_tier[i])
+	var pool := _voice.pool_for(tier)
+	var pick := _voice.pick_for(tier)
+	var candidates: Array = []
 	for j in range(int(core.node_count())):
 		if not _encourage_target_eligible(core, i, j):
 			continue
-		var d: float = core.distance_between(i, j)
-		if d < best_dist - 1e-6:
-			best_dist = d
-			best = [j]
-		elif abs(d - best_dist) <= 1e-6:
-			best.append(j)
-	if best.is_empty():
+		if pool == "neighbors" and not core._neighbor_idx[i].has(j):
+			continue
+		(
+			candidates
+			. append(
+				{
+					"j": j,
+					"d": float(core.distance_between(i, j)),
+					"a": float(core.affinity(i, j)),
+				}
+			)
+		)
+	if candidates.is_empty():
 		return -1
-	if best.size() == 1:
-		return int(best[0])
-	return int(core._rng.choice(best))
+	if pick == "affinity":
+		if pool == "nearest3":
+			candidates.sort_custom(_candidate_distance_less)
+			if candidates.size() > 3:
+				candidates = candidates.slice(0, 3)
+		var best_a := -1e9
+		for c in candidates:
+			best_a = maxf(best_a, float(c["a"]))
+		var affinity_ties: Array = []
+		for c in candidates:
+			if absf(float(c["a"]) - best_a) <= 1e-6:
+				affinity_ties.append(c)
+		return _nearest_candidate(core, affinity_ties)
+	return _nearest_candidate(core, candidates)
+
+
+## 候选排序：距离近者优先，距离相同按节点号，保证可复现。
+func _candidate_distance_less(a: Dictionary, b: Dictionary) -> bool:
+	var da := float(a["d"])
+	var db := float(b["d"])
+	if absf(da - db) > 1e-6:
+		return da < db
+	return int(a["j"]) < int(b["j"])
+
+
+## 取最近距离的候选；并列带种子随机（与旧规则一致）。
+func _nearest_candidate(core: Variant, candidates: Array) -> int:
+	var best_d := 1e9
+	for c in candidates:
+		best_d = minf(best_d, float(c["d"]))
+	var nearest: Array = []
+	for c in candidates:
+		if absf(float(c["d"]) - best_d) <= 1e-6:
+			nearest.append(int(c["j"]))
+	if nearest.is_empty():
+		return -1
+	if nearest.size() == 1:
+		return int(nearest[0])
+	return int(core._rng.choice(nearest))
 
 
 func _encourage_target_eligible(core: Variant, i: int, j: int) -> bool:
@@ -310,19 +369,54 @@ func send_back(core: Variant) -> bool:
 	return true
 
 
-## 办公室聊天（D03 第 2 条）：安抚 / 表扬 / 训斥 / 打听 / 鼓励统一耗时 20 秒。
+## 表现层在采样窗口结束时写入档位；对声量四操作有效（安抚 / 表扬 / 训斥 / 鼓励）。
+func set_office_voice(tier: int) -> bool:
+	if _command != "office_chat" or _chat_kind not in ["comfort", "praise", "scold", "encourage"]:
+		return false
+	_chat_tier = clampi(tier, 1, 4)
+	return true
+
+
+## 声量规则只读（表现层用于采样窗口 / 档位显示）。
+func voice_rules() -> VoiceRules:
+	return _voice
+
+
+## 当前谈话的声量效果（压力 / 动力增量）；平常档 / 未开启时等于基础值。
+func voice_effect(kind: String = "", tier: int = -1) -> Dictionary:
+	var k := kind if kind != "" else _chat_kind
+	var t := tier if tier >= 1 else _chat_tier
+	var mult := _voice.mult_for(t)
+	match k:
+		"scold":
+			var delta_scold := float(_acts.get("office_scold_stress", 30.0)) * mult
+			return {"stress": delta_scold, "vitality": delta_scold}
+		"comfort":
+			var delta_comfort := float(_acts.get("office_comfort_stress", -20.0)) * mult
+			return {"stress": delta_comfort, "vitality": delta_comfort}
+		"praise":
+			# 表扬只加动力，声量只缩放动力（2026-10-19 裁定）。
+			return {
+				"stress": 0.0,
+				"vitality": roundf(float(_acts.get("office_praise_vitality", 15.0)) * mult)
+			}
+		_:
+			return {"stress": 0.0, "vitality": 0.0}
+
+
+## 办公室聊天（D03 第 2 条）：常模统一 20 秒；声量模式下训斥/安抚/鼓励改为 voice.csv 的 10 秒。
 ## 安抚：压力与动力各减配置值（一般联动）。训斥：压力与动力各加配置值。
 ## 表扬：只加该生动力，不加压力。鼓励当下只计时。
 ## 打听结束时给出消息：首次 3 条，再次打听同一人 5 条；百事通提高到配置条数。
 ## 参数 `_core` 保留为统一调用签名（与 summon / send_back 一致），本命令当下不需读内核状态。
-func office_chat(core: Variant, kind: String) -> bool:
+func office_chat(core: Variant, kind: String, voice_mode: bool = false) -> bool:
 	if _exam_blocked(core):
 		return false
 	if _held or _command != "" or kind not in ["comfort", "praise", "scold", "ask", "encourage"]:
 		return false
 	if _called < 0:
 		return false
-	# D09：已有未结束目标时重复鼓励无效，不覆盖、不叠加、也不扣 20 秒。
+	# D09：已有未结束目标时重复鼓励无效，不覆盖、不叠加、也不扣谈话时长。
 	if kind == "encourage" and has_active_encourage(_called):
 		return false
 	# D10：全班每课间最多成功一次打听；本课间已打听过则不再扣 20 秒。
@@ -330,7 +424,11 @@ func office_chat(core: Variant, kind: String) -> bool:
 		return false
 	_command = "office_chat"
 	_chat_kind = kind
-	_remaining = int(_timing["office_chat_seconds"])
+	_chat_tier = 2
+	var seconds := int(_timing["office_chat_seconds"])
+	if voice_mode and kind in ["comfort", "praise", "scold", "encourage"]:
+		seconds = _voice.office_chat_seconds()
+	_remaining = maxi(1, seconds)
 	return true
 
 
@@ -352,6 +450,7 @@ func cancel_office_chat() -> bool:
 		return false
 	_command = ""
 	_chat_kind = ""
+	_chat_tier = 2
 	_remaining = 0
 	return true
 
@@ -461,17 +560,18 @@ func _finish(core: Variant) -> void:
 		"office_chat":
 			# 训斥走一般联动（压力与动力同加）；安抚按一般联动减压；表扬只加动力。
 			# 打听只给出消息；鼓励生成一次聊天目标（D09，自主模式：学生自己找最近娱乐对象）。
+			var eff := voice_effect()
 			if _called >= 0 and _chat_kind == "scold":
-				core.add_stress(_called, float(_acts["office_scold_stress"]))
+				core.add_stress(_called, float(eff["stress"]))
 				core._note_scolded(_called)
 			elif _called >= 0 and _chat_kind == "comfort":
-				core.add_stress(_called, float(_acts["office_comfort_stress"]))
+				core.add_stress(_called, float(eff["stress"]))
 			elif _called >= 0 and _chat_kind == "praise":
-				core.add_vitality(_called, float(_acts["office_praise_vitality"]))
+				core.add_vitality(_called, float(eff["vitality"]))
 			elif _called >= 0 and _chat_kind == "ask":
 				_deliver_ask(core, _called)
 			elif _called >= 0 and _chat_kind == "encourage":
-				start_encourage(_called, -1)
+				start_encourage(_called, -1, _chat_tier)
 			# D07 §10：办公室处理（含现场制止类的训斥）完成后，该学生本课间不能主动伤害。
 			core._note_stopped(_called)
 			_chat_kind = ""
@@ -721,6 +821,9 @@ func snapshot() -> Dictionary:
 		"remaining_seconds": _remaining,
 		"called": _called,
 		"chat_kind": _chat_kind,
+		"chat_tier": _chat_tier,
+		"voice_mult": _voice.mult_for(_chat_tier),
+		"voice_effect": voice_effect(),
 		"ask_lines": _ask_lines.duplicate(),
 		"ask_records": _ask_records.duplicate(true),
 		"ask_id": _ask_id,
@@ -753,6 +856,7 @@ func export_state() -> Dictionary:
 		"remaining": _remaining,
 		"called": _called,
 		"chat_kind": _chat_kind,
+		"chat_tier": _chat_tier,
 		"seat_change": _seat_change.duplicate(true),
 		"held": _held,
 		"asked_this_break": _asked_this_break,
@@ -766,6 +870,7 @@ func export_state() -> Dictionary:
 		"encourage_target": _encourage_target.duplicate(),
 		"encourage_mode": _encourage_mode.duplicate(),
 		"encourage_breaks": _encourage_breaks.duplicate(),
+		"encourage_tier": _encourage_tier.duplicate(),
 		"encourage_status": _encourage_status.duplicate(),
 	}
 
@@ -777,6 +882,7 @@ func restore_state(data: Dictionary) -> void:
 	_remaining = int(data.get("remaining", 0))
 	_called = int(data.get("called", -1))
 	_chat_kind = str(data.get("chat_kind", ""))
+	_chat_tier = clampi(int(data.get("chat_tier", 2)), 1, 4)
 	_seat_change = _int_pair(data.get("seat_change", {}))
 	_held = bool(data.get("held", false))
 	_asked_this_break = bool(data.get("asked_this_break", false))
@@ -793,6 +899,10 @@ func restore_state(data: Dictionary) -> void:
 	_encourage_mode = _strs(data.get("encourage_mode", []))
 	_encourage_breaks = _ints(data.get("encourage_breaks", []))
 	_encourage_status = _strs(data.get("encourage_status", []))
+	var restored_tiers := _ints(data.get("encourage_tier", []))
+	_encourage_tier.clear()
+	for i in range(_encourage_status.size()):
+		_encourage_tier.append(int(restored_tiers[i]) if i < restored_tiers.size() else 2)
 
 
 func _int_pair(raw: Dictionary) -> Dictionary:

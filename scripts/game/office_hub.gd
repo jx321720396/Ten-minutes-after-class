@@ -5,6 +5,8 @@ const OFFICE := preload("res://scenes/game/office.tscn")
 const TEACHER_UI := preload("res://scenes/ui/teacher_classroom.tscn")
 const TEACHER_PRESENCE := preload("res://scenes/components/teacher_presence.tscn")
 const PROFILE_DATA := preload("res://scripts/ui/npc_profile_data.gd")
+const VOICE_INPUT := preload("res://scripts/game/voice_input.gd")
+const VOICE_ACTIONS := ["comfort", "praise", "scold", "encourage"]
 
 var _view: Control
 var _room: Node
@@ -29,6 +31,12 @@ var _office_origin := ""
 # 打开当前这份名单时要记住的「上一界面」：只有进办公室顺带弹名单时才填（教室／监控）。
 # 空串 = 办公室内部自己打开的名单，取消后不切页面。
 var _picker_back_target := ""
+# 声量窗口（可选挑战模式）：开启时谈话前 2.5 秒采样；关闭时整段旁路。
+var _voice: Node
+var _voice_window_active := false
+var _duck_active := false
+var _music_db := 0.0
+var _sfx_db := 0.0
 
 
 func bind_classroom(room: Node) -> void:
@@ -40,6 +48,12 @@ func bind_classroom(room: Node) -> void:
 	_view.hide()
 	_view.bind_sources(room.get_node("Clock"))
 	_view.action_requested.connect(_on_action)
+	_view.voice_hold_started.connect(_on_voice_hold_started)
+	_view.voice_hold_ended.connect(_on_voice_hold_ended)
+	_voice = VOICE_INPUT.new()
+	add_child(_voice)
+	_voice.tier_locked.connect(_on_voice_tier_locked)
+	_voice.mic_failed.connect(_on_voice_mic_failed)
 	for path in ["UI/EncyclopediaEntry", "UI/NpcProfile", "UI/PauseMenu"]:
 		_bind_tool_touch(room.get_node(path))
 	var replay: Button = room.get_node("UI/PauseMenu").settings_panel.replay_btn
@@ -93,6 +107,8 @@ func set_mode(next: String) -> bool:
 		return false
 	var core: Variant = _room.get_node("Actors").current_core()
 	var commands = core.teacher_commands()
+	if _mode == "office" and next != "office" and _voice_window_active:
+		_voice.finish_now()
 	if next == "classroom" and _mode != "classroom":
 		if commands.current_command() != "" or commands.called_index() >= 0:
 			return false
@@ -154,7 +170,23 @@ func _process(_delta: float) -> void:
 	var snapshot: Dictionary = core.teacher_commands().snapshot()
 	if _interlude != null:
 		_interlude.refresh(core, snapshot)
+	if _voice_window_active:
+		if not VoiceSettings.is_enabled():
+			_voice.finish_now()
+		elif str(snapshot.get("command", "")) != "office_chat":
+			_voice.abort_window()
+			_voice_window_active = false
+			_unduck_audio()
+		elif bool(snapshot.get("held_by_class", false)):
+			_voice.finish_now()
+		else:
+			_view.set_voice_live(true, _voice.current_intensity(), _voice.live_tier())
+	else:
+		_view.set_voice_live(false, 0.0, 2)
 	_view.update_commands(core, snapshot)
+	# 声量条并入演出弹窗：弹窗盖住办公室面板后仍能看到实时档位与预计效果。
+	if _interlude != null:
+		_interlude.set_voice_state(_view.voice_state(core, snapshot))
 	_teacher.update_commands(snapshot, _view.command_status(snapshot))
 	_apply_talk_fast_forward(snapshot)
 	var ask_id := int(snapshot.get("ask_id", 0))
@@ -169,8 +201,14 @@ func _process(_delta: float) -> void:
 ## 谈话（office_chat）进行中自动快进：老师版没有「快进」按钮，改成「谈话期间临时加速到 fast_forward_scale」，
 ## 谈话结束（命令清空）自动还原到玩家自选档。逐帧按 owner 请求/释放，TimeFlow 的 owner-hold 幂等，重复调用安全。
 func _apply_talk_fast_forward(snapshot: Dictionary) -> void:
-	var talking := str(snapshot.get("command", "")) == "office_chat"
 	var clock: Node = _room.get_node("Clock")
+	# 声量采样必须是真实 5 秒：强制 1×，不受玩家自选 2×/3× 影响。
+	if _voice_window_active:
+		clock.request_normal_speed(&"voice_window")
+		clock.release_fast_forward(&"office_chat")
+		return
+	clock.release_normal_speed(&"voice_window")
+	var talking := str(snapshot.get("command", "")) == "office_chat"
 	if talking:
 		clock.request_fast_forward(&"office_chat")
 	else:
@@ -224,6 +262,11 @@ func _cancel_intervention() -> void:
 
 
 func _on_action(action: String) -> void:
+	if action in VOICE_ACTIONS and VoiceSettings.is_enabled():
+		if VoiceSettings.input_mode() == "hold":
+			return  # 按住模式由 button_down / button_up 驱动
+		_start_voice_action(action)
+		return
 	if action in ["comfort", "scold", "praise", "ask", "encourage", "send_back"]:
 		var core: Variant = _room.get_node("Actors").current_core()
 		var commands = core.teacher_commands()
@@ -233,6 +276,9 @@ func _on_action(action: String) -> void:
 			commands.office_chat(core, action)
 		_process(0.0)
 	elif action == "cancel_chat":
+		_voice.abort_window()
+		_voice_window_active = false
+		_unduck_audio()
 		var core: Variant = _room.get_node("Actors").current_core()
 		core.teacher_commands().cancel_office_chat()
 		_process(0.0)
@@ -274,6 +320,75 @@ func _enter_classroom() -> void:
 		return
 	core.teacher_commands().enter_classroom(core)
 	_process(0.0)
+
+
+# ------------------------------------------------------------------ 声量窗口
+func _start_voice_action(action: String) -> bool:
+	var core: Variant = _room.get_node("Actors").current_core()
+	var commands = core.teacher_commands()
+	if not commands.office_chat(core, action, true):
+		return false
+	_voice.configure(commands.voice_rules())
+	_duck_audio(true, commands.voice_rules().duck_db)
+	if not _voice.begin_window(VoiceSettings.input_mode() == "hold"):
+		_voice_window_active = false
+		_unduck_audio()
+		_process(0.0)
+		return true
+	_voice_window_active = true
+	_process(0.0)
+	return true
+
+
+func _on_voice_hold_started(action: String) -> void:
+	if not VoiceSettings.is_enabled() or VoiceSettings.input_mode() != "hold":
+		return
+	if action in VOICE_ACTIONS:
+		_start_voice_action(action)
+
+
+func _on_voice_hold_ended(_action: String) -> void:
+	if _voice_window_active:
+		_voice.end_hold()
+
+
+func _on_voice_tier_locked(tier: int) -> void:
+	if _room == null:
+		return
+	var core: Variant = _room.get_node("Actors").current_core()
+	core.teacher_commands().set_office_voice(tier)
+	_voice_window_active = false
+	_unduck_audio()
+	_process(0.0)
+
+
+func _on_voice_mic_failed(reason: String) -> void:
+	_voice_window_active = false
+	_unduck_audio()
+	push_warning("声量：%s；本次按平常档结算。" % reason)
+
+
+func _duck_audio(on: bool, db: float = -12.0) -> void:
+	var music := AudioServer.get_bus_index("Music")
+	var sfx := AudioServer.get_bus_index("SFX")
+	if on and not _duck_active:
+		_music_db = AudioServer.get_bus_volume_db(music) if music >= 0 else 0.0
+		_sfx_db = AudioServer.get_bus_volume_db(sfx) if sfx >= 0 else 0.0
+		if music >= 0:
+			AudioServer.set_bus_volume_db(music, _music_db + db)
+		if sfx >= 0:
+			AudioServer.set_bus_volume_db(sfx, _sfx_db + db)
+		_duck_active = true
+	elif not on and _duck_active:
+		if music >= 0:
+			AudioServer.set_bus_volume_db(music, _music_db)
+		if sfx >= 0:
+			AudioServer.set_bus_volume_db(sfx, _sfx_db)
+		_duck_active = false
+
+
+func _unduck_audio() -> void:
+	_duck_audio(false)
 
 
 func select_observed_student(index: int) -> void:

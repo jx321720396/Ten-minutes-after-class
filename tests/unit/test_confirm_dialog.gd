@@ -54,6 +54,17 @@ func test_keep_signal_still_available_in_save_mode() -> void:
 	assert_signal_emitted(d, "confirmed_keep", "保留存档 → confirmed_keep")
 
 
+func test_open_warning_uses_warning_signal() -> void:
+	var d := _dialog()
+	d.open_warning("开启声量模式？", "使用本功能可能无法通关。", "仍然开启")
+	assert_eq(d.title_label.text, "开启声量模式？")
+	assert_eq(d.clear_btn.text, "仍然开启")
+	assert_false(d.keep_btn.visible, "警告口径不显示保留存档")
+	watch_signals(d)
+	d.clear_btn.pressed.emit()
+	assert_signal_emitted(d, "confirmed_warning", "确认 → confirmed_warning")
+
+
 func test_main_menu_new_game_flow_matches_save_state() -> void:
 	# 自适应本机真实存档状态（Save 是 autoload，无法打桩，只能顺着真实存档状态分支）。
 	# 2026-10-17：无存档不再弹「开始新游戏？」确认，点「新游戏」直接开局；

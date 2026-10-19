@@ -446,6 +446,61 @@ check("exam：噪声与扣分非负",
 check("exam：特等奖名次至少为 1", int(float(_exam.get("top_prize_rank", 0))) >= 1)
 check("exam：进步奖门槛为正", float(_exam.get("progress_prize_delta", 0)) > 0)
 
+print("\n=== 16. 声量（可选挑战模式）===")
+_voice = {r["param"]: str(r["value"]).strip() for r in load("rules/voice.csv")}
+
+
+def _vnum(key, default=0.0):
+    try:
+        return float(_voice.get(key, default))
+    except (TypeError, ValueError):
+        return default
+
+
+_voice_required = {
+    "window_seconds", "prompt_seconds", "voice_chat_seconds",
+    "tier1_min", "tier1_mult", "tier2_min", "tier2_mult",
+    "tier3_min", "tier3_mult", "tier4_min", "tier4_mult",
+    "mic_floor_ratio", "mic_median_frames", "mic_attack_seconds", "mic_release_seconds",
+    "mic_average_seconds",
+    "tier_hysteresis", "mic_gate_ratio", "mic_shout_min_ratio", "mic_shout_max_ratio",
+    "hold_curve_exp", "duck_db",
+    "calib_floor_seconds", "calib_ref_seconds", "calib_shout_seconds",
+    "encourage_tier1_pool", "encourage_tier2_pool", "encourage_tier3_pool", "encourage_tier4_pool",
+    "encourage_tier1_pick", "encourage_tier2_pick", "encourage_tier3_pick", "encourage_tier4_pick",
+}
+check("声量：必需键齐全", _voice_required <= set(_voice.keys()), sorted(_voice_required - set(_voice.keys())))
+_voice_mins = [_vnum("tier%d_min" % i, -1.0) for i in range(1, 5)]
+_voice_mults = [_vnum("tier%d_mult" % i, -1.0) for i in range(1, 5)]
+check("声量：档位下限严格递增", all(_voice_mins[i] < _voice_mins[i + 1] for i in range(3)), _voice_mins)
+check("声量：档位倍率非递减", all(_voice_mults[i] <= _voice_mults[i + 1] for i in range(3)), _voice_mults)
+check("声量：平常档倍率 = 1.0（不改现行标定）", abs(_voice_mults[1] - 1.0) < 1e-9, _voice_mults)
+check("声量：轻声下限 = 0 且吼下限 < 100",
+      abs(_voice_mins[0]) < 1e-9 and 0.0 < _voice_mins[3] < 100.0, _voice_mins)
+check("声量：谈话时长 > 提示 + 采样窗口",
+      _vnum("voice_chat_seconds") > _vnum("window_seconds") + _vnum("prompt_seconds"))
+check("声量：窗口为正、提示非负、校准时长为正",
+      _vnum("window_seconds") > 0 and _vnum("prompt_seconds") >= 0
+      and all(_vnum(k) > 0 for k in ("calib_floor_seconds", "calib_ref_seconds", "calib_shout_seconds")))
+check("声量：麦克风比例合法",
+      _vnum("mic_floor_ratio") >= 0 and 0.0 < _vnum("mic_gate_ratio") < 1.0
+      and _vnum("mic_shout_min_ratio") > 1.0
+      and _vnum("mic_shout_max_ratio") >= _vnum("mic_shout_min_ratio"))
+check("声量：平滑参数合法",
+      _vnum("mic_attack_seconds") > 0
+      and _vnum("mic_release_seconds") >= _vnum("mic_attack_seconds")
+      and int(_vnum("mic_median_frames")) >= 1
+      and int(_vnum("mic_median_frames")) % 2 == 1)
+check("声量：平均窗口 ∈ (0, 采样窗口]",
+      0.0 < _vnum("mic_average_seconds") <= _vnum("window_seconds"))
+check("声量：档位回差 ∈ [0,12.5)", 0.0 <= _vnum("tier_hysteresis") < 12.5)
+check("声量：按住曲线指数 > 0 且 duck_db ≤ 0",
+      _vnum("hold_curve_exp") > 0 and _vnum("duck_db") <= 0)
+check("声量：鼓励目标池合法",
+      all(_voice.get("encourage_tier%d_pool" % i) in ("neighbors", "all", "nearest3") for i in range(1, 5)))
+check("声量：鼓励选人方式合法",
+      all(_voice.get("encourage_tier%d_pick" % i) in ("nearest", "affinity") for i in range(1, 5)))
+
 print("\n=== 结论 ===")
 _leisure = params("rules/leisure.csv")
 # 2026-10-16（D02）：减压不再逐活动配 —— 统一「每 10 秒 −5 压力」（rules/activities.csv 的 relief_per_unit），

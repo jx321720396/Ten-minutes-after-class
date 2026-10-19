@@ -249,7 +249,9 @@ func _init(seed: int, npc_count: int, tables: Dictionary = {}) -> void:
 	_space = INTERACTION_SPACE.new()
 	_term_record = TERM_RECORD.new()
 	_term_record.configure(self, tables)
-	_teacher_commands.configure(_params(tables, TEACHER_COMMANDS_TABLE), _acts)
+	_teacher_commands.configure(
+		_params(tables, TEACHER_COMMANDS_TABLE), _acts, tables.get("rules/voice", {})
+	)
 
 
 func _load_config(tables: Dictionary) -> void:

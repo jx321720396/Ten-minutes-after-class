@@ -1,5 +1,20 @@
 extends GutTest
 
+var _was_voice := false
+var _was_voice_mode := "mic"
+
+
+## 本文件测常模办公室 UI；强制关闭可选声量模式，结束恢复本机设置。
+func before_each() -> void:
+	_was_voice = VoiceSettings.is_enabled()
+	_was_voice_mode = VoiceSettings.input_mode()
+	VoiceSettings.set_enabled(false)
+
+
+func after_each() -> void:
+	VoiceSettings.set_input_mode(_was_voice_mode)
+	VoiceSettings.set_enabled(_was_voice)
+
 
 func test_office_command_lifecycle_blocks_early_chat_and_duplicate_summons() -> void:
 	var core := SimCore.new(20261016, 16, ConfigLoader.new().load_all())

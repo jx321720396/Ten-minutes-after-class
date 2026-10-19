@@ -2,6 +2,10 @@ extends Control
 ## Office portrait and controls only read command snapshots; actions are emitted to OfficeHub.
 
 signal action_requested(action: String)
+signal voice_hold_started(action: String)
+signal voice_hold_ended(action: String)
+
+const FONTS := preload("res://scripts/ui/game_fonts.gd")
 
 @onready var _clip: Control = $Clip
 @onready var _portrait: TextureRect = $Clip/Portrait
@@ -16,6 +20,10 @@ var _buttons: Dictionary = {}
 var _identity := -1
 var _sprites: Dictionary
 var _appearance: Dictionary = {}
+var _voice_meter: Control
+var _voice_live_active := false
+var _voice_live_intensity := 0.0
+var _voice_live_tier := 2
 
 
 func setup(view: Control) -> void:
@@ -34,10 +42,20 @@ func setup(view: Control) -> void:
 	rows.add_theme_constant_override("separation", int(view.config.gap))
 	for label in [_title, _status]:
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.add_theme_font_override("font", preload("res://scripts/ui/game_fonts.gd").regular())
+		label.add_theme_font_override("font", FONTS.regular())
 		label.add_theme_color_override("font_color", Color(view.config.ink))
 		label.add_theme_font_size_override("font_size", int(_config.font_size))
 	_status.custom_minimum_size.y = float(_config.status_height)
+	_voice_meter = preload("res://scripts/ui/voice_meter.gd").new()
+	rows.add_child(_voice_meter)
+	rows.move_child(_voice_meter, _title.get_index() + 1)
+	_voice_meter.setup(
+		_config,
+		FONTS.regular(),
+		Color(view.config.ink),
+		Color(view.config.paper),
+		Color(view.config.accent)
+	)
 	_cancel.text = _config.cancel_chat
 	view.style_button(_cancel)
 	_cancel.custom_minimum_size.y = float(_config.button_height)
@@ -60,6 +78,10 @@ func setup(view: Control) -> void:
 			"font_disabled_color", Color(view.config.ink).lerp(Color(view.config.paper), 0.45)
 		)
 		button.pressed.connect(func() -> void: action_requested.emit(key))
+		button.button_down.connect(func() -> void: voice_hold_started.emit(key))
+		button.button_up.connect(func() -> void: voice_hold_ended.emit(key))
+		if key in ["comfort", "praise", "scold", "encourage"]:
+			button.set_meta("emit_hold", true)
 		_buttons[key] = button
 		if key == "encourage":
 			button.tooltip_text = _config.pending
@@ -99,6 +121,7 @@ func refresh(core: Variant, snapshot: Dictionary) -> void:
 		)
 	for key in _buttons:
 		_buttons[key].disabled = not arrived or command != ""
+	_update_voice_meter(core, snapshot)
 	_cancel.visible = command == "office_chat"
 
 
@@ -125,6 +148,100 @@ func show_student(core: Variant, index: int) -> void:
 	var sprite := str(_appearance.get(str(core.character_id(index)), ""))
 	_portrait.texture = load(str(_sprites[sprite].idle)) as Texture2D
 	_identity = index
+
+
+## 办公室 hub 每帧写入实时强度/档位；无窗口时 active=false。
+func set_voice_live(active: bool, intensity: float, tier: int) -> void:
+	_voice_live_active = active
+	_voice_live_intensity = intensity
+	_voice_live_tier = tier
+
+
+func _update_voice_meter(core: Variant, snapshot: Dictionary) -> void:
+	var state := voice_state(core, snapshot)
+	_voice_meter.set_state(
+		bool(state.get("active", false)),
+		int(state.get("tier", 2)),
+		float(state.get("intensity", 0.0)),
+		str(state.get("preview", "")),
+		str(state.get("warning", ""))
+	)
+
+
+## 声量条完整展示状态；演出弹窗复用同一份数据，避免两处口径漂移。
+## active=false 时其余字段无意义（弹窗据此隐藏声量条）。
+func voice_state(core: Variant, snapshot: Dictionary) -> Dictionary:
+	var enabled := false
+	var settings := get_node_or_null("/root/VoiceSettings")
+	if settings != null:
+		enabled = bool(settings.is_enabled())
+	var kind := str(snapshot.get("chat_kind", ""))
+	var active := (
+		enabled
+		and str(snapshot.get("command", "")) == "office_chat"
+		and kind in ["comfort", "praise", "scold", "encourage"]
+		and not bool(snapshot.get("held_by_class", false))
+	)
+	if not active:
+		return {}
+	var called := int(snapshot.get("called", -1))
+	if called < 0:
+		return {}
+	var tier := _voice_live_tier if _voice_live_active else int(snapshot.get("chat_tier", 2))
+	var effect: Dictionary = core.teacher_commands().voice_effect(kind, tier)
+	var tiers: Array = _config.get("voice_tiers", ["轻声", "平常", "提高", "吼"])
+	var tier_name := str(tiers[clampi(tier, 1, 4) - 1]) if tiers.size() >= 4 else str(tier)
+	var preview := ""
+	var warning := ""
+	if kind == "encourage":
+		var target_key := "voice_encourage_affinity"
+		if tier <= 1:
+			target_key = "voice_encourage_neighbors"
+		elif tier == 2:
+			target_key = "voice_encourage_nearest"
+		preview = (
+			str(_config.get("voice_encourage", "%s · %s → 目标：%s"))
+			% [
+				str(_config.get("encourage", "鼓励")),
+				tier_name,
+				str(_config.get(target_key, "最近")),
+			]
+		)
+	elif kind == "praise":
+		# 表扬只加动力，不涉及压力与崩溃预警。
+		preview = (
+			str(_config.get("voice_praise", "%s · %s → 动力 %+.0f"))
+			% [
+				str(_config.get("praise", "表扬")),
+				tier_name,
+				float(effect.get("vitality", 0.0)),
+			]
+		)
+	else:
+		preview = (
+			str(_config.get("voice_preview", "%s · %s → 压力 %+.0f · 动力 %+.0f"))
+			% [
+				str(_config.get(kind, kind)),
+				tier_name,
+				float(effect.get("stress", 0.0)),
+				float(effect.get("vitality", 0.0)),
+			]
+		)
+		var stress_now := float(core.stress(called))
+		var after := stress_now + float(effect.get("stress", 0.0))
+		if core.is_broken(called):
+			warning = str(_config.get("voice_broken", "已崩溃"))
+		elif after > 90.0:
+			warning = str(_config.get("voice_breakdown", "预计压力 %.0f · 会崩溃")) % after
+		else:
+			warning = str(_config.get("voice_safe", "预计压力 %.0f · 安全")) % after
+	return {
+		"active": true,
+		"tier": tier,
+		"intensity": _voice_live_intensity if _voice_live_active else 0.0,
+		"preview": preview,
+		"warning": warning,
+	}
 
 
 func meeting_visible() -> bool:

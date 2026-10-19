@@ -4,6 +4,7 @@ extends Control
 signal cancel_requested
 
 const FONTS = preload("res://scripts/ui/game_fonts.gd")
+const VOICE_METER = preload("res://scripts/ui/voice_meter.gd")
 
 var config: Dictionary
 var _panel: PanelContainer
@@ -20,6 +21,7 @@ var _duration := 1.0
 var _action: Dictionary = {}
 var _teacher_pose: TextureRect
 var _pose_atlas: Texture2D
+var _voice_meter: Control
 
 
 func _ready() -> void:
@@ -52,6 +54,19 @@ func _ready() -> void:
 	rows.add_child(_cast)
 	_beat = _label(rows, int(config.font_size))
 	_status = _label(rows, int(config.font_size))
+	# 声量模式：把办公室面板里的四段条搬进演出弹窗，遮罩盖住面板后仍能看到实时档位。
+	_voice_meter = VOICE_METER.new()
+	rows.add_child(_voice_meter)
+	var office_config: Dictionary = JSON.parse_string(
+		FileAccess.get_file_as_string("res://data/ui/office_hub.json")
+	)
+	_voice_meter.setup(
+		office_config.get("meeting", {}),
+		FONTS.regular(),
+		Color(config.ink),
+		Color(config.paper),
+		Color(config.accent)
+	)
 	_progress = ProgressBar.new()
 	_progress.show_percentage = false
 	rows.add_child(_progress)
@@ -144,6 +159,19 @@ func refresh(core: Variant, snapshot: Dictionary) -> void:
 	visible = not _hidden
 
 
+## 与办公室面板共用一份声量状态；空字典 = 当前没有声量窗口/不适用，隐藏声量条。
+func set_voice_state(state: Dictionary) -> void:
+	if _voice_meter == null:
+		return
+	_voice_meter.set_state(
+		not state.is_empty(),
+		int(state.get("tier", 2)),
+		float(state.get("intensity", 0.0)),
+		str(state.get("preview", "")),
+		str(state.get("warning", ""))
+	)
+
+
 func _process(delta: float) -> void:
 	if not visible or _action.is_empty():
 		return
@@ -153,17 +181,21 @@ func _process(delta: float) -> void:
 	var beat: int = int(_elapsed / cycle) % _action.beats.size()
 	_beat.text = str(_action.symbol) + "  " + str(_action.beats[beat])
 	var viewport := get_viewport_rect().size
+	# 声量条可见时内容会变高；按实际最小尺寸缩放，避免弹窗超出缩放预算。
+	var panel_size := Vector2(
+		float(config.width), maxf(float(config.height), _panel.get_combined_minimum_size().y)
+	)
 	var factor := minf(
 		1.0,
 		minf(
-			viewport.x / (float(config.width) + float(config.margin)),
-			viewport.y / (float(config.height) + float(config.margin))
+			viewport.x / (panel_size.x + float(config.margin)),
+			viewport.y / (panel_size.y + float(config.margin))
 		)
 	)
 	_panel.scale = Vector2.ONE * factor
-	_panel.size = Vector2(config.width, config.height)
+	_panel.size = panel_size
 	_panel.position = Vector2(
-		(viewport.x - _panel.size.x * factor) * 0.5, (viewport.y - _panel.size.y * factor) * 0.5
+		(viewport.x - panel_size.x * factor) * 0.5, (viewport.y - panel_size.y * factor) * 0.5
 	)
 	_panel.modulate.a = minf(1.0, _elapsed / float(config.enter_seconds)) if not _held else 1.0
 	for index in range(_cast.get_child_count()):

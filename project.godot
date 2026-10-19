@@ -16,6 +16,11 @@ config/quit_on_go_back=false
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://assets/icons/game-icon-social-note-v1-window.webp"
 
+[audio]
+
+driver/enable_input=true
+enable_audio_input=true
+
 [autoload]
 
 EventBus="*res://autoload/event_bus.gd"
@@ -25,6 +30,7 @@ GameState="*res://autoload/game_state.gd"
 BGM="*res://autoload/bgm.tscn"
 SFX="*res://autoload/sfx.tscn"
 BackHandler="*res://autoload/back_handler.gd"
+VoiceSettings="*res://autoload/voice_settings.gd"
 
 [display]
 
