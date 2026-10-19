@@ -241,8 +241,7 @@ func _evidence(kind: String, entry: Dictionary) -> String:
 			str(_cfg.bully_evidence)
 			% [
 				int(rules.get("bully_min_enemies", 0)),
-				int(rules.get("bully_hostility_threshold", 0)),
-				int(rules.get("bully_daily_harm_min", 0))
+				int(rules.get("bully_hostility_threshold", 0))
 			]
 		)
 	else:

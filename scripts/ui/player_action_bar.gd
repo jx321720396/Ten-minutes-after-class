@@ -34,6 +34,9 @@ const ACTIVITY_NAMES := {
 	"eat_snack": "在吃零食",
 	"read_book": "在看课外书",
 	"leave_class": "你出去了",
+	"quarrel": "在吵架",
+	"shove": "在推搡",
+	"fight": "在打架",
 }
 
 const GameFonts := preload("res://scripts/ui/game_fonts.gd")

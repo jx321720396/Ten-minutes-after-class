@@ -151,41 +151,38 @@ exam.settle_exam(30)
 check("期末考也不改平时成绩", exam.Grade == grade_snapshot)
 
 
-print("=== 6b. D07 伤害与关系修复（《老师版规则合并稿》）===")
+print("=== 6b. 课间冲突：吵架 / 推搡 / 打架 ===")
 harm = Sim(seed=12345, npc_count=8)
 harm.phase = "break"
-harm.harm["trigger_p"] = 1.0
-harm.harm["shove_choice_p"] = 1.0
-# 2026-10-19：开局敌对改为 0–45 随机，可能自己就 >40；本用例只测门槛，先把敌对清零。
-harm.H = [[0.0] * harm.N for _ in range(harm.N)]
-harm.neighbor_idx[0] = [1]
-harm.neighbor_idx[1] = [0]
-harm.H[0][1] = 40.0
-harm.begin_harm_phase()
-harm.check_harm()
-check("D07：恰好 40 不触发恶语攻击", len(harm.harm_events) == 0)
-harm.H[0][1] = 41.0
-stress_before = harm.Stress[1]
-hostility_before = harm.H[1][0]
-harm.begin_harm_phase()
-harm.check_harm()
-check("D07：>40 触发恶语攻击",
-      len(harm.harm_events) == 1 and harm.harm_events[0]["kind"] == "aggression")
-check("D07：恶语使目标压力 +5", abs(harm.Stress[1] - (stress_before + 5.0)) < 1e-6)
-check("D07：恶语使目标对发起者敌对 +3", abs(harm.H[1][0] - (hostility_before + 3.0)) < 1e-6)
-harm.H[0][1] = 71.0
-harm.begin_harm_phase()
-harm.check_harm()
-check("D07：>70 归为推搡", harm.harm_events[0]["kind"] == "shove")
-harm.phase_state[0] = "study"
-harm.begin_harm_phase()
-harm.check_harm()
-check("D07：学习锁定的学生不参与伤害", len(harm.harm_events) == 0)
-harm.phase_state[0] = "free"
+for i in range(harm.N):
+    for j in range(harm.N):
+        harm.H[i][j] = 0.0
+harm.H[0][1] = 50.0
+harm.H[1][0] = 70.0
+stress_before = harm.Stress[0]
+harm.begin_conflicts()
+check("较低值 50 算吵架", len(harm.harm_events) == 1 and harm.harm_events[0]["kind"] == "quarrel")
+check("吵架不改压力", abs(harm.Stress[0] - stress_before) < 1e-6)
+for _k in range(int(harm.harm["conflict_seconds"])):
+    harm.tick_conflicts()
+check("吵架自然结束双方各 +10",
+      abs(harm.H[0][1] - 60.0) < 1e-6 and abs(harm.H[1][0] - 80.0) < 1e-6)
+harm.H[2][3] = 90.0
+harm.H[3][2] = 95.0
+harm.Broken[0] = True
+harm.begin_conflicts()
+check("较低值 ≥90 算打架，崩溃者不参加",
+      any(ev["kind"] == "fight" and ev["from"] == 2 for ev in harm.harm_events))
+for _k in range(int(harm.harm["conflict_seconds"])):
+    harm.tick_conflicts()
+check("打架结束双方各 −40，并记曾经打过",
+      abs(harm.H[2][3] - 50.0) < 1e-6 and harm.risk_ever_fought[2] and harm.fight_count[2] == 1)
 harm.phase = "class"
-harm.begin_harm_phase()
-harm.check_harm()
-check("D07：上课段不发生伤害（课间接触才判）", len(harm.harm_events) == 0)
+harm.H[4][5] = 90.0
+harm.H[5][4] = 90.0
+before = len(harm.harm_events)
+harm.begin_conflicts()
+check("上课段不判定冲突", len(harm.harm_events) == before)
 
 chat = Sim(seed=12345, npc_count=8)
 chat.start_conversation(0, 1)
@@ -202,13 +199,13 @@ print("=== 6c. D06 风险判定与退学 ===")
 risk = Sim(seed=12345, npc_count=8)
 for k in range(3):
     risk.H[k][5] = 60.0
-risk.note_harm(0, 5, "aggression")
+risk.note_harm(0, 5, "fight")
 risk.settle_risk(2)
 check("D06：满足霸凌条件第一天只预警（不触发、不辞退）",
       risk.risk_warned[5] and not risk.risk_triggered[5] and not risk.dropped[5])
 for k in range(3):
     risk.H[k][5] = 60.0
-risk.note_harm(0, 5, "aggression")
+risk.note_harm(0, 5, "fight")
 risk.settle_risk(2)
 check("D06：连续第二天正式触发霸凌", risk.risk_triggered[5])
 risk.register_breakdown(5)

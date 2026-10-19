@@ -211,7 +211,10 @@
     "snack": "吃零食",
     "read_book": "看书",
     "moving": "移动中",
-    "absent": "不在教室"
+    "absent": "不在教室",
+    "quarrel": "吵架",
+    "shove": "推搡",
+    "fight": "打架"
   },
   "target_picker": {
     "width": 900,

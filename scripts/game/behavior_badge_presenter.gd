@@ -65,7 +65,7 @@ func _sync_activities() -> void:
 	if _core != null and is_instance_valid(_core):
 		for i in range(int(_core.node_count())):
 			var activity := str(_core.activity_of(i))
-			if activity in ["listen_music", "eat_snack", "read_book"]:
+			if activity in ["listen_music", "eat_snack", "read_book", "quarrel", "shove", "fight"]:
 				wanted[i] = str(PlayerActionBar.ACTIVITY_NAMES[activity])
 	for i in _activity_badges.keys():
 		if not wanted.has(i):

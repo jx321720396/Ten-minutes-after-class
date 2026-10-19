@@ -2,7 +2,7 @@ class_name RiskMonitor
 extends RefCounted
 ## 风险判定、预警与失败（《老师版规则合并稿》D06 / 主文档第十一章）。
 ##
-## 霸凌：至少 3 名其他学生对目标敌对 >50，且当天受到这些人中至少一人发起的伤害；
+## 霸凌：至少 3 名其他学生对目标敌对 >50，且目标曾经打过一次架；
 ## 孤立：其他所有学生对目标好感 <20，且当天主动找伴被拒 ≥2 次、当天没有成功参加共同活动
 ##      （忙碌、满员不算关系拒绝）；退学：累计崩溃超过 3 次，或正式触发霸凌／孤立后再次崩溃。
 ## 第一天满足只预警，连续第二天才正式触发；中间一天不满足则重置连续计数；只统计实际事件，
@@ -23,6 +23,7 @@ var _breakdowns: Array = []
 var _rejects_today: Array = []
 var _activity_today: Array = []
 var _harm_today: Array = []
+var _ever_fought: Array = []
 var _streak: Array = []
 var _warned: Array = []
 var _triggered: Array = []
@@ -49,6 +50,7 @@ func configure(table: Dictionary, count: int) -> void:
 	_rejects_today = _zeros(count, 0)
 	_activity_today = _zeros(count, false)
 	_harm_today = _empty_lists(count)
+	_ever_fought = _zeros(count, false)
 	_streak = _zeros(count, 0)
 	_warned = _zeros(count, false)
 	_triggered = _zeros(count, false)
@@ -75,10 +77,13 @@ func register_activity(i: int) -> void:
 		_activity_today[i] = true
 
 
-## 伤害登记（霸凌判据要看「当天受到这些人中至少一人发起的伤害」）。
+## 只有打架记伤害。双方都算「曾经打过一次架」，不要求对手属于当天的敌对者。
 func register_harm(from_i: int, to_i: int, kind: String) -> void:
-	if to_i >= 0 and to_i < _harm_today.size():
-		(_harm_today[to_i] as Array).append({"from": from_i, "kind": kind})
+	if kind != "fight":
+		return
+	for idx in [from_i, to_i]:
+		if idx >= 0 and idx < _ever_fought.size():
+			_ever_fought[idx] = true
 
 
 # ------------------------------------------------------------------ 每日判定
@@ -137,11 +142,7 @@ func _is_bullied(core: Variant, i: int) -> bool:
 			enemies.append(j)
 	if enemies.size() < _bully_min_enemies:
 		return false
-	var harmed := 0
-	for entry in _harm_today[i]:
-		if enemies.has(int(entry["from"])):
-			harmed += 1
-	return harmed >= _bully_daily_harm
+	return i >= 0 and i < _ever_fought.size() and bool(_ever_fought[i])
 
 
 func _is_isolated(core: Variant, i: int) -> bool:
@@ -225,6 +226,7 @@ func export_state() -> Dictionary:
 		"rejects_today": _rejects_today.duplicate(),
 		"activity_today": _activity_today.duplicate(),
 		"harm_today": _harm_today.duplicate(true),
+		"ever_fought": _ever_fought.duplicate(),
 		"streak": _streak.duplicate(),
 		"warned": _warned.duplicate(),
 		"triggered": _triggered.duplicate(),
@@ -245,6 +247,7 @@ func restore_state(data: Dictionary) -> void:
 		for hit in bucket:
 			items.append({"from": int(hit.get("from", -1)), "kind": str(hit.get("kind", ""))})
 		_harm_today.append(items)
+	_ever_fought = _bools(data.get("ever_fought", []))
 	_streak = _ints(data.get("streak", []))
 	_warned = _bools(data.get("warned", []))
 	_triggered = _bools(data.get("triggered", []))

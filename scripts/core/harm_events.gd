@@ -1,154 +1,318 @@
 class_name HarmEvents
 extends RefCounted
-## 伤害事件（《老师版规则合并稿》D07 / 主文档第十章）：只有「恶语攻击」与「推搡」两类。
+## 课间冲突（2026-10-18）：吵架 / 推搡 / 打架。
 ##
-## 条件：课间接触、发起者对目标敌对超过门槛、双方都不得处于学习锁定 / 办公室 / 崩溃；
-## 每 10 秒检查一次，满足条件后**按固定概率随机触发**（概率与增量是合并稿明确「待定」的参数，
-## 读 data/rules/harm.csv 的可运行初值）。
-## 遍历顺序固定（发起者升序 → 目标升序），随机消耗与 tools/core_sim.py 保持同序，同种子可复现。
-## 高敌对不保证必然发生伤害：普通拒绝、无意碰撞与正常打闹都不走这里。
+## 课间开始、学生选定活动之前判定一次。档位取双方敌对的较低值，
+## 同一对人只进一档，每人只进一场。不改压力。只有打架记为伤害。
 
-var _aggression_threshold := 40.0
-var _shove_threshold := 70.0
-var _trigger_p := 0.05
-var _shove_choice_p := 0.5
-var _aggression_stress := 5.0
-var _aggression_hostility := 3.0
-var _shove_stress := 10.0
-var _shove_hostility := 5.0
-var _shove_preferred := true
-var _check_seconds := 10
+var _quarrel_min := 40.0
+var _shove_min := 60.0
+var _fight_min := 90.0
+var _seconds := 20
+var _quarrel_gain := 10.0
+var _quarrel_mediate := 5.0
+var _shove_gain := 15.0
+var _shove_mediate := 10.0
+var _fight_cut := 40.0
+var _quarrel_cooldown := 4
+var _shove_cooldown := 4
+var _mediate_cut := 10.0
+var _mediate_cooldown := 3
 var _friendly_cut := 2.0
-var _mediate_threshold := 50.0
-var _mediate_cut := 5.0
+var _spot_x := -2.05
+var _spot_z := 0.0
+var _spot_gap := 0.8
+
+var _active: Array = []
+var _kind_of: Array = []
+var _partner_of: Array = []
+var _fight_count: Array = []
+var _quarrel_until: Dictionary = {}
+var _shove_until: Dictionary = {}
+var _mediate_until: Dictionary = {}
+var _break_serial := 0
 var _last_events: Array = []
-## 每人每课间最多主动伤害一次（两类共用次数，§10）。
-var _struck_this_phase: Array = []
 
 
 func configure(table: Dictionary) -> void:
-	_aggression_threshold = float(
-		table.get("aggression_hostility_threshold", _aggression_threshold)
-	)
-	_shove_threshold = float(table.get("shove_hostility_threshold", _shove_threshold))
-	_trigger_p = float(table.get("trigger_p", _trigger_p))
-	_shove_choice_p = float(table.get("shove_choice_p", _shove_choice_p))
-	_aggression_stress = float(table.get("aggression_target_stress", _aggression_stress))
-	_aggression_hostility = float(table.get("aggression_hostility_gain", _aggression_hostility))
-	_shove_stress = float(table.get("shove_target_stress", _shove_stress))
-	_shove_hostility = float(table.get("shove_hostility_gain", _shove_hostility))
-	_shove_preferred = int(float(table.get("shove_preferred_when_both", 1))) == 1
-	_check_seconds = int(float(table.get("check_seconds", _check_seconds)))
-	_friendly_cut = float(table.get("friendly_chat_hostility_cut", _friendly_cut))
-	_mediate_threshold = float(table.get("mediate_hostility_threshold", _mediate_threshold))
+	_quarrel_min = float(table.get("quarrel_min", _quarrel_min))
+	_shove_min = float(table.get("shove_min", _shove_min))
+	_fight_min = float(table.get("fight_min", _fight_min))
+	_seconds = int(float(table.get("conflict_seconds", _seconds)))
+	_quarrel_gain = float(table.get("quarrel_hostility_gain", _quarrel_gain))
+	_quarrel_mediate = float(table.get("quarrel_mediate_gain", _quarrel_mediate))
+	_shove_gain = float(table.get("shove_hostility_gain", _shove_gain))
+	_shove_mediate = float(table.get("shove_mediate_gain", _shove_mediate))
+	_fight_cut = float(table.get("fight_hostility_cut", _fight_cut))
+	_quarrel_cooldown = int(float(table.get("quarrel_cooldown_breaks", _quarrel_cooldown)))
+	_shove_cooldown = int(float(table.get("shove_cooldown_breaks", _shove_cooldown)))
 	_mediate_cut = float(table.get("mediate_hostility_cut", _mediate_cut))
+	_mediate_cooldown = int(float(table.get("mediate_cooldown_breaks", _mediate_cooldown)))
+	_friendly_cut = float(table.get("friendly_chat_hostility_cut", _friendly_cut))
+	_spot_x = float(table.get("conflict_spot_x", _spot_x))
+	_spot_z = float(table.get("conflict_spot_z", _spot_z))
+	_spot_gap = float(table.get("conflict_pair_gap", _spot_gap))
 
 
-## 段首重置「每课间一次」的计数（两类共用）。
 func begin_phase(count: int) -> void:
-	_struck_this_phase = []
-	for _i in range(count):
-		_struck_this_phase.append(false)
-
-
-func check_seconds() -> int:
-	return _check_seconds
+	_ensure(count)
+	_active = []
+	for i in range(count):
+		_kind_of[i] = ""
+		_partner_of[i] = -1
 
 
 func friendly_cut() -> float:
 	return _friendly_cut
 
 
-func mediate_threshold() -> float:
-	return _mediate_threshold
-
-
 func mediate_cut() -> float:
 	return _mediate_cut
 
 
-## 上一次检查触发的事件（表现层 / 简报只读）。
 func last_events() -> Array:
 	return _last_events
 
 
-## 一次伤害检查（主循环每 check_seconds 调一次）；返回本次触发条数。
-## 一次伤害检查（主循环每 check_seconds 调一次）；返回本次触发条数。
-##
-## 2026-10-16 定稿：每名符合资格的发起者**只掷一次** —— 先在自己满足条件的目标里等概率随机
-## 选一个，再掷 _trigger_p；不对每个候选分别掷骰（否则周围人越多命中越高）。
-func check(core: Variant) -> int:
-	_last_events = []
-	# §369：伤害发生在「课间接触」。
-	if str(core._current_phase_kind()) != "break":
+func active_kind(i: int) -> String:
+	if i < 0 or i >= _kind_of.size():
+		return ""
+	return str(_kind_of[i])
+
+
+func partner_of(i: int) -> int:
+	if i < 0 or i >= _partner_of.size():
+		return -1
+	return int(_partner_of[i])
+
+
+func fight_count_of(i: int) -> int:
+	if i < 0 or i >= _fight_count.size():
 		return 0
+	return int(_fight_count[i])
+
+
+func spot() -> Vector2:
+	return Vector2(_spot_x, _spot_z)
+
+
+func spot_gap() -> float:
+	return _spot_gap
+
+
+## 课间开始判定一次。考试日与非课间不判定，冷却按实际课间计数。
+func begin_break(core: Variant) -> void:
+	if str(core._current_phase_kind()) != "break" or bool(core._is_exam_only_day()):
+		return
+	_last_events = []
+	_break_serial += 1
+	_judge(core)
+
+
+## 每秒推进进行中的冲突；到点按自然结束结算。
+func tick(core: Variant) -> void:
+	if str(core._current_phase_kind()) != "break" or _active.is_empty():
+		return
+	var finished: Array = []
+	for item in _active:
+		item["remaining"] = int(item["remaining"]) - 1
+		if int(item["remaining"]) <= 0:
+			finished.append(item)
+	for item in finished:
+		_settle(core, int(item["a"]), int(item["b"]), str(item["kind"]), false)
+
+
+## 调解。返回 stopped / queued / fight / cooldown / invalid。
+## stopped：立刻终止吵架或推搡，敌对按中断幅度结算，不再另减 10。
+## queued：没有可终止的冲突，等命令走完再双方 −10。
+## fight：打架不能终止。
+func mediate(core: Variant, a: int, b: int) -> String:
 	var n := int(core.node_count())
-	for i in range(n):
-		if not _can_act(core, i):
-			continue
-		# §10：每人每课间最多主动伤害一次；老师制止后本课间不能再发起。
-		if i < _struck_this_phase.size() and bool(_struck_this_phase[i]):
-			continue
-		if bool(core._is_stopped_by_teacher(i)):
-			continue
-		var candidates: Array = []
-		for j in range(n):
-			if i == j or not _can_act(core, j):
-				continue
-			if not (core._shares_activity(i, j) or core._are_neighbors(i, j)):
-				continue
-			if float(core.hostility(i, j)) > _aggression_threshold:
-				candidates.append(j)
-		if candidates.is_empty():
-			continue
-		var pick := int(floor(float(core._next_unit_random()) * float(candidates.size())))
-		pick = mini(pick, candidates.size() - 1)
-		var target := int(candidates[pick])
-		if float(core._next_unit_random()) >= _trigger_p:
-			continue
-		# 敌对 >70：各 50% 选恶语或推搡（一次只发生一种）；40 < 敌对 ≤ 70 只能恶语。
-		var kind := "aggression"
-		if float(core.hostility(i, target)) > _shove_threshold:
-			if float(core._next_unit_random()) < _shove_choice_p:
-				kind = "shove"
-		_apply(core, i, target, kind)
-		if i < _struck_this_phase.size():
-			_struck_this_phase[i] = true
-	return _last_events.size()
+	if a < 0 or b < 0 or a == b or a >= n or b >= n:
+		return "invalid"
+	if _mediate_blocked(a, b):
+		return "cooldown"
+	var kind := _pair_active(a, b)
+	if kind == "fight":
+		return "fight"
+	if kind == "quarrel" or kind == "shove":
+		_settle(core, a, b, kind, true)
+		return "stopped"
+	return "queued"
 
 
-## 参与伤害的资格（§372）：不得处于学习锁定、办公室或崩溃。
-func _can_act(core: Variant, i: int) -> bool:
-	if not bool(core.is_present(i)) or bool(core.is_broken(i)):
-		return false
-	if bool(core._is_in_office(i)):
-		return false
-	return not bool(core._is_study_locked(i))
+## 调解命令结束的课间起，记三个课间冷却。进行中被终止的冲突不再减 10。
+func finish_mediate(core: Variant, a: int, b: int, apply_cut: bool) -> void:
+	if apply_cut:
+		core._add_hostility(a, b, -_mediate_cut)
+		core._add_hostility(b, a, -_mediate_cut)
+	_mediate_until[_key(a, b)] = _break_serial + _mediate_cooldown
 
 
-func _apply(core: Variant, from_i: int, to_i: int, kind: String) -> void:
-	if kind == "shove":
-		# 压力走 _add_peer_stress：目标若带「玻璃心」按 §10.2 额外 +100%。
-		core._add_peer_stress(to_i, _shove_stress)
-		core._add_hostility(to_i, from_i, _shove_hostility)
-		# 推搡额外中断目标当前活动（恶语不中断）。
-		core._interrupt_activity(to_i)
-	else:
-		core._add_peer_stress(to_i, _aggression_stress)
-		core._add_hostility(to_i, from_i, _aggression_hostility)
-	_last_events.append({"kind": kind, "from": from_i, "to": to_i, "tick": int(core.global_tick())})
-	# 霸凌判据要看「当天受到这些人中至少一人发起的伤害」→ 记到风险监控里。
-	core._note_harm(from_i, to_i, kind)
-
-
-# ------------------------------------------------------------------ 存档
-## 导出「每人每课间最多主动伤害一次」的计数（跨 tick 持久）。_last_events 是瞬态，不存。
 func export_state() -> Dictionary:
-	return {"struck_this_phase": _struck_this_phase.duplicate()}
+	return {
+		"fight_count": _fight_count.duplicate(),
+		"quarrel_until": _quarrel_until.duplicate(),
+		"shove_until": _shove_until.duplicate(),
+		"mediate_until": _mediate_until.duplicate(),
+		"break_serial": _break_serial,
+		"active": _active.duplicate(true),
+		"kind_of": _kind_of.duplicate(),
+		"partner_of": _partner_of.duplicate(),
+	}
 
 
 func restore_state(data: Dictionary) -> void:
-	_struck_this_phase = []
-	for v in data.get("struck_this_phase", []):
-		_struck_this_phase.append(bool(v))
+	_fight_count = []
+	for v in data.get("fight_count", []):
+		_fight_count.append(int(v))
+	_quarrel_until = data.get("quarrel_until", {}).duplicate()
+	_shove_until = data.get("shove_until", {}).duplicate()
+	_mediate_until = data.get("mediate_until", {}).duplicate()
+	_break_serial = int(data.get("break_serial", 0))
+	_active = data.get("active", []).duplicate(true)
+	_kind_of = data.get("kind_of", []).duplicate()
+	_partner_of = data.get("partner_of", []).duplicate()
 	_last_events = []
+
+
+func _ensure(count: int) -> void:
+	while _kind_of.size() < count:
+		_kind_of.append("")
+		_partner_of.append(-1)
+		_fight_count.append(0)
+	if _kind_of.size() > count:
+		_kind_of.resize(count)
+		_partner_of.resize(count)
+		_fight_count.resize(count)
+
+
+func _judge(core: Variant) -> void:
+	var n := int(core.node_count())
+	_ensure(n)
+	var taken: Array = []
+	for _i in range(n):
+		taken.append(false)
+	var pairs: Array = []
+	for i in range(n):
+		if not _eligible(core, i):
+			continue
+		for j in range(i + 1, n):
+			if not _eligible(core, j):
+				continue
+			var low := minf(float(core.hostility(i, j)), float(core.hostility(j, i)))
+			var kind := _tier(low)
+			if kind == "" or _cooled(kind, i, j):
+				continue
+			pairs.append({"a": i, "b": j, "kind": kind, "low": low, "rank": _rank(kind)})
+	pairs.sort_custom(
+		func(p: Dictionary, q: Dictionary) -> bool:
+			if int(p["rank"]) != int(q["rank"]):
+				return int(p["rank"]) > int(q["rank"])
+			if float(p["low"]) != float(q["low"]):
+				return float(p["low"]) > float(q["low"])
+			if int(p["a"]) != int(q["a"]):
+				return int(p["a"]) < int(q["a"])
+			return int(p["b"]) < int(q["b"])
+	)
+	for pair in pairs:
+		var a := int(pair["a"])
+		var b := int(pair["b"])
+		if bool(taken[a]) or bool(taken[b]):
+			continue
+		taken[a] = true
+		taken[b] = true
+		_start(core, a, b, str(pair["kind"]))
+
+
+func _eligible(core: Variant, i: int) -> bool:
+	return bool(core.is_present(i)) and not bool(core.is_broken(i))
+
+
+func _tier(low: float) -> String:
+	if low >= _fight_min:
+		return "fight"
+	if low >= _shove_min:
+		return "shove"
+	if low >= _quarrel_min:
+		return "quarrel"
+	return ""
+
+
+func _rank(kind: String) -> int:
+	match kind:
+		"fight":
+			return 3
+		"shove":
+			return 2
+		"quarrel":
+			return 1
+	return 0
+
+
+func _cooled(kind: String, a: int, b: int) -> bool:
+	var until := 0
+	match kind:
+		"quarrel":
+			until = int(_quarrel_until.get(_key(a, b), 0))
+		"shove":
+			until = int(_shove_until.get(_key(a, b), 0))
+	return _break_serial < until
+
+
+func _mediate_blocked(a: int, b: int) -> bool:
+	return _break_serial < int(_mediate_until.get(_key(a, b), 0))
+
+
+func _pair_active(a: int, b: int) -> String:
+	if active_kind(a) != "" and partner_of(a) == b:
+		return active_kind(a)
+	return ""
+
+
+func _start(core: Variant, a: int, b: int, kind: String) -> void:
+	_active.append({"a": a, "b": b, "kind": kind, "remaining": _seconds})
+	_kind_of[a] = kind
+	_kind_of[b] = kind
+	_partner_of[a] = b
+	_partner_of[b] = a
+	core._enter_conflict(a, kind)
+	core._enter_conflict(b, kind)
+	_last_events.append({"kind": kind, "from": a, "to": b, "tick": int(core.global_tick())})
+
+
+func _settle(core: Variant, a: int, b: int, kind: String, mediated: bool) -> void:
+	var kept: Array = []
+	for item in _active:
+		if int(item["a"]) == a and int(item["b"]) == b:
+			continue
+		kept.append(item)
+	_active = kept
+	if a < _kind_of.size():
+		_kind_of[a] = ""
+		_partner_of[a] = -1
+	if b < _kind_of.size():
+		_kind_of[b] = ""
+		_partner_of[b] = -1
+	core._leave_conflict(a)
+	core._leave_conflict(b)
+	var delta := 0.0
+	match kind:
+		"quarrel":
+			delta = _quarrel_mediate if mediated else _quarrel_gain
+			_quarrel_until[_key(a, b)] = _break_serial + _quarrel_cooldown
+		"shove":
+			delta = _shove_mediate if mediated else _shove_gain
+			_shove_until[_key(a, b)] = _break_serial + _shove_cooldown
+		"fight":
+			delta = -_fight_cut
+			_fight_count[a] = int(_fight_count[a]) + 1
+			_fight_count[b] = int(_fight_count[b]) + 1
+			core._note_harm(a, b, "fight")
+	if delta != 0.0:
+		core._add_hostility(a, b, delta)
+		core._add_hostility(b, a, delta)
+
+
+func _key(a: int, b: int) -> String:
+	return "%d:%d" % [mini(a, b), maxi(a, b)]

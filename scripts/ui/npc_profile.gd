@@ -350,6 +350,7 @@ func _refresh_status() -> void:
 			"gain": _number(gain, true)
 		}
 	)
+	%StatusDetails.text += "\n" + words("fight_count", {"count": str(int(snapshot.get("fight_count", 0)))})
 	# 群策群力（主文档 §10.2）：该生可以看到所有其他同学对本人好感 —— 只读展示，不写矩阵。
 	# 放在状态摘要之后、明细之前，档案一打开就能看到，不用滚到底。
 	if bool(snapshot.get("reveals_incoming_affinity", false)):
