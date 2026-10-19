@@ -546,6 +546,9 @@ func _begin_phase() -> void:
 	_teacher.begin_phase(self)
 	_roll_sleep()
 	_begin_phase_state()
+	# 课间冲突在学生选定活动之前判定一次（吵架 / 推搡 / 打架）。
+	if _phase == "break" and not _is_exam_only_day() and _harm_events != null:
+		_harm_events.begin_break(self)
 	_phase_setup_done = true
 
 
@@ -803,9 +806,9 @@ func _tick() -> void:
 	_settle_units()
 	_check_breakdown()
 	_update_environment()
-	# D07：伤害每 10 秒检查一次（课间接触；门槛 / 概率 / 增量读 rules/harm.csv）。
-	if _harm_events != null and _global_tick % int(_harm_events.check_seconds()) == 0:
-		_harm_events.check(self)
+	# 进行中的吵架 / 推搡 / 打架按秒倒数，到点结算；不改压力。
+	if _phase == "break" and _harm_events != null:
+		_harm_events.tick(self)
 	# D05：考试当天只有考试，压力涓流也属「相关结算」，当天不跑。
 	if _global_tick % int(_p["settle_interval"]) == 0 and not _is_exam_only_day():
 		_stress_drip()
@@ -873,6 +876,9 @@ func _settle_units() -> void:
 ## 该生此刻按哪一类结算："" = 不结算｜"study"｜"play"｜"leisure"（状态来自段首判定或中途跨线锁定）。
 func _unit_kind(i: int) -> String:
 	if _broken[i] or _sleeping[i] or not is_present(i):
+		return ""
+	# 冲突发生在选定活动之前，这 20 秒不按学习 / 游戏 / 娱乐结算。
+	if _harm_events != null and _harm_events.active_kind(i) != "":
 		return ""
 	if _phase_state.size() > i and str(_phase_state[i]) == "study":
 		return "study"
@@ -1253,16 +1259,29 @@ func _current_phase_kind() -> String:
 	return _phase
 
 
-## 老师调解的门槛与幅度（D07，供 TeacherCommands 只读）。
-func _mediate_hostility_threshold() -> float:
-	return float(_harm_events.mediate_threshold())
+## 进入一场课间冲突：清掉本段睡觉，占住决策，直到冲突结束。
+func _enter_conflict(i: int, kind: String) -> void:
+	if i < 0 or i >= _n:
+		return
+	_sleeping[i] = false
+	_current_act[i] = kind
+	_busy_act[i] = kind
+	_busy_until[i] = _FOREVER
 
 
-func _mediate_hostility_cut() -> float:
-	return float(_harm_events.mediate_cut())
+## 冲突结束：放开决策。已经开始的学业单位不在这里折算（冲突开始前还没有活动）。
+func _leave_conflict(i: int) -> void:
+	if i < 0 or i >= _n:
+		return
+	if str(_current_act[i]) in ["quarrel", "shove", "fight"]:
+		_current_act[i] = null
+	if str(_busy_act[i]) in ["quarrel", "shove", "fight"]:
+		_busy_act[i] = null
+		_busy_phase[i] = -1
+		_busy_until[i] = 0
 
 
-## 有向敌对增量（D07：恶语 / 推搡让目标对发起者的敌对增加）。
+## 有向敌对增量（吵架 / 推搡 / 打架与调解都是双向各记一次）。
 func _add_hostility(from_i: int, to_i: int, delta: float) -> void:
 	if from_i < 0 or to_i < 0 or from_i >= _n or to_i >= _n or from_i == to_i:
 		return
@@ -1351,7 +1370,7 @@ func _interrupt_activity(i: int) -> void:
 	_busy_until[i] = 0
 
 
-## 伤害登记（霸凌判据：当天受到这些敌对者中至少一人发起的伤害）。
+## 伤害登记。只有打架会把双方记成「曾经打过一次架」。
 func _note_harm(from_i: int, to_i: int, kind: String) -> void:
 	if _risk != null:
 		_risk.register_harm(from_i, to_i, kind)
@@ -3106,6 +3125,7 @@ func teacher_student_snapshot(i: int) -> Dictionary:
 		"grade_max": float(_kp["grade_max"]),
 		"reveals_incoming_affinity": _passives.reveals_incoming_affinity(i),
 		"well_informed_messages": _passives.well_informed_messages(i),
+		"fight_count": _harm_events.fight_count_of(i) if _harm_events != null else 0,
 	}
 	var goal := _teacher_commands.encourage_goal_text(self, i)
 	if goal != "":

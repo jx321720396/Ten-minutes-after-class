@@ -229,7 +229,8 @@ class Sim:
         self.risk_breakdowns = [0] * n            # 每人累计崩溃次数（退学判据）
         self.risk_rejects_today = [0] * n        # 当天主动找伴被拒次数（孤立判据）
         self.risk_activity_today = [False] * n   # 当天是否成功参加过共同活动
-        self.risk_harm_today = [[] for _ in range(n)]  # 当天受到的伤害 {from, kind}
+        self.risk_harm_today = [[] for _ in range(n)]  # 旧当日伤害列表，霸凌已改用 ever_fought
+        self.risk_ever_fought = [False] * n  # 曾经打过一次架（双方都记）
         self.risk_streak = [0] * n
         self.risk_warned = [False] * n
         self.risk_triggered = [False] * n
@@ -238,7 +239,15 @@ class Sim:
         self.dropped = [False] * n
         self.risk_events = []
         self.harm_events = []
-        self.harm_struck_phase = [False] * n  # D07 §10：每人每课间最多主动伤害一次
+        self.harm_struck_phase = [False] * n  # 保留字段，段首冲突不再用「每课间主动一次」
+        self.conflict_active = []
+        self.conflict_kind = [""] * n
+        self.conflict_partner = [-1] * n
+        self.fight_count = [0] * n
+        self.quarrel_until = {}
+        self.shove_until = {}
+        self.mediate_until = {}
+        self.break_serial = 0
         self.phase_stopped = []              # D07 §10：本课间被老师制止的学生
         self.phase_state = ["free"] * n  # 段首状态：study / play / free / broken
         self.settle_acc = [0.0] * n      # 单位结算游标（按秒累计）
@@ -1721,9 +1730,8 @@ class Sim:
         self.settle_units()
         self.check_breakdown()
         self.update_environment()
-        # D07：伤害每 10 秒检查一次（课间接触；门槛 / 概率 / 增量读 rules/harm.csv）。
-        if self.global_tick % int(self.harm["check_seconds"]) == 0:
-            self.check_harm()
+        if self.phase == "break":
+            self.tick_conflicts()
         if self.global_tick % int(self.p["settle_interval"]) == 0 and not self.exam_only_today():
             self.stress_drip()          # 每天 2 次（上午/下午）；D05 考试当天不跑
         # 压力爆发已在每日结算时按概率判定（见 try_burst），此处不再做阈值相变
@@ -1731,6 +1739,8 @@ class Sim:
     def unit_kind(self, i):
         """该生此刻按哪一类结算："" = 不结算｜"study"｜"play"｜"leisure"。"""
         if self.Broken[i] or self.sleeping[i]:
+            return ""
+        if self.conflict_kind[i]:
             return ""
         state = self.phase_state[i]
         if state == "study":
@@ -1971,9 +1981,12 @@ class Sim:
             self.risk_activity_today[i] = True
 
     def note_harm(self, from_i, to_i, kind):
-        """伤害登记（霸凌判据：当天受到这些敌对者中至少一人发起的伤害）。"""
-        if 0 <= to_i < self.N:
-            self.risk_harm_today[to_i].append({"from": from_i, "kind": kind})
+        """只有打架记伤害：双方都算曾经打过一次架。"""
+        if kind != "fight":
+            return
+        for idx in (from_i, to_i):
+            if 0 <= idx < self.N:
+                self.risk_ever_fought[idx] = True
 
     def harm_eligible(self, i):
         """参与伤害的资格（D07）：不得处于学习锁定、办公室或崩溃。"""
@@ -1982,66 +1995,155 @@ class Sim:
         return True
 
     def begin_harm_phase(self):
-        """段首重置「每课间一次」的伤害计数与「被老师制止」名单。"""
+        """段首清掉上一场冲突的进行标记。冷却和打架次数保留。"""
         self.harm_struck_phase = [False] * self.N
         self.phase_stopped = []
+        self.conflict_active = []
+        self.conflict_kind = [""] * self.N
+        self.conflict_partner = [-1] * self.N
 
     def is_stopped_by_teacher(self, i):
-        """D07 §10：本课间被老师制止（现场制止 / 调解 / 召唤）的学生不能再发起伤害。"""
+        """本课间被老师调解或召唤的学生。"""
         return i in self.phase_stopped
 
-    def check_harm(self):
-        """D07：每 10 秒一次的伤害检查（课间接触；只有恶语攻击与推搡）。
+    def _conflict_key(self, a, b):
+        return (min(a, b), max(a, b))
 
-        2026-10-16 定稿：每名符合资格的发起者**只掷一次** —— 先在自己满足条件的目标里
-        等概率随机选一个，再掷 trigger_p；不对每个候选分别掷骰（否则周围人越多命中越高）。
-        """
+    def _conflict_tier(self, low):
+        if low >= self.harm["fight_min"]:
+            return "fight"
+        if low >= self.harm["shove_min"]:
+            return "shove"
+        if low >= self.harm["quarrel_min"]:
+            return "quarrel"
+        return ""
+
+    def conflict_eligible(self, i):
+        return not self.Broken[i] and not self.is_in_office(i)
+
+    def begin_conflicts(self):
+        """课间开始判定一次。档位取双方敌对较低值，每人只进一场。"""
+        if self.phase != "break" or self.exam_only_today():
+            return
         self.harm_events = []
-        if self.phase != "break":
-            return 0
-        n = self.N
-        for i in range(n):
-            if not self.harm_eligible(i):
+        self.break_serial += 1
+        self.begin_harm_phase()
+        rank = {"fight": 3, "shove": 2, "quarrel": 1}
+        pairs = []
+        for i in range(self.N):
+            if not self.conflict_eligible(i):
                 continue
-            # §10：每人每课间最多主动伤害一次；老师制止后本课间不能再发起。
-            if self.harm_struck_phase[i] or self.is_stopped_by_teacher(i):
-                continue
-            candidates = []
-            for j in range(n):
-                if i == j or not self.harm_eligible(j):
+            for j in range(i + 1, self.N):
+                if not self.conflict_eligible(j):
                     continue
-                if not (self.shares_activity(i, j) or self.are_neighbors(i, j)):
+                low = min(self.H[i][j], self.H[j][i])
+                kind = self._conflict_tier(low)
+                if not kind:
                     continue
-                if self.H[i][j] > self.harm["aggression_hostility_threshold"]:
-                    candidates.append(j)
-            if not candidates:
+                key = self._conflict_key(i, j)
+                until = 0
+                if kind == "quarrel":
+                    until = self.quarrel_until.get(key, 0)
+                elif kind == "shove":
+                    until = self.shove_until.get(key, 0)
+                if self.break_serial < until:
+                    continue
+                pairs.append((rank[kind], low, i, j, kind))
+        pairs.sort(key=lambda item: (-item[0], -item[1], item[2], item[3]))
+        taken = [False] * self.N
+        for _rank, _low, i, j, kind in pairs:
+            if taken[i] or taken[j]:
                 continue
-            pick = int(self.next_unit_random() * len(candidates))
-            if pick >= len(candidates):
-                pick = len(candidates) - 1
-            target = candidates[pick]
-            if self.next_unit_random() >= self.harm["trigger_p"]:
-                continue
-            kind = "aggression"
-            if self.H[i][target] > self.harm["shove_hostility_threshold"]:
-                if self.next_unit_random() < self.harm["shove_choice_p"]:
-                    kind = "shove"
-            self.apply_harm(i, target, kind)
-            self.harm_struck_phase[i] = True
-        return len(self.harm_events)
+            taken[i] = True
+            taken[j] = True
+            self._start_conflict(i, j, kind)
 
-    def apply_harm(self, from_i, to_i, kind):
-        if kind == "shove":
-            self.add_stress(to_i, self.harm["shove_target_stress"])
-            self.add_hostility(to_i, from_i, self.harm["shove_hostility_gain"])
-            self.interrupt_activity(to_i)
-        else:
-            self.add_stress(to_i, self.harm["aggression_target_stress"])
-            self.add_hostility(to_i, from_i, self.harm["aggression_hostility_gain"])
-        self.harm_events.append(
-            {"kind": kind, "from": from_i, "to": to_i, "tick": int(self.global_tick)}
+    def _start_conflict(self, a, b, kind):
+        self.conflict_active.append(
+            {"a": a, "b": b, "kind": kind, "remaining": int(self.harm["conflict_seconds"])}
         )
-        self.note_harm(from_i, to_i, kind)
+        self.conflict_kind[a] = kind
+        self.conflict_kind[b] = kind
+        self.conflict_partner[a] = b
+        self.conflict_partner[b] = a
+        self._enter_conflict(a, kind)
+        self._enter_conflict(b, kind)
+        self.harm_events.append({"kind": kind, "from": a, "to": b, "tick": int(self.global_tick)})
+
+    def _enter_conflict(self, i, kind):
+        self.sleeping[i] = False
+        self.current_act[i] = kind
+        self.busy_act[i] = kind
+        self.busy_until[i] = 10 ** 9
+
+    def _leave_conflict(self, i):
+        if self.current_act[i] in ("quarrel", "shove", "fight"):
+            self.current_act[i] = None
+        if self.busy_act[i] in ("quarrel", "shove", "fight"):
+            self.busy_act[i] = None
+            self.busy_until[i] = 0
+
+    def tick_conflicts(self):
+        if self.phase != "break" or not self.conflict_active:
+            return
+        done = []
+        for item in self.conflict_active:
+            item["remaining"] -= 1
+            if item["remaining"] <= 0:
+                done.append(item)
+        for item in done:
+            self._settle_conflict(item["a"], item["b"], item["kind"], False)
+
+    def _settle_conflict(self, a, b, kind, mediated):
+        self.conflict_active = [
+            item for item in self.conflict_active if not (item["a"] == a and item["b"] == b)
+        ]
+        self.conflict_kind[a] = ""
+        self.conflict_kind[b] = ""
+        self.conflict_partner[a] = -1
+        self.conflict_partner[b] = -1
+        self._leave_conflict(a)
+        self._leave_conflict(b)
+        key = self._conflict_key(a, b)
+        if kind == "quarrel":
+            delta = self.harm["quarrel_mediate_gain"] if mediated else self.harm["quarrel_hostility_gain"]
+            self.quarrel_until[key] = self.break_serial + int(self.harm["quarrel_cooldown_breaks"])
+        elif kind == "shove":
+            delta = self.harm["shove_mediate_gain"] if mediated else self.harm["shove_hostility_gain"]
+            self.shove_until[key] = self.break_serial + int(self.harm["shove_cooldown_breaks"])
+        else:
+            delta = -self.harm["fight_hostility_cut"]
+            self.fight_count[a] += 1
+            self.fight_count[b] += 1
+            self.note_harm(a, b, "fight")
+        self.add_hostility(a, b, delta)
+        self.add_hostility(b, a, delta)
+
+    def mediate_conflict(self, a, b):
+        """返回 stopped / queued / fight / cooldown / invalid。"""
+        if a < 0 or b < 0 or a == b or a >= self.N or b >= self.N:
+            return "invalid"
+        key = self._conflict_key(a, b)
+        if self.break_serial < self.mediate_until.get(key, 0):
+            return "cooldown"
+        kind = ""
+        if self.conflict_partner[a] == b:
+            kind = self.conflict_kind[a]
+        if kind == "fight":
+            return "fight"
+        if kind in ("quarrel", "shove"):
+            self._settle_conflict(a, b, kind, True)
+            return "stopped"
+        return "queued"
+
+    def finish_mediate(self, a, b, apply_cut):
+        if apply_cut:
+            cut = self.harm["mediate_hostility_cut"]
+            self.add_hostility(a, b, -cut)
+            self.add_hostility(b, a, -cut)
+        self.mediate_until[self._conflict_key(a, b)] = (
+            self.break_serial + int(self.harm["mediate_cooldown_breaks"])
+        )
 
     def settle_risk(self, day):
         """D06：当天末判定霸凌 / 孤立（预警、正式触发）与退学（在关系衰减之前调用）。"""
@@ -2091,8 +2193,7 @@ class Sim:
                    if j != i and self.H[j][i] > cfg["bully_hostility_threshold"]]
         if len(enemies) < int(cfg["bully_min_enemies"]):
             return False
-        harmed = sum(1 for e in self.risk_harm_today[i] if e["from"] in enemies)
-        return harmed >= int(cfg["bully_daily_harm_min"])
+        return bool(self.risk_ever_fought[i])
 
     def is_isolated(self, i):
         cfg = self.risk_cfg
@@ -2106,7 +2207,7 @@ class Sim:
         return self.risk_rejects_today[i] >= int(cfg["isolate_daily_rejects"])
 
     def mediate_hostility_threshold(self):
-        return self.harm["mediate_hostility_threshold"]
+        return 0.0
 
     def mediate_hostility_cut(self):
         return self.harm["mediate_hostility_cut"]
@@ -2387,10 +2488,11 @@ class Sim:
         """
         self.phase = self.day_phases[self.phase_index][0]
         self.tick_in_phase = 0
-        self.begin_harm_phase()          # D07 §10：每课间重置「主动伤害一次」的计数
         self.teacher.begin_phase(self)
         self.roll_sleep()                 # 本段开始掷一次睡觉（段粒度，非 tick）
         self.begin_phase_state()          # D01 段首状态：学习 / 游戏 / 自由
+        if self.phase == "break" and not self.exam_only_today():
+            self.begin_conflicts()
 
     def skip_class(self):
         """上课段硬跳过（2026-10-17 裁定）：不逐 tick 模拟，只做「固定学业收益 + 崩溃判定」。

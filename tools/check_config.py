@@ -474,17 +474,23 @@ check("P0-3：持书配额可抽足（book_count 单值）",
       "book_count=%s，持书者 %d" % (_quota, _available))
 _seat_rel = params("rules/seat_relations.csv")
 _harm_cfg = params("rules/harm.csv")
-check("D07：恶语门槛 40 / 推搡门槛 70（且推搡更高）",
-      _harm_cfg.get("aggression_hostility_threshold", -1) == 40
-      and _harm_cfg.get("shove_hostility_threshold", -1) == 70)
-check("D07：伤害检查间隔为 10 秒", _harm_cfg.get("check_seconds", -1) == 10)
-check("D07：触发概率与推搡选择概率在 (0,1]",
-      0 < _harm_cfg.get("trigger_p", 0) <= 1
-      and 0 < _harm_cfg.get("shove_choice_p", 0) <= 1)
-check("D07：友善交流 −2 / 调解门槛 50 / 调解 −5",
-      _harm_cfg.get("friendly_chat_hostility_cut", -1) == 2
-      and _harm_cfg.get("mediate_hostility_threshold", -1) == 50
-      and _harm_cfg.get("mediate_hostility_cut", -1) == 5)
+check("D07：冲突档位 40 / 60 / 90",
+      _harm_cfg.get("quarrel_min", -1) == 40
+      and _harm_cfg.get("shove_min", -1) == 60
+      and _harm_cfg.get("fight_min", -1) == 90)
+check("D07：冲突持续 20 秒，吵架冷却 4 课间、调解冷却 3 课间",
+      _harm_cfg.get("conflict_seconds", -1) == 20
+      and _harm_cfg.get("quarrel_cooldown_breaks", -1) == 4
+      and _harm_cfg.get("shove_cooldown_breaks", -1) == 4
+      and _harm_cfg.get("mediate_cooldown_breaks", -1) == 3)
+check("D07：吵架 +10/+5、推搡 +15/+10、打架 −40、调解 −10",
+      _harm_cfg.get("quarrel_hostility_gain", -1) == 10
+      and _harm_cfg.get("quarrel_mediate_gain", -1) == 5
+      and _harm_cfg.get("shove_hostility_gain", -1) == 15
+      and _harm_cfg.get("shove_mediate_gain", -1) == 10
+      and _harm_cfg.get("fight_hostility_cut", -1) == 40
+      and _harm_cfg.get("mediate_hostility_cut", -1) == 10
+      and _harm_cfg.get("friendly_chat_hostility_cut", -1) == 2)
 _risk_cfg = params("rules/risk.csv")
 check("D06：霸凌敌对门槛 >50、至少 3 名敌对者",
       _risk_cfg.get("bully_hostility_threshold", -1) == 50

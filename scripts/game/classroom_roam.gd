@@ -170,6 +170,7 @@ func _process(delta: float) -> void:
 		_sync_positions_to_core()
 		return
 	_sync_positions_to_core()
+	_send_conflicts()
 	if _group_distance > 0.0:
 		_group_spacing.update(_core, _actors, _walkers, self, _group_distance, _minimum_gap)
 	if _decides_remaining <= 0 or decide_interval <= 0.0:
@@ -444,6 +445,49 @@ func force_decide() -> void:
 		_decides_remaining = _max_decides_per_break
 	_decide_timer = 0.0
 	_decide_batch()
+
+
+var _was_in_conflict: Array = []
+var _conflict_goal: Dictionary = {}
+
+
+## 吵架 / 推搡 / 打架的两人走到左侧柜子旁的空地；结束后走回自己的座位。
+func _send_conflicts() -> void:
+	if _core == null or _core._harm_events == null:
+		return
+	var harm: HarmEvents = _core._harm_events
+	var spot := harm.spot()
+	var gap := harm.spot_gap()
+	while _was_in_conflict.size() < _actor_count:
+		_was_in_conflict.append(false)
+	for i in range(_actor_count):
+		var kind := harm.active_kind(i)
+		if kind == "":
+			_conflict_goal.erase(i)
+			if bool(_was_in_conflict[i]):
+				_was_in_conflict[i] = false
+				var seat_id := str(_core.seat_of(i))
+				if _point_positions.has(seat_id):
+					_release_point(i)
+					_send_to_point(i, _point_positions[seat_id])
+			continue
+		_was_in_conflict[i] = true
+		var partner := harm.partner_of(i)
+		var side := -1.0 if i < partner else 1.0
+		var target := Vector3(spot.x, 0.0, spot.y + side * gap * 0.5)
+		var actor: Node3D = _actors[i]
+		if actor == null:
+			continue
+		# 导航会把落点吸到可行走面上，0.45 米内视为已经站到红圈空地。
+		if actor.global_position.distance_to(target) <= 0.45:
+			continue
+		var walker: ActorWalker = _walkers[i]
+		var goal: Vector3 = _conflict_goal.get(i, Vector3(INF, INF, INF))
+		if walker != null and walker.is_moving() and goal.distance_to(target) <= 0.05:
+			continue
+		_conflict_goal[i] = target
+		_release_point(i)
+		_send_to_point(i, target)
 
 
 ## 课间一批离座决策（2026-10-19 用户裁定）：只有自由状态（动力 30–60）的学生走动，

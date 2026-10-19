@@ -6,7 +6,7 @@ window_days,2,连续天数窗口：第 1 天预警、连续第 2 天正式触发
 earliest_day,2,最早在「两个完整上学日」结束后才正式判定（此前只记录不判定）
 bully_hostility_threshold,50,霸凌：敌对门槛 >50（恰好 50 不算；沿用旧值，不随伤害门槛调整）
 bully_min_enemies,3,霸凌：至少这么多名其他学生对目标敌对 >50
-bully_daily_harm_min,1,霸凌：当天受到这些人中至少一人发起的伤害次数
+bully_daily_harm_min,1,已不参与判定：霸凌伤害证据改为「曾经打过一次架」，本键保留以免旧读档缺列
 isolate_affinity_threshold,20,孤立：其他所有学生对目标好感 <20
 isolate_daily_rejects,2,孤立：当天主动找伴被拒至少这么多次（忙碌、满员不算关系拒绝）
 isolate_require_no_activity,1,孤立：当天必须没有成功参加共同活动

@@ -15,7 +15,7 @@ func _stack() -> Array:
 func _bully(core: SimCore, target: int) -> void:
 	for source in range(3):
 		core._h[source * core.node_count() + target] = 60.0
-	core._note_harm(0, target, "aggression")
+	core._note_harm(0, target, "fight")
 
 
 func test_warning_uses_settled_evidence_and_clears_when_streak_resets() -> void:
@@ -28,6 +28,8 @@ func test_warning_uses_settled_evidence_and_clears_when_streak_resets() -> void:
 	if warnings.get("bully", []).size() == 1:
 		assert_eq(warnings.bully[0].streak, 1)
 		assert_false(warnings.bully[0].formal)
+	for source in range(3):
+		core._h[source * core.node_count() + 5] = 0.0
 	core._risk.settle_day(core, 2)
 	assert_true(core._risk.warned_of(5), "历史预警仍保留")
 	assert_eq(parts[1].snapshot().get("risk_attention", {}).get("bully", []).size(), 0)
@@ -105,6 +107,8 @@ func test_exam_keeps_warning_and_formal_risk_remains_after_no_harm_day() -> void
 	core._day = 9
 	_bully(core, 5)
 	core._risk.settle_day(core, 9)
+	for source in range(3):
+		core._h[source * core.node_count() + 5] = 0.0
 	core._risk.settle_day(core, 10)
 	entries = parts[1].snapshot().get("risk_attention", {}).get("bully", [])
 	assert_eq(entries.size(), 1)

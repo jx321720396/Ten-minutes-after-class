@@ -345,8 +345,9 @@ func cancel_office_chat() -> bool:
 	return true
 
 
-## 老师调解（D07）：任一方向敌对 >50 才执行（否则调用方不应扣耗时）；
-## 完成后双方敌对各 −5，不抹去风险历史、不自动修复无冲突的敌对。
+## 老师调解：进行中的吵架 / 推搡立刻终止（敌对只加中断幅度）；
+## 没有可终止的冲突时，命令结束后双方敌对各 −10。
+## 打架不能终止。自本次调解结束的课间起，三个课间不能再调解这对人。
 func mediate(core: Variant, a: int, b: int) -> bool:
 	if _exam_blocked(core):
 		return false
@@ -354,12 +355,14 @@ func mediate(core: Variant, a: int, b: int) -> bool:
 		return false
 	if a < 0 or b < 0 or a == b or a >= int(core.node_count()) or b >= int(core.node_count()):
 		return false
-	var threshold := float(core._mediate_hostility_threshold())
-	if float(core.hostility(a, b)) <= threshold and float(core.hostility(b, a)) <= threshold:
-		return false  # 两方向都不超过门槛：不执行、不扣耗时
+	var outcome := "queued"
+	if core._harm_events != null:
+		outcome = str(core._harm_events.mediate(core, a, b))
+	if outcome in ["invalid", "cooldown", "fight"]:
+		return false
 	_command = "mediate"
 	_remaining = int(_timing["mediate_seconds"])
-	_mediate_pair = {"a": a, "b": b}
+	_mediate_pair = {"a": a, "b": b, "apply_cut": outcome == "queued"}
 	return true
 
 
@@ -424,12 +427,12 @@ func _finish(core: Variant) -> void:
 			_seat_change = {}
 		"mediate":
 			if not _mediate_pair.is_empty():
-				var cut := float(core._mediate_hostility_cut())
-				core._add_hostility(int(_mediate_pair["a"]), int(_mediate_pair["b"]), -cut)
-				core._add_hostility(int(_mediate_pair["b"]), int(_mediate_pair["a"]), -cut)
-				# D07 §10：调解完成后，涉及的双方本课间都不能再主动伤害。
-				core._note_stopped(int(_mediate_pair["a"]))
-				core._note_stopped(int(_mediate_pair["b"]))
+				var a := int(_mediate_pair["a"])
+				var b := int(_mediate_pair["b"])
+				if core._harm_events != null:
+					core._harm_events.finish_mediate(core, a, b, bool(_mediate_pair.get("apply_cut", true)))
+				core._note_stopped(a)
+				core._note_stopped(b)
 			_mediate_pair = {}
 		"office_chat":
 			# 训斥走一般联动（压力与动力同加）；安抚按一般联动减压；表扬只加动力。

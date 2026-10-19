@@ -1,17 +1,24 @@
-# 伤害事件与关系修复（《老师版规则合并稿》D07 / 主文档第十章）
-# 伤害只有「恶语攻击」与「推搡」两类：课间接触、发起者对目标敌对超过门槛、双方都不得处于
-# 学习锁定 / 办公室 / 崩溃；每 10 秒检查一次，每名发起者先等概率随机选一个合格目标、再掷一次概率。
-# 2026-10-16 定稿：不对每个候选目标分别掷骰（否则周围人越多命中越高）。
+# 课间冲突（2026-10-18）
+# 课间开始、学生选定活动之前判定一次。取双方敌对的较低值：
+#   ≥90 打架，≥60 推搡，≥40 吵架，低于 40 不发生。同一对人只进一档，先打架再推搡再吵架。
+# 每人每课间最多一场。在教室且未崩溃才参加；办公室与崩溃不参加。
+# 吵架、推搡不是伤害，也不改压力。只有打架是伤害，并写入「曾经打过一次架」。
+# 吵架 / 推搡可持续 20 秒，调解能立刻终止；打架不能调解终止。
 param,value,note
-check_seconds,10,伤害检查间隔（秒）
-trigger_p,0.05,每名发起者每 10 秒掷一次的触发概率（命中则对该课间随机选中的合格目标动手）
-shove_choice_p,0.5,敌对 >70 时选择推搡的概率（其余选恶语）；40 < 敌对 ≤ 70 只能恶语攻击
-aggression_hostility_threshold,40,恶语攻击：发起者对目标敌对 >40（恰好 40 不满足）
-shove_hostility_threshold,70,推搡：发起者对目标敌对 >70（恰好 70 不满足）
-aggression_target_stress,5,恶语攻击：目标压力增量
-aggression_hostility_gain,3,恶语攻击：目标对发起者敌对增量
-shove_target_stress,10,推搡：目标压力增量（大于恶语）
-shove_hostility_gain,5,推搡：目标对发起者敌对增量
+quarrel_min,40,吵架：双方敌对较低值 ≥40
+shove_min,60,推搡：双方敌对较低值 ≥60
+fight_min,90,打架：双方敌对较低值 ≥90
+conflict_seconds,20,吵架 / 推搡 / 打架持续秒数
+quarrel_hostility_gain,10,吵架自然结束：双方敌对各 +10
+quarrel_mediate_gain,5,调解终止吵架：双方敌对各 +5
+shove_hostility_gain,15,推搡自然结束：双方敌对各 +15
+shove_mediate_gain,10,调解终止推搡：双方敌对各 +10
+fight_hostility_cut,40,打架结束：双方敌对各 −40
+quarrel_cooldown_breaks,4,吵架当课间起，四个课间内不能再吵架
+shove_cooldown_breaks,4,推搡当课间起，四个课间内不能再推搡
+mediate_hostility_cut,10,没有进行中的吵架 / 推搡时，调解完成后双方敌对各 −10
+mediate_cooldown_breaks,3,调解结束的课间起，三个课间内不能再调解这对人
 friendly_chat_hostility_cut,2,友善交流：正常接纳并实际完成聊天时，对子双方敌对各 −2
-mediate_hostility_threshold,50,老师调解：任一方向敌对 >50 才执行，否则不扣耗时
-mediate_hostility_cut,5,老师调解完成后双方敌对各 −5
+conflict_spot_x,-2.05,冲突站位 X（教室左侧柜子旁空地，对齐 StandPoints/SIDE_LEFT）
+conflict_spot_z,0,冲突站位 Z
+conflict_pair_gap,0.8,两人面对面时的中心间距（米），不小于 student_min_gap
