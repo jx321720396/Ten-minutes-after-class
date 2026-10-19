@@ -118,6 +118,7 @@ func _reveal(index: int) -> void:
 	tween.tween_property(panel, "modulate:a", 1.0, float(_cfg.animation_seconds))
 	tween.tween_property(panel, "position:x", 0.0, float(_cfg.animation_seconds))
 	_tweens.append(tween)
+	SFX.play_one_shot("BookFlip")
 
 
 func _close() -> void:

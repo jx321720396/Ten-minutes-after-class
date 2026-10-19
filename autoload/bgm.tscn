@@ -2,9 +2,22 @@
 
 [ext_resource type="AudioStream" uid="uid://bbfjrufvn4v1x" path="res://music/bgm_classroom.ogg" id="1_lif0m"]
 [ext_resource type="Script" uid="uid://d3gl5b1aj71vc" path="res://autoload/bgm.gd" id="1_script"]
+[ext_resource type="AudioStream" uid="uid://cp4720dqb0uas" path="res://music/bgm_lofi_classroom.mp3" id="2_lofi"]
+[ext_resource type="AudioStream" uid="uid://g1osh8r7u3p7" path="res://music/urgent.ogg" id="3_urgent"]
 
 [node name="BGM" type="AudioStreamPlayer" unique_id=1553037142]
+process_mode = 3
 stream = ExtResource("1_lif0m")
 volume_db = 5.396
 bus = &"Music"
 script = ExtResource("1_script")
+
+[node name="BgmLofi" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_lofi")
+volume_db = 5.396
+bus = &"Music"
+
+[node name="BgmUrgent" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("3_urgent")
+volume_db = 5.396
+bus = &"Music"

@@ -70,6 +70,8 @@ func _ready() -> void:
 	# bind_core 不会补发 phase_changed，所以连上后先按当前快照复查一次。
 	clock.phase_changed.connect(SFX.on_phase_changed)
 	SFX.on_phase_changed(clock.snapshot())
+	# 学期最终结算（第 30 天结束 / 被辞退）放学声收尾；正常结束与 day_settled 同帧，SFX 内已去重。
+	clock.term_finished.connect(SFX.on_term_finished)
 	_term_report = TERM_REPORT_SCENE.instantiate()
 	add_child(_term_report)
 	_term_report.bind_sources(core, clock, actors, false)

@@ -3,4 +3,8 @@
 key,value,note
 bgm_default_volume,0.8,首次启动（user://settings.cfg 无持久化值）时的 BGM 音量（线性 0–1）
 sfx_default_volume,1.0,首次启动时的音效音量（线性 0–1）
-footstep_distance_m,0.55,玩家每行走多少米触发一次脚步声（<=0 关闭脚步声）
+footstep_distance_m,0.55,人物每行走多少米触发一次脚步声（<=0 关闭脚步声）
+footstep_min_gap_s,0.2,全局脚步声最小重播间隔（秒）；<=0 关闭节流（多人同走会叠音）
+bgm_lofi_pressure,50.0,班级平均压力达到该值时 BGM 切到 bgm_lofi_classroom.mp3（对应教室灯色 #f4ddd2 锚点）
+bgm_urgent_pressure,100.0,班级平均压力达到该值时 BGM 切到 urgent.ogg（对应教室灯色 #edafa1 锚点）
+bgm_fade_seconds,3.0,BGM 换轨交叉淡入淡出秒数；同时作为压力平滑时间常数（与灯光 transition_seconds 同值保持声画同步）
