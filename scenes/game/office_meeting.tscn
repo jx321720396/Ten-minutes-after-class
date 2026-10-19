@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/game/office_meeting.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/game/office_student_scroll.gd" id="2"]
 
 [node name="Meeting" type="Control"]
 mouse_filter = 2
@@ -46,6 +47,7 @@ visible = false
 [node name="Scroll" type="ScrollContainer" parent="Panel/Rows"]
 layout_mode = 2
 size_flags_vertical = 3
+script = ExtResource("2")
 
 [node name="Actions" type="VBoxContainer" parent="Panel/Rows/Scroll"]
 layout_mode = 2

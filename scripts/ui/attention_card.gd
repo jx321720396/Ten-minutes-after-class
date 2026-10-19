@@ -5,6 +5,7 @@ signal student_requested(index: int)
 
 const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
 const GameFonts := preload("res://scripts/ui/game_fonts.gd")
+const TOUCH_SCROLL := preload("res://scripts/ui/touch_scroll_container.gd")
 
 var _cfg: Dictionary = JSON.parse_string(
 	FileAccess.get_file_as_string("res://data/ui/attention_card.json")
@@ -358,6 +359,7 @@ func _build_details() -> void:
 	rows.add_child(_detail_heading)
 	var scroll := ScrollContainer.new()
 	scroll.name = "RiskScroll"
+	scroll.set_script(TOUCH_SCROLL)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	rows.add_child(scroll)

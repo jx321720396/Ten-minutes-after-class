@@ -157,7 +157,7 @@ static func main_menu(view: Control) -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var logo := TextureRect.new()
 	logo.name = "CampusLogo"
-	logo.texture = load("res://assets/logos/xiake-ten-minutes-logo-transparent-v1.webp")
+	logo.texture = load("res://assets/logos/xiake-ten-minutes-logo-transparent-v2.webp")
 	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	logo.position = Vector2(cfg.logo_x, cfg.logo_y)

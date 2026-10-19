@@ -3,6 +3,7 @@ extends CanvasLayer
 ## 期末纸面报告。只读归档；回放使用展示副本，永不推进内核。
 
 const CampusTheme := preload("res://scripts/ui/campus_theme.gd")
+const TOUCH_SCROLL := preload("res://scripts/ui/touch_scroll_container.gd")
 const METER := preload("res://scripts/ui/emotion_meter.gd")
 const REPLAY := preload("res://scripts/game/term_replay.gd")
 const ARCHIVE := preload("res://scripts/game/term_archive.gd")
@@ -177,6 +178,7 @@ func _build_ui() -> void:
 	_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_build_relations()
 	_stats = ScrollContainer.new()
+	_stats.set_script(TOUCH_SCROLL)
 	_stats.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_content.add_child(_stats)
 	_stats_rows = _column(_stats)
@@ -240,6 +242,7 @@ func _build_relations() -> void:
 	_detail = _column(_relations)
 	_detail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_matrix = ScrollContainer.new()
+	_matrix.set_script(TOUCH_SCROLL)
 	_matrix.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_relations.add_child(_matrix)
 	_grid = GridContainer.new()

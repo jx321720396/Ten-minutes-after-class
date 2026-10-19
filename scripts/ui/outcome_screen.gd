@@ -7,6 +7,7 @@ const MODEL := preload("res://scripts/game/outcome_snapshot.gd")
 const FONTS := preload("res://scripts/ui/game_fonts.gd")
 const ARCHIVE := preload("res://scripts/game/term_archive.gd")
 const LAYOUT := preload("res://scripts/ui/outcome_layout.gd")
+const TOUCH_SCROLL := preload("res://scripts/ui/touch_scroll_container.gd")
 const SETTINGS := "res://data/ui/outcome_screen.json"
 const HOLD := &"outcome_screen"
 
@@ -185,6 +186,7 @@ func _open_details(title: String) -> VBoxContainer:
 	_rect(column, _cfg.detail_rect)
 	_text(column, title, int(_cfg.stat_font))
 	var scroll := ScrollContainer.new()
+	scroll.set_script(TOUCH_SCROLL)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(scroll)
