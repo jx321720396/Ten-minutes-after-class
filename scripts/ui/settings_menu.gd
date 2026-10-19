@@ -1,8 +1,6 @@
 extends Control
 
 signal closed
-## 「重看教程」被点击：教室里直接重放；主菜单里记标记下局生效。
-signal replay_requested
 
 const CONFIRM := preload("res://scenes/ui/confirm_dialog.tscn")
 const FONTS := preload("res://scripts/ui/game_fonts.gd")
@@ -14,7 +12,6 @@ const VOICE_WARN_MSG := "声量会改变训斥、安抚、表扬、鼓励的效�
 const VOICE_WARN_OK := "仍然开启"
 
 @onready var back_btn: Button = $Overlay/CenterContainer/Panel/VBox/BackBtn
-@onready var replay_btn: Button = $Overlay/CenterContainer/Panel/VBox/ReplayBtn
 @onready var bgm_slider: HSlider = $Overlay/CenterContainer/Panel/VBox/BGMRow/BGMSlider
 @onready var sfx_slider: HSlider = $Overlay/CenterContainer/Panel/VBox/SFXRow/SFXSlider
 
@@ -33,7 +30,6 @@ func _ready():
 	get_viewport().size_changed.connect(_fit_fullscreen)
 	_fit_fullscreen()
 	back_btn.pressed.connect(_on_back)
-	replay_btn.pressed.connect(_on_replay)
 	bgm_slider.value = BGM.get_bgm_volume() * 100.0
 	bgm_slider.value_changed.connect(_on_bgm_volume_changed)
 	sfx_slider.value = SFX.get_sfx_volume() * 100.0
@@ -48,11 +44,6 @@ func _fit_fullscreen() -> void:
 	preload("res://scripts/ui/fullscreen_panel.gd").fit(
 		$Overlay/CenterContainer, $Overlay/CenterContainer/Panel, Vector2(1280, 720)
 	)
-
-
-func _on_replay():
-	replay_requested.emit()
-	emit_signal("closed")
 
 
 func _on_bgm_volume_changed(value: float) -> void:
@@ -74,7 +65,7 @@ func _build_voice_settings() -> void:
 	(vbox.get_node("Spacer1") as Control).custom_minimum_size.y = 20.0
 	(vbox.get_node("Spacer2") as Control).custom_minimum_size.y = 12.0
 	(vbox.get_node("Spacer3") as Control).custom_minimum_size.y = 20.0
-	var replay: Button = replay_btn
+	var replay: Button = back_btn  # 「重看教程」按钮已移除，以「返回」按钮作样式参照与插入锚点
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(0, 12)
 	vbox.add_child(spacer)

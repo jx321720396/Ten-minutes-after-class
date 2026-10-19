@@ -61,8 +61,6 @@ func bind_classroom(room: Node) -> void:
 	_voice.mic_failed.connect(_on_voice_mic_failed)
 	for path in ["UI/EncyclopediaEntry", "UI/NpcProfile", "UI/PauseMenu"]:
 		_bind_tool_touch(room.get_node(path))
-	var replay: Button = room.get_node("UI/PauseMenu").settings_panel.replay_btn
-	replay.disabled = true
 	# PauseMenu 属于 UI 层；复用既有层级确保暂停菜单高于办公室。
 	room.get_node("UI").layer = 4
 	_teacher = TEACHER_UI.instantiate()
@@ -77,7 +75,6 @@ func bind_classroom(room: Node) -> void:
 	profile.summon_requested.connect(_on_profile_summon)
 	_bind_tool_touch(_teacher)
 	_return = _teacher.get_node("%ReturnOffice")
-	replay.tooltip_text = _teacher.config.copy.disabled_tutorial
 	_build_picker()
 	_interlude = preload("res://scripts/ui/teacher_interlude.gd").new()
 	var modal_layer := CanvasLayer.new()

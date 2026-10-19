@@ -1,6 +1,11 @@
 {
   "version": 2,
   "seed": 20261019,
+  "scenario": {
+    "stress_0": 80.0,
+    "affinity_01": 60.0,
+    "hostility_01": 60.0
+  },
   "note": "老师版第 0 天报到日教程（docs/design/新手教程-报到日-2026-10-19.md）。steps 用 done_event 推进；info_card 指向 info_cards 里的说明卡；timeout_seconds=0 表示不设超时；anchor 为空或锚点未接线时静默不高亮。",
   "labels": {
     "next": "开始报到",

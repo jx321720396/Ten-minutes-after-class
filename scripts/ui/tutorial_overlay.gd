@@ -93,18 +93,30 @@ static func tutorial_seed() -> int:
 	return 20261019
 
 
+## 报到日教学情境初始态（数值集中在 tutorial.json 的 scenario）：0 号学生高压、
+## 0↔1 互相敌对。教程局结束后整体丢弃，不进正式局。
+static func tutorial_scenario() -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(CFG_PATH))
+	if parsed is Dictionary:
+		var sc: Variant = parsed.get("scenario", {})
+		if sc is Dictionary:
+			return sc
+	return {}
+
+
 func is_running() -> bool:
 	return _running
 
 
-func start_first_run() -> void:
+func start_first_run() -> bool:
 	if _cfg.is_empty():
-		return
+		return false
 	_running = true
 	visible = true
 	_skip_btn.visible = true
 	_card_index = 0
 	_show_card(0)
+	return true
 
 
 func skip() -> void:
@@ -123,15 +135,6 @@ func notify_event(event: StringName) -> void:
 	var step := _current_step()
 	if str(step.get("done_event", "")) == str(event):
 		_advance()
-
-
-## 兼容旧教室接线：老师版新教程不使用行为栏 arm / commit 事件。
-func notify_armed(_kind: StringName) -> void:
-	pass
-
-
-func notify_committed(_kind: StringName) -> void:
-	pass
 
 
 # ------------------------------------------------------------------ 每帧推进

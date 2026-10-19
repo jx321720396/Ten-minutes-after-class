@@ -43,7 +43,6 @@ func _ready():
 	settings_panel = SCENE_SETTINGS.instantiate()
 	settings_panel.visible = false
 	settings_panel.closed.connect(_on_close_settings)
-	settings_panel.replay_requested.connect(_on_replay_tutorial)
 	add_child(settings_panel)
 
 	about_panel = SCENE_ABOUT.instantiate()
@@ -103,9 +102,8 @@ func _start_new_game() -> void:
 	_starting_new_game = true
 	_show_opening()
 	# §4.1 契约：先建本局唯一的内核实例，再切课间空间——教室只读 GameState.sim_core。
-	# 第 0 天报到日：未看过教程或设置里点了「重看」→ 固定教程种子；否则随机开局。
-	var wants_tutorial := GameState.replay_tutorial or not TutorialOverlay.is_seen()
-	GameState.replay_tutorial = false
+	# 第 0 天报到日：未看过教程 → 固定教程种子；否则随机开局。
+	var wants_tutorial := not TutorialOverlay.is_seen()
 	if wants_tutorial:
 		GameState.start_game(TutorialOverlay.tutorial_seed(), _npc_count())
 		GameState.tutorial_mode = true
@@ -212,11 +210,6 @@ func _on_quit():
 
 func _on_close_settings():
 	settings_panel.visible = false
-
-
-## 主菜单里没有教室可放教程：记一个标记，下一次新游戏进教室时重放。
-func _on_replay_tutorial():
-	GameState.replay_tutorial = true
 
 
 func _on_close_about():

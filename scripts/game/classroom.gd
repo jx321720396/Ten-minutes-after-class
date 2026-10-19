@@ -30,10 +30,6 @@ const TERM_REPORT_SCENE := preload("res://scenes/ui/term_report.tscn")
 
 var _term_report: CanvasLayer
 var _outcome_screen: CanvasLayer
-## 开场漫画实例：教程模式下等它播完再启动报到日步骤。
-var _opening_comic: Node = null
-## 教程步进用：最近一次被选中的行为栏 kind（提交时连同状态一起转发给教程）
-var _tutorial_armed: StringName = &""
 
 
 func _ready() -> void:
@@ -112,11 +108,6 @@ func _bind_opening_comic() -> void:
 	var comic := preload("res://scripts/ui/opening_comic.gd").new()
 	comic.name = "OpeningComic"
 	add_child(comic)
-	_opening_comic = comic
-	var settings: Control = pause_menu.settings_panel
-	settings.replay_btn.disabled = false
-	settings.replay_btn.tooltip_text = ""
-	settings.replay_requested.connect(func(): comic.start(clock))
 	if GameState.tutorial_pending:
 		GameState.tutorial_pending = false
 		if GameState.tutorial_mode:
@@ -161,19 +152,20 @@ func _start_tutorial() -> void:
 	if not tutorial.tutorial_finished.is_connected(_on_tutorial_finished):
 		tutorial.tutorial_finished.connect(_on_tutorial_finished, CONNECT_ONE_SHOT)
 	clock.hold(&"tutorial")
-	tutorial.start_first_run()
+	if not tutorial.start_first_run():
+		_on_tutorial_finished()
 
 
 ## 教学情境只设初始状态，不指定学生之后做什么（不违反不脚本化原则）。
-## 直接写内核平铺数组：教程局独立、结束后整体丢弃，不进入正式局。
+## 数值在 data/ui/tutorial.json 的 scenario 里；由内核公开方法写自己的平铺数组
+## （表现层不戳内核私有成员）。教程局独立、结束后整体丢弃，不进入正式局。
 func _seed_tutorial_state(core: Variant) -> void:
-	var n := int(core.node_count())
-	if n < 2:
-		return
-	core._stress[0] = 80.0
-	core._a[0 * n + 1] = 60.0
-	core._h[0 * n + 1] = 60.0
-	core._h[1 * n + 0] = 60.0
+	var sc: Dictionary = TutorialOverlay.tutorial_scenario()
+	core.seed_tutorial_scenario(
+		float(sc.get("stress_0", 80.0)),
+		float(sc.get("affinity_01", 60.0)),
+		float(sc.get("hostility_01", 60.0))
+	)
 
 
 func _on_tutorial_event(event: StringName) -> void:
@@ -199,11 +191,6 @@ func _on_tutorial_finished() -> void:
 	var error := get_tree().change_scene_to_file("res://scenes/game/classroom3D.tscn")
 	if error != OK:
 		push_error("无法进入正式第一天：%s" % error_string(error))
-
-
-func _on_tutorial_armed(kind: StringName) -> void:
-	_tutorial_armed = kind
-	tutorial.notify_armed(kind)
 
 
 func _bind_time_flow(core: SimCore) -> bool:

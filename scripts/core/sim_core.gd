@@ -1135,6 +1135,17 @@ func add_vitality(i: int, delta: float) -> void:
 	_vitality[i] = _clamp100(_vitality[i] + delta)
 
 
+## 报到日教学情境初始态（不进入正式局、不参与标定，教程局结束后整体丢弃）：
+## 0 号学生设高压；0↔1 互相敌对（0→1 好感同向）。数值由表现层从教程配置读入。
+func seed_tutorial_scenario(stress_0: float, affinity_01: float, hostility_01: float) -> void:
+	if _n < 2:
+		return
+	_stress[0] = _clamp100(stress_0)
+	_a[0 * _n + 1] = _clamp100(affinity_01)
+	_h[0 * _n + 1] = _clamp100(hostility_01)
+	_h[1 * _n + 0] = _clamp100(hostility_01)
+
+
 ## 调座位发起时打断参与者当前行为（D03 第 6 / 7 条）：保留已得收益、不发放完成奖励；
 ## 处在共同活动里则从该活动移出（其他人不自动停下，人数不足时活动自然结束）。
 func interrupt_for_seat_change(i: int) -> void:
