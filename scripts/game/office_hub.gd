@@ -268,13 +268,6 @@ func _on_action(action: String) -> void:
 		_start_voice_action(action)
 		return
 	if action in ["comfort", "scold", "praise", "ask", "encourage", "send_back"]:
-		# 点击反馈：安慰 → comfort_voice，表扬 → teacher_praise，训斥 → teacher_scold
-		if action == "comfort":
-			SFX.play_one_shot("ComfortVoice")
-		elif action == "praise":
-			SFX.play_one_shot("TeacherPraise")
-		elif action == "scold":
-			SFX.play_one_shot("TeacherScold")
 		var core: Variant = _room.get_node("Actors").current_core()
 		var commands = core.teacher_commands()
 		if action == "send_back":

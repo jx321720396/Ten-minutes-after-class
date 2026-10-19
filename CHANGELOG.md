@@ -1,5 +1,10 @@
 # 变更记录
 
+## 2026-10-19 停用安抚／表扬／训斥点击音效（用户要求）
+
+- 移除 `scripts/game/office_hub.gd::_on_action` 中 `ComfortVoice`、`TeacherPraise`、`TeacherScold` 三处 `SFX.play_one_shot`；打听、鼓励、脚步、BGM、漫画翻书等其余音效不变。
+- `autoload/sfx.tscn` 的音频节点与 `music/*.mp3` 素材保留；如需连资源一起删除，另行处理。
+
 ## 2026-10-19 表扬接入声量（用户裁定）
 
 - **范围**：声量从 安抚／训斥／鼓励 扩到 **安抚／表扬／训斥／鼓励**；安抚行为不变。
