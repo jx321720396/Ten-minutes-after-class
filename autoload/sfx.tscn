@@ -18,6 +18,7 @@
 [ext_resource type="AudioStream" uid="uid://dk42x745th4au" path="res://music/comfort_voice.mp3" id="16_comfort"]
 [ext_resource type="AudioStream" uid="uid://dfqrrfu4g1hiy" path="res://music/teacher_scold.mp3" id="17_scold"]
 [ext_resource type="AudioStream" uid="uid://d15rf6nax5jrl" path="res://music/teacher_praise.mp3" id="18_praise"]
+[ext_resource type="AudioStream" uid="uid://bfdkhjv6u5by1" path="res://music/book_flip.2.ogg" id="19_book_flip"]
 
 [node name="SFX" type="Node" unique_id=188820636]
 process_mode = 3
@@ -101,4 +102,8 @@ bus = &"SFX"
 
 [node name="TeacherPraise" type="AudioStreamPlayer" parent="." unique_id=1675603740]
 stream = ExtResource("18_praise")
+bus = &"SFX"
+
+[node name="BookFlip" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("19_book_flip")
 bus = &"SFX"
