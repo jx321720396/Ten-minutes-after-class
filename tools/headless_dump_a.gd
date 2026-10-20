@@ -15,7 +15,7 @@ func _init() -> void:
 		npc = int(args[2])
 
 	var tables := ConfigLoader.new().load_all()
-	var core := SimCore.from_npc(seed, npc, tables)
+	var core := SimCore.new(seed, npc, tables)
 	for _t in range(tick_target):
 		core.advance_tick()
 	var n := core.node_count()

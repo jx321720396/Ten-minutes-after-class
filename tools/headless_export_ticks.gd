@@ -23,7 +23,7 @@ func _init() -> void:
 		npc = int(args[2])
 
 	var tables := ConfigLoader.new().load_all()
-	var core := SimCore.from_npc(seed, npc, tables)
+	var core := SimCore.new(seed, npc, tables)
 	var n := core.node_count()
 
 	for _d in range(days):
@@ -50,45 +50,56 @@ func _run_day_sampled(core: SimCore, n: int, sink: Callable) -> void:
 
 
 ## 采样一行快照：字段与 export_ticks.py 的 snapshot() 一致。
+## 老师版（2026-10-16）：信任 T 与透明度 O 轴已删除；新增动力 / 今日学业收益 / 崩溃计数。
 func _snapshot(core: SimCore, n: int) -> Dictionary:
 	var a: Array[float] = []
 	var h: Array[float] = []
-	var t: Array[float] = []
 	for i in range(n):
 		for j in range(n):
 			a.append(core.affinity(i, j))
 			h.append(core.hostility(i, j))
-			t.append(core.trust(i, j))
-	var o: Array[float] = []
 	var s: Array[float] = []
 	var g: Array[float] = []
 	var sa: Array[float] = []
+	var v: Array[float] = []
+	var gn: Array[float] = []
 	for i in range(n):
-		o.append(core.opacity(i))
 		s.append(core.stress(i))
 		g.append(core.grade(i))
 		sa.append(core.study_acc(i))
+		v.append(core.vitality(i))
+		gn.append(core.gain_today(i))
 	return {
 		"tick": core.global_tick(),
+		"rng_random_calls": core._rng.random_calls,
+		"rng_words_consumed": core._rng.words_consumed,
 		"day": core.day(),
 		"phase": core.phase(),
 		"phase_index": core.phase_index(),
 		"tick_in_phase": core.tick_in_phase(),
 		"A_mean": _mean(a),
 		"H_mean": _mean(h),
-		"T_mean": _mean(t),
-		"O_mean": _mean(o),
 		"stress_mean": _mean(s),
 		"grade_mean": _mean(g),
+		"vitality_mean": _mean(v),
+		"gain_mean": _mean(gn),
+		"broken_count": _broken_count(core),
 		"A_hash": _digest(a),
 		"H_hash": _digest(h),
-		"T_hash": _digest(t),
 		"grade_hash": _digest(g),
 		"study_acc_hash": _digest(sa),
 		"events": int(core._stats.get("events", 0)),
 		"bursts": int(core._stats.get("bursts", 0)),
-		"transmits": int(core._stats.get("transmission_ticks", 0)),
 	}
+
+
+## 崩溃人数（《老师版规则合并稿》D01 / D06）：与 tools/export_ticks.py 的 broken_count 对齐。
+func _broken_count(core: SimCore) -> int:
+	var count := 0
+	for i in range(int(core.node_count())):
+		if core.is_broken(i):
+			count += 1
+	return count
 
 
 ## 均值，round 到 3 位（对齐 export_ticks.py 的 _mean：round(x,3)，half-even）。

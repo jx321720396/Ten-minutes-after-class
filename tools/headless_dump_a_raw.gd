@@ -1,7 +1,7 @@
 extends SceneTree
 func _init() -> void:
 	var tables := ConfigLoader.new().load_all()
-	var core := SimCore.from_npc(12345, 16, tables)
+	var core := SimCore.new(12345, 16, tables)
 	for _t in range(11):
 		core.advance_tick()
 	var pairs := [[2,3],[2,0],[3,2],[0,2],[3,0]]
