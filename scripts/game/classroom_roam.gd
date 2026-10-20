@@ -203,6 +203,10 @@ func snap_to_seats(stay_seconds: float = SNAP_STAY_SECONDS) -> void:
 		if _walkers[i] != null:
 			_walkers[i].stop()
 		actor.global_position = _point_positions[seat_id]
+		if i < _was_in_conflict.size():
+			_was_in_conflict[i] = false
+		_conflict_goal.erase(i)
+		_set_people_gap(i, true)
 		_core.set_position(i, actor.global_position.x, actor.global_position.z)
 		_core.set_moving(i, false)
 	# 归位后至少停留 stay_seconds 再进行下一批离座（计时为累加制，时钟节拍来自 data）
@@ -483,14 +487,10 @@ func _send_conflicts() -> void:
 	for i in range(_actor_count):
 		var kind := harm.active_kind(i)
 		if kind == "":
-			_conflict_goal.erase(i)
 			if bool(_was_in_conflict[i]):
-				_was_in_conflict[i] = false
-				_set_people_gap(i, true)
-				var seat_id := str(_core.seat_of(i))
-				if _point_positions.has(seat_id):
-					_release_point(i)
-					_send_to_point(i, _point_positions[seat_id])
+				_send_conflict_home(i)
+			else:
+				_conflict_goal.erase(i)
 			continue
 		_was_in_conflict[i] = true
 		# 去左侧过道的路线会贴着座位穿过同学。普通让行会把第一步卡住，
@@ -515,6 +515,32 @@ func _send_conflicts() -> void:
 		_send_to_point(i, target)
 
 
+## 冲突结束后走回自己的座位。回程穿过坐着的同学，让行会把人卡在过道上，
+## 所以走到座位之前一直不让行；没走到就继续派，不能只派一次。
+func _send_conflict_home(i: int) -> void:
+	var seat_id := str(_core.seat_of(i))
+	if not _point_positions.has(seat_id):
+		_was_in_conflict[i] = false
+		_conflict_goal.erase(i)
+		_set_people_gap(i, true)
+		return
+	var seat: Vector3 = _point_positions[seat_id]
+	var actor: Node3D = _actors[i]
+	if actor != null and actor.global_position.distance_to(seat) <= 0.6:
+		_was_in_conflict[i] = false
+		_conflict_goal.erase(i)
+		_set_people_gap(i, true)
+		return
+	_set_people_gap(i, false)
+	var walker: ActorWalker = _walkers[i]
+	var goal: Vector3 = _conflict_goal.get(i, Vector3(INF, INF, INF))
+	if walker != null and walker.is_moving() and goal.distance_to(seat) <= 0.05:
+		return
+	_conflict_goal[i] = seat
+	_release_point(i)
+	_send_to_point(i, seat)
+
+
 ## 找茬和闲聊都要先走到对方面前才开始。发起者走向对方；找茬结束后走回座位。
 func _send_nitpicks() -> void:
 	if _core == null:
@@ -523,6 +549,8 @@ func _send_nitpicks() -> void:
 		_was_nitpicking.append(false)
 	for i in range(_actor_count):
 		if _core._harm_events != null and _core._harm_events.active_kind(i) != "":
+			continue
+		if i < _was_in_conflict.size() and bool(_was_in_conflict[i]):
 			continue
 		var target_index := int(_core.approach_target_of(i))
 		if target_index < 0:
