@@ -52,8 +52,10 @@ func _process(_delta: float) -> void:
 	var seated := _is_seated()
 	var side := seated or keep_side
 	_apply_layout(side)
-	var anchor := _seated_anchor(camera) if seated else (
-		_standing_side_anchor(camera) if keep_side else _standing_anchor()
+	var anchor := (
+		_seated_anchor(camera)
+		if seated
+		else (_standing_side_anchor(camera) if keep_side else _standing_anchor())
 	)
 	global_position = anchor
 	var distance := camera.global_position.distance_to(anchor)

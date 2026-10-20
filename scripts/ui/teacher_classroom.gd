@@ -32,9 +32,7 @@ func _ready() -> void:
 	%Heading.add_theme_font_size_override("font_size", int(config.heading_size))
 	%Mode.add_theme_font_size_override("font_size", int(config.small_size))
 	%Hint.add_theme_font_size_override("font_size", int(config.small_size))
-	for key in [
-		"private_chat", "seats", "conflict", "profile", "profile_tool", "book_tool"
-	]:
+	for key in ["private_chat", "seats", "conflict", "profile", "profile_tool", "book_tool"]:
 		var button := get_node("%" + str(key).to_pascal_case()) as Button
 		button.text = str(config.copy[key])
 		_style_button(button)
