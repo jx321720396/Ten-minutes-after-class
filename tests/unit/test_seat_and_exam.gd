@@ -126,11 +126,11 @@ func test_first_exam_is_on_the_eighth_day() -> void:
 
 func test_target_mean_by_exam_order() -> void:
 	var core := _core()
-	assert_almost_eq(core._exam.target_mean(), 450.0, 0.0001, "第 1 次目标 450（2026-10-18）")
-	assert_almost_eq(core._exam.target_mean_for(14), 480.0, 0.0001, "第 2 次目标 480")
-	assert_almost_eq(core._exam.target_mean_for(21), 500.0, 0.0001, "第 3 次目标 500")
-	assert_almost_eq(core._exam.target_mean_for(28), 520.0, 0.0001, "第 4 次目标 520")
-	assert_almost_eq(core._exam.target_mean_for(30), 520.0, 0.0001, "期末考沿用最后一次目标")
+	assert_almost_eq(core._exam.target_mean(), 490.0, 0.0001, "第 1 次目标 490（2026-10-20）")
+	assert_almost_eq(core._exam.target_mean_for(14), 520.0, 0.0001, "第 2 次目标 520")
+	assert_almost_eq(core._exam.target_mean_for(21), 560.0, 0.0001, "第 3 次目标 560")
+	assert_almost_eq(core._exam.target_mean_for(28), 600.0, 0.0001, "第 4 次目标 600")
+	assert_almost_eq(core._exam.target_mean_for(30), 600.0, 0.0001, "期末考沿用最后一次目标")
 
 
 func test_exam_eve_raises_class_stress_by_20() -> void:

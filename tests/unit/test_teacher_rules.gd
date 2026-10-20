@@ -483,7 +483,7 @@ func test_failure_reason_reports_exam_failure_with_numbers() -> void:
 	var reason := core._failure_reason()
 	assert_true(reason.contains("考核不达标"), "考核不达标时给出对应判据")
 	assert_true(reason.contains("300"), "原因给出实际均分")
-	assert_true(reason.contains("450"), "原因给出该次目标均分")
+	assert_true(reason.contains("490"), "原因给出该次目标均分")
 
 
 func test_no_failure_reason_when_no_trigger() -> void:

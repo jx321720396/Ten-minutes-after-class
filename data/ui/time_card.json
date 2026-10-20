@@ -1,5 +1,5 @@
 {
-  "description": "老师版左上角时间／周考卡片。周考倒计时与目标均分按「下一次考试」动态读取 data/rules/exam.csv 的 exam_target_mean_<次序>（450 / 480 / 500 / 520，期末考沿用 520）；分数直接读取 750 分制内核。",
+  "description": "老师版左上角时间／周考卡片。周考倒计时与目标均分按「下一次考试」动态读取 data/rules/exam.csv 的 exam_target_mean_<次序>（490 / 520 / 560 / 600，期末考沿用 600）；分数直接读取 750 分制内核。",
   "width": 340,
   "minimum_height": 224,
   "margin": [

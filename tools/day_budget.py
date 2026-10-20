@@ -5,7 +5,7 @@
 回答三件事（不改数值、只算账）：
   1. 老师完全不操作的一天，班级动力／压力／收益会走到哪里；
   2. 老师一天最多能给出多少动力，够把多少人推过 30（自由）／60（学习）；
-  3. 第八天「目标均分」（`exam_target_mean_1`，2026-10-18 起 450）在算术上需要多少人全天学习，与老师能给的数量差几倍。
+  3. 第八天「目标均分」（`exam_target_mean_1`，2026-10-20 起 490）在算术上需要多少人全天学习，与老师能给的数量差几倍。
 
 所有数值都从 `data/rules/*.csv` 读，脚本里不写死参数；口径见主文档 §5.1／§5.2 与
 `docs/production/老师版待确认参数.md`。运行：`python tools/day_budget.py`
@@ -77,7 +77,7 @@ def main():
 
     # —— 第八天目标可达性 ——
     init_mean = (float(psyche["grade_init_min"]) + float(psyche["grade_init_max"])) / 2.0
-    target = float(exam.get("exam_target_mean_1", exam.get("exam_target_mean", 450.0)))
+    target = float(exam.get("exam_target_mean_1", exam.get("exam_target_mean", 490.0)))
     exam_day = int(exam["exam_day_1"])
     need_total = (target - init_mean) * npc
     need_daily = need_total / exam_day

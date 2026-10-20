@@ -19,9 +19,9 @@ var _tokens: PackedInt32Array = PackedInt32Array()
 var _rank: PackedInt32Array = PackedInt32Array()
 var _reports: Dictionary = {}
 ## D05：目标均分／考前加压／考后减压／考试当天只有考试。
-## 目标按次配置：`exam_target_mean_<次序>`（次序与 `exam_day_<次序>` 对应，2026-10-18 起 450/480/500/520）。
+## 目标按次配置：`exam_target_mean_<次序>`（次序与 `exam_day_<次序>` 对应，2026-10-20 起 490/520/560/600）。
 ## 该次没配则回落到 `exam_target_mean`；超出已配次数（如期末考）沿用最后一次的目标。
-var _target_mean := 450.0
+var _target_mean := 490.0
 var _target_means: Array[float] = []
 var _pre_bonus := 20.0
 var _post_cut := 30.0

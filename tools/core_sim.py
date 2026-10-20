@@ -2490,12 +2490,12 @@ class Sim:
         by_key = {r["param"]: float(r["value"]) for r in rows if not r["param"].startswith("exam_day_")}
         self.exam_sigma = by_key.get("exam_noise_sigma", 12.0)
         self.exam_penalty = by_key.get("stress_exam_penalty", 15.0)
-        # D05：目标均分（按次 exam_target_mean_<次序>，2026-10-18 起 450/480/500/520）／考前加压／考后减压／只有考试。
+        # D05：目标均分（按次 exam_target_mean_<次序>，2026-10-20 起 490/520/560/600）／考前加压／考后减压／只有考试。
         self.exam_target_means = {}
         for r in rows:
             if r["param"].startswith("exam_target_mean_"):
                 self.exam_target_means[int(r["param"][len("exam_target_mean_"):])] = float(r["value"])
-        self.exam_target_mean = by_key.get("exam_target_mean", 450.0)
+        self.exam_target_mean = by_key.get("exam_target_mean", 490.0)
         self.exam_pre_bonus = by_key.get("pre_exam_stress_bonus", 20.0)
         self.exam_post_cut = by_key.get("post_exam_stress_cut", 30.0)
         self.exam_only_day = int(by_key.get("exam_only_day", 1))
@@ -2531,7 +2531,7 @@ class Sim:
             self.exam_rank[i] = place + 1
         self.exam_score = scores
         self.exam_last = list(scores)
-        # D05：全班均分与目标均分（`exam_target_mean_<次序>`，2026-10-18 起 450/480/500/520）考核 —— 不达标老师被辞退（只读，不改成绩）。
+        # D05：全班均分与目标均分（`exam_target_mean_<次序>`，2026-10-20 起 490/520/560/600）考核 —— 不达标老师被辞退（只读，不改成绩）。
         total = sum(scores)
         mean = (total / float(self.N)) if self.N > 0 else 0.0
         self.exam_means[day] = mean

@@ -135,11 +135,11 @@ grade_snapshot = list(exam.Grade)
 check("周考不改平时成绩", exam.settle_exam(8) is True and exam.Grade == grade_snapshot)
 check("周考按考分排名（最高分第一）", exam.exam_rank[0] == 1)
 check("同分按节点号破平", exam.exam_rank[1] == 2)
-# 2026-10-18：四次周考目标按次递增 450 / 480 / 500 / 520，达标判定按该次目标。
-check("首次考核：目标均分为 450", exam.target_mean_for(8) == 450.0,
+# 2026-10-20：四次周考目标按次递增 490 / 520 / 560 / 600，达标判定按该次目标。
+check("首次考核：目标均分为 490", exam.target_mean_for(8) == 490.0,
       exam.target_mean_for(8))
-check("后续考核：目标均分按次递增 480 / 500 / 520",
-      [exam.target_mean_for(d) for d in (14, 21, 28)] == [480.0, 500.0, 520.0],
+check("后续考核：目标均分按次递增 520 / 560 / 600",
+      [exam.target_mean_for(d) for d in (14, 21, 28)] == [520.0, 560.0, 600.0],
       [exam.target_mean_for(d) for d in (14, 21, 28)])
 check("D05：考试日结算后记录班级均分", exam.exam_means.get(8, -1.0) > 0.0)
 check("D05：达标判定按均分与该次目标比较",
@@ -296,7 +296,7 @@ exam_fail.exam_passed[8] = False
 check("考核不达标的原因含判据、实际均分与目标均分",
       "考核不达标" in exam_fail.failure_reason()
       and "300" in exam_fail.failure_reason()
-      and "450" in exam_fail.failure_reason())
+      and "490" in exam_fail.failure_reason())
 
 print("=== 7. 持续学习回归（《老师版规则合并稿》D02：每 20 秒 +1 学业收益、−5 动力）===")
 study = Sim(seed=12345, npc_count=8)

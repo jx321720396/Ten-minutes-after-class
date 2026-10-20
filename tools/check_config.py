@@ -389,7 +389,7 @@ if all(k in _ps for k in _grade_keys):
           bool(_exam_orders) and all(t is not None for t in _targets),
           "日期序 %s / 目标 %s" % (_exam_orders, _targets))
     if _exam_orders and all(t is not None for t in _targets):
-        check("exam：目标均分逐次递增（450 → 480 → 500 → 520）",
+        check("exam：目标均分逐次递增（490 → 520 → 560 → 600）",
               all(a < b for a, b in zip(_targets, _targets[1:])), _targets)
         check("exam：第 1 次目标高于开局班级均分",
               _targets[0] > (_ps["grade_init_min"] + _ps["grade_init_max"]) / 2.0,

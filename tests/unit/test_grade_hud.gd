@@ -45,7 +45,7 @@ func test_goal_gap_tracks_student_grades() -> void:
 	var core: SimCore = parts[0]
 	var clock: SimulationClock = parts[1]
 	var hud: TimeHUD = parts[2]
-	# D05：目标均分取自配置（2026-10-18 起 exam_target_mean_1 = 450）。
+	# D05：目标均分取自配置（2026-10-20 起 exam_target_mean_1 = 490）。
 	var target := _exam_target_mean(parts[3])
 	for index in range(core.node_count()):
 		core._grade[index] = 300.0
