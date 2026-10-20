@@ -31,6 +31,8 @@
 | [`day_budget.py`](day_budget.py) | **一天收支预算（只算账）**：从 `data/rules/*.csv` 读速率与耗时，算一整天各状态的动力／压力／收益、老师一日动力上限、阈值维持成本、邻座涓流扩散上限与第八天目标均分（现 450）的算术可达性；不改任何数值 | `python tools/day_budget.py` |
 | [`bake_classroom_nav.gd`](bake_classroom_nav.gd) | **教室导航网格烘焙**（GDScript，需 Godot）：参数取自 `data/rules/movement.csv`，产物 `resources/navigation/classroom_nav.tres`；改了教室占位几何后必须重跑 | `godot --headless --path . --script tools/bake_classroom_nav.gd` |
 | [`md2docx.py`](md2docx.py) | **md → docx 导出**：标题 / 表格 / 代码块 / 行内格式，输出到 `docs/export/` | `python tools/md2docx.py --all` |
+| [`export_encyclopedia.py`](export_encyclopedia.py) | **百科词条导出**：把 `data/localization/encyclopedia.json` 导成一份「一词条一块」的 Markdown 编辑稿（`docs/localization/百科全书-词条编辑稿.md`），供逐词条改文案；`--check` 比对编辑稿与 JSON 是否同步 | `python tools/export_encyclopedia.py` |
+| [`import_encyclopedia.py`](import_encyclopedia.py) | **百科词条回写**：把编辑稿的改动写回同名 JSON（JSON 仍是唯一事实源）。校验 id 重复 / category 不在分类表 / 正文代码块没收尾等，出错不写盘；`[t]…[/t]` 引用了不存在的词条只警告 | `python tools/import_encyclopedia.py --dry-run` |
 | [`export_ticks.py`](export_ticks.py) | **逐 tick 状态导出（对拍基建）**：hook 内核 `tick`，导出同种子逐 tick 的关系三轴 / 透明度 / 压力统计与矩阵哈希，供 GDScript 移植后逐 tick 对拍（冲刺计划 D6–D9） | `python tools/export_ticks.py --days 3 --seed 12345 --npc 8` |
 | [`headless_day_book.gd`](headless_day_book.gd) | **三策略收支与过程记录**（GDScript，需 Godot）：A 自动巡查无操作／B 有限督学（表扬＋换座）／C 集中督学，同种子对照；逐 tick 记录压力峰值与 >70 持续、学习与共同学习组人数、敌对总量、伤害与拒绝、崩溃人·tick、老师占用 tick，并出 30 天满格好感结构；只读 `data/` | `godot --headless --path . --script res://tools/headless_day_book.gd -- 8 12345 16` |
 
