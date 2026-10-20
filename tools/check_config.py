@@ -659,18 +659,14 @@ check("passive_params 的每个键都被 passives.gd 读取",
       set(_pp) <= _pv_used, "写了没人读: %s" % sorted(set(_pp) - _pv_used))
 
 
-print("=== 15. 时间卡目标均分与 exam.csv 一致（防文案／配置漂移）===")
-_exam_p = params("rules/exam.csv")
+print("=== 15. 时间卡不再写死目标均分（考试目标按次从 exam.csv 动态读取）===")
 _card = json.loads(read(os.path.join(DATA, "ui", "time_card.json")))
-check("time_card.target_mean == exam_target_mean_1",
-      abs(float(_card["target_mean"]) - _exam_p["exam_target_mean_1"]) < 1e-6,
-      "时间卡 %s vs exam.csv %s" % (_card["target_mean"], _exam_p["exam_target_mean_1"]))
-check("time_card.target_is_provisional 为 false（目标已定稿）",
-      _card.get("target_is_provisional") is False, _card.get("target_is_provisional"))
-_later_targets = {int(_exam_p["exam_target_mean_%d" % k]) for k in (2, 3, 4)}
-_desc_numbers = {int(n) for n in re.findall(r"\b(\d{3})\b", str(_card.get("description", "")))}
-check("time_card.description 提到的后续目标与 exam.csv 一致",
-      _later_targets <= _desc_numbers, "描述里没写: %s" % sorted(_later_targets - _desc_numbers))
+check("time_card 不再硬编码 target_mean（HUD 读内核 exam_target_mean）",
+      "target_mean" not in _card, "时间卡仍写死 target_mean")
+check("time_card 提供期末考文案（week_future_final / week_today_final）",
+      bool(_card.get("messages", {}).get("week_future_final"))
+      and bool(_card.get("messages", {}).get("week_today_final")),
+      "缺少期末考文案键")
 
 
 print("  通过 %d 项，失败 %d 项" % (PASSED[0], len(FAILED)))

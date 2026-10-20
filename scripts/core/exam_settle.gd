@@ -93,6 +93,18 @@ func exam_only_day() -> bool:
 	return _only_day == 1
 
 
+## 从当天起（含当天）最近的一次考试日（周考或期末考）；都已考完返回 0。
+## 表现层用它做「下次考试还有几天 · 该次目标均分」的倒计时，不再写死第一次。
+func next_exam_day(day: int) -> int:
+	var all: Array[int] = _days.duplicate()
+	all.append(_term_days)
+	all.sort()
+	for d in all:
+		if d >= day:
+			return d
+	return 0
+
+
 ## 某次考试的目标均分（按次配置；超出次数沿用最后一次）。
 func target_mean_for(day: int) -> float:
 	return _target_mean_at(_index_of(day))

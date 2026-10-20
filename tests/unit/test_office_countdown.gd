@@ -7,7 +7,7 @@ func test_office_shows_remaining_bar_instead_of_seconds() -> void:
 	var snapshot := {
 		"mode": "running",
 		"day": 1,
-		"first_exam_day": 8,
+		"next_exam_day": 8,
 		"phase_id": "morning_break",
 		"kind": "break",
 		"remaining_seconds": 65.0,

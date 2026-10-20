@@ -1,7 +1,5 @@
 {
-  "description": "老师版左上角时间／首次周考卡片。target_mean 为第八天首次考试的目标均分（D05，与 data/rules/exam.csv 的 exam_target_mean_1 同步；后续两次为 480 / 500 / 520）；分数直接读取 750 分制内核。",
-  "target_mean": 450,
-  "target_is_provisional": false,
+  "description": "老师版左上角时间／周考卡片。周考倒计时与目标均分按「下一次考试」动态读取 data/rules/exam.csv 的 exam_target_mean_<次序>（450 / 480 / 500 / 520，期末考沿用 520）；分数直接读取 750 分制内核。",
   "width": 340,
   "minimum_height": 224,
   "margin": [
@@ -41,7 +39,9 @@
     "skip_break": "跳过课间",
     "week_future": "周考还有 %d 天",
     "week_today": "今天周考",
-    "week_past": "首次周考已结束",
+    "week_future_final": "期末考还有 %d 天",
+    "week_today_final": "今天期末考",
+    "week_past": "本学期考试已结束",
     "week_unknown": "周考日期待设置",
     "goal_missing": "目标均分 %s · 均分待获取",
     "goal_gap": "目标均分 %s · [color=%s]还差 %s 分[/color]",

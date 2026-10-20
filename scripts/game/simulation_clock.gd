@@ -383,6 +383,18 @@ func snapshot() -> Dictionary:
 	out["display_name"] = _display_name_of(str(out.get("phase_id", "")))
 	var day := int(out.get("day", 0))
 	out["is_exam_day"] = running and _core != null and _core._exam.is_exam_day(day)
+	var next_exam_day := 0
+	if _core != null:
+		next_exam_day = _core._exam.next_exam_day(day)
+	out["next_exam_day"] = next_exam_day
+	if _core != null:
+		out["exam_target_mean"] = (
+			_core._exam.target_mean_for(next_exam_day)
+			if next_exam_day > 0
+			else _core._exam.target_mean()
+		)
+	else:
+		out["exam_target_mean"] = 0.0
 	if bool(out["is_exam_day"]):
 		out["display_name"] = "考试"
 		out["player_control"] = false

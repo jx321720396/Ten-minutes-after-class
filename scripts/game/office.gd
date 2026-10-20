@@ -171,13 +171,19 @@ func _update_time(snapshot: Dictionary) -> void:
 		%Countdown.text = config.copy.report if mode == "report" else config.copy.finished
 		return
 	%Countdown.text = str(_weekly_copy.week_unknown)
-	var exam_day := int(snapshot.get("first_exam_day", 0))
+	var exam_day := int(snapshot.get("next_exam_day", 0))
 	var day := int(snapshot.get("day", 0))
+	var is_final := exam_day > 0 and exam_day == int(snapshot.get("term_days", 0))
 	if exam_day > day:
-		%Countdown.text = str(_weekly_copy.week_future) % (exam_day - day)
-	elif exam_day == day and day > 0:
-		%Countdown.text = str(_weekly_copy.week_today)
-	elif exam_day > 0:
+		%Countdown.text = (
+			str(_weekly_copy.week_future_final if is_final else _weekly_copy.week_future)
+			% (exam_day - day)
+		)
+	elif exam_day == day and exam_day > 0:
+		%Countdown.text = str(
+			_weekly_copy.week_today_final if is_final else _weekly_copy.week_today
+		)
+	elif exam_day <= 0:
 		%Countdown.text = str(_weekly_copy.week_past)
 	var color := Color(config.ink)
 	var status := ""

@@ -357,15 +357,19 @@ func _refresh_weekly_goal(snapshot_data: Dictionary) -> void:
 	var day := int(snapshot_data.get("day", 0))
 	if str(snapshot_data.get("mode", "")) != SimulationClock.MODE_RUNNING:
 		day = int(snapshot_data.get("ended_day", day))
-	var exam_day := int(snapshot_data.get("first_exam_day", 0))
+	var exam_day := int(snapshot_data.get("next_exam_day", 0))
+	var is_final := exam_day > 0 and exam_day == int(snapshot_data.get("term_days", 0))
 	_weekly.text = str(words.week_unknown)
 	if exam_day > day:
-		_weekly.text = str(words.week_future) % (exam_day - day)
+		_weekly.text = (
+			str(words.week_future_final if is_final else words.week_future) % (exam_day - day)
+		)
 	elif exam_day == day and exam_day > 0:
-		_weekly.text = str(words.week_today)
-	elif exam_day > 0:
+		_weekly.text = str(words.week_today_final if is_final else words.week_today)
+	elif exam_day <= 0:
 		_weekly.text = str(words.week_past)
-	var target := _number_text(float(_card_cfg.target_mean))
+	var target_mean := float(snapshot_data.get("exam_target_mean", 0.0))
+	var target := _number_text(target_mean)
 	var average = snapshot_data.get("class_average_grade")
 	_grade.text = str(words.goal_missing) % target
 	_grade.tooltip_text = ""
@@ -373,7 +377,7 @@ func _refresh_weekly_goal(snapshot_data: Dictionary) -> void:
 		return
 	var mean := float(average)
 	var theme := CampusTheme.settings()
-	var gap := float(_card_cfg.target_mean) - mean
+	var gap := target_mean - mean
 	if gap > 0.0:
 		_grade.text = str(words.goal_gap) % [target, str(theme.warning), _number_text(gap)]
 	else:

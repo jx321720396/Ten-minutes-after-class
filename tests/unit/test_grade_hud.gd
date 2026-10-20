@@ -68,24 +68,33 @@ func test_reached_goal_does_not_show_negative_gap() -> void:
 	assert_false(_goal_text(hud).contains("还差 -"), _goal_text(hud))
 
 
-func test_first_weekly_exam_day_has_today_label() -> void:
+func test_weekly_exam_countdown_tracks_next_exam() -> void:
 	var parts := _stack()
 	var hud: TimeHUD = parts[2]
 	var snapshot: Dictionary = parts[1].snapshot()
-	snapshot["day"] = 7
-	hud._refresh(snapshot)
 	var label := hud.get_node_or_null("Card/Rows/WeeklyExamRow/WeeklyExamLabel") as Label
 	assert_not_null(label, "卡片应有独立周考行")
+	snapshot["day"] = 7
+	snapshot["next_exam_day"] = 8
+	hud._refresh(snapshot)
 	if label != null:
 		assert_eq(label.text, "周考还有 1 天", "D05：第 7 天是考前日")
 	snapshot["day"] = 8
+	snapshot["next_exam_day"] = 8
 	hud._refresh(snapshot)
 	if label != null:
 		assert_eq(label.text, "今天周考", "D05：第 8 天是首次考试日")
 	snapshot["day"] = 9
+	snapshot["next_exam_day"] = 14
 	hud._refresh(snapshot)
 	if label != null:
-		assert_eq(label.text, "首次周考已结束")
+		assert_eq(label.text, "周考还有 5 天", "D05：第 9 天倒计时到第 14 天第二次周考")
+	snapshot["day"] = 29
+	snapshot["next_exam_day"] = 30
+	snapshot["term_days"] = 30
+	hud._refresh(snapshot)
+	if label != null:
+		assert_eq(label.text, "期末考还有 1 天", "D05：第 29 天倒计时到期末考")
 
 
 func test_missing_grades_are_not_fabricated_as_zero() -> void:

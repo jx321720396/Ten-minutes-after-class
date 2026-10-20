@@ -1,5 +1,17 @@
 # 变更记录
 
+## 2026-10-20 周考／期末考倒计时与目标均分改为按「下一次考试」动态读取
+
+- **问题**：左上角时间卡与办公室倒计时用 `data/ui/time_card.json` 里写死的 `target_mean: 450` 和 `first_exam_day`（考试日最小值），第 8 天首次周考之后永久显示「首次周考已结束 · 目标均分 450」，逐次递进的目标（450 → 480 → 500 → 520）从未反映出来。
+- **修复**：
+  - `scripts/core/exam_settle.gd` 新增 `next_exam_day(day)`：从当天起（含当天）最近一次周考或期末考，全部考完返回 0。
+  - `scripts/game/simulation_clock.gd` 快照新增 `next_exam_day` 与 `exam_target_mean`（目标按次读 `data/rules/exam.csv` 的 `exam_target_mean_1..4`，期末考沿用最后一次 520）。
+  - `scripts/ui/time_hud.gd` 与 `scripts/game/office.gd` 改读动态字段；期末考以 `exam_day == term_days` 区分，用 `week_future_final`／`week_today_final` 文案（「期末考还有 %d 天」「今天期末考」）。
+  - `data/ui/time_card.json` 移除写死的 `target_mean`，`week_past` 由「首次周考已结束」改为「本学期考试已结束」。
+- **校验**：`tools/check_config.py` 第 15 节改为断言 `time_card` 不再硬编码 `target_mean` 且提供期末考文案。
+- **测试**：`tests/unit/test_grade_hud.gd` 用例改为跟踪 `next_exam_day`（第 9 天 → 「周考还有 5 天」，第 29 天 → 「期末考还有 1 天」）；`tests/unit/test_office_countdown.gd` 快照键同步为 `next_exam_day`。
+- **验证**：快四门（check_config／test_core／verify_formula／check_docs）全绿；本次改动脚本 `gdformat`／`gdlint` 通过（`sim_core.gd` 的既有行数红项未触碰）；字体子集检查通过（新增文案「期末考」「本学期考试已结束」字符均已覆盖）；Godot headless 逐日对拍通过（8 → 14 → 21 → 28 → 30，目标 450 → 480 → 500 → 520）。
+
 ## 2026-10-20 找茬减半，走近才开始，冲突保持两人
 
 - 找茬基础概率由 0.06 改为 0.03，是闲聊的一半。爱聊天／爱学习修正不变。
