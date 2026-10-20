@@ -1,8 +1,20 @@
 {
   "font_size": 26,
   "head_gap_pixels": 6,
+  "chat_lift_pixels": 30,
   "reference_height_pixels": 1080,
   "minimum_view_scale": 0.5,
   "maximum_view_scale": 1.5,
-  "fallback_height_m": 1.5
+  "fallback_height_m": 1.5,
+  "activity_labels": {
+    "chat": "聊天",
+    "listen_music": "在听音乐",
+    "eat_snack": "在吃零食",
+    "play_phone": "玩手机",
+    "read_book": "在看课外书",
+    "quarrel": "在吵架",
+    "shove": "在推搡",
+    "fight": "在打架",
+    "nitpick": "在找茬"
+  }
 }

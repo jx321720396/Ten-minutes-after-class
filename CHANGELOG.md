@@ -25,6 +25,24 @@
 - **页面补充**：背包 `scripts/ui/backpack_panel.gd`、学生档案 `scripts/ui/npc_profile.gd`、开场漫画 `scripts/ui/opening_comic.gd` 在 `_input` 阶段消费 ESC（早于 SFX 的全局判定），三处显式调用 `SFX.play_cancel()`；`scripts/ui/term_report.gd` 的 ESC 只是吞事件、无动作，保持静音；`scripts/ui/main_menu.gd` 加载期间只吞安卓返回的合成事件（`InputEventAction`），物理 ESC 不再被误判为「已返回」。
 - **回归**：新增 `tests/unit/test_cancel_sfx.gd`（真实确认面板消费 ESC → 播放；无人消费 → 静音），GUT 3/3 通过。
 - **验证**（rebase 到远端 `a072cde4` 之后）：快四门 `check_config` 209 / `test_core` 135 / `verify_formula` 9 / `check_docs` 全绿；本次改动的脚本 `gdformat` 通过（全仓另有 3 个由 `a072cde4` 带入的待格式化文件：`actor_name_tag.gd`、`behavior_badge_presenter.gd`、`teacher_classroom.gd`，本次未触碰）；`gdlint` 的红项均在 `sim_core.gd`（文件行数与公开方法数，同样由 `a072cde4` 带入）。完整 GUT 单测 457/466，9 个失败与本次无关（行为表行数、贴图扩展名、旧标定数值等，均来自 `a072cde4`）。
+## 2026-10-19 聊天与玩手机补上头顶活动文字
+
+- **问题**（用户反馈「聊天和玩手机没有头上的文字的提醒」）：教室里聊天的人只有头顶符号粒子、玩手机的人头顶什么都没有；听音乐／吃零食／看课外书却有「在听音乐」这类文字，玩家读不出这两类人在干什么。
+- **做法**（`scripts/game/behavior_badge_presenter.gd`）：徽标白名单与文案整体搬进 `data/ui/behavior_badges.json` 的 `activity_labels`（聊天／听音乐／吃零食／玩手机／看课外书／吵架／推搡／打架／找茬），组件不再用 `PlayerActionBar.ACTIVITY_NAMES` 拼文案；活动换了就换字，离开白名单立刻收掉。聊天文案按用户要求写「聊天」（其余沿用原文案），并在头顶再多抬 `chat_lift_pixels`（30 px × 屏幕缩放），给上浮的聊天符号让位（用户裁定「符号照旧」）。
+- **合并适配**：rebase 到远端「学生可以找茬」之后，把远端新加的 `nitpick` 也纳入配置表（文案「在找茬」，沿用 `ACTIVITY_NAMES` 原文），否则白名单搬家会把它丢掉。
+- **口径**：学习、睡觉、走动、出门仍不挂文字徽标（学习有符号粒子）；不给压力／好感／正在被排挤这类隐藏状态做提示。徽标只读 `activity_of` 与会话快照，不回写矩阵、不参与结算。
+- **防回归**：`tools/check_config.py` 新增两项 —— 文案表必须恰好覆盖这 9 种活动、文案非空且 `chat_lift_pixels` 为正；`tests/unit/test_behavior_badge_layout.gd` 新增聊天／玩手机出文字、学习与空闲不出、换活动换字，以及「聊天文字比其余徽标更高」的布局断言。
+- **文档**：主文档 §12.1 补「头顶活动文字徽标」段，`python tools/split_teacher_gdd.py` 重新生成 15 章分册。
+- **验证**：`check_config`、`test_core`、`verify_formula`、`check_docs` 全绿；`gdformat --check` 与 `gdlint` 对改动文件通过。本机没有可执行的 Godot，GUT 新增用例未实跑。
+- **既有红项（与本次无关）**：`subset_font.py` 报 LXGW 缺「戳」U+6233，来源是刚拉取的 `scripts/game/classroom.gd:161` 注释（「表现层不戳内核私有成员」），该检查按整份文件取字、注释也计入；本次新增文案没有引入新字符。
+
+## 2026-10-19 百科词条改为「导出编辑稿 → 回写 JSON」的改稿流程
+
+- **问题**（用户需求「导出现有的百科全书文本，逐词条改完再导回去」）：65 条词条 / 8 个分类全在 `data/localization/encyclopedia.json`，改文案得手改 JSON —— 转义、段落用的 `\n\n`、键序一碰就乱，也没法一条一条对着看。
+- **做法**：新增 `tools/export_encyclopedia.py`（JSON → `docs/localization/百科全书-词条编辑稿.md`，一词条一块、正文放代码块、段落空行即分段）与 `tools/import_encyclopedia.py`（编辑稿 → JSON，**JSON 仍是唯一事实源**）。回写前校验 id 重复 / 词条名重复 / `category` 不在分类表 / 正文代码块没收尾 / 正文为空，不过**不写盘**；`[t]…[/t]` 引用了不存在的词条只提示。调顺序 = 整块上下挪，加词条 = 复制一块改 id，下线 = `implemented: false`。
+- **无损往返**：导出→原样回写实测 **JSON 零字节变化**（`text == 原文件` 即跳过写盘，也是自检方式）；`_note` / `_discipline` / `schema_version` 原样保留，`aliases` 仍内联、2 空格缩进。
+- **文档**：`docs/localization/本地化说明.md` 新增 §4「百科词条的改稿流程」，`tools/README.md` 补两行脚本说明；`docs/localization/百科全书文案.md` 仍是过期存档，未动。
+- **验证**：`check_config` 191、`test_core` 133、`verify_formula` 9、`check_docs` 全绿；编辑稿放在 `docs/localization/` 下不触发文档门的空括号扫描。未改 `scripts/`，无 GDScript 侧改动。
 
 ## 2026-10-19 停用安抚／表扬／训斥点击音效（用户要求）
 

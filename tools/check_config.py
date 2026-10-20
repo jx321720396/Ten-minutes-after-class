@@ -252,6 +252,19 @@ check("符号粒子：各样式符号与颜色有效",
           and s["colors"] and all(re.fullmatch(r"[0-9a-fA-F]{6}", c) for c in s["colors"])
           for s in _particles["styles"].values()))
 
+with open(os.path.join(DATA, "ui", "behavior_badges.json"), encoding="utf-8") as _file:
+    _badges = json.load(_file)
+_badge_labels = _badges.get("activity_labels", {})
+_badge_required = {"chat", "listen_music", "eat_snack", "play_phone", "read_book",
+                   "quarrel", "shove", "fight", "nitpick"}
+check("头顶徽标：文案表覆盖聊天／玩手机／找茬等 9 种公开活动",
+      set(_badge_labels) == _badge_required,
+      "缺失: %s；多余: %s" % (sorted(_badge_required - set(_badge_labels)),
+                             sorted(set(_badge_labels) - _badge_required)))
+check("头顶徽标：文案非空且聊天额外抬升为正",
+      all(isinstance(v, str) and v.strip() for v in _badge_labels.values())
+      and float(_badges.get("chat_lift_pixels", 0)) > 0)
+
 _style_rows = load("ui/chat_feedback_style.csv")
 with open(os.path.join(DATA, "ui/activity_ring_palette.json"), encoding="utf-8") as _file:
     _ring_palette = json.load(_file)

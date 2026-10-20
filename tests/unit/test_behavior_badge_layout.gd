@@ -9,6 +9,20 @@ class HeadActors:
 		return head
 
 
+class FakeCore:
+	extends RefCounted
+	var acts: Array = []
+
+	func node_count() -> int:
+		return acts.size()
+
+	func activity_of(index: int) -> String:
+		return str(acts[index])
+
+	func position_of(_index: int) -> Vector2:
+		return Vector2.ZERO
+
+
 func test_badge_centers_on_current_head_for_each_text_width() -> void:
 	var world := Node3D.new()
 	add_child_autofree(world)
@@ -68,3 +82,48 @@ func test_head_anchor_switches_between_actual_seated_and_standing_sprites() -> v
 	assert_almost_eq(actors.head_position_of(0), Vector3(2.2, 1.3, -2.6), Vector3.ONE * 0.001)
 	actor.position.x += 1.0
 	assert_almost_eq(actors.head_position_of(0), Vector3(3.2, 1.3, -2.6), Vector3.ONE * 0.001)
+
+
+func test_chat_and_phone_badges_follow_public_activity() -> void:
+	var core := FakeCore.new()
+	core.acts = ["chat", "play_phone", "study", "listen_music", ""]
+	var presenter := BehaviorBadgePresenter.new()
+	add_child_autofree(presenter)
+	presenter.set_process(false)
+	presenter.bind_core(core)
+	presenter._sync_activities()
+	assert_eq(presenter.activity_badge_text(0), "聊天", "聊天有头顶文字")
+	assert_eq(presenter.activity_badge_text(1), "玩手机", "玩手机有头顶文字")
+	assert_eq(presenter.activity_badge_text(2), "", "学习不在徽标白名单")
+	assert_eq(presenter.activity_badge_text(3), "在听音乐", "既有徽标文案不变")
+	assert_eq(presenter.activity_badge_text(4), "", "空闲不挂徽标")
+	assert_eq(presenter.activity_badge_kind(0), "chat")
+	# 同一人换活动：徽标跟着内核公开状态换文案，不残留旧文字
+	core.acts = ["listen_music", "play_phone", "", "", ""]
+	presenter._sync_activities()
+	assert_eq(presenter.activity_badge_text(0), "在听音乐")
+	assert_eq(presenter.activity_badge_kind(0), "listen_music")
+	assert_eq(presenter.activity_badge_text(2), "")
+
+
+func test_chat_badge_lifts_above_the_rising_chat_symbols() -> void:
+	var world := Node3D.new()
+	add_child_autofree(world)
+	var camera := Camera3D.new()
+	world.add_child(camera)
+	camera.position = Vector3(0, 1, 6)
+	camera.current = true
+	var actors := HeadActors.new()
+	world.add_child(actors)
+	var core := FakeCore.new()
+	core.acts = ["chat", "listen_music"]
+	var presenter := BehaviorBadgePresenter.new()
+	add_child_autofree(presenter)
+	presenter.set_process(false)
+	presenter.bind_core(core)
+	presenter.bind_actors(actors)
+	presenter._sync_activities()
+	presenter._layout()
+	var chat_badge := presenter._activity_badges[0] as Label
+	var music_badge := presenter._activity_badges[1] as Label
+	assert_lt(chat_badge.position.y, music_badge.position.y, "聊天文字比其余徽标更高，给头顶符号让位")
