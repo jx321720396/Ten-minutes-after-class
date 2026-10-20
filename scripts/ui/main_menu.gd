@@ -76,8 +76,10 @@ func _ready():
 
 
 ## 开幕加载期间吞掉返回键：此时没有可返回的页面，也不应该直接退出。
+## 只吞安卓返回合成的 InputEventAction，不吞物理 ESC —— 后者交给 SFX 判定为
+## “没有页面处理”，不会误播返回音。
 func _unhandled_input(event: InputEvent) -> void:
-	if _starting_new_game and event.is_action_pressed("ui_cancel"):
+	if _starting_new_game and event is InputEventAction and event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 
 

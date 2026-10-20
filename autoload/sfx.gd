@@ -13,6 +13,9 @@ const SETTINGS_KEY := "sfx_volume_linear"
 var _volume := 1.0
 var _buttons: Array[BaseButton] = []
 var _pointer_pos := Vector2.INF
+## 返回音判定（2026-10-20）：_input 记下 ui_cancel，若 _unhandled_input 仍收到
+## 说明没有任何页面消费这次返回（例如主菜单），此时不播。
+var _cancel_pending := false
 ## 脚步声全局节流：多个人物同时走时按最小间隔重播（<=0 关闭节流）
 var _footstep_gap_s := 0.0
 var _footstep_last := -INF
@@ -84,6 +87,10 @@ func _on_node_added(node: Node) -> void:
 ## 禁用按钮不会收到 GUI 输入（不 emit pressed），用指针位置手动命中判定：
 ## 点到禁用按钮 = 无响应点击，播 ui_button_click 作反馈。
 func _input(event: InputEvent) -> void:
+	# 返回 / 取消音：先记下，本次事件派发结束后再结算（页面在 _unhandled_input 里消费 ESC）。
+	if event.is_action_pressed("ui_cancel"):
+		_cancel_pending = true
+		call_deferred(&"_flush_cancel_sound")
 	if event is InputEventMouseMotion:
 		_pointer_pos = event.position
 		return
@@ -108,6 +115,20 @@ func _input(event: InputEvent) -> void:
 				return
 
 
+## 本次 ui_cancel 是否真的被页面处理。autoload 的 _unhandled_input 排在场景节点之后：
+## 仍然收到 = 没人消费（如主菜单），作废；被页面消费了则收不到，保留待播。
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_cancel_pending = false
+
+
+func _flush_cancel_sound() -> void:
+	if not _cancel_pending:
+		return
+	_cancel_pending = false
+	play_cancel()
+
+
 func _play_button_click() -> void:
 	_button_player.play()
 
@@ -129,6 +150,13 @@ func _load_audio_value(key: String, fallback: float) -> float:
 			return float(str(row["value"]))
 	push_warning("SFX：data/rules/audio.csv 缺少 %s，用兜底值 %s。" % [key, fallback])
 	return fallback
+
+
+## 返回音：沿用普通按钮点击音（ui_light_hint.mp3，与 ButtonClick 同一资源），
+## 不用 ui_cancel.mp3（试听为「取消／拒绝」音色）。ESC 由 _input 自动判定；
+## 在 _input 阶段自行消费 ESC 的页面（背包 / 档案 / 开场漫画）直接调用本函数。
+func play_cancel() -> void:
+	play_one_shot("UiCancel")
 
 
 ## 播一次子播放器（节点名见 sfx.tscn），缺失时静默（场景未接入音频时不报错）。

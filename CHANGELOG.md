@@ -17,6 +17,15 @@
 - `data/rules/psyche.csv` 的 `stress_init_max` 由 45 改为 30。开局动力仍等于该生压力，所以动力同样落在 0–30。
 - 抽样是 `[0, 30)`，而游戏状态是动力 < 30，因此开局全班都在游戏状态，没有人开局就进入自由或学习。
 
+## 2026-10-20 修复 ESC 返回没有音效
+
+- **问题**：ESC 返回全程静音：`SFX` 只自动挂接按钮 `pressed`，ESC 由各页面在 `_input` / `_unhandled_input` 里自行消费。
+- **修复**：`autoload/sfx.tscn` 新增 `UiCancel` 播放器，沿用**普通按钮点击音**（`music/改1/ui_light_hint.mp3`，与 `ButtonClick` 同一资源，`volume_db=24`）；`autoload/sfx.gd` 在 `_input` 记下 `ui_cancel`，`_unhandled_input` 仍收到说明没有页面消费（不播），被页面消费则在帧末播一次。安卓返回键经 `BackHandler` 合成的 `ui_cancel` 走同一条路径。
+- **音色**：不使用 `music/改1/ui_cancel.mp3`（用户试听后确认是「取消／拒绝」音色）；返回音与普通按钮点击保持一致。
+- **页面补充**：背包 `scripts/ui/backpack_panel.gd`、学生档案 `scripts/ui/npc_profile.gd`、开场漫画 `scripts/ui/opening_comic.gd` 在 `_input` 阶段消费 ESC（早于 SFX 的全局判定），三处显式调用 `SFX.play_cancel()`；`scripts/ui/term_report.gd` 的 ESC 只是吞事件、无动作，保持静音；`scripts/ui/main_menu.gd` 加载期间只吞安卓返回的合成事件（`InputEventAction`），物理 ESC 不再被误判为「已返回」。
+- **回归**：新增 `tests/unit/test_cancel_sfx.gd`（真实确认面板消费 ESC → 播放；无人消费 → 静音），GUT 3/3 通过。
+- **验证**（rebase 到远端 `a072cde4` 之后）：快四门 `check_config` 209 / `test_core` 135 / `verify_formula` 9 / `check_docs` 全绿；本次改动的脚本 `gdformat` 通过（全仓另有 3 个由 `a072cde4` 带入的待格式化文件：`actor_name_tag.gd`、`behavior_badge_presenter.gd`、`teacher_classroom.gd`，本次未触碰）；`gdlint` 的红项均在 `sim_core.gd`（文件行数与公开方法数，同样由 `a072cde4` 带入）。完整 GUT 单测 457/466，9 个失败与本次无关（行为表行数、贴图扩展名、旧标定数值等，均来自 `a072cde4`）。
+
 ## 2026-10-19 停用安抚／表扬／训斥点击音效（用户要求）
 
 - 移除 `scripts/game/office_hub.gd::_on_action` 中 `ComfortVoice`、`TeacherPraise`、`TeacherScold` 三处 `SFX.play_one_shot`；打听、鼓励、脚步、BGM、漫画翻书等其余音效不变。

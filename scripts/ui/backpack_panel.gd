@@ -83,6 +83,8 @@ func take_selected() -> void:
 
 func _input(event: InputEvent) -> void:
 	if is_open() and event.is_action_pressed("ui_cancel"):
+		# 本页在 _input 阶段消费 ESC（早于 SFX 的全局判定），返回音须自己播。
+		SFX.play_cancel()
 		close()
 		get_viewport().set_input_as_handled()
 
