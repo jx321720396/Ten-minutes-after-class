@@ -33,14 +33,13 @@ func _ready() -> void:
 	%Mode.add_theme_font_size_override("font_size", int(config.small_size))
 	%Hint.add_theme_font_size_override("font_size", int(config.small_size))
 	for key in [
-		"patrol", "private_chat", "seats", "conflict", "profile", "profile_tool", "book_tool"
+		"private_chat", "seats", "conflict", "profile", "profile_tool", "book_tool"
 	]:
 		var button := get_node("%" + str(key).to_pascal_case()) as Button
 		button.text = str(config.copy[key])
 		_style_button(button)
-	for button in [%Patrol, %PrivateChat, %Seats, %Conflict]:
+	for button in [%PrivateChat, %Seats, %Conflict]:
 		button.custom_minimum_size.y = float(config.button_height)
-	%Patrol.icon = preload("res://assets/icons/actions/observe.svg")
 	%PrivateChat.icon = preload("res://assets/icons/actions/chat.svg")
 	%Seats.icon = preload("res://assets/icons/ui/teacher_seat.svg")
 	%Conflict.icon = preload("res://assets/icons/ui/teacher_conflict.svg")
@@ -50,7 +49,6 @@ func _ready() -> void:
 	%Conflict.disabled = true
 	%Profile.disabled = true
 	%Profile.pressed.connect(func() -> void: profile_requested.emit(_selected))
-	%Patrol.pressed.connect(func() -> void: action_requested.emit("classroom"))
 	%PrivateChat.pressed.connect(func() -> void: action_requested.emit("private_chat"))
 	%Seats.pressed.connect(func() -> void: action_requested.emit("seats"))
 	%Conflict.pressed.connect(func() -> void: action_requested.emit("mediate"))
@@ -77,7 +75,6 @@ func set_mode(mode: String) -> void:
 	%Mode.text = config.copy.monitor_title if monitor else config.copy.classroom_title
 	%ReturnOffice.text = config.copy.monitor_return if monitor else config.copy.classroom_return
 	%Status.text = config.copy.monitor_status if monitor else config.copy.classroom_status
-	%Patrol.disabled = not monitor
 
 
 func select_student(index: int, student_name: String) -> void:

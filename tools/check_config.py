@@ -547,14 +547,15 @@ check("D07：冲突持续 20 秒，吵架冷却 4 课间、调解冷却 3 课间
       and _harm_cfg.get("quarrel_cooldown_breaks", -1) == 4
       and _harm_cfg.get("shove_cooldown_breaks", -1) == 4
       and _harm_cfg.get("mediate_cooldown_breaks", -1) == 3)
-check("D07：吵架 +10/+5、推搡 +15/+10、打架 −40、调解 −10",
+check("D07：吵架 +10/+5、推搡 +15/+10、打架 −40、调解 −10、找茬 +5",
       _harm_cfg.get("quarrel_hostility_gain", -1) == 10
       and _harm_cfg.get("quarrel_mediate_gain", -1) == 5
       and _harm_cfg.get("shove_hostility_gain", -1) == 15
       and _harm_cfg.get("shove_mediate_gain", -1) == 10
       and _harm_cfg.get("fight_hostility_cut", -1) == 40
       and _harm_cfg.get("mediate_hostility_cut", -1) == 10
-      and _harm_cfg.get("friendly_chat_hostility_cut", -1) == 2)
+      and _harm_cfg.get("friendly_chat_hostility_cut", -1) == 2
+      and _harm_cfg.get("nitpick_hostility_gain", -1) == 5)
 _risk_cfg = params("rules/risk.csv")
 check("D06：霸凌敌对门槛 >50、至少 3 名敌对者",
       _risk_cfg.get("bully_hostility_threshold", -1) == 50

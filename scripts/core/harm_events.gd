@@ -19,9 +19,11 @@ var _shove_cooldown := 4
 var _mediate_cut := 10.0
 var _mediate_cooldown := 3
 var _friendly_cut := 2.0
+var _nitpick_gain := 5.0
 var _spot_x := -2.05
 var _spot_z := 0.0
 var _spot_gap := 0.8
+var _lane_gap := 1.6
 
 var _active: Array = []
 var _kind_of: Array = []
@@ -49,9 +51,11 @@ func configure(table: Dictionary) -> void:
 	_mediate_cut = float(table.get("mediate_hostility_cut", _mediate_cut))
 	_mediate_cooldown = int(float(table.get("mediate_cooldown_breaks", _mediate_cooldown)))
 	_friendly_cut = float(table.get("friendly_chat_hostility_cut", _friendly_cut))
+	_nitpick_gain = float(table.get("nitpick_hostility_gain", _nitpick_gain))
 	_spot_x = float(table.get("conflict_spot_x", _spot_x))
 	_spot_z = float(table.get("conflict_spot_z", _spot_z))
 	_spot_gap = float(table.get("conflict_pair_gap", _spot_gap))
+	_lane_gap = float(table.get("conflict_lane_gap", _lane_gap))
 
 
 func begin_phase(count: int) -> void:
@@ -64,6 +68,10 @@ func begin_phase(count: int) -> void:
 
 func friendly_cut() -> float:
 	return _friendly_cut
+
+
+func nitpick_gain() -> float:
+	return _nitpick_gain
 
 
 func mediate_cut() -> float:
@@ -98,6 +106,10 @@ func spot() -> Vector2:
 
 func spot_gap() -> float:
 	return _spot_gap
+
+
+func lane_gap() -> float:
+	return _lane_gap
 
 
 ## 课间开始判定一次。考试日与非课间不判定，冷却按实际课间计数。
@@ -220,12 +232,17 @@ func _judge(core: Variant) -> void:
 		var b := int(pair["b"])
 		if bool(taken[a]) or bool(taken[b]):
 			continue
+		if active_kind(a) != "" or active_kind(b) != "":
+			continue
 		taken[a] = true
 		taken[b] = true
 		_start(core, a, b, str(pair["kind"]))
 
 
 func _eligible(core: Variant, i: int) -> bool:
+	# 已经在吵架、推搡或打架里的人不能再被拉进另一场。
+	if active_kind(i) != "":
+		return false
 	return bool(core.is_present(i)) and not bool(core.is_broken(i))
 
 
@@ -271,6 +288,8 @@ func _pair_active(a: int, b: int) -> String:
 
 
 func _start(core: Variant, a: int, b: int, kind: String) -> void:
+	if active_kind(a) != "" or active_kind(b) != "":
+		return
 	_active.append({"a": a, "b": b, "kind": kind, "remaining": _seconds})
 	_kind_of[a] = kind
 	_kind_of[b] = kind

@@ -7,3 +7,4 @@ chat_range_m,1.2,m,闲聊双方的交互范围（真实地面位置距离上限�
 seated_tolerance_m,0.1,m,判定仍在本座位入口的平面距离容差
 seated_chat_range_m,2.1,m,同列前后紧邻且都在本座位时允许转身聊天；覆盖移动端真实2米排距
 range_step_m,0.1,m,连线阻挡判定采样步长（短连接段不得穿过桌椅）
+partner_start_range_m,0.9,m,闲聊和找茬要走到这个距离以内才真正开始；更远只算走过去

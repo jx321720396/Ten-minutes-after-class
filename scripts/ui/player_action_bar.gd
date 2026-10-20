@@ -26,6 +26,7 @@ signal profile_requested(index: int)
 ## 公开活动的中文名（内核 activity_of 的返回值 → 玩家看得懂的说法）
 const ACTIVITY_NAMES := {
 	"chat": "正在闲聊",
+	"nitpick": "在找茬",
 	"roughhouse": "在打闹",
 	"move": "走动中",
 	"sleep": "睡着了",

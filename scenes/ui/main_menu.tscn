@@ -1,8 +1,7 @@
 [gd_scene format=3 uid="uid://cc7c5bw525vga"]
 
-[ext_resource type="FontFile" uid="uid://charthemonyossans01" path="res://assets/fonts/harmonyos-sans/HarmonyOS_Sans_SC.ttf" id="campus_font"]
-
 [ext_resource type="Script" uid="uid://cctsahkm2am3h" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="FontFile" uid="uid://l8d1u77nwens" path="res://assets/fonts/harmonyos-sans/HarmonyOS_Sans_SC.ttf" id="campus_font"]
 
 [sub_resource type="FontVariation" id="FontVariation_title"]
 base_font = ExtResource("campus_font")
@@ -220,7 +219,7 @@ theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/focus = SubResource("StyleBoxFlat_btn_focus")
 text = "关于"
 
-[node name="Encyclopedia" type="Button" parent="VBoxContainer"]
+[node name="Encyclopedia" type="Button" parent="VBoxContainer" unique_id=743027850]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.28, 0.2, 0.12, 1)
 theme_override_colors/font_pressed_color = Color(0.16, 0.1, 0.04, 1)

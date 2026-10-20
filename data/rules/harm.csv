@@ -19,6 +19,8 @@ shove_cooldown_breaks,4,推搡当课间起，四个课间内不能再推搡
 mediate_hostility_cut,10,没有进行中的吵架 / 推搡时，调解完成后双方敌对各 −10
 mediate_cooldown_breaks,3,调解结束的课间起，三个课间内不能再调解这对人
 friendly_chat_hostility_cut,2,友善交流：正常接纳并实际完成聊天时，对子双方敌对各 −2
+nitpick_hostility_gain,5,找茬自然结束：双方敌对各 +5（直接加，不走拒绝公式）
 conflict_spot_x,-2.05,冲突站位 X（教室左侧柜子旁空地，对齐 StandPoints/SIDE_LEFT）
 conflict_spot_z,0,冲突站位 Z
 conflict_pair_gap,0.8,两人面对面时的中心间距（米），不小于 student_min_gap
+conflict_lane_gap,1.6,相邻两场冲突沿左侧过道拉开的间距（米）；一场只有两个人

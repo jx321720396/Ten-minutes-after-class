@@ -269,7 +269,7 @@ class Sim:
         self.tick_in_phase = 0
         # 一天的相位序列（段名, tick 数）。与 GDScript 内核 `_active_phases` 对齐（break/class 交替）。
         self.day_phases = [("break", 100), ("class", 90), ("break", 100), ("class", 90), ("break", 100)]
-        self.stats = {"events": 0, "chats": 0, "joins": 0, "bursts": 0,
+        self.stats = {"events": 0, "chats": 0, "nitpicks": 0, "joins": 0, "bursts": 0,
                       "interrupts": 0,
                       "skipped_events": 0, "dedup_skips": 0,
                       "roughhouse": 0, "sleeps": 0,
@@ -320,6 +320,8 @@ class Sim:
         # 多人聊天（2026-10-14 重构）：会话 = 成员集合，逐人计时，2→3→4 递进加入。
         self.conversations = []          # 会话列表：{"members": set}
         self.conv_of = [None] * n        # 节点 -> 所在会话（None = 不在会话）
+        self.nitpick_of = [-1] * n       # 找茬对方；-1 = 不在找茬
+        self.nitpick_lead = [False] * n  # 只有发起者结算双方敌对 +5
         self.join_log = []               # 通用加入日志（投票/跟随/不合流/满员，只读观察，§9.1.4 交接 3）
         # 通用加入（§9.1.4，2026-10-15）：活动组（打闹/学习/零食分享）+ 带朋友冷却 + 分享去重
         self.rough_groups = []          # 打闹组：{"members": set}
@@ -785,12 +787,116 @@ class Sim:
         """正在娱乐 = 正在做休闲活动（LEISURE_KINDS 且占用未到）。"""
         return self.busy_act[j] in LEISURE_KINDS and self.global_tick < self.busy_until[j]
 
+    def _try_nitpick(self, i):
+        """找茬：与闲聊同一概率和时长抖动，直接找自己敌对最高的人。"""
+        if not self.allowed("nitpick") or "nitpick" not in self.probs:
+            return False
+        gain = 1.0 + self.tag_bias(i, "chat_bias") - self.tag_bias(i, "study_bias")
+        gain = max(0.1, gain)
+        if self.rng.random() >= self.probs["nitpick"] * gain:
+            return False
+        target = self._find_nitpick_target(i)
+        if target is None:
+            return False
+        self._start_nitpick(i, target)
+        return True
+
+    def _find_nitpick_target(self, i):
+        best, best_h, has_best = None, 0.0, False
+        for j in range(self.N):
+            if not self._nitpick_target_ok(i, j):
+                continue
+            h = float(self.H[i][j])
+            if not has_best or h > best_h or (h == best_h and j < best):
+                best, best_h, has_best = j, h, True
+        return best
+
+    def _nitpick_target_ok(self, i, j):
+        if j == i or self.sleeping[j] or self.Broken[j] or self.is_in_office(j):
+            return False
+        if self.conflict_kind[j]:
+            return False
+        if self.busy_act[j] == "nitpick":
+            return False
+        return True
+
+    def _start_nitpick(self, i, j):
+        self._pull_for_nitpick(j)
+        dur = self._nitpick_duration()
+        until = self.global_tick + dur
+        self.nitpick_of[i] = j
+        self.nitpick_lead[i] = True
+        self.nitpick_of[j] = i
+        self.nitpick_lead[j] = False
+        for person in (i, j):
+            self.current_act[person] = "nitpick"
+            self.busy_act[person] = "nitpick"
+            self.busy_until[person] = until
+            self.busy_phase[person] = self.phase_index
+        self.stats["nitpicks"] = self.stats.get("nitpicks", 0) + 1
+
+    def _pull_for_nitpick(self, j):
+        self._cancel_nitpick(j)
+        if self.conv_of[j] is not None:
+            self._leave_conversation(j, self.conv_of[j])
+        if self.rough_of[j] is not None:
+            grp = self.rough_of[j]
+            grp["members"].discard(j)
+            self.rough_of[j] = None
+            if len(grp["members"]) < 2:
+                for m in list(grp["members"]):
+                    self.rough_of[m] = None
+                if grp in self.rough_groups:
+                    self.rough_groups.remove(grp)
+        self._leave_solo_activity(j)
+        self.current_act[j] = None
+        self.busy_act[j] = None
+        self.busy_phase[j] = -1
+        self.busy_until[j] = 0
+
+    def _nitpick_duration(self):
+        base = int(self.behaviors.get("nitpick", {}).get("duration", 20))
+        lo = float(self.thresholds_lookup.get("chat_duration_jitter_min", 0.8))
+        hi = float(self.thresholds_lookup.get("chat_duration_jitter_max", 1.2))
+        return max(1, int(base * (lo + (hi - lo) * self.rng.random())))
+
+    def _finish_nitpick(self, i):
+        j = self.nitpick_of[i] if i < len(self.nitpick_of) else -1
+        if j is not None and j >= 0:
+            self._add_nitpick_hostility(i, j)
+        self._unlink_nitpick(i)
+
+    def _unlink_nitpick(self, i):
+        if not (0 <= i < self.N):
+            return
+        j = self.nitpick_of[i]
+        self.nitpick_of[i] = -1
+        self.nitpick_lead[i] = False
+        if j is None or j < 0 or j >= self.N or self.nitpick_of[j] != i:
+            return
+        self.nitpick_of[j] = -1
+        self.nitpick_lead[j] = False
+
+    def _cancel_nitpick(self, i):
+        if not (0 <= i < self.N):
+            return
+        j = self.nitpick_of[i]
+        self._unlink_nitpick(i)
+        if j is None or j < 0 or j >= self.N or self.busy_act[j] != "nitpick":
+            return
+        self.current_act[j] = None
+        self.busy_act[j] = None
+        self.busy_phase[j] = -1
+        self.busy_until[j] = 0
+
     def _try_partner_activity(self, i, busy):
         """伙伴类活动（闲聊 / 打闹）的一次尝试（§9.1.4）：按 behavior_probs 掷骰 → 找伴 → 提议。
 
         2026-10-17 裁定：游戏状态（动力 <30）也允许伙伴类娱乐，故自由状态与游戏状态共用本函数；
         学习状态仍锁定学习，不调用。返回 True 表示本决策点已被占用。
         """
+        if self._try_nitpick(i):
+            return True
         # 标签调制（§11、§18.9）：爱学习 → 更少闲聊；爱聊天 → 更多闲聊
         chat_gain = 1.0 + self.tag_bias(i, "chat_bias") - self.tag_bias(i, "study_bias")
         chat_gain = max(0.1, chat_gain)
@@ -882,6 +988,12 @@ class Sim:
             if r <= acc:
                 return j
         return pool[-1][0]
+
+    def _add_nitpick_hostility(self, i, j):
+        """找茬自然结束：双方敌对各加 harm.csv 的增量。结算写入，不是选人时读对方态度。"""
+        gain = float(self.harm.get("nitpick_hostility_gain", 5))
+        self.H[i][j] = clamp100(self.H[i][j] + gain)
+        self.H[j][i] = clamp100(self.H[j][i] + gain)
 
     def occupy(self, i, j, behavior, quiet=False):
         """按行为耗时把双方置为忙碌（“收益越大耗时越长”，不再一律 20 tick）"""
@@ -1061,6 +1173,7 @@ class Sim:
             self.sleeping[j]
             or (self.busy_act[j] == "move" and self.global_tick < self.busy_until[j])
             or (self.phase_state[j] == "play")
+            or self.busy_act[j] == "nitpick"
         )
 
     def _find_partner(self, i, kind):
@@ -1664,6 +1777,9 @@ class Sim:
         cost = self.probs.get("interrupted_stress", 0.0)
         interrupted = []
         for i in range(self.N):
+            if self.nitpick_lead[i] and self.busy_until[i] > self.global_tick:
+                self._unlink_nitpick(i)
+        for i in range(self.N):
             if self.busy_phase[i] < 0:
                 continue
             if self.busy_until[i] > self.global_tick:
@@ -1714,6 +1830,8 @@ class Sim:
                     self.H[i][m] = clamp100(self.H[i][m] - cut)
                     self.H[m][i] = clamp100(self.H[m][i] - cut)
                 self.stats["friendly_chats"] = self.stats.get("friendly_chats", 0) + 1
+            if self.busy_act[i] == "nitpick" and self.nitpick_lead[i]:
+                self._finish_nitpick(i)
             self.current_act[i] = None
             self.busy_act[i] = None
             self.busy_phase[i] = -1
@@ -1741,6 +1859,8 @@ class Sim:
         if self.Broken[i] or self.sleeping[i]:
             return ""
         if self.conflict_kind[i]:
+            return ""
+        if self.busy_act[i] == "nitpick" or self.current_act[i] == "nitpick":
             return ""
         state = self.phase_state[i]
         if state == "study":
@@ -1959,6 +2079,7 @@ class Sim:
         """中断当前活动（推搡效果）；已得学业收益按 D02 折算后保留。"""
         if not (0 <= i < self.N):
             return
+        self._cancel_nitpick(i)
         self.fold_pending_unit(i)
         self.current_act[i] = None
         self.busy_act[i] = None
@@ -2458,6 +2579,7 @@ class Sim:
                 self.current_act[i] = None
                 self.StudyAcc[i] = 0.0
         for i in interrupted:
+            self._cancel_nitpick(i)
             self.current_act[i] = None
             self.busy_act[i] = None
             self.in_conversation[i] = False

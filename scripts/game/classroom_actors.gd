@@ -323,6 +323,10 @@ func _process(_delta: float) -> void:
 		# 贴图还在后台加载时保持站立表现（不闪空、不阻塞主线程）。
 		var standing: bool = mode == "stand" or not applied
 		actor.get_node("Sprite").visible = standing
+		var tag := actor.get_node_or_null("NameTag") as ActorNameTag
+		if tag != null:
+			var activity := str(_pose_core.activity_of(index))
+			tag.keep_side = activity == "chat" or activity == "nitpick"
 		_update_chair_depth(seat, standing and at_home and not moving)
 
 

@@ -32,6 +32,8 @@ var seat_pose: Node3D = null
 ## 坐姿用的竖排文本 / 站姿用的横排文本（都带换行差异，由 ClassroomActors 填）。
 var seat_text: String = ""
 var stand_text: String = ""
+## 找茬、闲聊即使站着，名字也贴在图片左侧，不放到头顶。
+var keep_side := false
 ## 站姿头顶高度（actor 局部坐标，米）：拿不到贴图包围盒时的兜底值。
 var head_y: float = 1.35
 
@@ -48,8 +50,11 @@ func _process(_delta: float) -> void:
 	if camera == null:
 		return
 	var seated := _is_seated()
-	_apply_layout(seated)
-	var anchor := _seated_anchor(camera) if seated else _standing_anchor()
+	var side := seated or keep_side
+	_apply_layout(side)
+	var anchor := _seated_anchor(camera) if seated else (
+		_standing_side_anchor(camera) if keep_side else _standing_anchor()
+	)
 	global_position = anchor
 	var distance := camera.global_position.distance_to(anchor)
 	if distance > 0.01:
@@ -74,6 +79,25 @@ func _is_seated() -> bool:
 	if stand_sprite != null and is_instance_valid(stand_sprite) and stand_sprite.visible:
 		return false
 	return true
+
+
+## 站着找茬 / 闲聊：竖排名字贴在立绘左侧，高度靠近胸口，不挡脸。
+func _standing_side_anchor(camera: Camera3D) -> Vector3:
+	var sprite := stand_sprite
+	var owner_actor := get_parent() as Node3D
+	if sprite == null or not is_instance_valid(sprite) or owner_actor == null:
+		return _standing_anchor()
+	var box := sprite.get_aabb()
+	if box.size.y <= 0.0:
+		return _standing_anchor()
+	var chest := owner_actor.to_global(Vector3(0.0, _stand_top_y() * 0.62, 0.0))
+	var right := camera.global_transform.basis.x
+	right.y = 0.0
+	if right.length_squared() < 0.0001:
+		return chest
+	# 立绘两侧有透明边，按整张图半宽会把名字推得太远；收一截再留一点间隙。
+	var half := box.size.x * sprite.global_transform.basis.get_scale().x * 0.38
+	return chest - right.normalized() * maxf(side_offset, half)
 
 
 ## 站姿：头顶正上方、横向居中于角色。
@@ -102,7 +126,7 @@ func _stand_top_y() -> float:
 func _seated_anchor(camera: Camera3D) -> Vector3:
 	var box := _seated_bounds()
 	if box.size == Vector3.ZERO:
-		return _standing_anchor()
+		return _standing_side_anchor(camera) if keep_side else _standing_anchor()
 	var right := camera.global_transform.basis.x
 	right.y = 0.0
 	if right.length_squared() < 0.0001:

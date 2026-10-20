@@ -75,6 +75,12 @@ static func export_state(core: SimCore) -> Dictionary:
 		"snack_groups": core._snack_groups.duplicate(true),
 		"snack_of": _ref_indices(core._snack_of, core._snack_groups),
 		"snack_provider": core._snack_provider.duplicate(),
+		"nitpick_of": core._nitpick_of.duplicate(),
+		"nitpick_lead": core._nitpick_lead.duplicate(),
+		"approach_kind": core._approach_kind.duplicate(),
+		"approach_of": core._approach_of.duplicate(),
+		"approach_dur_a": core._approach_dur_a.duplicate(),
+		"approach_dur_b": core._approach_dur_b.duplicate(),
 		"share_units": _share_units_to_array(core._share_units),
 		"joined_tick": core._joined_tick.duplicate(),
 		"study_start_tick": core._study_start_tick.duplicate(),
@@ -143,6 +149,12 @@ static func restore_state(core: SimCore, data: Dictionary) -> bool:
 	core._snack_groups = _groups_from(data.get("snack_groups", []))
 	core._snack_of = _relink(data.get("snack_of", []), core._snack_groups)
 	core._snack_provider = _nullable_ints(data.get("snack_provider", []))
+	core._nitpick_of = _ints(data.get("nitpick_of", []))
+	core._nitpick_lead = _bools(data.get("nitpick_lead", []))
+	core._approach_kind = _strs(data.get("approach_kind", []))
+	core._approach_of = _ints(data.get("approach_of", []))
+	core._approach_dur_a = _ints(data.get("approach_dur_a", []))
+	core._approach_dur_b = _ints(data.get("approach_dur_b", []))
 	core._share_units = _share_units_from(data.get("share_units", {}))
 	core._joined_tick = _ints(data.get("joined_tick", []))
 	core._study_start_tick = _ints(data.get("study_start_tick", []))

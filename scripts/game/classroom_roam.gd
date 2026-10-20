@@ -102,6 +102,8 @@ var _max_decides_per_break: int = 1
 var _decides_remaining: int = 0
 ## 课间冲突（吵架 / 推搡 / 打架）在场人名与目标点
 var _was_in_conflict: Array = []
+var _was_nitpicking: Array = []
+var _nitpick_goal: Dictionary = {}
 var _conflict_goal: Dictionary = {}
 
 
@@ -174,6 +176,7 @@ func _process(delta: float) -> void:
 		return
 	_sync_positions_to_core()
 	_send_conflicts()
+	_send_nitpicks()
 	if _group_distance > 0.0:
 		_group_spacing.update(_core, _actors, _walkers, self, _group_distance, _minimum_gap)
 	if _decides_remaining <= 0 or decide_interval <= 0.0:
@@ -450,6 +453,22 @@ func force_decide() -> void:
 	_decide_batch()
 
 
+## 一场冲突只有两个人。多场同时发生时沿过道前后错开，避免叠成一团。
+func _conflict_lanes(harm: HarmEvents) -> Dictionary:
+	var anchors: Array[int] = []
+	for i in range(_actor_count):
+		var partner := harm.partner_of(i)
+		if partner <= i or harm.active_kind(i) == "":
+			continue
+		anchors.append(i)
+	anchors.sort()
+	var lanes := {}
+	var count := anchors.size()
+	for index in range(count):
+		lanes[anchors[index]] = float(index) - float(count - 1) * 0.5
+	return lanes
+
+
 ## 吵架 / 推搡 / 打架的两人走到左侧柜子旁的空地；结束后走回自己的座位。
 func _send_conflicts() -> void:
 	if _core == null or _core._harm_events == null:
@@ -457,6 +476,8 @@ func _send_conflicts() -> void:
 	var harm: HarmEvents = _core._harm_events
 	var spot := harm.spot()
 	var gap := harm.spot_gap()
+	var lane_gap := harm.lane_gap()
+	var lanes := _conflict_lanes(harm)
 	while _was_in_conflict.size() < _actor_count:
 		_was_in_conflict.append(false)
 	for i in range(_actor_count):
@@ -465,15 +486,20 @@ func _send_conflicts() -> void:
 			_conflict_goal.erase(i)
 			if bool(_was_in_conflict[i]):
 				_was_in_conflict[i] = false
+				_set_people_gap(i, true)
 				var seat_id := str(_core.seat_of(i))
 				if _point_positions.has(seat_id):
 					_release_point(i)
 					_send_to_point(i, _point_positions[seat_id])
 			continue
 		_was_in_conflict[i] = true
+		# 去左侧过道的路线会贴着座位穿过同学。普通让行会把第一步卡住，
+		# 人就停在自己座位上吵架。冲突这几秒先不让行，到了再恢复。
+		_set_people_gap(i, false)
 		var partner := harm.partner_of(i)
 		var side := -1.0 if i < partner else 1.0
-		var target := Vector3(spot.x, 0.0, spot.y + side * gap * 0.5)
+		var lane := float(lanes.get(mini(i, partner), 0.0))
+		var target := Vector3(spot.x, 0.0, spot.y + lane * lane_gap + side * gap * 0.5)
 		var actor: Node3D = _actors[i]
 		if actor == null:
 			continue
@@ -487,6 +513,46 @@ func _send_conflicts() -> void:
 		_conflict_goal[i] = target
 		_release_point(i)
 		_send_to_point(i, target)
+
+
+## 找茬和闲聊都要先走到对方面前才开始。发起者走向对方；找茬结束后走回座位。
+func _send_nitpicks() -> void:
+	if _core == null:
+		return
+	while _was_nitpicking.size() < _actor_count:
+		_was_nitpicking.append(false)
+	for i in range(_actor_count):
+		if _core._harm_events != null and _core._harm_events.active_kind(i) != "":
+			continue
+		var target_index := int(_core.approach_target_of(i))
+		if target_index < 0:
+			target_index = int(_core.nitpick_target_of(i))
+		if target_index < 0 or target_index >= _actors.size():
+			_nitpick_goal.erase(i)
+			if bool(_was_nitpicking[i]):
+				_was_nitpicking[i] = false
+				if str(_core.activity_of(i)) == "chat":
+					continue
+				var seat_id := str(_core.seat_of(i))
+				if _point_positions.has(seat_id):
+					_release_point(i)
+					_send_to_point(i, _point_positions[seat_id])
+			continue
+		_was_nitpicking[i] = true
+		var actor: Node3D = _actors[i]
+		var target_actor: Node3D = _actors[target_index]
+		if actor == null or target_actor == null:
+			continue
+		var dest := target_actor.global_position
+		if actor.global_position.distance_to(dest) <= 0.8:
+			continue
+		var walker: ActorWalker = _walkers[i]
+		var goal: Vector3 = _nitpick_goal.get(i, Vector3(INF, INF, INF))
+		if walker != null and walker.is_moving() and goal.distance_to(dest) <= 0.4:
+			continue
+		_nitpick_goal[i] = dest
+		_release_point(i)
+		_go_to_friend(i, target_index)
 
 
 ## 课间一批离座决策（2026-10-19 用户裁定）：只有自由状态（动力 30–60）的学生走动，
@@ -714,6 +780,13 @@ func _move_actor_to(i: int, pos: Vector3, keep_occupancy: bool) -> void:
 ## 让人物走到目标点（**导航折线**），速度 = `movement.csv` 的 `meters_per_tick`。
 ## 上课归位不走这里（改用 `snap_to_seats`，2026-10-12 裁定）：本函数只服务课间离座 / 会面。
 ## 取不到路线 = 留在原地 + 记一次失败 —— 不直线兜底（直线会穿桌椅，§10.4）。
+## 冲突走向左侧时关掉人与人的让行；结束或平时走动再打开。
+func _set_people_gap(i: int, enabled: bool) -> void:
+	if i < 0 or i >= _walkers.size() or _walkers[i] == null:
+		return
+	_walkers[i].step_allowed = _step_clear.bind(i) if enabled else Callable()
+
+
 func _send_to_point(i: int, target: Vector3) -> bool:
 	var walker: ActorWalker = _walkers[i]
 	if walker == null:

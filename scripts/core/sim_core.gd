@@ -118,6 +118,12 @@ var _sleeping: Array = []
 var _in_conversation: Array = []
 var _conversations: Array = []  # 多人会话列表：{"members": Array(升序)}（2026-10-14 重构）
 var _conv_of: Array = []  # 节点 -> 所在会话 dict（null = 不在会话）
+var _nitpick_of: Array = []  # 找茬对方的节点号；-1 = 不在找茬
+var _nitpick_lead: Array = []  # true = 这次找茬的发起者（只有发起者结算 +5）
+var _approach_kind: Array = []  # "" / "chat" / "nitpick"：还在走过去，活动还没开始
+var _approach_of: Array = []
+var _approach_dur_a: Array = []
+var _approach_dur_b: Array = []
 var _join_log: Array = []  # 通用加入日志（投票/跟随/不合流/满员，只读观察，§9.1.4 交接 3）
 # 通用加入（§9.1.4，2026-10-15）：活动组（打闹/学习/零食分享）+ 带朋友冷却 + 分享去重
 var _rough_groups: Array = []  # 打闹组：{"members": Array(升序)}
@@ -321,6 +327,7 @@ func _reset_runtime(n: int) -> void:
 	_stats = {
 		"events": 0,
 		"chats": 0,
+		"nitpicks": 0,
 		"joins": 0,
 		"bursts": 0,
 		"interrupts": 0,
@@ -345,6 +352,12 @@ func _reset_runtime(n: int) -> void:
 	_in_conversation = []
 	_conversations = []
 	_conv_of = []
+	_nitpick_of = []
+	_nitpick_lead = []
+	_approach_kind = []
+	_approach_of = []
+	_approach_dur_a = []
+	_approach_dur_b = []
 	_join_log = []
 	_rough_groups = []
 	_rough_of = []
@@ -373,6 +386,12 @@ func _reset_runtime(n: int) -> void:
 		_sleeping.append(false)
 		_in_conversation.append(false)
 		_conv_of.append(null)
+		_nitpick_of.append(-1)
+		_nitpick_lead.append(false)
+		_approach_kind.append("")
+		_approach_of.append(-1)
+		_approach_dur_a.append(0)
+		_approach_dur_b.append(0)
 		_rough_of.append(null)
 		_study_of.append(null)
 		_snack_of.append(null)
@@ -427,7 +446,7 @@ func _apply_bindings() -> void:
 
 ## 成绩初始化（§17.1.1）：**镜像配对**，开局班级平均分恒为 (min+max)/2。
 ## ⚠️ 必须紧跟 _init_relations() 之后调用，与 Python 同一点插入，保同种子 RNG 流不漂移。
-## 开局状态（《老师版规则合并稿》D01）：压力 0–20 随机、动力 = 该生压力、成绩 min–max 镜像配对。
+## 开局状态（《老师版规则合并稿》D01）：压力 0–30 随机、动力 = 该生压力、成绩 min–max 镜像配对。
 ## 平均分是**固定值而非期望值**（2026-10-18 裁定）：前 half 名学生各自均匀随机 [min,max)，
 ## 后 half 名各自为其关于中值的镜像（g' = min + max − g），故总和恒为 n×(min+max)/2，
 ## 任意种子下开局均分都是同一个数值 —— 否则开局随机抖动本身就会造出「必不达标」的局。
@@ -757,6 +776,8 @@ func _settle_finished_actions() -> void:
 		if _busy_act[i] == "chat" and _conv_of.size() > i and _conv_of[i] != null:
 			_settle_friendly_chat(i)
 			_stats["friendly_chats"] = int(_stats.get("friendly_chats", 0)) + 1
+		if _busy_act[i] == "nitpick" and _nitpick_lead.size() > i and bool(_nitpick_lead[i]):
+			_finish_nitpick(i)
 		_current_act[i] = null
 		_busy_act[i] = null
 		_busy_phase[i] = -1
@@ -794,6 +815,7 @@ func _settle_friendly_chat(i: int) -> void:
 
 func _tick() -> void:
 	_global_tick += 1
+	_advance_approaches()
 	_settle_finished_actions()
 	_settle_conversations()
 	_settle_groups()
@@ -881,6 +903,11 @@ func _unit_kind(i: int) -> String:
 		return ""
 	# 冲突发生在选定活动之前，这 20 秒不按学习 / 游戏 / 娱乐结算。
 	if _harm_events != null and _harm_events.active_kind(i) != "":
+		return ""
+	# 找茬占用期间不按学习 / 游戏 / 娱乐结算。
+	if _busy_act[i] == "nitpick" or _current_act[i] == "nitpick":
+		return ""
+	if str(_busy_act[i]) == "approach":
 		return ""
 	if _phase_state.size() > i and str(_phase_state[i]) == "study":
 		return "study"
@@ -1151,6 +1178,8 @@ func seed_tutorial_scenario(stress_0: float, affinity_01: float, hostility_01: f
 func interrupt_for_seat_change(i: int) -> void:
 	if i < 0 or i >= _n:
 		return
+	_cancel_nitpick(i)
+	_clear_approach(i)
 	_fold_pending_unit(i)
 	_current_act[i] = null
 	_busy_act[i] = null
@@ -1377,6 +1406,8 @@ func _is_study_locked(i: int) -> bool:
 func _interrupt_activity(i: int) -> void:
 	if i < 0 or i >= _n:
 		return
+	_cancel_nitpick(i)
+	_clear_approach(i)
 	_fold_pending_unit(i)
 	_current_act[i] = null
 	_busy_act[i] = null
@@ -1735,6 +1766,9 @@ func _check_interrupt() -> void:
 	var cost := float(_probs.get("interrupted_stress", 0.0))
 	_interrupted_nodes = []
 	for i in range(_n):
+		if _nitpick_lead.size() > i and bool(_nitpick_lead[i]) and _busy_until[i] > _global_tick:
+			_unlink_nitpick(i)
+	for i in range(_n):
 		if _busy_phase[i] < 0:
 			continue
 		if _busy_until[i] > _global_tick:
@@ -1755,12 +1789,16 @@ func _check_interrupt() -> void:
 func _cleanup_phase() -> void:
 	_interrupt_conversations()
 	_clear_join_groups()
+	for i in range(_n):
+		if _approach_kind.size() > i and str(_approach_kind[i]) != "":
+			_clear_approach(i)
 	var leisure_notifications: Array = []
 	for i in range(_n):
 		if _current_act[i] == "study":
 			_current_act[i] = null
 			_study_acc[i] = 0.0
 	for i in _interrupted_nodes:
+		_cancel_nitpick(i)
 		if LEISURE_KINDS.has(_busy_act[i]):
 			leisure_notifications.append(
 				{"kind": "leisure_interrupted", "i": i, "activity": _busy_act[i]}
@@ -1990,10 +2028,200 @@ func _decide_and_act() -> void:
 	_invite_friends_pass()
 
 
+## 找茬：基础概率是闲聊的一半，时长抖动相同。对象是自己敌对最高的人，不看距离。
+## 不能拒绝，也不能被加入。睡觉、办公室、崩溃、正在吵架 / 推搡 / 打架的人不拉。
+## 游戏锁定和学习锁定可以拉进来。自然结束才双方敌对各 +5。
+func _try_nitpick(i: int) -> bool:
+	if not _allowed("nitpick") or not _probs.has("nitpick"):
+		return false
+	var gain := 1.0 + _tag_bias(i, "chat_bias") - _tag_bias(i, "study_bias")
+	gain = maxf(0.1, gain)
+	if _rng.random() >= float(_probs["nitpick"]) * gain:
+		return false
+	var target := _find_nitpick_target(i)
+	if target < 0:
+		return false
+	var dur := _nitpick_duration()
+	if _partner_needs_walk(i, target):
+		_begin_approach(i, target, "nitpick", dur, dur)
+	else:
+		_start_nitpick(i, target, dur)
+	return true
+
+
+func _find_nitpick_target(i: int) -> int:
+	var best := -1
+	var best_h := 0.0
+	var has_best := false
+	for j in range(_n):
+		if not _nitpick_target_ok(i, j):
+			continue
+		var h := float(_h[i * _n + j])
+		if not has_best or h > best_h or (is_equal_approx(h, best_h) and j < best):
+			best = j
+			best_h = h
+			has_best = true
+	return best
+
+
+func _nitpick_target_ok(i: int, j: int) -> bool:
+	if j == i or not is_present(j) or _sleeping[j] or _broken[j]:
+		return false
+	if _harm_events != null and _harm_events.active_kind(j) != "":
+		return false
+	if _busy_act[j] == "nitpick":
+		return false
+	return true
+
+
+func _start_nitpick(i: int, j: int, preset_duration: int = -1) -> void:
+	interrupt_for_seat_change(j)
+	var dur := preset_duration if preset_duration >= 0 else _nitpick_duration()
+	var until := _global_tick + dur
+	_nitpick_of[i] = j
+	_nitpick_lead[i] = true
+	_nitpick_of[j] = i
+	_nitpick_lead[j] = false
+	for person in [i, j]:
+		_current_act[person] = "nitpick"
+		_busy_act[person] = "nitpick"
+		_busy_until[person] = until
+		_busy_phase[person] = _phase_index
+	_stats["nitpicks"] = int(_stats.get("nitpicks", 0)) + 1
+	_emit("event_happened", {"kind": "nitpick", "i": i, "j": j})
+
+
+func _nitpick_duration() -> int:
+	var base := int(_behaviors.get("nitpick", {}).get("duration", 20))
+	var lo := float(_thresholds_lookup.get("chat_duration_jitter_min", 0.8))
+	var hi := float(_thresholds_lookup.get("chat_duration_jitter_max", 1.2))
+	return maxi(1, int(base * (lo + (hi - lo) * _rng.random())))
+
+
+## 找茬自然结束：只由发起者结算一次，双方敌对各加配置值。占用由到期循环清掉。
+func _finish_nitpick(i: int) -> void:
+	var j := int(_nitpick_of[i]) if _nitpick_of.size() > i else -1
+	if j >= 0 and _harm_events != null:
+		var gain := float(_harm_events.nitpick_gain())
+		_add_hostility(i, j, gain)
+		_add_hostility(j, i, gain)
+	_unlink_nitpick(i)
+
+
+## 只拆双方链接，不加敌对，也不改占用。
+func _unlink_nitpick(i: int) -> void:
+	if i < 0 or i >= _n or _nitpick_of.size() <= i:
+		return
+	var j := int(_nitpick_of[i])
+	_nitpick_of[i] = -1
+	_nitpick_lead[i] = false
+	if j < 0 or j >= _n or _nitpick_of.size() <= j or int(_nitpick_of[j]) != i:
+		return
+	_nitpick_of[j] = -1
+	_nitpick_lead[j] = false
+
+
+## 中途把一个人拉走：不加敌对，并放开还挂在这次找茬上的对方。
+func _cancel_nitpick(i: int) -> void:
+	if i < 0 or i >= _n or _nitpick_of.size() <= i:
+		return
+	var j := int(_nitpick_of[i])
+	_unlink_nitpick(i)
+	if j < 0 or j >= _n or _busy_act[j] != "nitpick":
+		return
+	_current_act[j] = null
+	_busy_act[j] = null
+	_busy_phase[j] = -1
+	_busy_until[j] = 0
+
+
+## 表现层用：找茬发起者要走向的人。不是发起者返回 -1。
+func nitpick_target_of(i: int) -> int:
+	if i < 0 or i >= _n or _nitpick_lead.size() <= i or not bool(_nitpick_lead[i]):
+		return -1
+	return int(_nitpick_of[i])
+
+
+## 表现层用：正在走向闲聊或找茬对象的人。还没走近时活动本身还没开始。
+func approach_target_of(i: int) -> int:
+	if i < 0 or i >= _n or _approach_kind.size() <= i or str(_approach_kind[i]) == "":
+		return -1
+	return int(_approach_of[i])
+
+
+func _partner_start_range() -> float:
+	return float(_chat_space.get("partner_start_range_m", 0.9))
+
+
+## 没有教室几何时（离线对拍）直接开始，避免多走一步改变随机序列。
+func _partner_needs_walk(i: int, j: int) -> bool:
+	if not _space.is_ready():
+		return false
+	return distance_between(i, j) > _partner_start_range()
+
+
+func _begin_approach(i: int, j: int, kind: String, dur_a: int, dur_b: int) -> void:
+	_approach_kind[i] = kind
+	_approach_of[i] = j
+	_approach_dur_a[i] = dur_a
+	_approach_dur_b[i] = dur_b
+	_current_act[i] = null
+	_busy_act[i] = "approach"
+	_busy_phase[i] = _phase_index
+	_busy_until[i] = _FOREVER
+
+
+func _clear_approach(i: int) -> void:
+	if i < 0 or i >= _n or _approach_kind.size() <= i:
+		return
+	_approach_kind[i] = ""
+	_approach_of[i] = -1
+	if str(_busy_act[i]) == "approach":
+		_busy_act[i] = null
+		_busy_phase[i] = -1
+		_busy_until[i] = 0
+		_current_act[i] = null
+
+
+func _approach_target_ok(i: int, j: int, kind: String) -> bool:
+	if kind == "nitpick":
+		return _nitpick_target_ok(i, j)
+	if j < 0 or j >= _n or j == i or not is_present(j) or _sleeping[j] or _broken[j]:
+		return false
+	if _harm_events != null and _harm_events.active_kind(j) != "":
+		return false
+	if _busy_act[j] != null or _current_act[j] != null:
+		return false
+	return true
+
+
+func _advance_approaches() -> void:
+	for i in range(_n):
+		if _approach_kind.size() <= i or str(_approach_kind[i]) == "":
+			continue
+		var j := int(_approach_of[i])
+		var kind := str(_approach_kind[i])
+		if not _approach_target_ok(i, j, kind):
+			_clear_approach(i)
+			continue
+		if _partner_needs_walk(i, j):
+			continue
+		var dur_a := int(_approach_dur_a[i])
+		var dur_b := int(_approach_dur_b[i])
+		_clear_approach(i)
+		if kind == "nitpick":
+			_start_nitpick(i, j, dur_a)
+		elif kind == "chat":
+			_start_conversation(i, j, dur_a, dur_b)
+
+
 ## 伙伴类活动（闲聊 / 打闹）的一次尝试（§9.1.4）：按 behavior_probs 掷骰 → 找伴 → 提议。
 ## 2026-10-17 裁定：游戏状态（动力 <30）也允许伙伴类娱乐，故自由状态与游戏状态共用本函数；
 ## 学习状态仍锁定学习，不调用。返回 true 表示本决策点已被占用。
 func _try_partner_activity(i: int, busy: Array) -> bool:
+	# 找茬基础概率是闲聊的一半，标签修正相同，但先掷。掷中就直接去找敌对最高的人。
+	if _try_nitpick(i):
+		return true
 	# 标签调制（§11、§18.9）：爱学习更少聊、爱聊天更多聊
 	var chat_gain := 1.0 + _tag_bias(i, "chat_bias") - _tag_bias(i, "study_bias")
 	chat_gain = maxf(0.1, chat_gain)
@@ -2223,7 +2451,7 @@ func _do_chat_join(i: int, j: int, roll: float = -1.0) -> void:
 
 # ------------------------------------------------------------------ 多人聊天会话子系统（2026-10-14 重构：2→3→4 递进加入）
 ## 二人开聊（会话种子，规格 B）：形成会话 {i,j}，逐人独立计时，他人可随后加入。
-func _start_conversation(i: int, j: int) -> void:
+func _start_conversation(i: int, j: int, dur_i: int = -1, dur_j: int = -1) -> void:
 	var members: Array = [i, j]
 	# D06 孤立判据：新建共同活动 → 双方当天都算「成功参加共同活动」。
 	if _risk != null:
@@ -2236,8 +2464,8 @@ func _start_conversation(i: int, j: int) -> void:
 	_conv_of[j] = conv
 	_in_conversation[i] = true
 	_in_conversation[j] = true
-	_occupy_chat(i)
-	_occupy_chat(j)
+	_occupy_chat(i, dur_i)
+	_occupy_chat(j, dur_j)
 	_settle_chat_pair(i, j)
 	_stats["chats"] = int(_stats["chats"]) + 1
 	# 真实共同活动登记（显示层，不消耗 RNG）
@@ -2255,9 +2483,10 @@ func _chat_duration() -> int:
 
 ## 把 i 置为聊天占用（独立时长）。不写 busy_phase —— 聊天由 _settle_conversations /
 ## _interrupt_conversations 专责，不经过「到期结算 / 被打断」两套通用协议。
-func _occupy_chat(i: int) -> void:
+func _occupy_chat(i: int, preset_duration: int = -1) -> void:
+	var dur := preset_duration if preset_duration >= 0 else _chat_duration()
 	_current_act[i] = "chat"
-	_busy_until[i] = maxi(int(_busy_until[i]), _global_tick + _chat_duration())
+	_busy_until[i] = maxi(int(_busy_until[i]), _global_tick + dur)
 	_busy_act[i] = "chat"
 
 
@@ -2393,6 +2622,8 @@ func _join_blocked(j: int) -> bool:
 		or is_moving(j)
 		or (_busy_act[j] == "move" and _global_tick < _busy_until[j])
 		or (_phase_state.size() > j and str(_phase_state[j]) == "play")
+		or _busy_act[j] == "nitpick"
+		or _busy_act[j] == "approach"
 	)
 
 
@@ -2525,7 +2756,10 @@ func _propose_activity(i: int, j: int, kind: String) -> bool:
 			_reject_join(i, j, [j], kind, vote["yes"], vote["no"])
 			return false
 		if kind == "chat":
-			_do_chat(i, j)
+			if _partner_needs_walk(i, j):
+				_begin_approach(i, j, "chat", _chat_duration(), _chat_duration())
+			else:
+				_do_chat(i, j)
 		else:
 			_do_roughhouse(i, j)
 		_stats["join_accepts"] = int(_stats.get("join_accepts", 0)) + 1
@@ -2697,7 +2931,10 @@ func _switch_activity(j: int, kind: String, i: int) -> void:
 	_leave_solo_activity(j)
 	_study_acc[j] = acc
 	if kind == "chat":
-		_do_chat(i, j)
+		if _partner_needs_walk(j, i):
+			_begin_approach(j, i, "chat", _chat_duration(), _chat_duration())
+		else:
+			_do_chat(i, j)
 	else:
 		_do_roughhouse(i, j)
 
@@ -2857,6 +3094,10 @@ func interaction_space_ready() -> bool:
 ## 闲聊空间几何（规则来源 data/rules/chat_space.csv；2026-10-16 从 player_interaction.csv 迁出）。
 func chat_range() -> float:
 	return float(_chat_space["chat_range_m"])
+
+
+func partner_start_range() -> float:
+	return _partner_start_range()
 
 
 func seated_chat_range() -> float:

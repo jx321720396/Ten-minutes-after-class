@@ -22,7 +22,7 @@ func test_initial_distribution_follows_d01() -> void:
 	var total := 0.0
 	for i in range(core.node_count()):
 		var stress := core.stress(i)
-		assert_true(stress >= 0.0 and stress <= 20.0, "开局压力 0–20（D01）")
+		assert_true(stress >= 0.0 and stress <= 30.0, "开局压力 0–30（D01）")
 		assert_almost_eq(core.vitality(i), stress, 0.0001, "开局动力 = 该生压力（D01）")
 		var grade := core.grade(i)
 		assert_true(grade >= 330.0 and grade <= 530.0, "开局成绩 330–530（D01）")

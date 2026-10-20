@@ -807,6 +807,31 @@ check("鼓励：上课跳过不消耗次数、不改变目标",
       keep_sim.encourage_status[0] == "active" and keep_sim.encourage_breaks[0] == 4
       and keep_sim.encourage_target[0] == 1)
 
+# —— 9.8 找茬：敌对最高、不能拒绝，结束双方各 +5 ——
+nit = Sim(seed=7, npc_count=4)
+for i in range(nit.N):
+    for j in range(nit.N):
+        if i != j:
+            nit.H[i][j] = 0.0
+nit.H[0][1] = 5.0
+nit.H[0][2] = 30.0
+nit.phase_state[2] = "play"
+nit.sleeping[3] = True
+nit.H[0][3] = 80.0
+check("找茬：选敌对最高且可拉的人，跳过睡觉，游戏锁定仍可拉",
+      nit._find_nitpick_target(0) == 2)
+h_02 = nit.H[0][2]
+h_20 = nit.H[2][0]
+nit._start_nitpick(0, 2)
+check("找茬：双方进入找茬且对方不能被加入",
+      nit.current_act[0] == "nitpick" and nit.current_act[2] == "nitpick"
+      and nit._join_blocked(2))
+nit.busy_until[0] = nit.global_tick
+nit.busy_until[2] = nit.global_tick
+nit.settle_finished_actions()
+check("找茬结束：双方敌对各 +5",
+      nit.H[0][2] == h_02 + 5 and nit.H[2][0] == h_20 + 5)
+
 print("  通过 %d 项，失败 %d 项" % (len(PASSED), len(FAILED)))
 if FAILED:
     print("  失败清单：", FAILED)
